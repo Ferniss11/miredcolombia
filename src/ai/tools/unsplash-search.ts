@@ -42,6 +42,8 @@ export const unsplashSearch = ai.defineTool(
         }
 
         const data = await response.json();
+        console.log('[Unsplash Search Tool] API Response:', JSON.stringify(data, null, 2));
+
         const imageUrl = data.results?.[0]?.urls?.regular;
 
         if (!imageUrl) {

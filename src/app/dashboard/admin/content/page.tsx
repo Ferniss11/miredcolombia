@@ -11,10 +11,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from '@/hooks/use-toast';
 import { generateBlogIdeasAction, generateIntelligentArticleAction } from '@/lib/ai-actions';
-import { Loader2, Sparkles, Wand2, Image as ImageIcon, Tags } from 'lucide-react';
+import { Loader2, Sparkles, Wand2, Image as ImageIcon, Tags, Code } from 'lucide-react';
 import type { IntelligentArticle } from '@/lib/types';
 import Image from 'next/image';
 import { Badge } from '@/components/ui/badge';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 
 export default function AdminContentSuitePage() {
@@ -187,6 +188,7 @@ export default function AdminContentSuitePage() {
                             )}
 
                            {articleResult && !isPending && (
+                                <>
                                 <Card className="mt-6 bg-secondary">
                                     <CardHeader>
                                         <CardTitle className="font-headline text-2xl mb-2">{articleResult.title}</CardTitle>
@@ -245,6 +247,29 @@ export default function AdminContentSuitePage() {
                                         </div>
                                     </CardContent>
                                 </Card>
+
+                                <Collapsible className="mt-4">
+                                    <CollapsibleTrigger asChild>
+                                        <Button variant="outline" className="w-full">
+                                            <Code className="mr-2" />
+                                            Mostrar/Ocultar Respuesta JSON de la IA
+                                        </Button>
+                                    </CollapsibleTrigger>
+                                    <CollapsibleContent>
+                                        <Card className="mt-2 bg-black/80 text-white">
+                                            <CardHeader>
+                                                <CardTitle className="text-base text-white">Respuesta JSON de la IA</CardTitle>
+                                                <CardDescription className="text-gray-400">Este es el objeto JSON exacto devuelto por el flujo de IA. Úsalo para depurar.</CardDescription>
+                                            </CardHeader>
+                                            <CardContent>
+                                                <pre className="text-xs whitespace-pre-wrap break-all p-4 bg-black rounded-md overflow-x-auto">
+                                                    {JSON.stringify(articleResult, null, 2)}
+                                                </pre>
+                                            </CardContent>
+                                        </Card>
+                                    </CollapsibleContent>
+                                </Collapsible>
+                                </>
                             )}
                         </CardContent>
                     </Card>
