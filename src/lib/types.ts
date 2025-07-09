@@ -116,17 +116,28 @@ export type Business = {
   website: string;
 };
 
+// Represents a blog post stored in the database
 export type BlogPost = {
   id: string;
-  title: string;
   slug: string;
-  excerpt: string;
-  content: string;
+  title: string;
   author: string;
-  date: string;
+  date: string; // Should be ISO string
   status: 'Published' | 'Draft' | 'In Review' | 'Archived';
   category: string;
-  imageUrl: string;
+  
+  // Rich content from AI
+  introduction: string;
+  conclusion: string;
+  sections: Array<{
+    heading: string;
+    content: string;
+    imageUrl?: string;
+    imageHint?: string;
+  }>;
+  featuredImageUrl?: string;
+  featuredImageHint?: string;
+  suggestedTags: string[];
 };
 
 export type SubscriptionPlan = {
@@ -138,7 +149,7 @@ export type SubscriptionPlan = {
 };
 
 export type MigrationPackage = {
-    id: string;
+    id:string;
     name: string;
     price: number;
     priceCOP: string;

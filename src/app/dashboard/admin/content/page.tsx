@@ -2,6 +2,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -11,7 +12,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from '@/hooks/use-toast';
 import { generateBlogIdeasAction, generateIntelligentArticleAction } from '@/lib/ai-actions';
-import { Loader2, Sparkles, Wand2, Image as ImageIcon, Tags, Code } from 'lucide-react';
+import { createBlogPostAction } from '@/lib/blog-actions';
+import { Loader2, Sparkles, Wand2, Image as ImageIcon, Tags, Code, Save, Send } from 'lucide-react';
 import type { IntelligentArticle } from '@/lib/types';
 import Image from 'next/image';
 import { Badge } from '@/components/ui/badge';
@@ -20,7 +22,9 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 
 export default function AdminContentSuitePage() {
     const { toast } = useToast();
+    const router = useRouter();
     const [isPending, startTransition] = useTransition();
+    const [isSaving, setIsSaving] = useState(false);
     
     // State for ideas generator
     const [ideasResult, setIdeasResult] = useState<string[]>([]);
@@ -67,6 +71,25 @@ export default function AdminContentSuitePage() {
                 toast({ title: 'Éxito', description: '¡Nuevo artículo inteligente generado!' });
             }
         });
+    };
+    
+    const handleSaveArticle = async (status: 'Draft' | 'Published') => {
+        if (!articleResult) return;
+        setIsSaving(true);
+        
+        const result = await createBlogPostAction({
+            ...articleResult,
+            category: articleCategory,
+            status: status,
+        });
+
+        if (result.error) {
+            toast({ variant: 'destructive', title: 'Error al Guardar', description: result.error });
+        } else {
+            toast({ title: 'Éxito', description: `Artículo guardado como ${status === 'Draft' ? 'borrador' : 'publicado'}.` });
+            router.push('/dashboard/admin/blog');
+        }
+        setIsSaving(false);
     };
 
     return (
@@ -175,7 +198,7 @@ export default function AdminContentSuitePage() {
                                 </div>
                             </div>
 
-                            <Button onClick={handleGenerateArticle} disabled={isPending || !articleTopic}>
+                            <Button onClick={handleGenerateArticle} disabled={isPending || isSaving || !articleTopic}>
                                 {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
                                 Generar Artículo
                             </Button>
@@ -241,9 +264,15 @@ export default function AdminContentSuitePage() {
                                                 </div>
                                             </div>
                                         )}
-                                         <div className="flex justify-end mt-4">
-                                            <Button>Copiar Contenido</Button>
-                                            <Button variant="outline" className="ml-2">Guardar como Borrador</Button>
+                                         <div className="flex justify-end mt-4 gap-2">
+                                            <Button variant="outline" onClick={() => handleSaveArticle('Draft')} disabled={isSaving}>
+                                                {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Save className="mr-2 h-4 w-4"/>}
+                                                Guardar como Borrador
+                                            </Button>
+                                            <Button onClick={() => handleSaveArticle('Published')} disabled={isSaving}>
+                                                {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Send className="mr-2 h-4 w-4"/>}
+                                                Guardar y Publicar
+                                            </Button>
                                         </div>
                                     </CardContent>
                                 </Card>
