@@ -1,5 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileText, Users, HandCoins } from "lucide-react";
+import { FileText, Users, HandCoins, Bug } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
 export default function AdminDashboardPage() {
     return (
@@ -41,9 +43,25 @@ export default function AdminDashboardPage() {
                 <Card>
                     <CardHeader>
                         <CardTitle>Acciones Rápidas</CardTitle>
+                         <CardDescription>Herramientas y accesos directos para la administración del sitio.</CardDescription>
                     </CardHeader>
-                    <CardContent>
-                        <p>Usa la barra lateral para navegar a la Suite de Contenido IA o gestionar usuarios.</p>
+                    <CardContent className="flex flex-wrap gap-4">
+                        <Button asChild>
+                           <Link href="/dashboard/admin/content">
+                             Suite de Contenido IA
+                           </Link>
+                        </Button>
+                         <Button asChild variant="outline">
+                           <Link href="/dashboard/admin/blog">
+                             Gestionar Blog
+                           </Link>
+                        </Button>
+                         <Button asChild variant="destructive" className="bg-orange-500 hover:bg-orange-600 border-orange-500">
+                           <Link href="/dashboard/admin/debug">
+                             <Bug className="mr-2 h-4 w-4"/>
+                             Depuración de Herramientas
+                           </Link>
+                        </Button>
                     </CardContent>
                 </Card>
              </div>
