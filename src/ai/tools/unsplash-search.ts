@@ -41,6 +41,7 @@ export const unsplashSearch = ai.defineTool(
         }
 
         const data = await response.json();
+        // The photo ID is just the ID part, not the full slug
         const photoId = data.results?.[0]?.id;
 
         if (!photoId) {

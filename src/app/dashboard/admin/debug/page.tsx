@@ -47,7 +47,7 @@ export default function AdminDebugPage() {
     if (!photoId || photoId === 'placeholder') {
         return `https://placehold.co/1200x600.png`;
     }
-    return `https://images.unsplash.com/${photoId}?w=1200&fit=max`;
+    return `https://images.unsplash.com/photo-${photoId}?w=1200&fit=max`;
   }
 
   return (
