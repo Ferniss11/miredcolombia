@@ -56,7 +56,7 @@ export async function debugUnsplashSearchAction(query: string) {
     return { result };
   } catch (error) {
     console.error('[Debug Unsplash Action] Error:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Un error desconocido ocurrió.';
+    const errorMessage = error instanceof Error ? error.message : 'An error desconocido ocurrió.';
     return { error: errorMessage };
   }
 }

@@ -8,12 +8,12 @@ import { z } from 'zod';
 export const unsplashSearch = ai.defineTool(
   {
     name: 'unsplashSearch',
-    description: 'Searches for a relevant, high-quality, and royalty-free image on Unsplash and returns its URL. Use this to find images for blog posts.',
+    description: 'Searches for a relevant, high-quality, and royalty-free image on Unsplash and returns its unique Photo ID. Use this to find images for blog posts.',
     inputSchema: z.object({
       query: z.string().describe('A 2-3 word descriptive search query for the desired image. Be specific. Example: "legal documents spain", "madrid city apartment", "friendly meeting cafe".'),
     }),
     outputSchema: z.object({
-      imageUrl: z.string().url().describe("The URL of the found image on Unsplash."),
+      photoId: z.string().describe("The unique ID of the found image on Unsplash."),
       imageHint: z.string().describe("The original query used to find the image, to be used as a hint for alt text."),
     }),
   },
@@ -22,13 +22,9 @@ export const unsplashSearch = ai.defineTool(
     
     const accessKey = process.env.UNSPLASH_ACCESS_KEY;
     if (!accessKey) {
-        console.error("[Unsplash Search Tool] Error: UNSPLASH_ACCESS_KEY environment variable not set.");
-        // Return a placeholder if the key is missing to avoid breaking the flow,
-        // but log a clear error.
-        return {
-            imageUrl: `https://placehold.co/1200x600.png`,
-            imageHint: query,
-        };
+        const errorMsg = "[Unsplash Search Tool] Error: UNSPLASH_ACCESS_KEY environment variable not set.";
+        console.error(errorMsg);
+        throw new Error(errorMsg);
     }
 
     try {
@@ -45,32 +41,28 @@ export const unsplashSearch = ai.defineTool(
         }
 
         const data = await response.json();
-        console.log('[Unsplash Search Tool] API Response:', JSON.stringify(data, null, 2));
+        const photoId = data.results?.[0]?.id;
 
-        const imageUrlBase = data.results?.[0]?.urls?.regular;
-
-        if (!imageUrlBase) {
-            console.warn(`[Unsplash Search Tool] No image found on Unsplash for query: "${query}". Returning placeholder.`);
+        if (!photoId) {
+            console.warn(`[Unsplash Search Tool] No image found on Unsplash for query: "${query}". Returning a placeholder ID.`);
+            // Return a placeholder that can be identified
             return {
-                imageUrl: `https://placehold.co/1200x600.png`,
+                photoId: `placeholder`,
                 imageHint: query,
             };
         }
         
-        // Use the 'regular' URL which is optimized for general use.
-        const finalImageUrl = `${imageUrlBase}&w=1200&fit=max`;
-
-        console.log(`[Unsplash Search Tool] Found image URL: ${finalImageUrl}`);
+        console.log(`[Unsplash Search Tool] Found photo ID: ${photoId}`);
 
         return {
-            imageUrl: finalImageUrl,
+            photoId: photoId,
             imageHint: query,
         };
     } catch (error) {
         console.error("[Unsplash Search Tool] Error calling Unsplash API:", error);
         // Fallback to a placeholder in case of any unexpected error during the fetch.
         return {
-            imageUrl: `https://placehold.co/1200x600.png`,
+            photoId: `placeholder`,
             imageHint: query,
         };
     }

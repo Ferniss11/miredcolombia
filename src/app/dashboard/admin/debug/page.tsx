@@ -12,7 +12,7 @@ import { Loader2, Search, Bug } from 'lucide-react';
 import Image from 'next/image';
 
 type UnsplashResult = {
-  imageUrl: string;
+  photoId: string;
   imageHint: string;
 } | null;
 
@@ -42,6 +42,13 @@ export default function AdminDebugPage() {
       }
     });
   };
+
+  const buildUnsplashUrl = (photoId?: string) => {
+    if (!photoId || photoId === 'placeholder') {
+        return `https://placehold.co/1200x600.png`;
+    }
+    return `https://images.unsplash.com/${photoId}?w=1200&fit=max`;
+  }
 
   return (
     <div className="space-y-6">
@@ -106,7 +113,7 @@ export default function AdminDebugPage() {
               <h3 className="font-semibold mb-2">Vista Previa de la Imagen</h3>
               <div className="relative w-full h-64 rounded-lg overflow-hidden border">
                 <Image
-                  src={result.imageUrl}
+                  src={buildUnsplashUrl(result.photoId)}
                   alt={`Resultado para: ${result.imageHint}`}
                   fill
                   className="object-cover"

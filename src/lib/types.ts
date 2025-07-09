@@ -69,14 +69,14 @@ export type SimpleArticleOutput = z.infer<typeof SimpleArticleOutputSchema>;
 const ArticleSectionSchema = z.object({
     heading: z.string().describe("A clear and concise heading for this section of the article."),
     content: z.string().describe("The detailed content for this section, written in Markdown format."),
-    imageUrl: z.string().url().optional().describe("The URL of a relevant image for this section, found using the unsplashSearch tool."),
+    imageId: z.string().optional().describe("The unique Photo ID from Unsplash for this section, found using the unsplashSearch tool."),
     imageHint: z.string().optional().describe("A 2-3 word hint for the image's content, used for alt text and future searches.")
 });
 
 export const IntelligentArticleOutputSchema = z.object({
   title: z.string().describe('The generated, SEO-friendly blog title.'),
   introduction: z.string().describe("An engaging introductory paragraph for the article."),
-  featuredImageUrl: z.string().url().describe("The URL for the main hero/featured image of the article."),
+  featuredImageId: z.string().describe("The unique Photo ID from Unsplash for the main hero/featured image of the article."),
   featuredImageHint: z.string().describe("A 2-3 word hint for the featured image's content."),
   sections: z.array(ArticleSectionSchema).describe("An array of content sections that make up the body of the article."),
   conclusion: z.string().describe("A concluding paragraph that summarizes the article."),

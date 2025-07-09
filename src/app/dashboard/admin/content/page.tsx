@@ -69,6 +69,13 @@ export default function AdminContentSuitePage() {
         });
     };
 
+    const buildUnsplashUrl = (photoId: string) => {
+        if (!photoId || photoId === 'placeholder') {
+            return `https://placehold.co/1200x600.png`;
+        }
+        return `https://images.unsplash.com/${photoId}?w=1200&fit=max`;
+    }
+
     return (
         <div>
             <div className="flex items-center gap-4 mb-6">
@@ -194,7 +201,7 @@ export default function AdminContentSuitePage() {
                                         <CardTitle className="font-headline text-2xl mb-2">{articleResult.title}</CardTitle>
                                         <div className="relative w-full h-64 rounded-lg overflow-hidden border">
                                             <Image 
-                                                src={articleResult.featuredImageUrl} 
+                                                src={buildUnsplashUrl(articleResult.featuredImageId)} 
                                                 alt={articleResult.title}
                                                 fill
                                                 className="object-cover"
@@ -211,10 +218,10 @@ export default function AdminContentSuitePage() {
                                             {articleResult.sections.map((section, index) => (
                                                 <div key={index} className="mt-6">
                                                     <h3 className="text-xl font-bold font-headline">{section.heading}</h3>
-                                                    {section.imageUrl && section.imageHint && (
+                                                    {section.imageId && section.imageHint && (
                                                         <div className="relative w-full h-56 my-4 rounded-lg overflow-hidden">
                                                             <Image
-                                                                src={section.imageUrl}
+                                                                src={buildUnsplashUrl(section.imageId)}
                                                                 alt={section.heading}
                                                                 fill
                                                                 className="object-cover"
