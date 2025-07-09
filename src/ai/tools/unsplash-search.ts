@@ -22,7 +22,9 @@ export const unsplashSearch = ai.defineTool(
     
     const accessKey = process.env.UNSPLASH_ACCESS_KEY;
     if (!accessKey) {
-        console.error("Unsplash API key is not set. Returning placeholder.");
+        console.error("[Unsplash Search Tool] Error: UNSPLASH_ACCESS_KEY environment variable not set.");
+        // Return a placeholder if the key is missing to avoid breaking the flow,
+        // but log a clear error.
         return {
             imageUrl: `https://placehold.co/1200x600.png`,
             imageHint: query,
@@ -37,32 +39,36 @@ export const unsplashSearch = ai.defineTool(
         });
 
         if (!response.ok) {
-            console.error(`Unsplash API error: ${response.statusText}`);
-            throw new Error('Failed to fetch image from Unsplash.');
+            const errorData = await response.json();
+            console.error(`[Unsplash Search Tool] API error: ${response.statusText}`, errorData);
+            throw new Error(`Failed to fetch image from Unsplash. Status: ${response.status}`);
         }
 
         const data = await response.json();
         console.log('[Unsplash Search Tool] API Response:', JSON.stringify(data, null, 2));
 
-        const imageUrlBase = data.results?.[0]?.urls?.full;
+        const imageUrlBase = data.results?.[0]?.urls?.regular;
 
         if (!imageUrlBase) {
-            console.warn(`No image found on Unsplash for query: "${query}".`);
+            console.warn(`[Unsplash Search Tool] No image found on Unsplash for query: "${query}". Returning placeholder.`);
             return {
                 imageUrl: `https://placehold.co/1200x600.png`,
                 imageHint: query,
             };
         }
         
-        // Append parameters to ensure the URL is valid and optimized
+        // Use the 'regular' URL which is optimized for general use.
         const finalImageUrl = `${imageUrlBase}&w=1200&fit=max`;
+
+        console.log(`[Unsplash Search Tool] Found image URL: ${finalImageUrl}`);
 
         return {
             imageUrl: finalImageUrl,
             imageHint: query,
         };
     } catch (error) {
-        console.error("Error calling Unsplash API:", error);
+        console.error("[Unsplash Search Tool] Error calling Unsplash API:", error);
+        // Fallback to a placeholder in case of any unexpected error during the fetch.
         return {
             imageUrl: `https://placehold.co/1200x600.png`,
             imageHint: query,
