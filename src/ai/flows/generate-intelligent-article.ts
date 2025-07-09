@@ -39,8 +39,8 @@ const prompt = ai.definePrompt({
     *   Sugiere una lista de 3 a 5 **etiquetas** (tags) relevantes.
 
 3.  **Búsqueda de Imágenes (Paso Obligatorio):**
-    *   **Imagen Destacada:** Primero, utiliza la herramienta \`unsplashSearch\` para encontrar UNA imagen principal (destacada) que represente el tema general del artículo. Elige una consulta de búsqueda de 2-3 palabras que resuma el tema.
-    *   **Imágenes de Sección:** Para CADA sección que escribas, evalúa si una imagen mejoraría la comprensión. Si es así, usa la herramienta \`unsplashSearch\` NUEVAMENTE con una consulta de búsqueda muy específica y relevante para el contenido de ESA sección. Si una sección no necesita imagen, omítela.
+    *   **Imagen Destacada:** Primero, utiliza la herramienta \`unsplashSearch\` para encontrar UNA imagen principal (destacada) que represente el tema general del artículo. Elige una consulta de búsqueda de 2-3 palabras que resuma el tema. Del resultado, extrae la propiedad \`imageUrl\` y úsala para el campo \`featuredImageUrl\` en la salida. Guarda la consulta original en \`featuredImageHint\`.
+    *   **Imágenes de Sección:** Para CADA sección que escribas, evalúa si una imagen mejoraría la comprensión. Si es así, usa la herramienta \`unsplashSearch\` NUEVAMENTE con una consulta de búsqueda muy específica y relevante para el contenido de ESA sección. Del resultado, extrae la propiedad \`imageUrl\` y úsala para el campo \`imageUrl\` de la sección. Si una sección no necesita imagen, omítela. Guarda la consulta original en \`imageHint\`.
 
 4.  **Formato de Salida:**
     *   Debes devolver el resultado final estrictamente en el formato JSON definido en el esquema de salida.
