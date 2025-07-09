@@ -44,18 +44,21 @@ export const unsplashSearch = ai.defineTool(
         const data = await response.json();
         console.log('[Unsplash Search Tool] API Response:', JSON.stringify(data, null, 2));
 
-        const imageUrl = data.results?.[0]?.urls?.regular;
+        const imageUrlBase = data.results?.[0]?.urls?.full;
 
-        if (!imageUrl) {
+        if (!imageUrlBase) {
             console.warn(`No image found on Unsplash for query: "${query}".`);
             return {
                 imageUrl: `https://placehold.co/1200x600.png`,
                 imageHint: query,
             };
         }
+        
+        // Append parameters to ensure the URL is valid and optimized
+        const finalImageUrl = `${imageUrlBase}&w=1200&fit=max`;
 
         return {
-            imageUrl: imageUrl,
+            imageUrl: finalImageUrl,
             imageHint: query,
         };
     } catch (error) {
