@@ -5,7 +5,6 @@ import { z } from 'zod';
 import { generateBlogIdeas } from '@/ai/flows/generate-blog-ideas';
 import { generateBlogTitle } from '@/ai/flows/generate-blog-title';
 import { generateIntelligentArticle } from '@/ai/flows/generate-intelligent-article';
-import { unsplashSearch } from '@/ai/tools/unsplash-search';
 import { GenerateArticleInputSchema, GenerateBlogIdeasInputSchema, GenerateBlogTitleInputSchema, type GenerateArticleInput, type GenerateBlogIdeasInput, type GenerateBlogTitleInput } from '@/lib/types';
 
 
@@ -47,12 +46,37 @@ export async function generateIntelligentArticleAction(input: GenerateArticleInp
 
 
 export async function debugUnsplashSearchAction(query: string) {
+    // This is a temporary copy of the unsplashSearch tool logic for debugging purposes,
+    // so we don't have to re-import the main tool and can test variations.
   try {
-    const result = await unsplashSearch({ query });
-    return { result };
+     const accessKey = process.env.UNSPLASH_ACCESS_KEY;
+    if (!accessKey) {
+        throw new Error("UNSPLASH_ACCESS_KEY environment variable not set.");
+    }
+    const response = await fetch(`https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=1&orientation=landscape`, {
+        headers: {
+            Authorization: `Client-ID ${accessKey}`,
+        },
+    });
+
+    if (!response.ok) {
+        throw new Error(`Failed to fetch image from Unsplash. Status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const result = data.results?.[0];
+
+    if (!result) {
+      return { result: { imageUrl: `https://placehold.co/1200x600.png`, imageHint: query } };
+    }
+    
+    const imageUrl = `${result.urls.raw}&w=1200&fit=max`;
+
+    return { result: { imageUrl, imageHint: query } };
+
   } catch (error) {
     console.error('[Debug Unsplash Action] Error:', error);
-    const errorMessage = error instanceof Error ? error.message : 'An error desconocido ocurrió.';
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
     return { error: errorMessage };
   }
 }

@@ -3,6 +3,7 @@
 
 /**
  * @fileOverview Defines a Genkit tool for searching images on Unsplash.
+ * This version is designed to return a stable photo ID to prevent AI models from altering complex URLs.
  */
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
@@ -10,12 +11,12 @@ import { z } from 'zod';
 export const unsplashSearch = ai.defineTool(
   {
     name: 'unsplashSearch',
-    description: 'Searches for a relevant, high-quality, and royalty-free image on Unsplash and returns a direct URL to it. Use this to find images for blog posts.',
+    description: 'Searches for a relevant, high-quality, and royalty-free image on Unsplash and returns its unique ID. Use this to find images for blog posts.',
     inputSchema: z.object({
       query: z.string().describe('A 2-3 word descriptive search query for the desired image. Be specific. Example: "legal documents spain", "madrid city apartment", "friendly meeting cafe".'),
     }),
     outputSchema: z.object({
-      imageUrl: z.string().url().describe("The direct, usable URL of the found image on Unsplash."),
+      photoId: z.string().describe("The unique ID of the found image on Unsplash. This ID will be used to construct the final image URL."),
       imageHint: z.string().describe("The original query used to find the image, to be used as a hint for alt text."),
     }),
   },
@@ -46,25 +47,24 @@ export const unsplashSearch = ai.defineTool(
         const result = data.results?.[0];
 
         if (!result) {
-            console.warn(`[Unsplash Search Tool] No image found on Unsplash for query: "${query}". Returning a placeholder.`);
+            console.warn(`[Unsplash Search Tool] No image found on Unsplash for query: "${query}". Returning a placeholder ID.`);
             return {
-                imageUrl: `https://placehold.co/1200x600.png`,
+                photoId: `placeholder`,
                 imageHint: query,
             };
         }
         
-        // Construct the full URL with desired parameters
-        const imageUrl = `${result.urls.raw}&w=1200&fit=max`;
-        console.log(`[Unsplash Search Tool] Found image URL: ${imageUrl}`);
+        console.log(`[Unsplash Search Tool] Found photo ID: ${result.id}`);
 
         return {
-            imageUrl: imageUrl,
+            photoId: result.id,
             imageHint: query,
         };
     } catch (error) {
         console.error("[Unsplash Search Tool] Error calling Unsplash API:", error);
+        // Return a placeholder ID in case of error.
         return {
-            imageUrl: `https://placehold.co/1200x600.png`,
+            photoId: `placeholder`,
             imageHint: query,
         };
     }
