@@ -45,14 +45,10 @@ export async function generateIntelligentArticleAction(input: GenerateArticleInp
     }
 }
 
-const DebugUnsplashSearchInputSchema = z.object({
-  query: z.string().min(1, 'La consulta no puede estar vacía.'),
-});
 
 export async function debugUnsplashSearchAction(query: string) {
   try {
-    const validatedInput = DebugUnsplashSearchInputSchema.parse({ query });
-    const result = await unsplashSearch(validatedInput);
+    const result = await unsplashSearch({ query });
     return { result };
   } catch (error) {
     console.error('[Debug Unsplash Action] Error:', error);
