@@ -3,8 +3,10 @@
 
 /**
  * @fileOverview An intelligent AI agent for generating comprehensive, well-researched, and visually appealing blog articles.
+ * This flow generates the text content and suggests image search queries (hints).
+ * A separate server function will enrich this output with actual image URLs.
  *
- * - generateIntelligentArticle - A function that generates a blog post using web search and image search tools.
+ * - generateIntelligentArticle - A function that generates a blog post using web search and suggests images.
  */
 
 import {ai} from '@/ai/genkit';
@@ -18,12 +20,14 @@ export async function generateIntelligentArticle(input: GenerateArticleInput): P
   return generateIntelligentArticleFlow(input);
 }
 
+// NOTE: The output schema still defines imageUrls, but the prompt instructs the AI
+// to only fill the *Hint fields. The image URLs will be added by a separate process.
 const prompt = ai.definePrompt({
   name: 'generateIntelligentArticlePrompt',
   input: {schema: GenerateArticleInputSchema},
   output: {schema: IntelligentArticleOutputSchema},
   tools: [webSearch, unsplashSearch],
-  prompt: `Eres un experto creador de contenido y estratega de blogs para 'Colombia en España', una plataforma que ayuda a los colombianos a migrar y establecerse en España. Tu misión es generar un artículo completo, bien investigado y visualmente atractivo.
+  prompt: `Eres un experto creador de contenido y estratega de blogs para 'Colombia en España', una plataforma que ayuda a los colombianos a migrar y establecerse en España. Tu misión es generar un artículo completo, bien investigado y con sugerencias de imágenes.
 
 **Instrucciones del Proceso:**
 
@@ -38,12 +42,14 @@ const prompt = ai.definePrompt({
     *   Escribe una **conclusión** sólida que resuma los puntos clave.
     *   Sugiere una lista de 3 a 5 **etiquetas** (tags) relevantes.
 
-3.  **Búsqueda de Imágenes (Paso Obligatorio):**
-    *   **Imagen Destacada:** Primero, utiliza la herramienta \`unsplashSearch\` para encontrar UNA imagen principal (destacada) que represente el tema general del artículo. Elige una consulta de búsqueda de 2-3 palabras que resuma el tema. Del resultado, extrae la propiedad \`photoId\` y úsala de forma **LITERAL y SIN NINGUNA MODIFICACIÓN** para el campo \`featuredImageId\` en la salida. Guarda la consulta original en \`featuredImageHint\`.
-    *   **Imágenes de Sección:** Para CADA sección que escribas, evalúa si una imagen mejoraría la comprensión. Si es así, usa la herramienta \`unsplashSearch\` NUEVAMENTE con una consulta de búsqueda muy específica y relevante para el contenido de ESA sección. Del resultado, extrae la propiedad \`photoId\` y úsala de forma **LITERAL y SIN NINGUNA MODIFICACIÓN** para el campo \`imageId\` de la sección. Si una sección no necesita imagen, omítela. Guarda la consulta original en \`imageHint\`.
+3.  **Sugerencia de Imágenes (Paso OBLIGATORIO):**
+    *   Para la **imagen destacada** y para **CADA sección**, tu única tarea es decidir una **consulta de búsqueda de 2-3 palabras** para Unsplash.
+    *   NO llames a la herramienta \`unsplashSearch\`.
+    *   Coloca esta consulta de búsqueda en el campo \`featuredImageHint\` para la imagen principal, y en el campo \`imageHint\` para cada sección.
+    *   DEJA EN BLANCO los campos \`featuredImageUrl\` y \`imageUrl\` de las secciones. Otro proceso se encargará de buscar las imágenes.
 
 4.  **Formato de Salida:**
-    *   Debes devolver el resultado final estrictamente en el formato JSON definido en el esquema de salida.
+    *   Debes devolver el resultado final estrictamente en el formato JSON definido en el esquema de salida, recordando dejar los campos de URL de imagen en blanco.
 
 **Detalles del Artículo a Generar:**
 -   **Tema Principal:** {{{topic}}}
@@ -51,7 +57,7 @@ const prompt = ai.definePrompt({
 -   **Tono Deseado:** {{{tone}}}
 -   **Extensión Deseada:** {{{length}}}
 
-Comienza el proceso ahora. Recuerda seguir todos los pasos, especialmente el uso de las herramientas de búsqueda web y de imágenes.
+Comienza el proceso ahora. Recuerda seguir todos los pasos. NO busques imágenes, solo proporciona las consultas de búsqueda en los campos 'Hint'.
 `,
 });
 
