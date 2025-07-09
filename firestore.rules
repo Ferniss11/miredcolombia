@@ -1,0 +1,40 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      // Check if the user document exists and has the 'Admin' role.
+      return exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Admin';
+    }
+
+    // Rules for 'users' collection
+    match /users/{userId} {
+      allow read: if true;
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId) && request.resource.data.role == resource.data.role; // Prevent role change
+      allow delete: if false; // Generally, don't allow users to delete their own accounts from the client.
+    }
+    
+    // Rules for 'customers' collection
+    match /customers/{customerId} {
+      allow read: if isAdmin() || (request.auth.uid != null && request.auth.uid == resource.data.userId);
+      allow create: if true; // Allow anyone to create a customer profile during purchase.
+      allow update: if request.auth.uid != null && request.auth.uid == resource.data.userId;
+      allow delete: if false;
+    }
+
+    // Rules for 'orders' collection
+    match /orders/{orderId} {
+      allow read: if isAdmin() || (request.auth.uid != null && request.auth.uid == resource.data.userId);
+      allow create: if true; // Allow anyone to create an order document after a successful payment.
+      allow update, delete: if false;
+    }
+  }
+}
