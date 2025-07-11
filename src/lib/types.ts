@@ -117,11 +117,12 @@ export type Business = {
 };
 
 // Represents a blog post stored in the database
-export type BlogPost = {
+export interface BlogPost {
   id: string;
   slug: string;
   title: string;
   author: string;
+  authorId: string;
   date: string; // Should be ISO string
   status: 'Published' | 'Draft' | 'In Review' | 'Archived';
   category: string;
@@ -138,7 +139,12 @@ export type BlogPost = {
   featuredImageUrl?: string;
   featuredImageHint?: string;
   suggestedTags: string[];
-};
+
+  // Optional placeholder fields for simpler posts
+  excerpt?: string;
+  content?: string;
+  imageUrl?: string;
+}
 
 export type SubscriptionPlan = {
   id: string;

@@ -3,7 +3,6 @@
 
 import { z } from 'zod';
 import { createBlogPost } from '@/services/blog.service';
-import type { IntelligentArticle } from '@/lib/types';
 import { auth } from '@/lib/firebase/config';
 
 // Zod schema to validate the incoming blog post data from the client
@@ -36,7 +35,7 @@ export async function createBlogPostAction(input: CreateBlogPostInput) {
   try {
     const currentUser = auth.currentUser;
     if (!currentUser) {
-      throw new Error('No estás autenticado.');
+      throw new Error('No estás autenticado. Por favor, inicia sesión de nuevo.');
     }
     
     // Validate the input data against the schema
@@ -52,6 +51,7 @@ export async function createBlogPostAction(input: CreateBlogPostInput) {
     const newPostData = {
       ...validatedData,
       slug,
+      authorId: currentUser.uid,
       author: currentUser.displayName || 'Admin', // Or get from user profile
       date: new Date().toISOString(), // Use ISO 8601 format
     };
@@ -60,8 +60,21 @@ export async function createBlogPostAction(input: CreateBlogPostInput) {
 
     return { success: true, postId };
   } catch (error) {
-    console.error('Error creating blog post:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Un error desconocido ocurrió.';
+    console.error('Error detallado al crear el post:', error);
+    
+    let errorMessage = 'Un error desconocido ocurrió.';
+    if (error instanceof Error) {
+        errorMessage = error.message;
+    }
+
+    // Check for specific Firestore permission error
+    if (errorMessage.includes('permission-denied') || errorMessage.includes('Missing or insufficient permissions')) {
+        return {
+            success: false,
+            error: 'Error de Permisos de Base de Datos. Asegúrate de que las reglas de seguridad de Firestore permitan la escritura en la colección "posts" para tu usuario.',
+        };
+    }
+    
     return {
       success: false,
       error: `No se pudo crear la entrada de blog: ${errorMessage}`,

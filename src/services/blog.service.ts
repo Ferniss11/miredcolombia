@@ -7,8 +7,9 @@ import { db } from "@/lib/firebase/config";
 type BlogPostData = {
   slug: string;
   title: string;
+  authorId: string;
   author: string;
-  date: string;
+  date: string; // Should be ISO string
   status: 'Published' | 'Draft' | 'In Review' | 'Archived';
   category: string;
   introduction: string;
