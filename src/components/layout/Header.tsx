@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from "next/link";
@@ -31,6 +32,7 @@ export default function Header() {
     await signOutUser();
     toast({ title: "Has cerrado sesión." });
     router.push("/");
+    router.refresh();
   };
   
   const renderNavLinks = (isMobile = false) => (

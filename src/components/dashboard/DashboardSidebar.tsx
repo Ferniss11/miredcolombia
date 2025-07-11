@@ -50,6 +50,7 @@ export function DashboardSidebar() {
     await signOutUser();
     toast({ title: "Has cerrado sesión." });
     router.push("/");
+    router.refresh();
   };
   
   const role = userProfile?.role;
