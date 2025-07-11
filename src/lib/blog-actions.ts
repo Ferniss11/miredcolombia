@@ -2,7 +2,6 @@
 'use server';
 
 import { z } from 'zod';
-import { getAuth } from "firebase/auth";
 import { auth } from '@/lib/firebase/config';
 
 // Zod schema to validate the incoming blog post data from the client
@@ -46,14 +45,16 @@ export async function createBlogPostAction(input: CreateBlogPostInput) {
       .toLowerCase()
       .replace(/[^a-z0-9\s-]/g, '') // remove special characters
       .replace(/\s+/g, '-') // replace spaces with hyphens
-      .replace(/-+/g, '-'); // remove consecutive hyphens
+      .replace(/-+/g, '-');
       
     const postDataWithSlug = {
         ...input,
         slug
     };
 
-    const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/posts`, {
+    // Use NEXT_PUBLIC_APP_URL for absolute URL, necessary for server-side fetch
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:9002';
+    const response = await fetch(`${appUrl}/api/posts`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',

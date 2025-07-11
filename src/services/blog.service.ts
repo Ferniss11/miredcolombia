@@ -1,15 +1,10 @@
 
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
+import type { BlogPost } from "@/lib/types";
 
-// This is a simplified version of the full BlogPost type
-type BlogPostData = {
-  slug: string;
-  title: string;
-  category: string;
-  status: 'Published' | 'Draft';
-  // ... other fields from the AI model
-};
+// This type uses a subset of the full BlogPost type for creation
+type BlogPostData = Omit<BlogPost, 'id' | 'author' | 'authorId' | 'date' | 'content' | 'excerpt' | 'imageUrl'>;
 
 /**
  * Creates a new blog post document in the 'posts' collection in Firestore.
