@@ -112,13 +112,16 @@ export default function AdminContentSuitePage() {
         setIsSaving(true);
         
         try {
+            // Force token refresh to ensure custom claims (like 'Admin' role) are up-to-date.
+            const idToken = await user.getIdToken(true);
+
             const postData = {
                 ...articleResult,
                 category: articleCategory || "General",
                 status: status,
             };
 
-            const result = await createBlogPostAction(postData);
+            const result = await createBlogPostAction(postData, idToken);
 
             if (result.error) {
                 toast({ variant: 'destructive', title: 'Error al Guardar', description: result.error });

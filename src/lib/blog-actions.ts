@@ -2,7 +2,6 @@
 'use server';
 
 import { z } from 'zod';
-import { auth } from '@/lib/firebase/config';
 
 // Zod schema to validate the incoming blog post data from the client
 const BlogPostActionSchema = z.object({
@@ -30,15 +29,11 @@ type CreateBlogPostInput = z.infer<typeof BlogPostActionSchema>;
  * Creates a new blog post by calling a secure API route.
  * This is a server action called from the client.
  */
-export async function createBlogPostAction(input: CreateBlogPostInput) {
+export async function createBlogPostAction(input: CreateBlogPostInput, idToken: string) {
   try {
-    const user = auth.currentUser;
-    if (!user) {
-      throw new Error('No estás autenticado. Por favor, inicia sesión de nuevo.');
+    if (!idToken) {
+        throw new Error('El token de autenticación es obligatorio.');
     }
-
-    // Get the user's ID token to send to the secure API route
-    const idToken = await user.getIdToken();
 
     // Generate a slug from the title
     const slug = input.title
