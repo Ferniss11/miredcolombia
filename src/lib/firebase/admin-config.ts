@@ -10,12 +10,8 @@ export function initializeAdminApp() {
   
   if (!serviceAccountKey) {
     const errorMessage = 'Firebase service account key is not found in environment variables (FIREBASE_SERVICE_ACCOUNT_KEY). The Admin SDK cannot be initialized.';
-    console.error(errorMessage);
-    if (process.env.NODE_ENV === 'production') {
-       throw new Error(errorMessage);
-    }
-    console.warn("Continuing without full admin capabilities. API routes requiring admin rights will fail.");
-    return;
+    // Throw the error so it can be caught by the API route and sent to the client.
+    throw new Error(errorMessage);
   }
   
   try {
@@ -28,6 +24,7 @@ export function initializeAdminApp() {
     });
   } catch (error) {
     console.error("Error parsing FIREBASE_SERVICE_ACCOUNT_KEY or initializing Firebase Admin SDK.", error);
-    throw new Error("Failed to initialize Firebase Admin SDK. Make sure the service account key is a valid JSON.");
+    // Throw a more specific error
+    throw new Error("Failed to parse FIREBASE_SERVICE_ACCOUNT_KEY or initialize Firebase Admin SDK. Make sure the service account key is a valid JSON. Original Error: " + (error instanceof Error ? error.message : "Unknown"));
   }
 }

@@ -61,6 +61,7 @@ export async function createBlogPostAction(input: CreateBlogPostInput, idToken: 
     const result = await response.json();
 
     if (!response.ok) {
+        // The error from the API route's JSON response is now passed here
         throw new Error(result.error || `Error en el servidor: ${response.status}`);
     }
 
@@ -75,6 +76,7 @@ export async function createBlogPostAction(input: CreateBlogPostInput, idToken: 
     
     return {
       success: false,
+      // This errorMessage will now contain the detailed error from the server
       error: `No se pudo crear la entrada de blog: ${errorMessage}`,
     };
   }

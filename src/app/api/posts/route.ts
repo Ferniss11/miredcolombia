@@ -15,6 +15,9 @@ try {
 
 export async function POST(request: Request) {
   try {
+    // Re-run initialization check inside the request to catch environment variable issues per-request
+    initializeAdminApp();
+
     const authorization = request.headers.get('Authorization');
     if (!authorization?.startsWith('Bearer ')) {
       return NextResponse.json({ error: 'Unauthorized: Missing or invalid token' }, { status: 401 });
@@ -36,20 +39,19 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true, postId }, { status: 201 });
 
   } catch (error) {
-    console.error('API Error creating post:', error);
-    
     let errorMessage = 'An unknown error occurred';
     if (error instanceof Error) {
         errorMessage = error.message;
     }
     
+    // Log the detailed error on the server
+    console.error('API Error creating post:', errorMessage);
+
     if (errorMessage.includes('auth/id-token-expired') || errorMessage.includes('token-expired')) {
         return NextResponse.json({ error: 'Token expired, please log in again.' }, { status: 401 });
     }
-     if (errorMessage.includes('The default Firebase app does not exist')) {
-        return NextResponse.json({ error: 'Server configuration error: Firebase Admin SDK not initialized. Check server logs.' }, { status: 500 });
-    }
     
+    // Return the specific error message to the client
     return NextResponse.json({ error: `Internal Server Error: ${errorMessage}` }, { status: 500 });
   }
 }
