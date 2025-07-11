@@ -69,7 +69,7 @@ export async function createBlogPostAction(input: CreateBlogPostInput, uid: stri
     if (errorMessage.includes('permission-denied') || errorMessage.includes('Missing or insufficient permissions')) {
         return {
             success: false,
-            error: 'Error de Permisos de Base de Datos. Asegúrate de que las reglas de seguridad de Firestore permitan la escritura en la colección "posts" para tu usuario.',
+            error: 'Error de Permisos de Base de Datos. Asegúrate de que las reglas de seguridad de Firestore permitan la escritura en la colección "posts" para tu usuario. Consejo: Verifica que la función isAdmin() en tus reglas funciona como esperas y tu usuario tiene el rol "Admin" en la base de datos.',
         };
     }
     

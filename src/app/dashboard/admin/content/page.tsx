@@ -111,21 +111,30 @@ export default function AdminContentSuitePage() {
 
         setIsSaving(true);
         
-        const postData = {
-            ...articleResult,
-            category: articleCategory || "General", // Use selected category or a default
-            status: status,
-        }
+        try {
+            // Force token refresh to ensure security rules have the latest claims.
+            await user.getIdToken(true);
 
-        const result = await createBlogPostAction(postData, user.uid, userProfile.name || "Admin");
+            const postData = {
+                ...articleResult,
+                category: articleCategory || "General", // Use selected category or a default
+                status: status,
+            }
 
-        if (result.error) {
-            toast({ variant: 'destructive', title: 'Error al Guardar', description: result.error });
-        } else {
-            toast({ title: 'Éxito', description: `Artículo guardado como ${status === 'Draft' ? 'borrador' : 'publicado'}.` });
-            router.push('/dashboard/admin/blog');
+            const result = await createBlogPostAction(postData, user.uid, userProfile.name || "Admin");
+
+            if (result.error) {
+                toast({ variant: 'destructive', title: 'Error al Guardar', description: result.error });
+            } else {
+                toast({ title: 'Éxito', description: `Artículo guardado como ${status === 'Draft' ? 'borrador' : 'publicado'}.` });
+                router.push('/dashboard/admin/blog');
+            }
+        } catch (error) {
+             const errorMessage = error instanceof Error ? error.message : "Un error desconocido ocurrió.";
+             toast({ variant: 'destructive', title: 'Error Inesperado', description: errorMessage });
+        } finally {
+            setIsSaving(false);
         }
-        setIsSaving(false);
     };
 
     return (
