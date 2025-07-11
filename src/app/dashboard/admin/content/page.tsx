@@ -104,8 +104,7 @@ export default function AdminContentSuitePage() {
     };
     
     const handleSaveArticle = async (status: 'Draft' | 'Published') => {
-        // The AdminLayout now guarantees that user and userProfile exist and role is Admin
-        if (!articleResult || !user || !userProfile) {
+        if (!articleResult || !user) {
             toast({ variant: 'destructive', title: 'Error', description: 'No hay artículo para guardar o falta información del usuario.' });
             return;
         };
@@ -113,16 +112,13 @@ export default function AdminContentSuitePage() {
         setIsSaving(true);
         
         try {
-            // Force token refresh to ensure security rules have the latest claims.
-            await user.getIdToken(true);
-
             const postData = {
                 ...articleResult,
-                category: articleCategory || "General", // Use selected category or a default
+                category: articleCategory || "General",
                 status: status,
-            }
+            };
 
-            const result = await createBlogPostAction(postData, user.uid, userProfile.name || "Admin");
+            const result = await createBlogPostAction(postData);
 
             if (result.error) {
                 toast({ variant: 'destructive', title: 'Error al Guardar', description: result.error });
