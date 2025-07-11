@@ -52,7 +52,7 @@ export default function DashboardPage() {
             <CardTitle>Información de Depuración del Usuario</CardTitle>
             <CardDescription>
               Estos son los datos que se están leyendo de Firebase Auth y Firestore.
-              Usa esto para verificar que tu rol es 'Admin' antes de intentar guardar un post.
+              Usa esto para verificar que tu rol es el correcto.
             </CardDescription>
         </CardHeader>
         <CardContent>

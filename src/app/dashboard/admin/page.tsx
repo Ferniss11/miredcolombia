@@ -1,9 +1,14 @@
+'use client';
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { FileText, Users, HandCoins, Bug } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { useAuth } from "@/context/AuthContext";
 
 export default function AdminDashboardPage() {
+    const { user, userProfile } = useAuth();
+
     return (
         <div>
             <h1 className="text-3xl font-bold font-headline mb-6">Resumen de Administración</h1>
@@ -65,6 +70,33 @@ export default function AdminDashboardPage() {
                     </CardContent>
                 </Card>
              </div>
+             <div className="mt-6">
+                 <Card>
+                    <CardHeader>
+                        <CardTitle>Información de Depuración del Usuario</CardTitle>
+                        <CardDescription>
+                        Estos son los datos que se están leyendo de Firebase Auth y Firestore.
+                        Usa esto para verificar que tu rol es 'Admin' antes de intentar guardar un post.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="space-y-4">
+                            <div>
+                                <h3 className="font-semibold">Objeto User (de Firebase Auth)</h3>
+                                <pre className="mt-2 w-full overflow-x-auto rounded-md bg-muted p-4 text-sm">
+                                    {user ? JSON.stringify(user, null, 2) : 'No hay usuario autenticado.'}
+                                </pre>
+                            </div>
+                            <div>
+                                <h3 className="font-semibold">Objeto UserProfile (de Firestore)</h3>
+                                <pre className="mt-2 w-full overflow-x-auto rounded-md bg-muted p-4 text-sm">
+                                    {userProfile ? JSON.stringify(userProfile, null, 2) : 'No se encontró perfil en Firestore.'}
+                                </pre>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
         </div>
     );
 }
