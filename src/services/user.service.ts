@@ -1,13 +1,13 @@
-import { doc, setDoc, getDoc, updateDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase/config";
+
+import { doc, setDoc, getDoc, updateDoc, type Firestore } from "firebase/firestore";
+import { db as clientDb } from "@/lib/firebase/config"; // Keep client DB for client-side calls
 import type { UserProfile, UserRole, BusinessProfile } from "@/lib/types";
 import type { User } from "firebase/auth";
 
 export async function createUserProfile(user: User, name: string, role: UserRole = 'User'): Promise<void> {
-    if (!db) throw new Error("Firebase database is not initialized.");
+    if (!clientDb) throw new Error("Firebase database is not initialized.");
     
-    // The document ID will now be the user's UID, which is crucial for security rules.
-    const userRef = doc(db, "users", user.uid);
+    const userRef = doc(clientDb, "users", user.uid);
     
     const userProfileData: Omit<UserProfile, 'businessProfile'> = {
         uid: user.uid,
@@ -16,11 +16,11 @@ export async function createUserProfile(user: User, name: string, role: UserRole
         role: role,
     };
 
-    // Use setDoc to create the document with a specific ID (the UID).
     await setDoc(userRef, userProfileData);
 }
 
-export async function getUserProfile(uid: string): Promise<UserProfile | null> {
+// This function can now be used on both client and server, by passing the appropriate db instance
+export async function getUserProfile(uid: string, db: Firestore = clientDb): Promise<UserProfile | null> {
     if (!db) throw new Error("Firebase database is not initialized.");
     const userRef = doc(db, "users", uid);
     const userSnap = await getDoc(userRef);
@@ -31,14 +31,12 @@ export async function getUserProfile(uid: string): Promise<UserProfile | null> {
 }
 
 export async function updateBusinessProfile(uid: string, data: BusinessProfile): Promise<void> {
-    if (!db) throw new Error("Firebase database is not initialized.");
+    if (!clientDb) throw new Error("Firebase database is not initialized.");
     try {
-        const userRef = doc(db, "users", uid);
+        const userRef = doc(clientDb, "users", uid);
         
-        // Use dot notation to update nested fields which is safer for security rules
         const updates: { [key: string]: any } = {};
         for (const [key, value] of Object.entries(data)) {
-            // Only update if the value is not undefined, to avoid Firebase errors
             if (value !== undefined) {
                 updates[`businessProfile.${key}`] = value;
             }
