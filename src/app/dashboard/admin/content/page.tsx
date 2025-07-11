@@ -104,8 +104,9 @@ export default function AdminContentSuitePage() {
     };
     
     const handleSaveArticle = async (status: 'Draft' | 'Published') => {
+        // The AdminLayout now guarantees that user and userProfile exist and role is Admin
         if (!articleResult || !user || !userProfile) {
-            toast({ variant: 'destructive', title: 'Error', description: 'No hay artículo para guardar o no estás autenticado.' });
+            toast({ variant: 'destructive', title: 'Error', description: 'No hay artículo para guardar o falta información del usuario.' });
             return;
         };
 

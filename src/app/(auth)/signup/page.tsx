@@ -9,14 +9,15 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Suspense } from "react";
 
 function SignUpPageComponent() {
-  const { user, loading } = useAuth();
+  const { user, userProfile, loading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading && user) {
+    // Redirige solo cuando la carga ha terminado y tenemos tanto el usuario como el perfil
+    if (!loading && user && userProfile) {
       router.push('/dashboard');
     }
-  }, [user, loading, router]);
+  }, [user, userProfile, loading, router]);
   
   if (loading || (!loading && user)) {
       return (
