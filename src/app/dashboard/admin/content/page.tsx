@@ -14,7 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
 import { generateBlogIdeasAction, generateIntelligentArticleAction } from '@/lib/ai-actions';
 import { createBlogPostAction } from '@/lib/blog-actions';
-import { Loader2, Sparkles, Wand2, Image as ImageIcon, Tags, Code, Save, Send } from 'lucide-react';
+import { Loader2, Sparkles, Wand2, Image as ImageIcon, Tags, Code, Save, Send, TestTube2 } from 'lucide-react';
 import type { IntelligentArticle } from '@/lib/types';
 import Image from 'next/image';
 import { Badge } from '@/components/ui/badge';
@@ -74,9 +74,37 @@ export default function AdminContentSuitePage() {
             }
         });
     };
+
+    const handleGenerateFakeArticle = () => {
+        const fakeArticle: IntelligentArticle = {
+            title: "Artículo de Prueba para Depuración",
+            introduction: "Esta es una introducción generada localmente para probar la funcionalidad de guardado sin llamar a la API de Gemini.",
+            featuredImageUrl: "https://placehold.co/1200x600.png",
+            featuredImageHint: "debug test",
+            sections: [
+                {
+                    heading: "Sección de Prueba 1",
+                    content: "Este es el contenido para la primera sección de prueba. Su propósito es verificar que los datos se guardan correctamente en Firestore.",
+                    imageUrl: "https://placehold.co/800x400.png",
+                    imageHint: "test section"
+                },
+                {
+                    heading: "Sección de Prueba 2",
+                    content: "Este es el contenido para la segunda sección. Contiene texto de relleno para simular un artículo real.",
+                    imageUrl: "https://placehold.co/800x400.png",
+                    imageHint: "another test"
+                }
+            ],
+            conclusion: "Esta es la conclusión del artículo de prueba. Si puedes leer esto en la base de datos, la prueba ha sido un éxito.",
+            suggestedTags: ["depuración", "prueba", "firestore"]
+        };
+        setArticleResult(fakeArticle);
+        setArticleCategory("Noticias"); // Set a default category for the test
+        toast({ title: 'Éxito', description: '¡Artículo de prueba generado! Listo para guardar.' });
+    };
     
     const handleSaveArticle = async (status: 'Draft' | 'Published') => {
-        if (!articleResult || !user) {
+        if (!articleResult || !user || !userProfile) {
             toast({ variant: 'destructive', title: 'Error', description: 'No hay artículo para guardar o no estás autenticado.' });
             return;
         };
@@ -85,11 +113,11 @@ export default function AdminContentSuitePage() {
         
         const postData = {
             ...articleResult,
-            category: articleCategory,
+            category: articleCategory || "General", // Use selected category or a default
             status: status,
         }
 
-        const result = await createBlogPostAction(postData, user.uid, userProfile?.name || "Admin");
+        const result = await createBlogPostAction(postData, user.uid, userProfile.name || "Admin");
 
         if (result.error) {
             toast({ variant: 'destructive', title: 'Error al Guardar', description: result.error });
@@ -206,10 +234,16 @@ export default function AdminContentSuitePage() {
                                 </div>
                             </div>
 
-                            <Button onClick={handleGenerateArticle} disabled={isPending || isSaving || !articleTopic}>
-                                {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
-                                Generar Artículo
-                            </Button>
+                            <div className="flex flex-wrap gap-2">
+                                <Button onClick={handleGenerateArticle} disabled={isPending || isSaving || !articleTopic}>
+                                    {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
+                                    Generar Artículo
+                                </Button>
+                                <Button onClick={handleGenerateFakeArticle} disabled={isPending || isSaving} variant="outline">
+                                    <TestTube2 className="mr-2 h-4 w-4" />
+                                    Generar Artículo de Prueba
+                                </Button>
+                            </div>
 
                             {isPending && (
                                 <div className="text-center p-8 space-y-4">
