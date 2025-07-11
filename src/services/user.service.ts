@@ -4,17 +4,24 @@ import type { UserProfile, UserRole, BusinessProfile } from "@/lib/types";
 import type { User } from "firebase/auth";
 
 export async function createUserProfile(user: User, name: string, role: UserRole = 'User'): Promise<void> {
+    if (!db) throw new Error("Firebase database is not initialized.");
+    
+    // The document ID will now be the user's UID, which is crucial for security rules.
     const userRef = doc(db, "users", user.uid);
-    const userProfileData: UserProfile = {
+    
+    const userProfileData: Omit<UserProfile, 'businessProfile'> = {
         uid: user.uid,
         email: user.email,
         name: name,
         role: role,
     };
+
+    // Use setDoc to create the document with a specific ID (the UID).
     await setDoc(userRef, userProfileData);
 }
 
 export async function getUserProfile(uid: string): Promise<UserProfile | null> {
+    if (!db) throw new Error("Firebase database is not initialized.");
     const userRef = doc(db, "users", uid);
     const userSnap = await getDoc(userRef);
     if (userSnap.exists()) {
@@ -24,6 +31,7 @@ export async function getUserProfile(uid: string): Promise<UserProfile | null> {
 }
 
 export async function updateBusinessProfile(uid: string, data: BusinessProfile): Promise<void> {
+    if (!db) throw new Error("Firebase database is not initialized.");
     try {
         const userRef = doc(db, "users", uid);
         

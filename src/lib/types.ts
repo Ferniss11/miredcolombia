@@ -96,7 +96,7 @@ export type BusinessProfile = {
 };
 
 export type UserProfile = {
-  uid: string;
+  uid: string; // Document ID should match auth UID
   name: string | null;
   email: string | null;
   role: UserRole;
@@ -118,7 +118,7 @@ export type Business = {
 
 // Represents a blog post stored in the database
 export interface BlogPost {
-  id: string;
+  id: string; // Firestore document ID
   slug: string;
   title: string;
   author: string;
