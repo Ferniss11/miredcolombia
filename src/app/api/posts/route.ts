@@ -46,7 +46,7 @@ export async function POST(request: Request) {
     if (errorMessage.includes('auth/id-token-expired') || errorMessage.includes('token-expired')) {
         return NextResponse.json({ error: 'Token expired, please log in again.' }, { status: 401 });
     }
-     if (errorMessage.includes('Firebase Admin SDK has not been properly initialized')) {
+     if (errorMessage.includes('The default Firebase app does not exist')) {
         return NextResponse.json({ error: 'Server configuration error: Firebase Admin SDK not initialized. Check server logs.' }, { status: 500 });
     }
     
