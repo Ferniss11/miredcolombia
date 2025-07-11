@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/context/AuthContext';
 import { generateBlogIdeasAction, generateIntelligentArticleAction } from '@/lib/ai-actions';
 import { createBlogPostAction } from '@/lib/blog-actions';
 import { Loader2, Sparkles, Wand2, Image as ImageIcon, Tags, Code, Save, Send } from 'lucide-react';
@@ -23,6 +24,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 export default function AdminContentSuitePage() {
     const { toast } = useToast();
     const router = useRouter();
+    const { user, userProfile } = useAuth();
     const [isPending, startTransition] = useTransition();
     const [isSaving, setIsSaving] = useState(false);
     
@@ -74,14 +76,20 @@ export default function AdminContentSuitePage() {
     };
     
     const handleSaveArticle = async (status: 'Draft' | 'Published') => {
-        if (!articleResult) return;
+        if (!articleResult || !user) {
+            toast({ variant: 'destructive', title: 'Error', description: 'No hay artículo para guardar o no estás autenticado.' });
+            return;
+        };
+
         setIsSaving(true);
         
-        const result = await createBlogPostAction({
+        const postData = {
             ...articleResult,
             category: articleCategory,
             status: status,
-        });
+        }
+
+        const result = await createBlogPostAction(postData, user.uid, userProfile?.name || "Admin");
 
         if (result.error) {
             toast({ variant: 'destructive', title: 'Error al Guardar', description: result.error });

@@ -3,7 +3,6 @@
 
 import { z } from 'zod';
 import { createBlogPost } from '@/services/blog.service';
-import { auth } from '@/lib/firebase/config';
 
 // Zod schema to validate the incoming blog post data from the client
 const BlogPostActionSchema = z.object({
@@ -31,10 +30,9 @@ type CreateBlogPostInput = z.infer<typeof BlogPostActionSchema>;
  * Creates a new blog post in the database.
  * This is a server action called from the client.
  */
-export async function createBlogPostAction(input: CreateBlogPostInput) {
+export async function createBlogPostAction(input: CreateBlogPostInput, uid: string, authorName: string) {
   try {
-    const currentUser = auth.currentUser;
-    if (!currentUser) {
+    if (!uid) {
       throw new Error('No estás autenticado. Por favor, inicia sesión de nuevo.');
     }
     
@@ -51,8 +49,8 @@ export async function createBlogPostAction(input: CreateBlogPostInput) {
     const newPostData = {
       ...validatedData,
       slug,
-      authorId: currentUser.uid,
-      author: currentUser.displayName || 'Admin', // Or get from user profile
+      authorId: uid,
+      author: authorName,
       date: new Date().toISOString(), // Use ISO 8601 format
     };
 
