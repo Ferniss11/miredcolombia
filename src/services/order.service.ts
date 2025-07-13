@@ -1,6 +1,9 @@
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
-import { db } from "@/lib/firebase/config";
+import { FieldValue } from "firebase-admin/firestore";
+import { getAdminServices } from "@/lib/firebase/admin-config";
 import type { Order } from "@/lib/types";
+
+const { db } = getAdminServices();
+const ordersCollection = db.collection("orders");
 
 /**
  * Creates a new order document in Firestore.
@@ -9,10 +12,9 @@ import type { Order } from "@/lib/types";
  */
 export async function createOrder(orderData: Omit<Order, 'createdAt' | 'id'>): Promise<string> {
   try {
-    const ordersCollection = collection(db, "orders");
-    const docRef = await addDoc(ordersCollection, {
+    const docRef = await ordersCollection.add({
       ...orderData,
-      createdAt: serverTimestamp(),
+      createdAt: FieldValue.serverTimestamp(),
     });
     return docRef.id;
   } catch (error) {

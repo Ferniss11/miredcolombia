@@ -1,8 +1,11 @@
-import { db } from "@/lib/firebase/config";
+import { getAdminServices } from "@/lib/firebase/admin-config";
 import type { Customer } from "@/lib/types";
-import { collection, addDoc, getDocs, query, where, serverTimestamp, limit } from "firebase/firestore";
+import { FieldValue } from "firebase-admin/firestore";
 
 type CustomerData = Omit<Customer, 'id' | 'createdAt'>;
+
+const { db } = getAdminServices();
+const customersCollection = db.collection("customers");
 
 /**
  * Finds a customer by their email address.
@@ -10,9 +13,8 @@ type CustomerData = Omit<Customer, 'id' | 'createdAt'>;
  * @returns The customer document ID if found, otherwise null.
  */
 async function findCustomerByEmail(email: string): Promise<string | null> {
-    const customersCollection = collection(db, "customers");
-    const q = query(customersCollection, where("email", "==", email), limit(1));
-    const querySnapshot = await getDocs(q);
+    const q = customersCollection.where("email", "==", email).limit(1);
+    const querySnapshot = await q.get();
 
     if (!querySnapshot.empty) {
         return querySnapshot.docs[0].id;
@@ -27,10 +29,9 @@ async function findCustomerByEmail(email: string): Promise<string | null> {
  */
 async function createCustomer(data: CustomerData): Promise<string> {
     try {
-        const customersCollection = collection(db, "customers");
-        const docRef = await addDoc(customersCollection, {
+        const docRef = await customersCollection.add({
             ...data,
-            createdAt: serverTimestamp(),
+            createdAt: FieldValue.serverTimestamp(),
         });
         return docRef.id;
     } catch (error) {
