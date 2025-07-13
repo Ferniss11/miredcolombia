@@ -7,7 +7,7 @@ let adminDb: admin.firestore.Firestore | null = null;
 let adminAuth: admin.auth.Auth | null = null;
 
 try {
-  // Try to get an existing app
+  // Try to get an existing app to avoid re-initializing
   const existingApp = admin.apps.find(app => app?.name === ADMIN_APP_NAME);
   if (existingApp) {
     adminDb = existingApp.firestore();
@@ -20,34 +20,38 @@ try {
       throw new Error('La variable de entorno FIREBASE_SERVICE_ACCOUNT_KEY no está definida.');
     }
 
-    // The key might be wrapped in quotes if it's a single line in .env
+    // Robustly clean and parse the key
     let cleanedKey = serviceAccountKey;
+
+    // Remove quotes that might wrap the entire string in .env
     if (cleanedKey.startsWith('"') && cleanedKey.endsWith('"')) {
         cleanedKey = cleanedKey.substring(1, cleanedKey.length - 1);
     }
     
-    // Replace literal \n with actual newlines
+    // Replace literal \n with actual newlines. Important for the private_key.
     cleanedKey = cleanedKey.replace(/\\n/g, '\n');
 
-    const serviceAccount = JSON.parse(cleanedKey);
+    let serviceAccount;
+    try {
+        serviceAccount = JSON.parse(cleanedKey);
+    } catch(e) {
+        if (e instanceof Error) {
+            throw new Error(`Error al parsear el JSON de FIREBASE_SERVICE_ACCOUNT_KEY: ${e.message}. Asegúrate de que está en formato JSON válido y en una sola línea en el archivo .env.`);
+        }
+        throw new Error('Error desconocido al parsear el JSON de la clave de servicio.');
+    }
 
     const newApp = admin.initializeApp({
       credential: admin.credential.cert(serviceAccount),
-      projectId: serviceAccount.project_id, // Use project_id from the JSON itself
+      projectId: serviceAccount.project_id,
     }, ADMIN_APP_NAME);
 
     adminDb = newApp.firestore();
     adminAuth = newApp.auth();
   }
 } catch (error: any) {
-    let errorMessage = `CRITICAL FIREBASE ADMIN INITIALIZATION ERROR: ${error.message}`;
-    if (error.code === 'app/duplicate-app') {
-        errorMessage = 'Firebase Admin App ya está inicializada. Usando la instancia existente.';
-    } else if (error.message.includes('JSON')) {
-        errorMessage = 'Error de inicialización: FIREBASE_SERVICE_ACCOUNT_KEY no es un JSON válido. Por favor, comprueba el formato en el archivo .env.';
-    }
-    console.error(errorMessage);
-    // Set to null so subsequent calls will fail explicitly
+    console.error(`CRITICAL FIREBASE ADMIN INITIALIZATION ERROR: ${error.message}`);
+    // Explicitly set to null so subsequent calls will fail clearly
     adminDb = null;
     adminAuth = null;
 }
