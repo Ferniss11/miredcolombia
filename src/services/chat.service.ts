@@ -2,7 +2,7 @@
 'use server';
 
 import { FieldValue } from "firebase-admin/firestore";
-import type { ChatSession, ChatMessage } from "@/lib/types";
+import type { ChatSession, ChatMessage, TokenUsage, ChatSessionWithTokens } from "@/lib/types";
 import { getAdminServices } from "@/lib/firebase/admin-config";
 
 const { db } = getAdminServices();
@@ -27,8 +27,6 @@ function serializeMessage(doc: FirebaseFirestore.DocumentSnapshot): ChatMessage 
  */
 export async function findSessionByPhone(phone: string): Promise<(ChatSession & { id: string }) | null> {
   try {
-    // This query requires a composite index on (userPhone ==, createdAt desc).
-    // If it fails, Firestore will provide a link in the error logs to create it.
     const querySnapshot = await chatSessionsCollection
       .where('userPhone', '==', phone)
       .orderBy('createdAt', 'desc')
@@ -42,13 +40,11 @@ export async function findSessionByPhone(phone: string): Promise<(ChatSession & 
     const doc = querySnapshot.docs[0];
     const data = doc.data() as ChatSession;
     
-    const serializedData = {
+    return {
         ...data,
         id: doc.id,
         createdAt: data.createdAt.toDate().toISOString(),
-    }
-
-    return serializedData as ChatSession & { id: string };
+    } as ChatSession & { id: string };
 
   } catch (error) {
     console.error("Error finding session by phone. This might be due to a missing Firestore index on (userPhone, createdAt).", error);
@@ -96,6 +92,10 @@ export async function startChatSession(sessionData: Omit<ChatSession, 'id' | 'cr
     const docRef = await chatSessionsCollection.add({
       ...sessionData,
       createdAt: FieldValue.serverTimestamp(),
+      totalTokens: 0,
+      totalInputTokens: 0,
+      totalOutputTokens: 0,
+      messageCount: 0,
     });
     return docRef.id;
   } catch (error) {
@@ -108,17 +108,41 @@ export async function startChatSession(sessionData: Omit<ChatSession, 'id' | 'cr
 }
 
 /**
- * Saves a message to the 'messages' subcollection of a specific chat session.
+ * Saves a message to the 'messages' subcollection and updates token counts on the parent session.
  * @param sessionId - The ID of the chat session.
  * @param messageData - The message object to save.
+ * @param usage - Optional token usage data from the AI call.
  */
-export async function saveMessage(sessionId: string, messageData: Omit<ChatMessage, 'id' | 'timestamp'>): Promise<void> {
+export async function saveMessage(sessionId: string, messageData: Omit<ChatMessage, 'id' | 'timestamp'>, usage?: TokenUsage): Promise<void> {
   try {
-    const messagesCollection = chatSessionsCollection.doc(sessionId).collection('messages');
-    await messagesCollection.add({
-      ...messageData,
-      timestamp: FieldValue.serverTimestamp(),
+    const sessionRef = chatSessionsCollection.doc(sessionId);
+    const messagesCollection = sessionRef.collection('messages');
+    
+    // Use a transaction to ensure atomicity
+    await db.runTransaction(async (transaction) => {
+        // 1. Add the new message
+        const newMessageRef = messagesCollection.doc();
+        transaction.set(newMessageRef, {
+            ...messageData,
+            timestamp: FieldValue.serverTimestamp(),
+            usage, // Store token usage with the AI's response message
+        });
+
+        // 2. Update the aggregate counts on the session document
+        const sessionUpdate: { [key: string]: any } = {
+            messageCount: FieldValue.increment(1),
+            updatedAt: FieldValue.serverTimestamp(),
+        };
+
+        if (usage) {
+            sessionUpdate.totalInputTokens = FieldValue.increment(usage.inputTokens);
+            sessionUpdate.totalOutputTokens = FieldValue.increment(usage.outputTokens);
+            sessionUpdate.totalTokens = FieldValue.increment(usage.totalTokens);
+        }
+        
+        transaction.update(sessionRef, sessionUpdate);
     });
+
   } catch (error) {
     console.error(`Error saving message for session ${sessionId}:`, error);
      if (error instanceof Error) {
@@ -126,4 +150,27 @@ export async function saveMessage(sessionId: string, messageData: Omit<ChatMessa
     }
     throw new Error('Failed to save message in Firestore due to an unknown server error.');
   }
+}
+
+/**
+ * Retrieves all chat sessions with their aggregated token data.
+ */
+export async function getAllChatSessions(): Promise<ChatSessionWithTokens[]> {
+    const snapshot = await chatSessionsCollection.orderBy('createdAt', 'desc').get();
+    if (snapshot.empty) {
+        return [];
+    }
+    return snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+            id: doc.id,
+            userName: data.userName,
+            userPhone: data.userPhone,
+            createdAt: data.createdAt.toDate().toISOString(),
+            messageCount: data.messageCount || 0,
+            totalInputTokens: data.totalInputTokens || 0,
+            totalOutputTokens: data.totalOutputTokens || 0,
+            totalTokens: data.totalTokens || 0,
+        };
+    });
 }

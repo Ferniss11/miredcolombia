@@ -14,7 +14,7 @@ export async function startChatSessionAction(input: z.infer<typeof startSessionS
   try {
     const validatedInput = startSessionSchema.parse(input);
     
-    const existingSession = await findSessionByPhone(validatedInput.userPhone);
+    let existingSession = await findSessionByPhone(validatedInput.userPhone);
     
     if (existingSession) {
       const history = await getChatHistory(existingSession.id);
@@ -56,7 +56,7 @@ export async function postMessageAction(input: z.infer<typeof postMessageSchema>
 
     const aiResponse = await invokeChatFlow({ message, history });
 
-    await saveMessage(sessionId, { text: aiResponse.response, role: 'model' });
+    await saveMessage(sessionId, { text: aiResponse.response, role: 'model' }, aiResponse.usage);
 
     return { success: true, response: aiResponse.response };
 

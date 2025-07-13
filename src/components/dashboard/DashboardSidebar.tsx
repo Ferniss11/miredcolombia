@@ -20,6 +20,7 @@ import {
   Sparkles,
   Home,
   FileText,
+  Bot,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -43,7 +44,7 @@ export function DashboardSidebar() {
     { href: "/dashboard/admin", label: "Resumen", icon: LayoutGrid },
     { href: "/dashboard/admin/blog", label: "Gestión de Blog", icon: FileText },
     { href: "/dashboard/admin/content", label: "Suite de Contenido IA", icon: Sparkles },
-    // { href: "/dashboard/admin/users", label: "Usuarios", icon: User },
+    { href: "/dashboard/admin/agent", label: "Gestión de Agente", icon: Bot },
   ];
 
   const handleSignOut = async () => {

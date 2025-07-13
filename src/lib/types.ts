@@ -206,20 +206,13 @@ export type Order = {
 
 export type PurchaseableItem = (MigrationPackage | MigrationService) & { type: 'package' | 'service' };
 
-// Chat types
-export type ChatSession = {
-  id?: string;
-  userName: string;
-  userPhone: string;
-  createdAt: any; // Firestore Timestamp
-}
-
-export type ChatMessage = {
-  id?: string;
-  text: string;
-  role: 'user' | 'model';
-  timestamp: any; // Firestore Timestamp
-}
+// Agent & Chat types
+export const TokenUsageSchema = z.object({
+  inputTokens: z.number(),
+  outputTokens: z.number(),
+  totalTokens: z.number(),
+});
+export type TokenUsage = z.infer<typeof TokenUsageSchema>;
 
 export const ChatInputSchema = z.object({
   history: z.array(z.any()).describe('The chat history.'),
@@ -229,5 +222,44 @@ export type ChatInput = z.infer<typeof ChatInputSchema>;
 
 export const ChatOutputSchema = z.object({
   response: z.string().describe('The AI\'s response.'),
+  usage: TokenUsageSchema.optional(),
 });
 export type ChatOutput = z.infer<typeof ChatOutputSchema>;
+
+
+export type ChatSession = {
+  id?: string;
+  userName: string;
+  userPhone: string;
+  createdAt: any; // Firestore Timestamp
+  updatedAt?: any;
+  messageCount?: number;
+  totalTokens?: number;
+  totalInputTokens?: number;
+  totalOutputTokens?: number;
+}
+
+export type ChatSessionWithTokens = {
+  id: string;
+  userName: string;
+  userPhone: string;
+  createdAt: string;
+  messageCount: number;
+  totalTokens: number;
+  totalInputTokens: number;
+  totalOutputTokens: number;
+}
+
+export type ChatMessage = {
+  id?: string;
+  text: string;
+  role: 'user' | 'model';
+  timestamp: any; // Firestore Timestamp or ISO string
+  usage?: TokenUsage;
+}
+
+export const AgentConfigSchema = z.object({
+  model: z.string().default('googleai/gemini-1.5-flash-latest'),
+  systemPrompt: z.string().default('You are a helpful assistant.'),
+});
+export type AgentConfig = z.infer<typeof AgentConfigSchema>;
