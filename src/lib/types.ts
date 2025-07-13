@@ -233,7 +233,6 @@ export type ChatSession = {
   userPhone: string;
   createdAt: any; // Firestore Timestamp
   updatedAt?: any;
-  messageCount?: number;
   totalTokens?: number;
   totalInputTokens?: number;
   totalOutputTokens?: number;

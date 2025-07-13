@@ -16,6 +16,21 @@ function serializeMessage(doc: FirebaseFirestore.DocumentSnapshot): ChatMessage 
         text: data.text,
         role: data.role,
         timestamp: data.timestamp.toDate().toISOString(),
+        usage: data.usage
+    };
+}
+
+function serializeSession(doc: FirebaseFirestore.DocumentSnapshot): ChatSessionWithTokens {
+    const data = doc.data()!;
+    return {
+        id: doc.id,
+        userName: data.userName,
+        userPhone: data.userPhone,
+        createdAt: data.createdAt.toDate().toISOString(),
+        messageCount: data.messageCount || 0, // Fallback for safety
+        totalInputTokens: data.totalInputTokens || 0,
+        totalOutputTokens: data.totalOutputTokens || 0,
+        totalTokens: data.totalTokens || 0,
     };
 }
 
@@ -95,7 +110,6 @@ export async function startChatSession(sessionData: Omit<ChatSession, 'id' | 'cr
       totalTokens: 0,
       totalInputTokens: 0,
       totalOutputTokens: 0,
-      messageCount: 0,
     });
     return docRef.id;
   } catch (error) {
@@ -130,7 +144,6 @@ export async function saveMessage(sessionId: string, messageData: Omit<ChatMessa
 
         // 2. Update the aggregate counts on the session document
         const sessionUpdate: { [key: string]: any } = {
-            messageCount: FieldValue.increment(1),
             updatedAt: FieldValue.serverTimestamp(),
         };
 
@@ -160,17 +173,31 @@ export async function getAllChatSessions(): Promise<ChatSessionWithTokens[]> {
     if (snapshot.empty) {
         return [];
     }
-    return snapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-            id: doc.id,
-            userName: data.userName,
-            userPhone: data.userPhone,
-            createdAt: data.createdAt.toDate().toISOString(),
-            messageCount: data.messageCount || 0,
-            totalInputTokens: data.totalInputTokens || 0,
-            totalOutputTokens: data.totalOutputTokens || 0,
-            totalTokens: data.totalTokens || 0,
-        };
-    });
+    
+    const sessionsWithCounts = await Promise.all(snapshot.docs.map(async (doc) => {
+        const sessionData = serializeSession(doc);
+        const messagesSnapshot = await doc.ref.collection('messages').get();
+        sessionData.messageCount = messagesSnapshot.size;
+        return sessionData;
+    }));
+
+    return sessionsWithCounts;
+}
+
+/**
+ * Retrieves a single chat session by its ID.
+ */
+export async function getChatSessionById(sessionId: string): Promise<ChatSessionWithTokens | null> {
+  const docRef = chatSessionsCollection.doc(sessionId);
+  const docSnap = await docRef.get();
+
+  if (!docSnap.exists) {
+    return null;
+  }
+  
+  const session = serializeSession(docSnap);
+  const messagesSnapshot = await docRef.collection('messages').get();
+  session.messageCount = messagesSnapshot.size;
+
+  return session;
 }

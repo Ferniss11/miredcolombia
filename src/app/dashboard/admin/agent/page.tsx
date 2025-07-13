@@ -1,6 +1,8 @@
+
 'use client';
 
 import { useState, useEffect, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -8,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Save, Bot, MessageSquare, Tag } from 'lucide-react';
+import { Loader2, Save, Bot, MessageSquare, Tag, Eye } from 'lucide-react';
 import { getAgentConfigAction, saveAgentConfigAction, getChatSessionsAction } from '@/lib/agent-actions';
 import type { AgentConfig, ChatSessionWithTokens } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -20,6 +22,7 @@ export default function AgentManagementPage() {
     const [isLoadingSessions, setIsLoadingSessions] = useState(true);
     const [isSaving, startTransition] = useTransition();
     const { toast } = useToast();
+    const router = useRouter();
 
     useEffect(() => {
         const fetchConfig = async () => {
@@ -67,6 +70,10 @@ export default function AgentManagementPage() {
             hour: '2-digit',
             minute: '2-digit',
         });
+    };
+    
+    const handleRowClick = (sessionId: string) => {
+        router.push(`/dashboard/admin/agent/${sessionId}`);
     };
 
     return (
@@ -140,8 +147,8 @@ export default function AgentManagementPage() {
                                 <TableHead>Usuario</TableHead>
                                 <TableHead>Fecha Creación</TableHead>
                                 <TableHead className="text-right">Mensajes</TableHead>
-                                <TableHead className="text-right">Tokens (Entrada/Salida)</TableHead>
                                 <TableHead className="text-right">Coste Total Tokens</TableHead>
+                                <TableHead className="text-right">Acciones</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -152,22 +159,25 @@ export default function AgentManagementPage() {
                                         <TableCell><Skeleton className="h-5 w-24" /></TableCell>
                                         <TableCell className="text-right"><Skeleton className="h-5 w-12 ml-auto" /></TableCell>
                                         <TableCell className="text-right"><Skeleton className="h-5 w-20 ml-auto" /></TableCell>
-                                        <TableCell className="text-right"><Skeleton className="h-5 w-16 ml-auto" /></TableCell>
+                                        <TableCell className="text-right"><Skeleton className="h-8 w-16 ml-auto" /></TableCell>
                                     </TableRow>
                                 ))
                             ) : sessions.length > 0 ? (
                                 sessions.map(session => (
-                                    <TableRow key={session.id}>
+                                    <TableRow key={session.id} onClick={() => handleRowClick(session.id)} className="cursor-pointer hover:bg-muted/50">
                                         <TableCell>
                                             <div className="font-medium">{session.userName}</div>
                                             <div className="text-sm text-muted-foreground">{session.userPhone}</div>
                                         </TableCell>
                                         <TableCell>{formatDate(session.createdAt)}</TableCell>
                                         <TableCell className="text-right">{session.messageCount}</TableCell>
-                                        <TableCell className="text-right font-mono text-sm">
-                                            {session.totalInputTokens}/{session.totalOutputTokens}
+                                        <TableCell className="text-right font-bold font-mono">{session.totalTokens}</TableCell>
+                                        <TableCell className="text-right">
+                                            <Button variant="outline" size="sm">
+                                                <Eye className="mr-2 h-3 w-3" />
+                                                Ver
+                                            </Button>
                                         </TableCell>
-                                        <TableCell className="text-right font-bold">{session.totalTokens}</TableCell>
                                     </TableRow>
                                 ))
                             ) : (
