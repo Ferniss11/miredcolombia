@@ -189,7 +189,7 @@ export default function ChatWidget() {
             )}
           </div>
         </ScrollArea>
-        <div className="p-4 border-t">
+        <div className="p-4 border-t bg-background rounded-b-lg">
           <form onSubmit={handleSendMessage} className="flex gap-2">
             <Input
               value={currentMessage}
