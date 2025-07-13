@@ -1,15 +1,16 @@
 
-import { doc, setDoc, getDoc, updateDoc, type Firestore } from "firebase/firestore";
-import { db as clientDb } from "@/lib/firebase/config"; // Keep client DB for client-side calls
-import type { UserProfile, UserRole, BusinessProfile } from "@/lib/types";
+import { doc, setDoc, getDoc } from "firebase/firestore";
+import { db as clientDb } from "@/lib/firebase/config"; // Client DB for client-side calls
+import { adminDb } from "@/lib/firebase/admin-config"; // Admin DB for server-side calls
+import type { UserProfile, UserRole } from "@/lib/types";
 import type { User } from "firebase/auth";
 
 export async function createUserProfile(user: User, name: string, role: UserRole = 'User'): Promise<void> {
-    if (!clientDb) throw new Error("Firebase database is not initialized.");
+    if (!clientDb) throw new Error("Firebase client database is not initialized.");
     
     const userRef = doc(clientDb, "users", user.uid);
     
-    const userProfileData: Omit<UserProfile, 'businessProfile'> = {
+    const userProfileData: UserProfile = {
         uid: user.uid,
         email: user.email,
         name: name,
@@ -19,38 +20,17 @@ export async function createUserProfile(user: User, name: string, role: UserRole
     await setDoc(userRef, userProfileData);
 }
 
-// This function can now be used on both client and server, by passing the appropriate db instance
-export async function getUserProfile(uid: string, db: Firestore = clientDb): Promise<UserProfile | null> {
+// This function can be used on both client and server, as it now uses the correct db instance
+export async function getUserProfile(uid: string): Promise<UserProfile | null> {
+    // When called from the server (API routes), adminDb will be used.
+    // When called from the client, clientDb will be used.
+    const db = adminDb || clientDb;
     if (!db) throw new Error("Firebase database is not initialized.");
+    
     const userRef = doc(db, "users", uid);
     const userSnap = await getDoc(userRef);
     if (userSnap.exists()) {
         return userSnap.data() as UserProfile;
     }
     return null;
-}
-
-export async function updateBusinessProfile(uid: string, data: BusinessProfile): Promise<void> {
-    if (!clientDb) throw new Error("Firebase database is not initialized.");
-    try {
-        const userRef = doc(clientDb, "users", uid);
-        
-        const updates: { [key: string]: any } = {};
-        for (const [key, value] of Object.entries(data)) {
-            if (value !== undefined) {
-                updates[`businessProfile.${key}`] = value;
-            }
-        }
-
-        if (Object.keys(updates).length > 0) {
-            await updateDoc(userRef, updates);
-        }
-
-    } catch (error) {
-        console.error("Firebase update error:", error);
-        if (error instanceof Error) {
-            throw new Error(`Error de Firebase: ${error.message}`);
-        }
-        throw new Error('Un error desconocido ocurrió al actualizar en Firebase.');
-    }
 }

@@ -1,17 +1,15 @@
 
 import { NextResponse } from 'next/server';
-import { getAuth } from 'firebase-admin/auth';
-import { getFirestore } from 'firebase-admin/firestore';
-import { getAdminApp } from '@/lib/firebase/admin-config';
+import { adminAuth, adminDb } from '@/lib/firebase/admin-config';
 import { createBlogPost } from '@/services/blog.service';
 import { getUserProfile } from '@/services/user.service';
 
 export async function POST(request: Request) {
   try {
-    const adminApp = getAdminApp();
-    const adminAuth = getAuth(adminApp);
-    const adminDb = getFirestore(adminApp);
-    
+    if (!adminAuth || !adminDb) {
+      throw new Error("El SDK de Firebase Admin no se ha inicializado correctamente. Revisa los logs del servidor.");
+    }
+
     const authorization = request.headers.get('Authorization');
     if (!authorization?.startsWith('Bearer ')) {
       return NextResponse.json({ error: 'Unauthorized: Missing or invalid token' }, { status: 401 });
@@ -21,7 +19,7 @@ export async function POST(request: Request) {
     const decodedToken = await adminAuth.verifyIdToken(idToken);
     const uid = decodedToken.uid;
     
-    const userProfile = await getUserProfile(uid, adminDb);
+    const userProfile = await getUserProfile(uid);
 
     if (!userProfile || userProfile.role !== 'Admin') {
       return NextResponse.json({ error: 'Forbidden: User is not an admin' }, { status: 403 });
@@ -29,7 +27,7 @@ export async function POST(request: Request) {
 
     const postData = await request.json();
 
-    const postId = await createBlogPost(postData, uid, userProfile.name || 'Admin', adminDb);
+    const postId = await createBlogPost(postData, uid, userProfile.name || 'Admin');
     
     return NextResponse.json({ success: true, postId }, { status: 201 });
 

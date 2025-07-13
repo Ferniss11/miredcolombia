@@ -1,7 +1,8 @@
 'use server';
 
 import { z } from 'zod';
-import { updateBusinessProfile } from '@/services/user.service';
+import { doc, updateDoc } from "firebase/firestore";
+import { db as clientDb } from "@/lib/firebase/config";
 import type { BusinessProfile } from './types';
 
 const businessProfileSchema = z.object({
@@ -13,13 +14,26 @@ const businessProfileSchema = z.object({
 });
 
 export async function updateBusinessProfileAction(uid: string, data: BusinessProfile) {
+    if (!clientDb) {
+      return { error: 'Firebase client database is not initialized.' };
+    }
     try {
         if (!uid) {
             throw new Error('Usuario no autenticado');
         }
         const validatedData = businessProfileSchema.parse(data);
         
-        await updateBusinessProfile(uid, validatedData);
+        const userRef = doc(clientDb, "users", uid);
+        const updates: { [key: string]: any } = {};
+        for (const [key, value] of Object.entries(validatedData)) {
+            if (value !== undefined) {
+                updates[`businessProfile.${key}`] = value;
+            }
+        }
+
+        if (Object.keys(updates).length > 0) {
+            await updateDoc(userRef, updates);
+        }
 
         return { success: true };
     } catch (error) {

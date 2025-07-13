@@ -1,6 +1,7 @@
 
-import { collection, addDoc, serverTimestamp, type Firestore } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import type { BlogPost } from "@/lib/types";
+import { adminDb } from "@/lib/firebase/admin-config";
 
 // This type uses a subset of the full BlogPost type for creation
 type BlogPostData = Omit<BlogPost, 'id' | 'author' | 'authorId' | 'date' | 'content' | 'excerpt' | 'imageUrl'>;
@@ -11,16 +12,15 @@ type BlogPostData = Omit<BlogPost, 'id' | 'author' | 'authorId' | 'date' | 'cont
  * @param postData - The data for the blog post to be created.
  * @param authorId - The UID of the authenticated admin user.
  * @param authorName - The name of the admin user.
- * @param db - The Firestore database instance (can be from client or admin SDK).
  * @returns The ID of the newly created blog post document.
  */
-export async function createBlogPost(postData: BlogPostData, authorId: string, authorName: string, db: Firestore): Promise<string> {
-  if (!db) {
-    throw new Error("La base de datos de Firebase no está inicializada.");
+export async function createBlogPost(postData: BlogPostData, authorId: string, authorName: string): Promise<string> {
+  if (!adminDb) {
+    throw new Error("La base de datos de Firebase Admin no está inicializada.");
   }
   
   try {
-    const postsCollection = collection(db, "posts");
+    const postsCollection = collection(adminDb, "posts");
     const docRef = await addDoc(postsCollection, {
       ...postData,
       authorId: authorId,

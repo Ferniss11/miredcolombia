@@ -1,40 +1,55 @@
-
 import * as admin from 'firebase-admin';
 import type { App } from 'firebase-admin/app';
 
-function getAdminApp(): App {
-  if (admin.apps.length > 0) {
-    return admin.app();
-  }
+const ADMIN_APP_NAME = 'colombia-en-espana-admin';
 
-  const projectId = process.env.FIREBASE_ADMIN_PROJECT_ID;
-  const clientEmail = process.env.FIREBASE_ADMIN_CLIENT_EMAIL;
-  // Make sure to replace \\n with \n in the private key.
-  const privateKey = process.env.FIREBASE_ADMIN_PRIVATE_KEY?.replace(/\\n/g, '\n');
+let adminDb: admin.firestore.Firestore | null = null;
+let adminAuth: admin.auth.Auth | null = null;
 
-  if (!projectId || !clientEmail || !privateKey) {
-    const missingVars = [
-        !projectId && 'FIREBASE_ADMIN_PROJECT_ID',
-        !clientEmail && 'FIREBASE_ADMIN_CLIENT_EMAIL',
-        !privateKey && 'FIREBASE_ADMIN_PRIVATE_KEY'
-    ].filter(Boolean).join(', ');
-    throw new Error(`Firebase Admin SDK cannot be initialized. Missing required environment variables: ${missingVars}.`);
-  }
+try {
+  // Try to get an existing app
+  const existingApp = admin.apps.find(app => app?.name === ADMIN_APP_NAME);
+  if (existingApp) {
+    adminDb = existingApp.firestore();
+    adminAuth = existingApp.auth();
+  } else {
+    // If it doesn't exist, initialize a new one
+    const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
 
-  try {
-    return admin.initializeApp({
-      credential: admin.credential.cert({
-        projectId: projectId,
-        clientEmail: clientEmail,
-        privateKey: privateKey,
-      }),
-    });
-  } catch (error) {
-     if (error instanceof Error) {
-        throw new Error("Failed to initialize Firebase Admin SDK. Make sure the service account variables are correct. Original Error: " + error.message);
-     }
-     throw new Error("An unknown error occurred during Firebase Admin SDK initialization.");
+    if (!serviceAccountKey) {
+      throw new Error('La variable de entorno FIREBASE_SERVICE_ACCOUNT_KEY no está definida.');
+    }
+
+    // The key might be wrapped in quotes if it's a single line in .env
+    let cleanedKey = serviceAccountKey;
+    if (cleanedKey.startsWith('"') && cleanedKey.endsWith('"')) {
+        cleanedKey = cleanedKey.substring(1, cleanedKey.length - 1);
+    }
+    
+    // Replace literal \n with actual newlines
+    cleanedKey = cleanedKey.replace(/\\n/g, '\n');
+
+    const serviceAccount = JSON.parse(cleanedKey);
+
+    const newApp = admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount),
+      projectId: serviceAccount.project_id, // Use project_id from the JSON itself
+    }, ADMIN_APP_NAME);
+
+    adminDb = newApp.firestore();
+    adminAuth = newApp.auth();
   }
+} catch (error: any) {
+    let errorMessage = `CRITICAL FIREBASE ADMIN INITIALIZATION ERROR: ${error.message}`;
+    if (error.code === 'app/duplicate-app') {
+        errorMessage = 'Firebase Admin App ya está inicializada. Usando la instancia existente.';
+    } else if (error.message.includes('JSON')) {
+        errorMessage = 'Error de inicialización: FIREBASE_SERVICE_ACCOUNT_KEY no es un JSON válido. Por favor, comprueba el formato en el archivo .env.';
+    }
+    console.error(errorMessage);
+    // Set to null so subsequent calls will fail explicitly
+    adminDb = null;
+    adminAuth = null;
 }
 
-export { getAdminApp };
+export { adminDb, adminAuth };

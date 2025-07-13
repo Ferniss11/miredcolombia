@@ -54,7 +54,7 @@ export default function AdvertiserProfilePage() {
             if (result.error) {
                 toast({ variant: 'destructive', title: 'Error al actualizar', description: result.error });
             } else {
-                toast({ title: 'Éxito', description: '¡Tu perfil de negocio ha sido actualizado!' });
+                toast({ title: 'Éxito', 'description': '¡Tu perfil de negocio ha sido actualizado!' });
             }
         });
     }
