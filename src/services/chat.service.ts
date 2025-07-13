@@ -19,14 +19,16 @@ function serializeMessage(doc: FirebaseFirestore.DocumentSnapshot): ChatMessage 
     };
 }
 
-
 /**
  * Finds the most recent chat session for a given phone number.
+ * Firestore requires a composite index for this query. If the query fails, it's likely due to a missing index.
  * @param phone - The user's phone number.
  * @returns The chat session object if found, otherwise null.
  */
 export async function findSessionByPhone(phone: string): Promise<(ChatSession & { id: string }) | null> {
   try {
+    // This query requires a composite index on (userPhone, createdAt desc).
+    // If it fails, Firestore will provide a link in the error logs to create it.
     const querySnapshot = await chatSessionsCollection
       .where('userPhone', '==', phone)
       .orderBy('createdAt', 'desc')
@@ -40,7 +42,6 @@ export async function findSessionByPhone(phone: string): Promise<(ChatSession & 
     const doc = querySnapshot.docs[0];
     const data = doc.data() as ChatSession;
     
-    // Serialize the timestamp before returning
     const serializedData = {
         ...data,
         id: doc.id,
@@ -50,11 +51,13 @@ export async function findSessionByPhone(phone: string): Promise<(ChatSession & 
     return serializedData as ChatSession & { id: string };
 
   } catch (error) {
-    console.error("Error finding session by phone:", error);
-    throw new Error("Failed to find chat session by phone.");
+    console.error("Error finding session by phone. This might be due to a missing Firestore index on (userPhone, createdAt).", error);
+    if (error instanceof Error) {
+        throw new Error(`Failed to find chat session by phone: ${error.message}`);
+    }
+    throw new Error("Failed to find chat session by phone due to an unknown server error.");
   }
 }
-
 
 /**
  * Retrieves the message history for a given chat session.
@@ -76,7 +79,10 @@ export async function getChatHistory(sessionId: string): Promise<ChatMessage[]> 
     return messagesSnapshot.docs.map(serializeMessage);
   } catch (error) {
     console.error(`Error getting chat history for session ${sessionId}:`, error);
-    throw new Error("Failed to retrieve chat history.");
+    if (error instanceof Error) {
+      throw new Error(`Failed to retrieve chat history: ${error.message}`);
+    }
+    throw new Error("Failed to retrieve chat history due to an unknown server error.");
   }
 }
 
@@ -94,7 +100,10 @@ export async function startChatSession(sessionData: Omit<ChatSession, 'id' | 'cr
     return docRef.id;
   } catch (error) {
     console.error("Error creating chat session in Firestore:", error);
-    throw new Error('Failed to create chat session in Firestore.');
+    if (error instanceof Error) {
+        throw new Error(`Failed to create chat session in Firestore: ${error.message}`);
+    }
+    throw new Error('Failed to create chat session in Firestore due to an unknown server error.');
   }
 }
 
@@ -112,6 +121,9 @@ export async function saveMessage(sessionId: string, messageData: Omit<ChatMessa
     });
   } catch (error) {
     console.error(`Error saving message for session ${sessionId}:`, error);
-    throw new Error('Failed to save message in Firestore.');
+     if (error instanceof Error) {
+        throw new Error(`Failed to save message in Firestore: ${error.message}`);
+    }
+    throw new Error('Failed to save message in Firestore due to an unknown server error.');
   }
 }

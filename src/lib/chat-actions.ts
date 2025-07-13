@@ -14,23 +14,23 @@ export async function startChatSessionAction(input: z.infer<typeof startSessionS
   try {
     const validatedInput = startSessionSchema.parse(input);
     
-    // Check for an existing session with this phone number
     const existingSession = await findSessionByPhone(validatedInput.userPhone);
     
     if (existingSession) {
-      // If a session exists, return its ID and history
       const history = await getChatHistory(existingSession.id);
+      // If user exists but has no history, provide a welcome message.
+      if (history.length === 0) {
+        history.push({ role: 'model', text: '¡Hola de nuevo! Soy tu asistente de inmigración. ¿En qué más te puedo ayudar?' });
+      }
       return { success: true, sessionId: existingSession.id, history };
     } else {
-      // If no session exists, create a new one
       const sessionId = await startChatSession(validatedInput);
-      // For a new user, we return the new session ID and an empty history array.
-      // The client will provide the initial welcome message.
-      return { success: true, sessionId, history: [] };
+      const initialHistory = [{ role: 'model', text: '¡Hola! Soy tu asistente de inmigración para España. ¿Cómo puedo ayudarte hoy?' }];
+      return { success: true, sessionId, history: initialHistory };
     }
 
   } catch (error) {
-    console.error("Error starting chat session:", error);
+    console.error("Error starting chat session action:", error);
     const errorMessage = error instanceof Error ? error.message : "Un error desconocido ocurrió.";
     return { success: false, error: `No se pudo iniciar el chat: ${errorMessage}` };
   }
@@ -46,13 +46,10 @@ export async function postMessageAction(input: z.infer<typeof postMessageSchema>
   try {
     const { sessionId, message, history } = postMessageSchema.parse(input);
 
-    // 1. Save user's message to Firestore
     await saveMessage(sessionId, { text: message, role: 'user' });
 
-    // 2. Call the Genkit AI flow
     const aiResponse = await invokeChatFlow({ message, history });
 
-    // 3. Save AI's response to Firestore
     await saveMessage(sessionId, { text: aiResponse.response, role: 'model' });
 
     return { success: true, response: aiResponse.response };
