@@ -1,5 +1,5 @@
 
-import { serverTimestamp } from "firebase/firestore";
+import { FieldValue } from "firebase-admin/firestore";
 import type { BlogPost } from "@/lib/types";
 import { getAdminServices } from "@/lib/firebase/admin-config";
 
@@ -24,8 +24,8 @@ export async function createBlogPost(postData: BlogPostData, authorId: string, a
       authorId: authorId,
       author: authorName,
       date: new Date().toISOString(),
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
+      createdAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
     });
     return docRef.id;
   } catch (error) {
