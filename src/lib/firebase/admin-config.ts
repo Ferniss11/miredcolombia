@@ -1,3 +1,4 @@
+import 'dotenv/config'; // Make sure variables from .env are loaded
 import admin from 'firebase-admin';
 import { getApps } from 'firebase-admin/app';
 
@@ -14,7 +15,7 @@ const privateKey = process.env.FIREBASE_ADMIN_PRIVATE_KEY?.replace(/\\n/g, '\n')
  * @returns An object with the instances of Firestore (db) and Auth (auth).
  */
 function getAdminServices() {
-  // Check if the app is already initialized. If so, return its services.
+  // If the app is already initialized, return its services.
   if (getApps().length > 0) {
     const app = admin.app();
     return {
