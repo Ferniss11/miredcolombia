@@ -3,6 +3,7 @@
 
 /**
  * @fileOverview An AI agent specialized in providing immigration advice for Colombians moving to Spain.
+ * It uses a vector database (RAG) to provide informed answers.
  *
  * - chat - A function that handles the conversational chat process.
  */
@@ -11,6 +12,7 @@ import {ai} from '@/ai/genkit';
 import type { MessageData } from 'genkit';
 import { ChatInputSchema, type ChatInput, ChatOutputSchema, type ChatOutput } from '@/lib/types';
 import { getAgentConfig } from '@/services/agent.service';
+import { knowledgeBaseSearch } from '../tools/knowledge-base-search';
 
 export async function chat(input: ChatInput): Promise<ChatOutput> {
   const { history, message } = input;
@@ -18,10 +20,11 @@ export async function chat(input: ChatInput): Promise<ChatOutput> {
   // 1. Get the latest agent configuration from Firestore
   const agentConfig = await getAgentConfig();
 
-  // 2. Make the generate call using the retrieved configuration
+  // 2. Make the generate call using the retrieved configuration and knowledge base tool
   const { output, usage } = await ai.generate({
     model: agentConfig.model,
     system: agentConfig.systemPrompt,
+    tools: [knowledgeBaseSearch],
     prompt: [
         ...history.map(m => ({ role: m.role, content: [{ text: m.content as string }] })),
         { role: 'user', content: [{ text: message }] },
