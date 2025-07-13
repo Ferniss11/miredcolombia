@@ -144,7 +144,7 @@ export default function ChatWidget() {
                 )}
                 <div
                   className={cn(
-                    'max-w-xs md:max-w-md rounded-xl px-4 py-2 text-sm md:text-base',
+                    'max-w-xs md:max-w-md rounded-xl px-4 py-2 text-sm md:text-base break-words',
                     msg.role === 'user'
                       ? 'bg-primary text-primary-foreground rounded-br-none'
                       : 'bg-muted rounded-bl-none'
