@@ -205,3 +205,18 @@ export type Order = {
 }
 
 export type PurchaseableItem = (MigrationPackage | MigrationService) & { type: 'package' | 'service' };
+
+// Chat types
+export type ChatSession = {
+  id?: string;
+  userName: string;
+  userPhone: string;
+  createdAt: any; // Firestore Timestamp
+}
+
+export type ChatMessage = {
+  id?: string;
+  text: string;
+  role: 'user' | 'model';
+  timestamp: any; // Firestore Timestamp
+}
