@@ -3,51 +3,48 @@ import * as admin from 'firebase-admin';
 let adminServices: { db: admin.firestore.Firestore; auth: admin.auth.Auth } | null = null;
 
 /**
- * Obtiene o inicializa la app de Firebase Admin usando credenciales separadas del entorno.
- * Este método es más robusto que parsear un JSON completo desde una variable de entorno.
- * Lanza un error detallado si la inicialización falla.
- * @returns Un objeto con las instancias de Firestore (db) y Auth (auth).
+ * Initializes the Firebase Admin SDK if not already initialized.
+ * This function uses a robust pattern for serverless environments like Next.js.
+ * Throws a detailed error if initialization fails.
+ * @returns An object with the instances of Firestore (db) and Auth (auth).
  */
 export function getAdminServices() {
   if (adminServices) {
     return adminServices;
   }
 
+  // If the app is already initialized, return the existing services.
+  if (admin.apps.length > 0) {
+    const app = admin.app();
+    adminServices = {
+      db: app.firestore(),
+      auth: app.auth(),
+    };
+    return adminServices;
+  }
+
+  // If no app is initialized, create one.
   try {
-    const ADMIN_APP_NAME = 'colombia-en-espana-admin';
-    const existingApp = admin.apps.find(app => app?.name === ADMIN_APP_NAME);
-
-    if (existingApp) {
-      adminServices = {
-        db: existingApp.firestore(),
-        auth: existingApp.auth(),
-      };
-      return adminServices;
-    }
-
-    // Leer las credenciales de las variables de entorno separadas.
     const projectId = process.env.FIREBASE_ADMIN_PROJECT_ID;
     const clientEmail = process.env.FIREBASE_ADMIN_CLIENT_EMAIL;
-    const privateKey = process.env.FIREBASE_ADMIN_PRIVATE_KEY;
+    // The private key must have newlines properly escaped in the .env file.
+    const privateKey = process.env.FIREBASE_ADMIN_PRIVATE_KEY?.replace(/\\n/g, '\n');
 
     if (!projectId || !clientEmail || !privateKey) {
       const missingKeys = [];
       if (!projectId) missingKeys.push('FIREBASE_ADMIN_PROJECT_ID');
       if (!clientEmail) missingKeys.push('FIREBASE_ADMIN_CLIENT_EMAIL');
       if (!privateKey) missingKeys.push('FIREBASE_ADMIN_PRIVATE_KEY');
-      throw new Error(`Error CRÍTICO: Faltan las siguientes variables de entorno para Firebase Admin: ${missingKeys.join(', ')}`);
+      throw new Error(`CRITICAL: Missing Firebase Admin environment variables: ${missingKeys.join(', ')}`);
     }
-
-    // Corregir el formato de la clave privada, reemplazando `\n` literal con saltos de línea reales.
-    const formattedPrivateKey = privateKey.replace(/\\n/g, '\n');
-
+    
     const app = admin.initializeApp({
       credential: admin.credential.cert({
         projectId,
         clientEmail,
-        privateKey: formattedPrivateKey,
+        privateKey,
       }),
-    }, ADMIN_APP_NAME);
+    });
 
     adminServices = {
       db: app.firestore(),
@@ -58,8 +55,8 @@ export function getAdminServices() {
 
   } catch (error) {
     if (error instanceof Error) {
-      throw new Error(`Error CRÍTICO al inicializar Firebase Admin: ${error.message}`);
+      throw new Error(`CRITICAL: Firebase Admin initialization failed: ${error.message}`);
     }
-    throw new Error('Un error desconocido ocurrió durante la inicialización de Firebase Admin.');
+    throw new Error('An unknown error occurred during Firebase Admin initialization.');
   }
 }

@@ -8,7 +8,7 @@ type BlogPostData = Omit<BlogPost, 'id' | 'author' | 'authorId' | 'date' | 'cont
 
 /**
  * Creates a new blog post document in the 'posts' collection in Firestore.
- * This function is now called from a secure, server-side context (API Route).
+ * This function is called from a secure, server-side context (API Route).
  * @param postData - The data for the blog post to be created.
  * @param authorId - The UID of the authenticated admin user.
  * @param authorName - The name of the admin user.
@@ -31,8 +31,8 @@ export async function createBlogPost(postData: BlogPostData, authorId: string, a
   } catch (error) {
     console.error("Error creating blog post in Firestore:", error);
     if (error instanceof Error) {
-        throw new Error(`Error de Firebase al crear la entrada de blog: ${error.message}`);
+        throw new Error(`Firebase error while creating blog post: ${error.message}`);
     }
-    throw new Error('Un error desconocido ocurrió al crear la entrada de blog en Firebase.');
+    throw new Error('An unknown error occurred while creating the blog post in Firebase.');
   }
 }
