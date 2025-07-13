@@ -2,6 +2,9 @@
 'use server';
 
 import { z } from 'zod';
+import { createBlogPost, getBlogPosts, getPublishedBlogPosts, getBlogPostBySlug, getBlogPostById, updateBlogPost, deleteBlogPost } from '@/services/blog.service';
+import { revalidatePath } from 'next/cache';
+import type { BlogPost } from './types';
 
 // Zod schema to validate the incoming blog post data from the client
 const BlogPostActionSchema = z.object({
@@ -64,6 +67,9 @@ export async function createBlogPostAction(input: CreateBlogPostInput, idToken: 
         // The error from the API route's JSON response is now passed here
         throw new Error(result.error || `Error en el servidor: ${response.status}`);
     }
+    
+    revalidatePath('/dashboard/admin/blog');
+    revalidatePath('/blog');
 
     return { success: true, postId: result.postId };
   } catch (error) {
@@ -80,4 +86,41 @@ export async function createBlogPostAction(input: CreateBlogPostInput, idToken: 
       error: `No se pudo crear la entrada de blog: ${errorMessage}`,
     };
   }
+}
+
+export async function getBlogPostsAction(): Promise<{ posts?: BlogPost[], error?: string }> {
+    try {
+        const posts = await getBlogPosts();
+        return { posts };
+    } catch (error) {
+        console.error('Error fetching all blog posts:', error);
+        return { error: 'No se pudieron obtener las entradas del blog.' };
+    }
+}
+
+export { getPublishedBlogPosts, getBlogPostBySlug, getBlogPostById };
+
+export async function updateBlogPostStatusAction(id: string, status: 'Published' | 'Draft' | 'In Review' | 'Archived') {
+    try {
+        await updateBlogPost(id, { status });
+        revalidatePath('/dashboard/admin/blog');
+        revalidatePath('/blog');
+        revalidatePath(`/blog/[slug]`);
+        return { success: true };
+    } catch (error) {
+        console.error('Error updating post status:', error);
+        return { error: 'No se pudo actualizar el estado de la entrada.' };
+    }
+}
+
+export async function deleteBlogPostAction(id: string) {
+    try {
+        await deleteBlogPost(id);
+        revalidatePath('/dashboard/admin/blog');
+        revalidatePath('/blog');
+        return { success: true };
+    } catch (error) {
+        console.error('Error deleting post:', error);
+        return { error: 'No se pudo eliminar la entrada.' };
+    }
 }

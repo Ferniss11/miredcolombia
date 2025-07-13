@@ -1,14 +1,26 @@
-import { latestBlogPosts } from "@/lib/placeholder-data";
+
+import { getBlogPostBySlug, getPublishedBlogPosts } from "@/lib/blog-actions";
 import { notFound } from "next/navigation";
 import { Calendar, User } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
-export default function BlogPostPage({ params }: { params: { slug: string } }) {
-  const post = latestBlogPosts.find((p) => p.slug === params.slug);
+// This tells Next.js to generate static pages for all published posts at build time
+export async function generateStaticParams() {
+  const result = await getPublishedBlogPosts();
+  if (result.error || !result.posts) {
+    return [];
+  }
+  return result.posts.map((post) => ({
+    slug: post.slug,
+  }));
+}
 
-  if (!post) {
+export default async function BlogPostPage({ params }: { params: { slug: string } }) {
+  const { post } = await getBlogPostBySlug(params.slug);
+
+  if (!post || post.status !== 'Published') {
     notFound();
   }
 
@@ -22,7 +34,7 @@ export default function BlogPostPage({ params }: { params: { slug: string } }) {
         <div className="flex items-center justify-center space-x-4 text-sm text-muted-foreground mt-4 font-body">
           <div className="flex items-center">
             <Calendar className="w-4 h-4 mr-1.5" />
-            <span>Publicado el {post.date}</span>
+            <span>Publicado el {new Date(post.date).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
           </div>
           <div className="flex items-center">
             <User className="w-4 h-4 mr-1.5" />
@@ -31,27 +43,52 @@ export default function BlogPostPage({ params }: { params: { slug: string } }) {
         </div>
       </header>
       
-      <Image
-        src="https://placehold.co/1200x600.png"
-        alt={post.title}
-        width={1200}
-        height={600}
-        data-ai-hint="topic abstract"
-        className="w-full h-auto rounded-lg shadow-lg object-cover mb-8"
-      />
+      {post.featuredImageUrl && (
+        <Image
+            src={post.featuredImageUrl}
+            alt={post.title}
+            width={1200}
+            height={600}
+            data-ai-hint={post.featuredImageHint || 'blog post topic'}
+            className="w-full h-auto rounded-lg shadow-lg object-cover mb-8"
+            priority // Preload the main image
+        />
+      )}
 
       <div className="prose dark:prose-invert max-w-none font-body text-lg leading-relaxed">
-        <p className="text-xl italic text-muted-foreground">{post.excerpt}</p>
-        <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer nec odio. Praesent libero. Sed cursus ante dapibus diam. Sed nisi. Nulla quis sem at nibh elementum imperdiet. Duis sagittis ipsum. Praesent mauris. Fusce nec tellus sed augue semper porta. Mauris massa. Vestibulum lacinia arcu eget nulla.</p>
-        <h2>Una Mirada Profunda</h2>
-        <p>Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Curabitur sodales ligula in libero. Sed dignissim lacinia nunc. Curabitur tortor. Pellentesque nibh. Aenean quam. In scelerisque sem at dolor. Maecenas mattis. Sed convallis tristique sem. Proin ut ligula vel nunc egestas porttitor. Morbi lectus risus, iaculis vel, suscipit quis, luctus non, massa. Fusce ac turpis quis ligula lacinia aliquet.</p>
-        <ul>
-            <li>First point of discussion.</li>
-            <li>Second point that builds on the first.</li>
-            <li>A concluding thought on the matter.</li>
-        </ul>
-        <p>Mauris ipsum. Nulla metus metus, ullamcorper vel, tincidunt sed, euismod in, nibh. Quisque volutpat condimentum velit. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Nam nec ante. Sed lacinia, urna non tincidunt mattis, tortor neque adipiscing diam, a cursus ipsum ante quis turpis. Nulla facilisi. Ut fringilla. Suspendisse potenti. Nunc feugiat mi a tellus consequat imperdiet. Vestibulum sapien. Proin quam. Etiam ultrices.</p>
+        <p className="text-xl italic text-muted-foreground">{post.introduction}</p>
+        
+        {post.sections.map((section, index) => (
+            <section key={index} className="mt-8">
+                <h2 className="font-headline text-2xl md:text-3xl">{section.heading}</h2>
+                {section.imageUrl && (
+                     <Image
+                        src={section.imageUrl}
+                        alt={section.heading}
+                        width={800}
+                        height={400}
+                        data-ai-hint={section.imageHint || 'section image'}
+                        className="w-full h-auto rounded-lg shadow-md object-cover my-4"
+                    />
+                )}
+                <div dangerouslySetInnerHTML={{ __html: section.content.replace(/\n/g, '<br />') }} />
+            </section>
+        ))}
+
+        <h2 className="font-headline text-2xl md:text-3xl mt-8">Conclusión</h2>
+        <p>{post.conclusion}</p>
       </div>
+
+       {post.suggestedTags && post.suggestedTags.length > 0 && (
+        <div className="mt-8 pt-4 border-t">
+          <h3 className="text-sm font-semibold text-muted-foreground mb-2">Etiquetas</h3>
+          <div className="flex flex-wrap gap-2">
+            {post.suggestedTags.map((tag) => (
+              <span key={tag} className="bg-secondary text-secondary-foreground text-xs font-semibold mr-2 px-2.5 py-0.5 rounded-full">{tag}</span>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="mt-12 text-center">
         <Button asChild>
