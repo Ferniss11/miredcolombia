@@ -6,7 +6,7 @@ import { getAdminServices } from "@/lib/firebase/admin-config";
 // This type uses a subset of the full BlogPost type for creation
 type BlogPostData = Omit<BlogPost, 'id' | 'author' | 'authorId' | 'date' | 'createdAt' | 'updatedAt'>;
 
-const db = getAdminServices().db;
+const { db } = getAdminServices();
 const postsCollection = db.collection("posts");
 
 /**
@@ -39,7 +39,7 @@ export async function createBlogPost(postData: BlogPostData, authorId: string, a
 
 /**
  * Converts Firestore Timestamps in a post object to ISO strings.
- * @param post - The post object with potential Timestamp fields.
+ * @param doc - The Firestore document snapshot.
  * @returns The post object with dates serialized as strings.
  */
 function serializePost(doc: FirebaseFirestore.DocumentSnapshot): BlogPost {
@@ -47,11 +47,10 @@ function serializePost(doc: FirebaseFirestore.DocumentSnapshot): BlogPost {
     const post: any = { id: doc.id, ...data };
 
     // Convert Timestamps to ISO strings
-    if (data.createdAt && typeof data.createdAt.toDate === 'function') {
-        post.createdAt = data.createdAt.toDate().toISOString();
-    }
-    if (data.updatedAt && typeof data.updatedAt.toDate === 'function') {
-        post.updatedAt = data.updatedAt.toDate().toISOString();
+    for (const key in post) {
+        if (post[key] && typeof post[key].toDate === 'function') {
+            post[key] = post[key].toDate().toISOString();
+        }
     }
 
     return post as BlogPost;
@@ -109,7 +108,8 @@ export async function getBlogPostById(id: string): Promise<{ post: BlogPost | nu
  * Updates a blog post document.
  */
 export async function updateBlogPost(id: string, data: Partial<BlogPost>): Promise<void> {
-    await postsCollection.doc(id).update({
+    const postRef = postsCollection.doc(id);
+    await postRef.update({
         ...data,
         updatedAt: FieldValue.serverTimestamp(),
     });

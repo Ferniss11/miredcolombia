@@ -6,17 +6,22 @@ import Link from 'next/link';
 import Image from 'next/image';
 import {
   ArrowLeft,
-  Sparkles,
-  Wand2,
   Plus,
   Search,
   Edit,
   Trash2,
   Upload,
   Loader2,
+  Eye,
+  ExternalLink,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+} from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import {
@@ -28,8 +33,20 @@ import {
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import type { BlogPost } from '@/lib/types';
-import { getBlogPostsAction, updateBlogPostStatusAction, deleteBlogPostAction } from '@/lib/blog-actions';
+import {
+  getBlogPostsAction,
+  updateBlogPostStatusAction,
+  deleteBlogPostAction,
+} from '@/lib/blog-actions';
 import { useToast } from '@/hooks/use-toast';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { MoreVertical } from 'lucide-react';
 
 type PostStatus = 'Published' | 'Draft' | 'In Review' | 'Archived';
 
@@ -46,7 +63,11 @@ export default function AdminBlogManagementPage() {
       setIsLoading(true);
       const result = await getBlogPostsAction();
       if (result.error) {
-        toast({ variant: 'destructive', title: 'Error', description: result.error });
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: result.error,
+        });
       } else if (result.posts) {
         setPosts(result.posts);
       }
@@ -56,40 +77,50 @@ export default function AdminBlogManagementPage() {
   }, [toast]);
 
   const handleDelete = (postId: string) => {
+    if (!confirm('¿Estás seguro de que quieres eliminar esta entrada? Esta acción no se puede deshacer.')) {
+        return;
+    }
     startTransition(async () => {
-        const result = await deleteBlogPostAction(postId);
-        if (result.error) {
-            toast({ variant: 'destructive', title: 'Error', description: result.error });
-        } else {
-            toast({ title: 'Éxito', description: 'La entrada ha sido eliminada.' });
-            setPosts(posts.filter(p => p.id !== postId));
-        }
+      const result = await deleteBlogPostAction(postId);
+      if (result.error) {
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: result.error,
+        });
+      } else {
+        toast({ title: 'Éxito', description: 'La entrada ha sido eliminada.' });
+        setPosts(posts.filter((p) => p.id !== postId));
+      }
     });
   };
 
   const handleUpdateStatus = (postId: string, status: PostStatus) => {
-     startTransition(async () => {
-        const result = await updateBlogPostStatusAction(postId, status);
-        if (result.error) {
-            toast({ variant: 'destructive', title: 'Error', description: result.error });
-        } else {
-            toast({ title: 'Éxito', description: 'El estado de la entrada ha sido actualizado.' });
-            setPosts(posts.map(p => p.id === postId ? { ...p, status } : p));
-        }
+    startTransition(async () => {
+      const result = await updateBlogPostStatusAction(postId, status);
+      if (result.error) {
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: result.error,
+        });
+      } else {
+        toast({
+          title: 'Éxito',
+          description: 'El estado de la entrada ha sido actualizado.',
+        });
+        setPosts(posts.map((p) => (p.id === postId ? { ...p, status } : p)));
+      }
     });
   };
 
-  const getStatusCounts = () => {
-    return {
-      total: posts.length,
-      published: posts.filter((p) => p.status === 'Published').length,
-      draft: posts.filter((p) => p.status === 'Draft').length,
-      inReview: posts.filter((p) => p.status === 'In Review').length,
-      archived: posts.filter((p) => p.status === 'Archived').length,
-    };
+  const statusCounts = {
+    total: posts.length,
+    published: posts.filter((p) => p.status === 'Published').length,
+    draft: posts.filter((p) => p.status === 'Draft').length,
+    inReview: posts.filter((p) => p.status === 'In Review').length,
+    archived: posts.filter((p) => p.status === 'Archived').length,
   };
-
-  const statusCounts = getStatusCounts();
 
   const filteredPosts = posts
     .filter((post) =>
@@ -127,57 +158,60 @@ export default function AdminBlogManagementPage() {
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
-        <Button>
-            <Link href="/dashboard/admin/content" className="flex items-center">
-                <Plus className="mr-2" /> Nueva Entrada con IA
-            </Link>
+        <Button asChild>
+          <Link href="/dashboard/admin/content" className="flex items-center">
+            <Plus className="mr-2" /> Nueva Entrada con IA
+          </Link>
         </Button>
       </div>
-      
+
       <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
         <Card>
-            <CardContent className="p-4">
-                <div className="text-2xl font-bold">{statusCounts.total}</div>
-                <p className="text-xs text-muted-foreground">Total</p>
-            </CardContent>
+          <CardContent className="p-4">
+            <div className="text-2xl font-bold">{statusCounts.total}</div>
+            <p className="text-xs text-muted-foreground">Total</p>
+          </CardContent>
         </Card>
         <Card>
-            <CardContent className="p-4">
-                <div className="text-2xl font-bold">{statusCounts.published}</div>
-                <p className="text-xs text-muted-foreground">Publicados</p>
-            </CardContent>
+          <CardContent className="p-4">
+            <div className="text-2xl font-bold">{statusCounts.published}</div>
+            <p className="text-xs text-muted-foreground">Publicados</p>
+          </CardContent>
         </Card>
         <Card>
-            <CardContent className="p-4">
-                <div className="text-2xl font-bold">{statusCounts.draft}</div>
-                <p className="text-xs text-muted-foreground">Borradores</p>
-            </CardContent>
+          <CardContent className="p-4">
+            <div className="text-2xl font-bold">{statusCounts.draft}</div>
+            <p className="text-xs text-muted-foreground">Borradores</p>
+          </CardContent>
         </Card>
         <Card>
-            <CardContent className="p-4">
-                <div className="text-2xl font-bold">{statusCounts.inReview}</div>
-                <p className="text-xs text-muted-foreground">En Revisión</p>
-            </CardContent>
+          <CardContent className="p-4">
+            <div className="text-2xl font-bold">{statusCounts.inReview}</div>
+            <p className="text-xs text-muted-foreground">En Revisión</p>
+          </CardContent>
         </Card>
         <Card>
-            <CardContent className="p-4">
-                <div className="text-2xl font-bold">{statusCounts.archived}</div>
-                <p className="text-xs text-muted-foreground">Archivados</p>
-            </CardContent>
+          <CardContent className="p-4">
+            <div className="text-2xl font-bold">{statusCounts.archived}</div>
+            <p className="text-xs text-muted-foreground">Archivados</p>
+          </CardContent>
         </Card>
       </div>
 
       <div className="flex flex-col md:flex-row items-center gap-4">
         <div className="relative w-full">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input 
-            placeholder="Buscar entradas..." 
+          <Input
+            placeholder="Buscar entradas..."
             className="pl-9"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
-        <Select onValueChange={(value) => setStatusFilter(value as PostStatus | 'All')} defaultValue="All">
+        <Select
+          onValueChange={(value) => setStatusFilter(value as PostStatus | 'All')}
+          defaultValue="All"
+        >
           <SelectTrigger className="w-full md:w-[180px]">
             <SelectValue placeholder="Todos los estados" />
           </SelectTrigger>
@@ -190,59 +224,98 @@ export default function AdminBlogManagementPage() {
           </SelectContent>
         </Select>
       </div>
-      
+
       {isLoading ? (
         <div className="text-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
-            <p className="mt-2 text-muted-foreground">Cargando entradas...</p>
+          <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
+          <p className="mt-2 text-muted-foreground">Cargando entradas...</p>
         </div>
       ) : filteredPosts.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground">
-            <p>No se encontraron entradas.</p>
+          <p>No se encontraron entradas.</p>
         </div>
       ) : (
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {filteredPosts.map((post) => (
+          {filteredPosts.map((post) => (
             <Card key={post.id} className="flex flex-col overflow-hidden">
-                <CardHeader className="p-0 relative">
-                    <Image
-                        src={post.featuredImageUrl || 'https://placehold.co/400x200.png'}
-                        alt={post.title}
-                        width={400}
-                        height={200}
-                        data-ai-hint="blog post topic"
-                        className="w-full h-40 object-cover"
-                    />
-                    <Badge className={cn("absolute top-2 right-2", getStatusBadgeClass(post.status))}>
-                        {post.status === 'In Review' ? 'En Revisión' : post.status}
-                    </Badge>
-                </CardHeader>
-                <CardContent className="p-4 flex-grow">
+              <CardHeader className="p-0 relative">
+                <Image
+                  src={post.featuredImageUrl || 'https://placehold.co/400x200.png'}
+                  alt={post.title}
+                  width={400}
+                  height={200}
+                  data-ai-hint={post.featuredImageHint || 'blog post topic'}
+                  className="w-full h-40 object-cover"
+                />
+                <Badge
+                  className={cn(
+                    'absolute top-2 right-2',
+                    getStatusBadgeClass(post.status)
+                  )}
+                >
+                  {post.status === 'In Review' ? 'En Revisión' : post.status}
+                </Badge>
+              </CardHeader>
+              <CardContent className="p-4 flex-grow">
                 <h3 className="font-bold font-headline text-lg leading-snug line-clamp-2">
-                    {post.title}
+                  {post.title}
                 </h3>
-                <p className="text-muted-foreground text-sm mt-2 line-clamp-3">
-                    {post.introduction}
-                </p>
                 <div className="flex items-center justify-between text-xs text-muted-foreground mt-4">
-                    <Badge variant="secondary">{post.category}</Badge>
-                    <span>{new Date(post.date).toLocaleDateString()}</span>
+                  <Badge variant="secondary">{post.category}</Badge>
+                  <span>{new Date(post.date).toLocaleDateString()}</span>
                 </div>
-                </CardContent>
-                <CardFooter className="p-2 border-t bg-gray-50/50 dark:bg-card/50">
-                    <div className="w-full flex items-center justify-end gap-1">
-                        {post.status === 'Draft' && (
-                            <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={() => handleUpdateStatus(post.id, 'Published')} disabled={isPending}>
-                                <Upload className="mr-2 h-4 w-4"/> Publicar
-                            </Button>
-                        )}
-                        <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600 h-8 w-8" onClick={() => handleDelete(post.id)} disabled={isPending}>
-                            <Trash2 className="h-4 w-4"/>
-                        </Button>
-                    </div>
-                </CardFooter>
+              </CardContent>
+              <CardFooter className="p-2 border-t bg-gray-50/50 dark:bg-card/50 flex items-center justify-between">
+                {post.status === 'Draft' && (
+                  <Button
+                    size="sm"
+                    className="bg-green-600 hover:bg-green-700 h-8 text-xs px-2"
+                    onClick={() => handleUpdateStatus(post.id, 'Published')}
+                    disabled={isPending}
+                  >
+                    <Upload className="mr-1.5 h-3 w-3" /> Publicar
+                  </Button>
+                )}
+                 {post.status === 'Published' && (
+                  <Button variant="ghost" size="sm" asChild className="text-blue-600 h-8 text-xs px-2">
+                     <Link href={`/blog/${post.slug}`} target="_blank">
+                        <ExternalLink className="mr-1.5 h-3 w-3"/> Ver
+                     </Link>
+                  </Button>
+                 )}
+                 {post.status === 'In Review' && (
+                     <span className="text-xs text-muted-foreground">Pendiente</span>
+                 )}
+
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 ml-auto">
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem asChild>
+                        <Link href={`/dashboard/admin/blog/edit/${post.id}`}>
+                            <Edit className="mr-2 h-4 w-4" /> Editar
+                        </Link>
+                    </DropdownMenuItem>
+                    {post.status !== 'Published' && (
+                        <DropdownMenuItem asChild>
+                             <Link href={`/blog/preview/${post.id}`} target="_blank">
+                                <Eye className="mr-2 h-4 w-4" /> Previsualizar
+                            </Link>
+                        </DropdownMenuItem>
+                    )}
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => handleDelete(post.id)} className="text-red-600" disabled={isPending}>
+                       <Trash2 className="mr-2 h-4 w-4" /> Eliminar
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
+              </CardFooter>
             </Card>
-            ))}
+          ))}
         </div>
       )}
     </div>

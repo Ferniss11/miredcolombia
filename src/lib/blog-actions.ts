@@ -2,7 +2,7 @@
 'use server';
 
 import { z } from 'zod';
-import { createBlogPost, getBlogPosts, getPublishedBlogPosts, getBlogPostBySlug, getBlogPostById, updateBlogPost, deleteBlogPost } from '@/services/blog.service';
+import { createBlogPost, getBlogPosts, getPublishedBlogPosts, getBlogPostBySlug, getBlogPostById as getBlogPostByIdService, updateBlogPost, deleteBlogPost } from '@/services/blog.service';
 import { revalidatePath } from 'next/cache';
 import type { BlogPost } from './types';
 
@@ -23,16 +23,17 @@ const BlogPostActionSchema = z.object({
   conclusion: z.string(),
   suggestedTags: z.array(z.string()),
   category: z.string(),
-  status: z.enum(['Published', 'Draft']),
+  status: z.enum(['Published', 'Draft', 'In Review', 'Archived']),
+  slug: z.string(),
 });
 
-type CreateBlogPostInput = z.infer<typeof BlogPostActionSchema>;
+type BlogPostInput = z.infer<typeof BlogPostActionSchema>;
 
 /**
  * Creates a new blog post by calling a secure API route.
  * This is a server action called from the client.
  */
-export async function createBlogPostAction(input: CreateBlogPostInput, idToken: string) {
+export async function createBlogPostAction(input: Omit<BlogPostInput, 'slug'>, idToken: string) {
   try {
     if (!idToken) {
         throw new Error('El token de autenticación es obligatorio.');
@@ -98,14 +99,46 @@ export async function getBlogPostsAction(): Promise<{ posts?: BlogPost[], error?
     }
 }
 
-export { getPublishedBlogPosts, getBlogPostBySlug, getBlogPostById };
+export { getPublishedBlogPosts, getBlogPostBySlug };
+
+export async function getBlogPostByIdAction(id: string) {
+    try {
+        const { post } = await getBlogPostByIdService(id);
+        if (!post) {
+            return { error: 'No se encontró la entrada.' };
+        }
+        return { post };
+    } catch (error) {
+        console.error('Error fetching post by ID:', error);
+        return { error: 'No se pudo obtener la entrada.' };
+    }
+}
+
+
+export async function updateBlogPostAction(id: string, data: Partial<BlogPost>) {
+    try {
+        await updateBlogPost(id, data);
+        revalidatePath('/dashboard/admin/blog');
+        revalidatePath(`/blog/${data.slug}`);
+        revalidatePath(`/blog/preview/${id}`);
+        return { success: true };
+    } catch (error) {
+        console.error('Error updating post:', error);
+        return { error: 'No se pudo actualizar la entrada.' };
+    }
+}
+
 
 export async function updateBlogPostStatusAction(id: string, status: 'Published' | 'Draft' | 'In Review' | 'Archived') {
     try {
+        const { post } = await getBlogPostByIdService(id);
+        if (!post) {
+            return { error: "Post no encontrado" };
+        }
         await updateBlogPost(id, { status });
         revalidatePath('/dashboard/admin/blog');
         revalidatePath('/blog');
-        revalidatePath(`/blog/[slug]`);
+        revalidatePath(`/blog/${post.slug}`);
         return { success: true };
     } catch (error) {
         console.error('Error updating post status:', error);
