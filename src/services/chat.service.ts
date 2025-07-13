@@ -1,4 +1,6 @@
 
+'use server';
+
 import { FieldValue } from "firebase-admin/firestore";
 import type { ChatSession, ChatMessage } from "@/lib/types";
 import { getAdminServices } from "@/lib/firebase/admin-config";
@@ -36,7 +38,17 @@ export async function findSessionByPhone(phone: string): Promise<(ChatSession & 
     }
     
     const doc = querySnapshot.docs[0];
-    return { id: doc.id, ...doc.data() } as ChatSession & { id: string };
+    const data = doc.data() as ChatSession;
+    
+    // Serialize the timestamp before returning
+    const serializedData = {
+        ...data,
+        id: doc.id,
+        createdAt: data.createdAt.toDate().toISOString(),
+    }
+
+    return serializedData as ChatSession & { id: string };
+
   } catch (error) {
     console.error("Error finding session by phone:", error);
     throw new Error("Failed to find chat session by phone.");
