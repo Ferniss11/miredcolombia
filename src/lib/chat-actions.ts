@@ -2,7 +2,7 @@
 'use server';
 
 import { z } from 'zod';
-import { startChatSession, saveMessage } from '@/services/chat.service';
+import { startChatSession, saveMessage, findSessionByPhone, getChatHistory } from '@/services/chat.service';
 import { invokeChatFlow } from '@/ai/flows/chat-flow';
 
 const startSessionSchema = z.object({
@@ -13,8 +13,20 @@ const startSessionSchema = z.object({
 export async function startChatSessionAction(input: z.infer<typeof startSessionSchema>) {
   try {
     const validatedInput = startSessionSchema.parse(input);
-    const sessionId = await startChatSession(validatedInput);
-    return { success: true, sessionId };
+    
+    // Check for an existing session with this phone number
+    const existingSession = await findSessionByPhone(validatedInput.userPhone);
+    
+    if (existingSession) {
+      // If a session exists, return its ID and history
+      const history = await getChatHistory(existingSession.id);
+      return { success: true, sessionId: existingSession.id, history };
+    } else {
+      // If no session exists, create a new one
+      const sessionId = await startChatSession(validatedInput);
+      return { success: true, sessionId, history: [] };
+    }
+
   } catch (error) {
     console.error("Error starting chat session:", error);
     return { success: false, error: 'No se pudo iniciar el chat. Por favor, inténtalo de nuevo.' };

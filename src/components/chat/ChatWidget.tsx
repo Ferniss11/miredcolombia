@@ -50,7 +50,13 @@ export default function ChatWidget() {
     const result = await startChatSessionAction({ userName: values.userName, userPhone: values.userPhone });
     if (result.success && result.sessionId) {
       setSessionId(result.sessionId);
-      setMessages([{ role: 'model', text: '¡Hola! Soy tu asistente de inmigración para España. ¿Cómo puedo ayudarte hoy?' }]);
+      
+      const initialMessages = result.history?.length 
+        ? result.history 
+        : [{ role: 'model', text: '¡Hola! Soy tu asistente de inmigración para España. ¿Cómo puedo ayudarte hoy?' }];
+
+      setMessages(initialMessages as ChatMessage[]);
+
     } else {
       toast({ variant: 'destructive', title: 'Error', description: result.error });
     }
@@ -88,7 +94,7 @@ export default function ChatWidget() {
                 Contacto Directo
             </CardTitle>
             <CardDescription>
-                Necesitamos unos datos para poder ayudarte mejor.
+                Necesitamos unos datos para poder ayudarte mejor. Si ya has hablado con nosotros, usa el mismo teléfono para continuar la conversación.
             </CardDescription>
           </CardHeader>
           <CardContent>
