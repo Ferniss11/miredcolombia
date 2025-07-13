@@ -1,10 +1,15 @@
+
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { ArrowRight, Newspaper } from "lucide-react";
-import { latestBlogPosts } from "@/lib/placeholder-data";
+import { ArrowRight, Newspaper, Calendar, User } from "lucide-react";
+import { getPublishedBlogPosts } from "@/lib/blog-actions";
+import Image from "next/image";
 
-export default function BlogSection() {
+export default async function BlogSection() {
+    const { posts } = await getPublishedBlogPosts();
+    const latestPosts = posts?.slice(0, 3) || [];
+
     return (
         <section className="w-full py-12 md:py-24 lg:py-32">
             <div className="container px-4 md:px-6">
@@ -17,25 +22,57 @@ export default function BlogSection() {
                         </p>
                     </div>
                 </div>
-                <div className="mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 py-12">
-                    {latestBlogPosts.map((post) => (
-                        <Card key={post.id} className="overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300">
-                            <CardHeader>
-                                <CardTitle className="font-headline text-xl">{post.title}</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <p className="text-muted-foreground">{post.excerpt}</p>
-                            </CardContent>
-                            <CardFooter>
-                                <Button asChild variant="link" className="text-accent-foreground p-0 h-auto">
-                                    <Link href={`/blog/${post.slug}`}>
-                                        Leer Más <ArrowRight className="ml-2 h-4 w-4" />
+
+                {latestPosts.length > 0 ? (
+                    <div className="mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 py-12">
+                        {latestPosts.map((post) => (
+                             <Card key={post.id} className="flex flex-col overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300">
+                                {post.featuredImageUrl && (
+                                    <Link href={`/blog/${post.slug}`} className="block">
+                                    <Image
+                                        src={post.featuredImageUrl}
+                                        alt={post.title}
+                                        width={400}
+                                        height={200}
+                                        data-ai-hint={post.featuredImageHint || "blog post topic"}
+                                        className="w-full h-48 object-cover"
+                                    />
                                     </Link>
-                                </Button>
-                            </CardFooter>
-                        </Card>
-                    ))}
-                </div>
+                                )}
+                                <CardHeader>
+                                    <Link href={`/blog/${post.slug}`} className="hover:text-primary">
+                                    <CardTitle className="font-headline text-xl line-clamp-2 h-14">{post.title}</CardTitle>
+                                    </Link>
+                                    <div className="flex items-center space-x-4 text-xs text-muted-foreground pt-2">
+                                    <div className="flex items-center">
+                                        <Calendar className="w-4 h-4 mr-1.5" />
+                                        {new Date(post.date).toLocaleDateString()}
+                                    </div>
+                                    <div className="flex items-center">
+                                        <User className="w-4 h-4 mr-1.5" />
+                                        {post.author}
+                                    </div>
+                                    </div>
+                                </CardHeader>
+                                <CardContent className="flex-grow">
+                                    <p className="text-muted-foreground line-clamp-3">{post.introduction}</p>
+                                </CardContent>
+                                <CardFooter>
+                                    <Button asChild variant="link" className="text-accent-foreground p-0 h-auto">
+                                        <Link href={`/blog/${post.slug}`}>
+                                            Leer Más <ArrowRight className="ml-2 h-4 w-4" />
+                                        </Link>
+                                    </Button>
+                                </CardFooter>
+                            </Card>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="text-center py-12 text-muted-foreground">
+                        <p>No hay artículos recientes. ¡Vuelve pronto!</p>
+                    </div>
+                )}
+                
                 <div className="flex justify-center">
                     <Button asChild>
                         <Link href="/blog">

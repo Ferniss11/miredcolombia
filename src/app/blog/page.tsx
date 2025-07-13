@@ -1,10 +1,10 @@
 
 import { getPublishedBlogPosts } from "@/lib/blog-actions";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowRight, Calendar, User } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
+import { cn } from "@/lib/utils";
 
 export default async function BlogPage() {
   const { posts } = await getPublishedBlogPosts();
@@ -13,7 +13,7 @@ export default async function BlogPage() {
     <div className="container mx-auto px-4 py-12 md:px-6">
       <div className="text-center mb-12">
         <h1 className="text-4xl md:text-5xl font-bold font-headline">Nuestro Blog</h1>
-        <p className="text-lg text-muted-foreground mt-2 font-body">
+        <p className="text-lg text-muted-foreground mt-2 font-body max-w-2xl mx-auto">
           Noticias, historias y guías para la comunidad colombiana en España.
         </p>
       </div>
@@ -24,48 +24,64 @@ export default async function BlogPage() {
           <p>Aún no hay artículos publicados. ¡Vuelve pronto!</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-          {posts.map((post) => (
-            <Card key={post.id} className="flex flex-col overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300">
-              {post.featuredImageUrl && (
-                <Link href={`/blog/${post.slug}`} className="block">
-                  <Image
-                    src={post.featuredImageUrl}
-                    alt={post.title}
-                    width={400}
-                    height={200}
-                    data-ai-hint={post.featuredImageHint || "blog post topic"}
-                    className="w-full h-48 object-cover"
-                  />
+        <div className="grid grid-cols-12 gap-6">
+          {posts.map((post, index) => {
+            const isFirst = index === 0;
+            const isSecondOrThird = index === 1 || index === 2;
+
+            return (
+              <div
+                key={post.id}
+                className={cn(
+                  "group col-span-12 rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 ease-in-out transform hover:-translate-y-1",
+                  isFirst && "md:col-span-8 md:row-span-2",
+                  isSecondOrThird && "md:col-span-4",
+                  !isFirst && !isSecondOrThird && "md:col-span-4"
+                )}
+              >
+                <Link href={`/blog/${post.slug}`} className="block w-full h-full">
+                  <article className="relative w-full h-full">
+                    <Image
+                      src={post.featuredImageUrl || "https://placehold.co/800x600.png"}
+                      alt={post.title}
+                      fill
+                      data-ai-hint={post.featuredImageHint || "blog post topic"}
+                      className="object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
+                    <div className="relative flex flex-col justify-end h-full p-6 text-white">
+                       <h2 className={cn(
+                         "font-headline font-bold line-clamp-3 transition-colors duration-300 group-hover:text-primary",
+                         isFirst ? "text-3xl md:text-4xl" : "text-2xl"
+                       )}>
+                        {post.title}
+                      </h2>
+                      <p className={cn(
+                          "mt-2 text-white/90 line-clamp-2",
+                           isFirst ? "md:text-base" : "text-sm"
+                      )}>
+                        {post.introduction}
+                      </p>
+                      <div className="flex items-center text-xs text-white/80 mt-4 pt-4 border-t border-white/20">
+                         <div className="flex items-center">
+                            <Calendar className="w-4 h-4 mr-1.5" />
+                            {new Date(post.date).toLocaleDateString('es-ES', { month: 'long', day: 'numeric' })}
+                        </div>
+                        <span className="mx-2">·</span>
+                        <div className="flex items-center">
+                            <User className="w-4 h-4 mr-1.5" />
+                            {post.author}
+                        </div>
+                        <div className="flex items-center ml-auto opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                            Leer Más <ArrowRight className="ml-1 h-4 w-4" />
+                        </div>
+                      </div>
+                    </div>
+                  </article>
                 </Link>
-              )}
-              <CardHeader>
-                <Link href={`/blog/${post.slug}`} className="hover:text-primary">
-                  <CardTitle className="font-headline text-2xl line-clamp-2">{post.title}</CardTitle>
-                </Link>
-                <div className="flex items-center space-x-4 text-sm text-muted-foreground pt-2">
-                  <div className="flex items-center">
-                    <Calendar className="w-4 h-4 mr-1.5" />
-                    {new Date(post.date).toLocaleDateString()}
-                  </div>
-                  <div className="flex items-center">
-                    <User className="w-4 h-4 mr-1.5" />
-                    {post.author}
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="flex-grow">
-                <p className="text-muted-foreground line-clamp-3">{post.introduction}</p>
-              </CardContent>
-              <CardFooter>
-                <Button asChild variant="link" className="text-accent-foreground p-0 h-auto">
-                  <Link href={`/blog/${post.slug}`}>
-                    Leer Más <ArrowRight className="ml-2 h-4 w-4" />
-                  </Link>
-                </Button>
-              </CardFooter>
-            </Card>
-          ))}
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
