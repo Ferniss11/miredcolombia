@@ -20,18 +20,24 @@ export async function startChatSessionAction(input: z.infer<typeof startSessionS
       const history = await getChatHistory(existingSession.id);
       // If user exists but has no history, provide a welcome message.
       if (history.length === 0) {
-        history.push({ role: 'model', text: '¡Hola de nuevo! Soy tu asistente de inmigración. ¿En qué más te puedo ayudar?' });
+        history.push({ role: 'model', text: '¡Hola de nuevo! Soy tu asistente de inmigración. ¿En qué más te puedo ayudar?', timestamp: new Date().toISOString() });
       }
       return { success: true, sessionId: existingSession.id, history };
     } else {
       const sessionId = await startChatSession(validatedInput);
-      const initialHistory = [{ role: 'model', text: '¡Hola! Soy tu asistente de inmigración para España. ¿Cómo puedo ayudarte hoy?' }];
+      const initialHistory = [{ role: 'model', text: '¡Hola! Soy tu asistente de inmigración para España. ¿Cómo puedo ayudarte hoy?', timestamp: new Date().toISOString() }];
       return { success: true, sessionId, history: initialHistory };
     }
 
   } catch (error) {
     console.error("Error starting chat session action:", error);
     const errorMessage = error instanceof Error ? error.message : "Un error desconocido ocurrió.";
+    
+    // Check if it's the specific Firestore index error to handle it on the client
+    if (errorMessage.includes('requires an index')) {
+        return { success: false, error: errorMessage, isIndexError: true };
+    }
+
     return { success: false, error: `No se pudo iniciar el chat: ${errorMessage}` };
   }
 }

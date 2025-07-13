@@ -2,6 +2,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import * as z from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -33,6 +34,7 @@ export default function ChatWidget() {
   const [isAiResponding, setIsAiResponding] = useState(false);
   const [currentMessage, setCurrentMessage] = useState('');
   const { toast } = useToast();
+  const router = useRouter();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -48,12 +50,20 @@ export default function ChatWidget() {
 
   const handleStartSession = async (values: z.infer<typeof formSchema>) => {
     const result = await startChatSessionAction({ userName: values.userName, userPhone: values.userPhone });
+    
+    if (result.isIndexError) {
+        // Temporary solution to display full error for debugging
+        sessionStorage.setItem('fullError', result.error || 'Unknown index error.');
+        router.push('/errors');
+        return;
+    }
+
     if (result.success && result.sessionId) {
       setSessionId(result.sessionId);
       
       const initialMessages = result.history?.length 
         ? result.history 
-        : [{ role: 'model', text: '¡Hola! Soy tu asistente de inmigración para España. ¿Cómo puedo ayudarte hoy?' }];
+        : [{ role: 'model', text: '¡Hola! Soy tu asistente de inmigración para España. ¿Cómo puedo ayudarte hoy?', timestamp: new Date().toISOString() }];
 
       setMessages(initialMessages as ChatMessage[]);
 
