@@ -27,11 +27,12 @@ export default function HomePageClient({ children }: { children: React.ReactNode
   return (
     <div className="flex flex-col min-h-[100dvh]">
       
-      {/* The server-rendered children are passed here */}
+      {/* The server-rendered children are passed here, rendered in the correct order */}
+      {children}
+      
+      {/* The sections with client-side interaction are rendered after */}
       <PackagesSection handlePurchaseClick={handlePurchaseClick} formatPrice={formatPrice} />
       <ServicesSection handlePurchaseClick={handlePurchaseClick} formatPrice={formatPrice} />
-      
-      {children}
 
       <Link href="#" className="fixed bottom-6 right-6 bg-green-500 hover:bg-green-600 text-white rounded-full p-4 shadow-lg z-20">
         <MessageCircle className="h-6 w-6" />
