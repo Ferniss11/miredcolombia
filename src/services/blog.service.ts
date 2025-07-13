@@ -1,7 +1,7 @@
 
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import type { BlogPost } from "@/lib/types";
-import { adminDb } from "@/lib/firebase/admin-config";
+import { getAdminServices } from "@/lib/firebase/admin-config";
 
 // This type uses a subset of the full BlogPost type for creation
 type BlogPostData = Omit<BlogPost, 'id' | 'author' | 'authorId' | 'date' | 'content' | 'excerpt' | 'imageUrl'>;
@@ -15,9 +15,7 @@ type BlogPostData = Omit<BlogPost, 'id' | 'author' | 'authorId' | 'date' | 'cont
  * @returns The ID of the newly created blog post document.
  */
 export async function createBlogPost(postData: BlogPostData, authorId: string, authorName: string): Promise<string> {
-  if (!adminDb) {
-    throw new Error("La base de datos de Firebase Admin no está inicializada.");
-  }
+  const { db: adminDb } = getAdminServices(); // Get the admin db instance
   
   try {
     const postsCollection = collection(adminDb, "posts");

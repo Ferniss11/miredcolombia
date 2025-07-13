@@ -1,59 +1,67 @@
 import * as admin from 'firebase-admin';
-import type { App } from 'firebase-admin/app';
 
 const ADMIN_APP_NAME = 'colombia-en-espana-admin';
 
-let adminDb: admin.firestore.Firestore | null = null;
-let adminAuth: admin.auth.Auth | null = null;
+// Variable para cachear la instancia de los servicios una vez inicializados.
+let adminServices: { db: admin.firestore.Firestore; auth: admin.auth.Auth } | null = null;
 
-try {
-  // Try to get an existing app to avoid re-initializing
-  const existingApp = admin.apps.find(app => app?.name === ADMIN_APP_NAME);
-  if (existingApp) {
-    adminDb = existingApp.firestore();
-    adminAuth = existingApp.auth();
-  } else {
-    // If it doesn't exist, initialize a new one
+/**
+ * Obtiene o inicializa la app de Firebase Admin y devuelve sus servicios.
+ * Lanza un error detallado si la inicialización falla.
+ * @returns Un objeto con las instancias de Firestore (db) y Auth (auth).
+ */
+export function getAdminServices() {
+  // Si ya está inicializado, devuelve la instancia cacheada.
+  if (adminServices) {
+    return adminServices;
+  }
+
+  // Si no está inicializado, intenta configurarlo.
+  try {
+    // Intenta obtener una app existente por su nombre.
+    const existingApp = admin.apps.find(app => app?.name === ADMIN_APP_NAME);
+    const app = existingApp || admin.initializeApp({
+      credential: admin.credential.cert(getServiceAccount()),
+    }, ADMIN_APP_NAME);
+    
+    // Cachea los servicios para futuros usos.
+    adminServices = {
+      db: app.firestore(),
+      auth: app.auth(),
+    };
+    
+    return adminServices;
+
+  } catch (error) {
+    // Si cualquier parte de la inicialización falla, lanza un error detallado.
+    if (error instanceof Error) {
+      throw new Error(`Error CRÍTICO al inicializar Firebase Admin: ${error.message}`);
+    }
+    throw new Error('Un error desconocido ocurrió durante la inicialización de Firebase Admin.');
+  }
+}
+
+
+/**
+ * Lee las credenciales desde las variables de entorno y las formatea.
+ * @returns El objeto de cuenta de servicio parseado.
+ */
+function getServiceAccount(): admin.ServiceAccount {
     const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
 
     if (!serviceAccountKey) {
-      throw new Error('La variable de entorno FIREBASE_SERVICE_ACCOUNT_KEY no está definida.');
+        throw new Error('La variable de entorno FIREBASE_SERVICE_ACCOUNT_KEY no está definida.');
     }
 
-    // Robustly clean and parse the key
-    let cleanedKey = serviceAccountKey;
-
-    // Remove quotes that might wrap the entire string in .env
-    if (cleanedKey.startsWith('"') && cleanedKey.endsWith('"')) {
-        cleanedKey = cleanedKey.substring(1, cleanedKey.length - 1);
-    }
-    
-    // Replace literal \n with actual newlines. Important for the private_key.
-    cleanedKey = cleanedKey.replace(/\\n/g, '\n');
-
-    let serviceAccount;
     try {
-        serviceAccount = JSON.parse(cleanedKey);
+        // Robusto: Reemplaza \\n literales por \n reales para el parser de JSON.
+        const CrorrectedFormatKey = serviceAccountKey.replace(/\\n/g, '\n');
+        return JSON.parse(CrorrectedFormatKey);
     } catch(e) {
         if (e instanceof Error) {
+            // Lanza un error más descriptivo para el problema más común.
             throw new Error(`Error al parsear el JSON de FIREBASE_SERVICE_ACCOUNT_KEY: ${e.message}. Asegúrate de que está en formato JSON válido y en una sola línea en el archivo .env.`);
         }
         throw new Error('Error desconocido al parsear el JSON de la clave de servicio.');
     }
-
-    const newApp = admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount),
-      projectId: serviceAccount.project_id,
-    }, ADMIN_APP_NAME);
-
-    adminDb = newApp.firestore();
-    adminAuth = newApp.auth();
-  }
-} catch (error: any) {
-    console.error(`CRITICAL FIREBASE ADMIN INITIALIZATION ERROR: ${error.message}`);
-    // Explicitly set to null so subsequent calls will fail clearly
-    adminDb = null;
-    adminAuth = null;
 }
-
-export { adminDb, adminAuth };
