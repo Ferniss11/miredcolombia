@@ -1,5 +1,5 @@
 
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { serverTimestamp } from "firebase/firestore";
 import type { BlogPost } from "@/lib/types";
 import { getAdminServices } from "@/lib/firebase/admin-config";
 
@@ -18,8 +18,8 @@ export async function createBlogPost(postData: BlogPostData, authorId: string, a
   const { db: adminDb } = getAdminServices(); // Get the admin db instance
   
   try {
-    const postsCollection = collection(adminDb, "posts");
-    const docRef = await addDoc(postsCollection, {
+    const postsCollection = adminDb.collection("posts");
+    const docRef = await postsCollection.add({
       ...postData,
       authorId: authorId,
       author: authorName,
