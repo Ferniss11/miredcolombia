@@ -124,6 +124,8 @@ export interface BlogPost {
   author: string;
   authorId: string;
   date: string; // Should be ISO string
+  createdAt: string; // ISO string
+  updatedAt: string; // ISO string
   status: 'Published' | 'Draft' | 'In Review' | 'Archived';
   category: string;
   

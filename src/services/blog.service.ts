@@ -4,7 +4,7 @@ import type { BlogPost } from "@/lib/types";
 import { getAdminServices } from "@/lib/firebase/admin-config";
 
 // This type uses a subset of the full BlogPost type for creation
-type BlogPostData = Omit<BlogPost, 'id' | 'author' | 'authorId' | 'date'>;
+type BlogPostData = Omit<BlogPost, 'id' | 'author' | 'authorId' | 'date' | 'createdAt' | 'updatedAt'>;
 
 const db = getAdminServices().db;
 const postsCollection = db.collection("posts");
@@ -38,6 +38,27 @@ export async function createBlogPost(postData: BlogPostData, authorId: string, a
 }
 
 /**
+ * Converts Firestore Timestamps in a post object to ISO strings.
+ * @param post - The post object with potential Timestamp fields.
+ * @returns The post object with dates serialized as strings.
+ */
+function serializePost(doc: FirebaseFirestore.DocumentSnapshot): BlogPost {
+    const data = doc.data()!;
+    const post: any = { id: doc.id, ...data };
+
+    // Convert Timestamps to ISO strings
+    if (data.createdAt && typeof data.createdAt.toDate === 'function') {
+        post.createdAt = data.createdAt.toDate().toISOString();
+    }
+    if (data.updatedAt && typeof data.updatedAt.toDate === 'function') {
+        post.updatedAt = data.updatedAt.toDate().toISOString();
+    }
+
+    return post as BlogPost;
+}
+
+
+/**
  * Retrieves all blog posts from Firestore, ordered by creation date.
  */
 export async function getBlogPosts(): Promise<BlogPost[]> {
@@ -45,7 +66,7 @@ export async function getBlogPosts(): Promise<BlogPost[]> {
     if (snapshot.empty) {
         return [];
     }
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as BlogPost));
+    return snapshot.docs.map(serializePost);
 }
 
 /**
@@ -56,7 +77,7 @@ export async function getPublishedBlogPosts(): Promise<{ posts: BlogPost[], erro
     if (snapshot.empty) {
         return { posts: [] };
     }
-    const posts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as BlogPost));
+    const posts = snapshot.docs.map(serializePost);
     return { posts };
 }
 
@@ -68,7 +89,7 @@ export async function getBlogPostBySlug(slug: string): Promise<{ post: BlogPost 
     if (snapshot.empty) {
         return { post: null };
     }
-    const post = { id: snapshot.docs[0].id, ...snapshot.docs[0].data() } as BlogPost;
+    const post = serializePost(snapshot.docs[0]);
     return { post };
 }
 
@@ -80,7 +101,8 @@ export async function getBlogPostById(id: string): Promise<{ post: BlogPost | nu
     if (!docSnap.exists) {
         return { post: null };
     }
-    return { post: { id: docSnap.id, ...docSnap.data() } as BlogPost };
+    const post = serializePost(docSnap);
+    return { post };
 }
 
 /**
