@@ -58,7 +58,7 @@ export default function ChatWidget() {
       setMessages(initialMessages as ChatMessage[]);
 
     } else {
-      toast({ variant: 'destructive', title: 'Error', description: result.error });
+      toast({ variant: 'destructive', title: 'Error', description: result.error || 'No se pudo iniciar el chat. Por favor, inténtalo de nuevo.' });
     }
   };
 
@@ -80,6 +80,8 @@ export default function ChatWidget() {
       setMessages((prev) => [...prev, aiMessage]);
     } else {
       toast({ variant: 'destructive', title: 'Error', description: result.error });
+       const errorResponseMessage: ChatMessage = { role: 'model', text: 'Lo siento, he tenido un problema y no puedo responder ahora mismo.', timestamp: new Date().toISOString() };
+      setMessages((prev) => [...prev, errorResponseMessage]);
     }
     setIsAiResponding(false);
   };
@@ -127,7 +129,7 @@ export default function ChatWidget() {
                         </div>
                     </FormItem>
                  )} />
-                 <Button type="submit" className="w-full">
+                 <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
                     {form.formState.isSubmitting ? <Loader2 className="animate-spin" /> : "Iniciar Chat"}
                 </Button>
               </form>

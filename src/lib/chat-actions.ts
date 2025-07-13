@@ -24,12 +24,15 @@ export async function startChatSessionAction(input: z.infer<typeof startSessionS
     } else {
       // If no session exists, create a new one
       const sessionId = await startChatSession(validatedInput);
+      // For a new user, we return the new session ID and an empty history array.
+      // The client will provide the initial welcome message.
       return { success: true, sessionId, history: [] };
     }
 
   } catch (error) {
     console.error("Error starting chat session:", error);
-    return { success: false, error: 'No se pudo iniciar el chat. Por favor, inténtalo de nuevo.' };
+    const errorMessage = error instanceof Error ? error.message : "Un error desconocido ocurrió.";
+    return { success: false, error: `No se pudo iniciar el chat: ${errorMessage}` };
   }
 }
 
