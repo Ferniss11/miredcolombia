@@ -1,3 +1,5 @@
+'use client';
+
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Check } from "lucide-react";
@@ -6,11 +8,14 @@ import { migrationPackages } from "@/lib/placeholder-data";
 import type { MigrationPackage } from "@/lib/types";
 
 type PackagesSectionProps = {
-    handlePurchaseClick: (item: MigrationPackage, type: 'package') => void;
-    formatPrice: (price: number) => string;
+    handlePurchaseClick?: (item: MigrationPackage, type: 'package') => void;
 };
 
-export default function PackagesSection({ handlePurchaseClick, formatPrice }: PackagesSectionProps) {
+const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(price);
+};
+
+export default function PackagesSection({ handlePurchaseClick }: PackagesSectionProps) {
     return (
         <section id="packages" className="w-full py-12 md:py-24 lg:py-32 bg-background">
             <div className="container px-4 md:px-6">
@@ -51,7 +56,7 @@ export default function PackagesSection({ handlePurchaseClick, formatPrice }: Pa
                                 </ul>
                             </CardContent>
                             <CardFooter>
-                                <Button onClick={() => handlePurchaseClick(pkg, 'package')} className={cn("w-full text-white", pkg.color)}>Contratar {pkg.name}</Button>
+                                <Button onClick={() => handlePurchaseClick?.(pkg, 'package')} className={cn("w-full text-white", pkg.color)}>Contratar {pkg.name}</Button>
                             </CardFooter>
                         </Card>
                     ))}
@@ -60,3 +65,5 @@ export default function PackagesSection({ handlePurchaseClick, formatPrice }: Pa
         </section>
     );
 }
+
+PackagesSection.displayName = 'PackagesSection';

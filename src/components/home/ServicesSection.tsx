@@ -1,3 +1,5 @@
+'use client';
+
 import { Card, CardHeader, CardContent, CardFooter, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -27,11 +29,15 @@ const serviceIcons: { [key: string]: LucideIcon } = {
 };
 
 type ServicesSectionProps = {
-    handlePurchaseClick: (item: MigrationService, type: 'service') => void;
-    formatPrice: (price: number) => string;
+    handlePurchaseClick?: (item: MigrationService, type: 'service') => void;
 };
 
-export default function ServicesSection({ handlePurchaseClick, formatPrice }: ServicesSectionProps) {
+const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(price);
+};
+
+
+export default function ServicesSection({ handlePurchaseClick }: ServicesSectionProps) {
     return (
         <section id="services" className="w-full py-12 md:py-24 lg:py-32 bg-gray-100 dark:bg-gray-800">
             <div className="container px-4 md:px-6">
@@ -65,7 +71,7 @@ export default function ServicesSection({ handlePurchaseClick, formatPrice }: Se
                                     <p className="mt-2 text-sm">{service.description}</p>
                                 </CardContent>
                                 <CardFooter>
-                                    <Button onClick={() => handlePurchaseClick(service, 'service')} className={cn("w-full text-white", service.buttonColor)}>Solicitar</Button>
+                                    <Button onClick={() => handlePurchaseClick?.(service, 'service')} className={cn("w-full text-white", service.buttonColor)}>Solicitar</Button>
                                 </CardFooter>
                             </Card>
                         )
@@ -75,3 +81,5 @@ export default function ServicesSection({ handlePurchaseClick, formatPrice }: Se
         </section>
     );
 }
+
+ServicesSection.displayName = 'ServicesSection';
