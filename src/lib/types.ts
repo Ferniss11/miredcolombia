@@ -220,3 +220,14 @@ export type ChatMessage = {
   role: 'user' | 'model';
   timestamp: any; // Firestore Timestamp
 }
+
+export const ChatInputSchema = z.object({
+  history: z.array(z.any()).describe('The chat history.'),
+  message: z.string().describe('The user\'s message.'),
+});
+export type ChatInput = z.infer<typeof ChatInputSchema>;
+
+export const ChatOutputSchema = z.object({
+  response: z.string().describe('The AI\'s response.'),
+});
+export type ChatOutput = z.infer<typeof ChatOutputSchema>;

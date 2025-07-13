@@ -8,23 +8,13 @@
  */
 
 import {ai} from '@/ai/genkit';
-import { z } from 'zod';
 import type { MessageData } from 'genkit';
+import { ChatInputSchema, ChatOutputSchema, type ChatInput, type ChatOutput } from '@/lib/types';
 
-export const ChatInputSchema = z.object({
-  history: z.array(z.any()).describe('The chat history.'),
-  message: z.string().describe('The user\'s message.'),
-});
-export type ChatInput = z.infer<typeof ChatInputSchema>;
-
-export const ChatOutputSchema = z.object({
-  response: z.string().describe('The AI\'s response.'),
-});
-export type ChatOutput = z.infer<typeof ChatOutputSchema>;
 
 const immigrationPrompt = ai.definePrompt({
     name: 'immigrationChatPrompt',
-    input: { schema: z.object({ message: z.string() }) },
+    input: { schema: ChatInputSchema },
     output: { schema: ChatOutputSchema },
     system: `
         ### CONTEXTO
@@ -66,8 +56,8 @@ const immigrationPrompt = ai.definePrompt({
 
 export async function chat(input: ChatInput): Promise<ChatOutput> {
   const {output} = await ai.generate({
-    prompt: immigrationPrompt.prompt,
-    system: immigrationPrompt.system,
+    prompt: immigrationPrompt.prompt!,
+    system: immigrationPrompt.system!,
     history: input.history as MessageData[],
     input: { message: input.message },
     output: {
