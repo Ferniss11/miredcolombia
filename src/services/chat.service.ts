@@ -27,7 +27,7 @@ function serializeMessage(doc: FirebaseFirestore.DocumentSnapshot): ChatMessage 
  */
 export async function findSessionByPhone(phone: string): Promise<(ChatSession & { id: string }) | null> {
   try {
-    // This query requires a composite index on (userPhone, createdAt desc).
+    // This query requires a composite index on (userPhone ==, createdAt desc).
     // If it fails, Firestore will provide a link in the error logs to create it.
     const querySnapshot = await chatSessionsCollection
       .where('userPhone', '==', phone)
