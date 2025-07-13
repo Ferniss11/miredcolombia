@@ -56,10 +56,10 @@ const immigrationPrompt = ai.definePrompt({
 
 export async function chat(input: ChatInput): Promise<ChatOutput> {
   const {output} = await ai.generate({
-    prompt: immigrationPrompt.prompt!,
+    model: 'googleai/gemini-pro',
+    prompt: input.message,
     system: immigrationPrompt.system!,
     history: input.history as MessageData[],
-    input: { message: input.message },
     output: {
       schema: ChatOutputSchema,
     },
