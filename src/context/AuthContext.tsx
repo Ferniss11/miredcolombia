@@ -26,32 +26,37 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isFirebaseError, setIsFirebaseError] = useState(false);
 
   useEffect(() => {
-    // Only subscribe to auth state changes if Firebase was initialized
-    if (firebaseInitialized && auth) {
-        const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+    // Check for Firebase initialization status only on the client side.
+    if (!firebaseInitialized) {
+      console.error("Firebase config is missing or incomplete. Please check NEXT_PUBLIC_FIREBASE variables in your .env file.");
+      setIsFirebaseError(true);
+      setLoading(false);
+      return;
+    }
+
+    if (auth) {
+      const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
         if (firebaseUser) {
-            setUser(firebaseUser);
-            const profile = await getUserProfile(firebaseUser.uid);
-            setUserProfile(profile);
+          setUser(firebaseUser);
+          const profile = await getUserProfile(firebaseUser.uid);
+          setUserProfile(profile);
         } else {
-            setUser(null);
-            setUserProfile(null);
+          setUser(null);
+          setUserProfile(null);
         }
         setLoading(false);
-        });
+      });
 
-        return () => unsubscribe();
-    } else {
-        // If Firebase is not initialized, we stop loading and let the UI show the error message.
-        setLoading(false);
+      return () => unsubscribe();
     }
   }, []);
 
   const value = { user, userProfile, loading };
-  
-  if (!firebaseInitialized) {
+
+  if (isFirebaseError) {
       return (
           <div className="flex items-center justify-center min-h-screen bg-background p-4">
             <Card className="w-full max-w-lg border-destructive">
