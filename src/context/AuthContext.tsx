@@ -51,10 +51,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       });
 
       return () => unsubscribe();
+    } else {
+      // Handle case where auth is null even if firebase is initialized
+      setLoading(false);
     }
   }, []);
-
-  const value = { user, userProfile, loading };
 
   if (isFirebaseError) {
       return (
@@ -101,5 +102,5 @@ NEXT_PUBLIC_FIREBASE_APP_ID=...`}
       )
   }
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={{ user, userProfile, loading }}>{children}</AuthContext.Provider>;
 };
