@@ -2,7 +2,7 @@
 import { NextResponse } from 'next/server';
 import { adminAuth, adminDb } from '@/lib/firebase/admin-config';
 import { createBlogPost } from '@/services/blog.service';
-import { getUserProfile } from '@/services/user.service';
+import { getUserProfileByUid } from '@/services/admin.service';
 
 export async function POST(request: Request) {
   try {
@@ -19,7 +19,8 @@ export async function POST(request: Request) {
     const decodedToken = await adminAuth.verifyIdToken(idToken);
     const uid = decodedToken.uid;
     
-    const userProfile = await getUserProfile(uid);
+    // Use the dedicated admin service to get the user profile
+    const userProfile = await getUserProfileByUid(uid);
 
     if (!userProfile || userProfile.role !== 'Admin') {
       return NextResponse.json({ error: 'Forbidden: User is not an admin' }, { status: 403 });

@@ -1,10 +1,13 @@
 
-import { doc, setDoc, getDoc } from "firebase/firestore";
+import { doc, setDoc, getDoc, updateDoc } from "firebase/firestore";
 import { db as clientDb } from "@/lib/firebase/config"; // Client DB for client-side calls
-import { adminDb } from "@/lib/firebase/admin-config"; // Admin DB for server-side calls
 import type { UserProfile, UserRole } from "@/lib/types";
 import type { User } from "firebase/auth";
 
+/**
+ * Creates a user profile document in Firestore.
+ * This is a CLIENT-SIDE function.
+ */
 export async function createUserProfile(user: User, name: string, role: UserRole = 'User'): Promise<void> {
     if (!clientDb) throw new Error("Firebase client database is not initialized.");
     
@@ -17,20 +20,40 @@ export async function createUserProfile(user: User, name: string, role: UserRole
         role: role,
     };
 
+    if (role === 'Advertiser') {
+        userProfileData.businessProfile = {
+            businessName: '',
+            address: '',
+            phone: '',
+            website: '',
+            description: '',
+        }
+    }
+
     await setDoc(userRef, userProfileData);
 }
 
-// This function can be used on both client and server, as it now uses the correct db instance
+/**
+ * Retrieves a user's profile from Firestore.
+ * This is a CLIENT-SIDE function.
+ */
 export async function getUserProfile(uid: string): Promise<UserProfile | null> {
-    // When called from the server (API routes), adminDb will be used.
-    // When called from the client, clientDb will be used.
-    const db = adminDb || clientDb;
-    if (!db) throw new Error("Firebase database is not initialized.");
+    if (!clientDb) throw new Error("Firebase client database is not initialized.");
     
-    const userRef = doc(db, "users", uid);
+    const userRef = doc(clientDb, "users", uid);
     const userSnap = await getDoc(userRef);
     if (userSnap.exists()) {
         return userSnap.data() as UserProfile;
     }
     return null;
+}
+
+/**
+ * Updates a user's profile document in Firestore.
+ * This is a CLIENT-SIDE function.
+ */
+export async function updateUserProfile(uid: string, data: Partial<UserProfile>): Promise<void> {
+    if (!clientDb) throw new Error("Firebase client database is not initialized.");
+    const userRef = doc(clientDb, "users", uid);
+    await updateDoc(userRef, data);
 }
