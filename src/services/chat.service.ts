@@ -132,15 +132,21 @@ export async function saveMessage(sessionId: string, messageData: Omit<ChatMessa
     const sessionRef = chatSessionsCollection.doc(sessionId);
     const messagesCollection = sessionRef.collection('messages');
     
-    // Use a transaction to ensure atomicity
     await db.runTransaction(async (transaction) => {
-        // 1. Add the new message
         const newMessageRef = messagesCollection.doc();
-        transaction.set(newMessageRef, {
+        
+        // Build the message object dynamically to avoid undefined fields
+        const finalMessageObject: any = {
             ...messageData,
             timestamp: FieldValue.serverTimestamp(),
-            usage, // Store token usage with the AI's response message
-        });
+        };
+
+        if (usage) {
+            finalMessageObject.usage = usage;
+        }
+
+        // 1. Add the new message
+        transaction.set(newMessageRef, finalMessageObject);
 
         // 2. Update the aggregate counts on the session document
         const sessionUpdate: { [key: string]: any } = {
