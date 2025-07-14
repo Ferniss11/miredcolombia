@@ -1,4 +1,3 @@
-
 import 'dotenv/config'; // Make sure variables from .env are loaded
 import admin from 'firebase-admin';
 
