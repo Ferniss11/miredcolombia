@@ -1,4 +1,3 @@
-import 'dotenv/config'; // Make sure variables from .env are loaded
 import admin from 'firebase-admin';
 
 // This needs to be a unique name for the admin app instance
@@ -10,18 +9,12 @@ function initializeFirebaseAdmin() {
     // Check if our specific named app is already initialized.
     const existingApp = admin.apps.find(app => app?.name === ADMIN_APP_NAME);
     if (existingApp) {
-      try {
-        // If it exists, return its services.
-        initializedProjectId = `Re-accessed named app '${ADMIN_APP_NAME}'. Project ID: ${existingApp.options.projectId || 'N/A'}`;
-        return {
-          db: existingApp.firestore(),
-          auth: existingApp.auth(),
-          admin: admin,
-        };
-      } catch (e: any) {
-         initializedProjectId = `Failed to get services from existing app '${ADMIN_APP_NAME}': ${e.message}`;
-         return { db: null, auth: null, admin: null, };
-      }
+      initializedProjectId = `Re-accessed named app '${ADMIN_APP_NAME}'. Project ID: ${existingApp.options.projectId || 'N/A'}`;
+      return {
+        db: existingApp.firestore(),
+        auth: existingApp.auth(),
+        admin: admin,
+      };
     }
     
     // Fallback to individual keys if the base64 one is not present

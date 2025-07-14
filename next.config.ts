@@ -1,3 +1,6 @@
+import { config } from 'dotenv';
+config(); // Carga las variables de entorno desde .env
+
 import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
