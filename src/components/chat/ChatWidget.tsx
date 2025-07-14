@@ -168,7 +168,7 @@ export default function ChatWidget() {
                       ? 'bg-blue-100 dark:bg-blue-900/50'
                       : 'bg-gray-100 dark:bg-gray-800'
                   )}
-                  dangerouslySetInnerHTML={{ __html: msg.text.replace(/\\n/g, '<br />') }}
+                  dangerouslySetInnerHTML={{ __html: msg.text.replace(/\n/g, '<br />') }}
                 />
                  {msg.role === 'user' && (
                   <div className="flex-shrink-0 w-8 h-8 rounded-full bg-muted flex items-center justify-center">
