@@ -9,6 +9,7 @@ const FieldValue = adminInstance?.firestore.FieldValue;
 
 function getDbInstance() {
     if (!adminDb) {
+        // This will now correctly use the null-checked instance from admin-config
         throw new Error("Firebase Admin SDK is not initialized. Chat service is unavailable.");
     }
     return adminDb;
