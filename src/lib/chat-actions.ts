@@ -4,6 +4,7 @@
 import { z } from 'zod';
 import { startChatSession, saveMessage, findSessionByPhone, getChatHistory } from '@/services/chat.service';
 import { invokeChatFlow } from '@/ai/flows/chat-flow';
+import type { MessageData } from 'genkit';
 
 const startSessionSchema = z.object({
   userName: z.string().min(2, "El nombre es obligatorio."),
@@ -53,8 +54,14 @@ export async function postMessageAction(input: z.infer<typeof postMessageSchema>
     const { sessionId, message, history } = postMessageSchema.parse(input);
 
     await saveMessage(sessionId, { text: message, role: 'user' });
+    
+    // Clean and format history before passing it to the AI flow
+    const cleanedHistory: MessageData[] = history.map((m: any) => ({
+        role: m.role,
+        content: [{ text: m.text }], // Ensure content is always in the correct format
+    }));
 
-    const aiResponse = await invokeChatFlow({ message, history });
+    const aiResponse = await invokeChatFlow({ message, history: cleanedHistory });
 
     await saveMessage(sessionId, { text: aiResponse.response, role: 'model' }, aiResponse.usage);
 

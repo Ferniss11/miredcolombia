@@ -19,9 +19,10 @@ export async function chat(input: ChatInput): Promise<ChatOutput> {
   const agentConfig = await getAgentConfig();
 
   // 2. Map history to the correct MessageData format
-  const messages: MessageData[] = history.map((m) => ({
+  // The history is already cleaned in postMessageAction, but we do this for robustness
+  const messages: MessageData[] = history.map((m: any) => ({
     role: m.role,
-    content: [{ text: m.content as string }],
+    content: m.content, // Now content is already in the correct format [{ text: '...' }]
   }));
 
   // Add the current user message
