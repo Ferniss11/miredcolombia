@@ -1,3 +1,7 @@
+
+import { config } from 'dotenv';
+config(); // Carga las variables de entorno desde .env
+
 import admin from 'firebase-admin';
 
 // This needs to be a unique name for the admin app instance
@@ -20,6 +24,7 @@ function initializeFirebaseAdmin() {
     // Fallback to individual keys if the base64 one is not present
     const projectId = process.env.FIREBASE_PROJECT_ID;
     const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+    // THE FIX: Replace escaped newlines with actual newlines for Vercel/production environments.
     const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
 
     const hasAllKeys = projectId && clientEmail && privateKey;
@@ -54,6 +59,8 @@ function initializeFirebaseAdmin() {
         errorMessage = `Duplicate Firebase app initialization detected. App name: ${ADMIN_APP_NAME}.`;
     } else if (error.message.includes('JSON')) {
         errorMessage = 'Initialization failed: Service account key is not valid JSON.';
+    } else if (error.code === 'auth/invalid-credential') {
+        errorMessage = `Initialization failed: Invalid credential. Check the content of your Firebase Admin environment variables. Error: ${error.message}`;
     }
     console.error("CRITICAL FIREBASE ADMIN INITIALIZATION ERROR:", errorMessage);
     initializedProjectId = errorMessage;
