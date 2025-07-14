@@ -1,13 +1,15 @@
 
 import { NextResponse } from 'next/server';
-import { getAdminServices } from '@/lib/firebase/admin-config';
+import { adminAuth } from '@/lib/firebase/admin-config';
 import { createBlogPost } from '@/services/blog.service';
 import { getUserProfileByUid } from '@/services/admin.service';
 
 export async function POST(request: Request) {
   try {
     // Step 1: Securely get Admin services. This will throw an error if initialization fails.
-    const { auth: adminAuth } = getAdminServices();
+    if (!adminAuth) {
+        throw new Error("Firebase Admin Auth is not initialized.");
+    }
 
     // Step 2: Verify user's authorization token.
     const authorization = request.headers.get('Authorization');

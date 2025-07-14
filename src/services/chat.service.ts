@@ -1,16 +1,17 @@
 
 'use server';
 
-import { FieldValue } from "firebase-admin/firestore";
+import { adminDb, adminInstance } from "@/lib/firebase/admin-config";
 import type { ChatSession, ChatMessage, TokenUsage, ChatSessionWithTokens } from "@/lib/types";
-import { getAdminServices } from "@/lib/firebase/admin-config";
+
+const FieldValue = adminInstance?.firestore.FieldValue;
+
 
 function getDbInstance() {
-    const { db } = getAdminServices();
-    if (!db) {
+    if (!adminDb) {
         throw new Error("Firebase Admin SDK is not initialized. Chat service is unavailable.");
     }
-    return db;
+    return adminDb;
 }
 
 function serializeMessage(doc: FirebaseFirestore.DocumentSnapshot): ChatMessage {
@@ -110,6 +111,7 @@ export async function getChatHistory(sessionId: string): Promise<ChatMessage[]> 
  */
 export async function startChatSession(sessionData: Omit<ChatSession, 'id' | 'createdAt'>): Promise<string> {
   const db = getDbInstance();
+  if (!FieldValue) throw new Error("Firebase Admin SDK is not fully initialized.");
   try {
     const docRef = await db.collection("chatSessions").add({
       ...sessionData,
@@ -136,6 +138,7 @@ export async function startChatSession(sessionData: Omit<ChatSession, 'id' | 'cr
  */
 export async function saveMessage(sessionId: string, messageData: Omit<ChatMessage, 'id' | 'timestamp'>, usage?: TokenUsage): Promise<void> {
   const db = getDbInstance();
+  if (!FieldValue) throw new Error("Firebase Admin SDK is not fully initialized.");
   try {
     const sessionRef = db.collection("chatSessions").doc(sessionId);
     const messagesCollection = sessionRef.collection('messages');

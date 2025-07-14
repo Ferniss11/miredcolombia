@@ -1,6 +1,8 @@
-import { FieldValue } from "firebase-admin/firestore";
-import { getAdminServices } from "@/lib/firebase/admin-config";
+
+import { adminDb, adminInstance } from "@/lib/firebase/admin-config";
 import type { Order } from "@/lib/types";
+
+const FieldValue = adminInstance?.firestore.FieldValue;
 
 /**
  * Creates a new order document in Firestore.
@@ -8,8 +10,8 @@ import type { Order } from "@/lib/types";
  * @returns The ID of the newly created order document.
  */
 export async function createOrder(orderData: Omit<Order, 'createdAt' | 'id'>): Promise<string> {
-  const { db } = getAdminServices();
-  if (!db) {
+  const db = adminDb;
+  if (!db || !FieldValue) {
     throw new Error("Firebase Admin SDK is not initialized. Cannot create order.");
   }
   try {
