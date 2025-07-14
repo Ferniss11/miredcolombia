@@ -1,7 +1,7 @@
-
 import 'dotenv/config';
 import admin from 'firebase-admin';
 import { getApps } from 'firebase-admin/app';
+import { setAdminApiInitialized } from './config';
 
 /**
  * Initializes the Firebase Admin SDK if not already initialized.
@@ -10,6 +10,7 @@ import { getApps } from 'firebase-admin/app';
  */
 function getAdminServices() {
   if (getApps().length > 0) {
+    setAdminApiInitialized(true);
     const app = admin.app();
     return {
       db: app.firestore(),
@@ -37,6 +38,7 @@ function getAdminServices() {
       credential: admin.credential.cert(serviceAccount),
     });
 
+    setAdminApiInitialized(true);
     return {
       db: app.firestore(),
       auth: app.auth(),
@@ -53,6 +55,7 @@ function getAdminServices() {
     // For local development, we warn but don't crash the entire application.
     console.warn("ADVERTENCIA: Las variables de entorno del Firebase Admin SDK no están configuradas. Las funciones del lado del servidor que dependen de Firebase Admin fallarán. Esto es normal para el desarrollo local si no se necesita acceso de administrador.");
     
+    setAdminApiInitialized(false);
     // Return nulls so the app doesn't crash on startup
     return { db: null, auth: null, admin: null };
   }

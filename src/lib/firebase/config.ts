@@ -16,6 +16,12 @@ let auth: Auth | null = null;
 let db: Firestore | null = null;
 let firebaseInitialized = false;
 
+// A new flag to check if the server-side admin SDK is ready
+export let adminApiInitialized = false;
+export function setAdminApiInitialized(status: boolean) {
+    adminApiInitialized = status;
+}
+
 // Only initialize if the config is valid
 if (firebaseConfig.apiKey && firebaseConfig.projectId && firebaseConfig.authDomain) {
     if (typeof window !== 'undefined') {

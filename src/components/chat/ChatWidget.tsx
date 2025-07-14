@@ -17,6 +17,7 @@ import { MessageCircle, X, Send, User, Bot, Loader2, Sparkles, Phone } from 'luc
 import Link from 'next/link';
 import { startChatSessionAction, postMessageAction } from '@/lib/chat-actions';
 import { useToast } from '@/hooks/use-toast';
+import { adminApiInitialized } from '@/lib/firebase/config';
 
 type ClientMessage = {
     role: 'user' | 'model';
@@ -203,6 +204,11 @@ export default function ChatWidget() {
       </div>
     );
   };
+  
+  // Do not render the chat widget at all if the admin API is not available
+  if (!adminApiInitialized) {
+    return null;
+  }
 
   return (
     <>
