@@ -3,7 +3,7 @@
 
 import { z } from 'zod';
 import { startChatSession, saveMessage, findSessionByPhone, getChatHistory } from '@/services/chat.service';
-import { invokeChatFlow } from '@/ai/flows/chat-flow';
+import { chat } from '@/ai/flows/chat-flow';
 import type { MessageData } from 'genkit';
 
 const startSessionSchema = z.object({
@@ -59,9 +59,8 @@ export async function postMessageAction(input: z.infer<typeof postMessageSchema>
     // Save user's message to Firestore
     await saveMessage(sessionId, { text: message, role: 'user' });
     
-    // Pass the history and message directly to the flow.
-    // The flow is now responsible for ensuring the correct format.
-    const aiResponse = await invokeChatFlow({ message, history });
+    // Call the simple chat function directly
+    const aiResponse = await chat({ message, history });
 
     // Save AI's response to Firestore
     await saveMessage(sessionId, { text: aiResponse.response, role: 'model' }, aiResponse.usage);

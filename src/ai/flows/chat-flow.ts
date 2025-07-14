@@ -9,38 +9,39 @@
 
 import {ai} from '@/ai/genkit';
 import type { MessageData } from 'genkit';
-import { ChatInputSchema, type ChatInput, ChatOutputSchema, type ChatOutput } from '@/lib/types';
+import { type ChatInput, ChatOutputSchema, type ChatOutput } from '@/lib/types';
 import { getAgentConfig } from '@/services/agent.service';
 
+/**
+ * Handles the chat logic by taking history and a new message,
+ * formatting it for the AI, and returning the AI's response.
+ * @param input The user's message and the chat history.
+ * @returns The AI's response and token usage information.
+ */
 export async function chat(input: ChatInput): Promise<ChatOutput> {
   const { history, message } = input;
   
   // 1. Get the latest agent configuration from Firestore
   const agentConfig = await getAgentConfig();
 
-  // 2. Map history to the correct MessageData format required by ai.generate
-  // The 'history' from the client has the format { role: '...', content: '...' }
-  // We need to convert it to { role: '...', content: [{ text: '...' }] }
+  // 2. Map the client-side history to the MessageData[] format required by ai.generate
+  // The history from the client is { role: '...', content: '...' }
+  // We MUST convert it to { role: '...', content: [{ text: '...' }] }
   const messages: MessageData[] = history.map((m: any) => ({
     role: m.role,
-    // Ensure content is always in the correct array-of-parts format
-    content: [{ text: m.content }],
+    content: [{ text: m.content }], // Ensure content is always in the correct array-of-parts format
   }));
 
-  // Add the current user message
+  // Add the current user message to the conversation history for the AI
   messages.push({ role: 'user', content: [{ text: message }] });
 
-
-  // 3. Make the generate call using the retrieved configuration
+  // 3. Make the generate call using the retrieved configuration and formatted messages
   const { output, usage } = await ai.generate({
     model: agentConfig.model,
     system: agentConfig.systemPrompt,
     prompt: messages,
     output: {
       schema: ChatOutputSchema,
-    },
-    config: {
-        // We can add specific configs here if needed, like temperature
     },
   });
 
@@ -56,21 +57,4 @@ export async function chat(input: ChatInput): Promise<ChatOutput> {
       totalTokens: usage.totalTokens || 0,
     }
   };
-}
-
-const chatFlow = ai.defineFlow(
-  {
-    name: 'chatFlow',
-    inputSchema: ChatInputSchema,
-    outputSchema: ChatOutputSchema,
-  },
-  async (input) => {
-    // Call the underlying chat function which is easier to test
-    const result = await chat(input);
-    return result;
-  }
-);
-
-export async function invokeChatFlow(input: ChatInput): Promise<ChatOutput> {
-    return chatFlow(input);
 }
