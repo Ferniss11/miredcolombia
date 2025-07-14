@@ -18,11 +18,13 @@ export async function chat(input: ChatInput): Promise<ChatOutput> {
   // 1. Get the latest agent configuration from Firestore
   const agentConfig = await getAgentConfig();
 
-  // 2. Map history to the correct MessageData format
-  // The history is already cleaned in postMessageAction, but we do this for robustness
+  // 2. Map history to the correct MessageData format required by ai.generate
+  // The 'history' from the client has the format { role: '...', content: '...' }
+  // We need to convert it to { role: '...', content: [{ text: '...' }] }
   const messages: MessageData[] = history.map((m: any) => ({
     role: m.role,
-    content: m.content, // Now content is already in the correct format [{ text: '...' }]
+    // Ensure content is always in the correct array-of-parts format
+    content: [{ text: m.content }],
   }));
 
   // Add the current user message

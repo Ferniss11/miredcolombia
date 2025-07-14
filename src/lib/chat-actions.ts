@@ -23,6 +23,8 @@ export async function startChatSessionAction(input: z.infer<typeof startSessionS
       if (history.length === 0) {
         history.push({ role: 'model', text: '¡Hola de nuevo! Soy tu asistente de inmigración. ¿En qué más te puedo ayudar?', timestamp: new Date().toISOString() });
       }
+      // The history returned to the client is { role, text, ... }
+      // This will be mapped to { role, content } on the client side for the next request.
       return { success: true, sessionId: existingSession.id, history };
     } else {
       const sessionId = await startChatSession(validatedInput);
@@ -46,6 +48,7 @@ export async function startChatSessionAction(input: z.infer<typeof startSessionS
 const postMessageSchema = z.object({
   sessionId: z.string(),
   message: z.string(),
+  // The history from the client is an array of { role, content }
   history: z.array(z.any()),
 });
 
@@ -53,16 +56,14 @@ export async function postMessageAction(input: z.infer<typeof postMessageSchema>
   try {
     const { sessionId, message, history } = postMessageSchema.parse(input);
 
+    // Save user's message to Firestore
     await saveMessage(sessionId, { text: message, role: 'user' });
     
-    // Clean and format history before passing it to the AI flow
-    const cleanedHistory: MessageData[] = history.map((m: any) => ({
-        role: m.role,
-        content: [{ text: m.text }], // Ensure content is always in the correct format
-    }));
+    // Pass the history and message directly to the flow.
+    // The flow is now responsible for ensuring the correct format.
+    const aiResponse = await invokeChatFlow({ message, history });
 
-    const aiResponse = await invokeChatFlow({ message, history: cleanedHistory });
-
+    // Save AI's response to Firestore
     await saveMessage(sessionId, { text: aiResponse.response, role: 'model' }, aiResponse.usage);
 
     return { success: true, response: aiResponse.response };
