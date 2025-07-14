@@ -11,7 +11,6 @@ import {ai} from '@/ai/genkit';
 import type { MessageData } from 'genkit';
 import { ChatInputSchema, type ChatInput, ChatOutputSchema, type ChatOutput } from '@/lib/types';
 import { getAgentConfig } from '@/services/agent.service';
-import { knowledgeBaseSearch } from '../tools/knowledge-base-search';
 
 export async function chat(input: ChatInput): Promise<ChatOutput> {
   const { history, message } = input;
@@ -19,18 +18,21 @@ export async function chat(input: ChatInput): Promise<ChatOutput> {
   // 1. Get the latest agent configuration from Firestore
   const agentConfig = await getAgentConfig();
 
-  // 2. Make the generate call using the retrieved configuration
+  // 2. Map history to the correct MessageData format
+  const messages: MessageData[] = history.map((m) => ({
+    role: m.role,
+    content: [{ text: m.content as string }],
+  }));
+
+  // Add the current user message
+  messages.push({ role: 'user', content: [{ text: message }] });
+
+
+  // 3. Make the generate call using the retrieved configuration
   const { output, usage } = await ai.generate({
     model: agentConfig.model,
     system: agentConfig.systemPrompt,
-    tools: [knowledgeBaseSearch],
-    prompt: [
-        ...history.map(m => ({
-            role: m.role,
-            content: [{ text: m.content as string }],
-        }) as MessageData),
-        { role: 'user', content: [{ text: message }] },
-    ] as MessageData[],
+    prompt: messages,
     output: {
       schema: ChatOutputSchema,
     },
