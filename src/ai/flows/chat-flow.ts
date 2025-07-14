@@ -3,14 +3,12 @@
 
 /**
  * @fileOverview An AI agent specialized in providing immigration advice for Colombians moving to Spain.
- *
- * - chat - A function that handles the conversational chat process.
+ * This file contains the logic for processing chat messages.
  */
 
 import {ai} from '@/ai/genkit';
 import type { MessageData } from 'genkit';
-import type { ChatInput, ChatOutput } from '@/lib/types';
-import { ChatOutputSchema } from '@/lib/types';
+import { ChatInputSchema, type ChatInput, ChatOutputSchema, type ChatOutput } from '@/lib/types';
 import { getAgentConfig } from '@/services/agent.service';
 
 /**
@@ -25,12 +23,11 @@ export async function chat(input: ChatInput): Promise<ChatOutput> {
   // 1. Get the latest agent configuration from Firestore
   const agentConfig = await getAgentConfig();
 
-  // 2. Map the client-side history to the MessageData[] format required by ai.generate
-  // The history from the client is { role: '...', content: '...' }
-  // We MUST convert it to { role: '...', content: [{ text: '...' }] }
+  // 2. Map the client-side history (which has { role, content: string })
+  // to the MessageData[] format required by ai.generate, which is { role, content: [{ text: string }] }
   const messages: MessageData[] = history.map((m: any) => ({
     role: m.role,
-    content: [{ text: m.content }], // Ensure content is always in the correct array-of-parts format
+    content: [{ text: m.content }],
   }));
 
   // Add the current user message to the conversation history for the AI
@@ -59,3 +56,19 @@ export async function chat(input: ChatInput): Promise<ChatOutput> {
     }
   };
 }
+
+/**
+ * Defines a Genkit flow for the chat functionality.
+ * This wraps the main chat logic, making it available to the Genkit developer UI.
+ */
+const chatFlow = ai.defineFlow(
+  {
+    name: 'chatFlow',
+    inputSchema: ChatInputSchema,
+    outputSchema: ChatOutputSchema,
+  },
+  async (input) => {
+    // Call the underlying chat function which is easier to test
+    return await chat(input);
+  }
+);
