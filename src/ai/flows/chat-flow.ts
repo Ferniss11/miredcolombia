@@ -8,34 +8,38 @@
 
 import {ai} from '@/ai/genkit';
 import type { MessageData } from 'genkit';
-import { type ChatInput, ChatOutputSchema, type ChatOutput } from '@/lib/types';
+import { ChatInputSchema, type ChatInput, ChatOutputSchema, type ChatOutput } from '@/lib/types';
 import { getAgentConfig } from '@/services/agent.service';
 
+
 /**
- * Handles the chat logic by taking history and a new message,
- * formatting it for the AI, and returning the AI's response.
+ * The underlying chat logic. This function is wrapped by a Genkit flow.
+ * It's easier to test and manage this way.
  * @param input The user's message and the chat history.
  * @returns The AI's response and token usage information.
  */
-export async function chat(input: ChatInput): Promise<ChatOutput> {
+async function runChat(input: ChatInput): Promise<ChatOutput> {
   const { history, message } = input;
   
+  // 1. Get the latest agent configuration from Firestore
   const agentConfig = await getAgentConfig();
 
-  // The history from Firestore/client has the format { role, text }.
-  // We must map it to the MessageData[] format: { role, content: [{ text }] }.
+  // 2. Correctly map the history and add the new message to match the MessageData[] format.
+  // The history from the client might be in a simpler format, so we ensure it's correct here.
   const messages: MessageData[] = history.map((m: any) => ({
     role: m.role,
-    content: [{ text: m.text }],
+    content: [{ text: m.text || m.content }], // Handle both `text` and `content` properties for safety
   }));
 
-  // Add the current user message to the conversation history for the AI
+  // Add the current user message
   messages.push({ role: 'user', content: [{ text: message }] });
 
+
+  // 3. Make the generate call using the retrieved configuration and the formatted messages
   const { output, usage } = await ai.generate({
     model: agentConfig.model,
     system: agentConfig.systemPrompt,
-    prompt: messages, // Now the prompt has the correct format
+    prompt: messages, // Pass the correctly formatted message array
     output: {
       schema: ChatOutputSchema,
     },
@@ -54,3 +58,20 @@ export async function chat(input: ChatInput): Promise<ChatOutput> {
     }
   };
 }
+
+/**
+ * The main Genkit flow for handling chat conversations.
+ * It validates the input and calls the core chat logic.
+ */
+export const chatFlow = ai.defineFlow(
+  {
+    name: 'chatFlow',
+    inputSchema: ChatInputSchema,
+    outputSchema: ChatOutputSchema,
+  },
+  async (input) => {
+    // Call the underlying chat function which is easier to test
+    const result = await runChat(input);
+    return result;
+  }
+);
