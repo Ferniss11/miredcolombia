@@ -6,8 +6,6 @@ import { onAuthStateChanged, User } from 'firebase/auth';
 import { auth, firebaseInitialized } from '@/lib/firebase/config';
 import { getUserProfile } from '@/services/user.service';
 import type { UserProfile } from '@/lib/types';
-import { Loader2, AlertTriangle } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 
 interface AuthContextType {
   user: User | null;
@@ -29,29 +27,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!firebaseInitialized) {
-      console.error("Firebase config is missing or incomplete. Client-side authentication will not work.");
+    // Do not proceed if Firebase client is not initialized
+    if (!firebaseInitialized || !auth) {
       setLoading(false);
       return;
     }
 
-    if (auth) {
-      const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-        if (firebaseUser) {
-          setUser(firebaseUser);
-          const profile = await getUserProfile(firebaseUser.uid);
-          setUserProfile(profile);
-        } else {
-          setUser(null);
-          setUserProfile(null);
-        }
-        setLoading(false);
-      });
-
-      return () => unsubscribe();
-    } else {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        setUser(firebaseUser);
+        const profile = await getUserProfile(firebaseUser.uid);
+        setUserProfile(profile);
+      } else {
+        setUser(null);
+        setUserProfile(null);
+      }
       setLoading(false);
-    }
+    });
+
+    return () => unsubscribe();
   }, []);
 
   return <AuthContext.Provider value={{ user, userProfile, loading }}>{children}</AuthContext.Provider>;

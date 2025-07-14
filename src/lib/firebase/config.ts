@@ -1,3 +1,4 @@
+
 import { initializeApp, getApps, getApp, type FirebaseApp } from "firebase/app";
 import { getAuth, type Auth } from "firebase/auth";
 import { getFirestore, type Firestore } from "firebase/firestore";
@@ -23,7 +24,11 @@ export function setAdminApiInitialized(status: boolean) {
 }
 
 // Only initialize if the config is valid
-if (firebaseConfig.apiKey && firebaseConfig.projectId && firebaseConfig.authDomain) {
+if (
+    firebaseConfig.apiKey &&
+    firebaseConfig.authDomain &&
+    firebaseConfig.projectId
+) {
     if (typeof window !== 'undefined') {
         try {
             app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
@@ -32,11 +37,12 @@ if (firebaseConfig.apiKey && firebaseConfig.projectId && firebaseConfig.authDoma
             firebaseInitialized = true;
         } catch (e) {
             console.error('Failed to initialize Firebase on the client', e);
+            firebaseInitialized = false;
         }
     }
 } else {
     // This warning will show on both server and client if keys are missing
-    console.warn("Firebase client config is missing or incomplete. Please check NEXT_PUBLIC_FIREBASE variables in your .env file.");
+    console.warn("Firebase client config is missing or incomplete. Please check NEXT_PUBLIC_FIREBASE variables. Client-side features will be disabled.");
 }
 
 export { app, auth, db, firebaseInitialized };
