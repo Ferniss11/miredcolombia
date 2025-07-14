@@ -8,7 +8,7 @@
 
 import {ai} from '@/ai/genkit';
 import type { MessageData } from 'genkit';
-import { ChatInputSchema, type ChatInput, ChatOutputSchema, type ChatOutput } from '@/lib/types';
+import { type ChatInput, ChatOutputSchema, type ChatOutput } from '@/lib/types';
 import { getAgentConfig } from '@/services/agent.service';
 
 /**
@@ -22,11 +22,8 @@ export async function chat(input: ChatInput): Promise<ChatOutput> {
   
   const agentConfig = await getAgentConfig();
 
-  // Map the client-side history to the MessageData[] format required by ai.generate.
-  // The history can come in two formats:
-  // 1. From Firestore: { role: '...', text: '...' }
-  // 2. From client state: { role: '...', text: '...' } (after the fix)
-  // This mapping correctly handles both by looking for the 'text' property.
+  // The history from Firestore/client has the format { role, text }.
+  // We must map it to the MessageData[] format: { role, content: [{ text }] }.
   const messages: MessageData[] = history.map((m: any) => ({
     role: m.role,
     content: [{ text: m.text }],
@@ -38,7 +35,7 @@ export async function chat(input: ChatInput): Promise<ChatOutput> {
   const { output, usage } = await ai.generate({
     model: agentConfig.model,
     system: agentConfig.systemPrompt,
-    prompt: messages,
+    prompt: messages, // Now the prompt has the correct format
     output: {
       schema: ChatOutputSchema,
     },
