@@ -24,23 +24,28 @@ function initializeFirebaseAdmin() {
     // --- NEW: Prioritize Base64 encoded service account for Vercel/production ---
     const base64ServiceAccount = process.env.FIREBASE_SERVICE_ACCOUNT_BASE64;
     if (base64ServiceAccount) {
+      let serviceAccount;
+      try {
         const serviceAccountJson = Buffer.from(base64ServiceAccount, 'base64').toString('utf8');
-        const serviceAccount = JSON.parse(serviceAccountJson);
+        serviceAccount = JSON.parse(serviceAccountJson);
+      } catch (e) {
+        throw new Error("Failed to decode or parse FIREBASE_SERVICE_ACCOUNT_BASE64. Make sure it's a valid Base64 encoded JSON string.");
+      }
+      
+      if (typeof serviceAccount.private_key !== 'string') {
+           throw new Error('The private_key in the decoded service account is not a string.');
+      }
 
-        if (typeof serviceAccount.private_key !== 'string') {
-             throw new Error('The private_key in the decoded service account is not a string.');
-        }
+      const app = admin.initializeApp({
+          credential: admin.credential.cert(serviceAccount),
+      }, ADMIN_APP_NAME);
 
-        const app = admin.initializeApp({
-            credential: admin.credential.cert(serviceAccount),
-        }, ADMIN_APP_NAME);
-
-        initializedProjectId = `Initialized from Base64. Project ID: ${app.options.projectId}`;
-        return {
-            db: app.firestore(),
-            auth: app.auth(),
-            admin: admin,
-        };
+      initializedProjectId = `Initialized from Base64. Project ID: ${app.options.projectId}`;
+      return {
+          db: app.firestore(),
+          auth: app.auth(),
+          admin: admin,
+      };
     }
     
     // --- Fallback to individual keys for local development ---
@@ -79,8 +84,6 @@ function initializeFirebaseAdmin() {
     let errorMessage = `Initialization failed: ${error.message}`;
     if (error.code === 'app/duplicate-app') {
         errorMessage = `Duplicate Firebase app initialization detected. App name: ${ADMIN_APP_NAME}.`;
-    } else if (error.message.includes('JSON')) {
-        errorMessage = 'Initialization failed: Service account key is not valid JSON.';
     } else if (error.code === 'auth/invalid-credential' || error.message.includes('DECODER')) {
         errorMessage = `Initialization failed: Invalid credential. Check the content and format of your Firebase Admin environment variables. Error: ${error.message}`;
     }
