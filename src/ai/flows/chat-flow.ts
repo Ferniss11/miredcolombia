@@ -11,6 +11,7 @@ import {ai} from '@/ai/genkit';
 import type { MessageData } from 'genkit';
 import { ChatInputSchema, type ChatInput, ChatOutputSchema, type ChatOutput } from '@/lib/types';
 import { getAgentConfig } from '@/services/agent.service';
+import { knowledgeBaseSearch } from '../tools/knowledge-base-search';
 
 export async function chat(input: ChatInput): Promise<ChatOutput> {
   const { history, message } = input;
@@ -22,8 +23,12 @@ export async function chat(input: ChatInput): Promise<ChatOutput> {
   const { output, usage } = await ai.generate({
     model: agentConfig.model,
     system: agentConfig.systemPrompt,
+    tools: [knowledgeBaseSearch],
     prompt: [
-        ...history.map(m => ({ role: m.role, content: [{ text: m.content as string }] })),
+        ...history.map(m => ({
+            role: m.role,
+            content: [{ text: m.content as string }],
+        }) as MessageData),
         { role: 'user', content: [{ text: message }] },
     ] as MessageData[],
     output: {
