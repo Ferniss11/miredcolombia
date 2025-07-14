@@ -1,3 +1,4 @@
+
 import { 
   createUserWithEmailAndPassword, 
   signInWithEmailAndPassword, 
@@ -12,6 +13,9 @@ import { createUserProfile } from "@/services/user.service";
 import type { UserRole } from "../types";
 
 export async function signUpWithEmail(name: string, email: string, password: string, role: UserRole) {
+  if (!auth) {
+    return { user: null, error: { code: 'auth/unavailable', message: 'Firebase Auth is not initialized.' } as AuthError };
+  }
   try {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
@@ -23,6 +27,9 @@ export async function signUpWithEmail(name: string, email: string, password: str
 }
 
 export async function signInWithEmail(email: string, password: string) {
+    if (!auth) {
+      return { user: null, error: { code: 'auth/unavailable', message: 'Firebase Auth is not initialized.' } as AuthError };
+    }
     try {
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
         return { user: userCredential.user, error: null };
@@ -32,12 +39,15 @@ export async function signInWithEmail(email: string, password: string) {
 }
 
 export async function signInWithGoogle() {
+    if (!auth) {
+      return { user: null, error: { code: 'auth/unavailable', message: 'Firebase Auth is not initialized.' } as AuthError };
+    }
     const provider = new GoogleAuthProvider();
     try {
         const result = await signInWithPopup(auth, provider);
         const user = result.user;
         
-        const userRef = doc(db, "users", user.uid);
+        const userRef = doc(db!, "users", user.uid);
         const docSnap = await getDoc(userRef);
 
         if (!docSnap.exists()) {
@@ -52,6 +62,9 @@ export async function signInWithGoogle() {
 
 
 export async function signOutUser() {
+    if (!auth) {
+      return { error: { code: 'auth/unavailable', message: 'Firebase Auth is not initialized.' } as AuthError };
+    }
     try {
         await signOut(auth);
         return { error: null };

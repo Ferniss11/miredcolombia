@@ -1,4 +1,5 @@
 
+import 'dotenv/config'; // Make sure variables from .env are loaded
 import admin from 'firebase-admin';
 
 // This needs to be a unique name for the admin app instance
