@@ -20,11 +20,33 @@ function initializeFirebaseAdmin() {
         admin: admin,
       };
     }
+
+    // --- NEW: Prioritize Base64 encoded service account for Vercel/production ---
+    const base64ServiceAccount = process.env.FIREBASE_SERVICE_ACCOUNT_BASE64;
+    if (base64ServiceAccount) {
+        const serviceAccountJson = Buffer.from(base64ServiceAccount, 'base64').toString('utf8');
+        const serviceAccount = JSON.parse(serviceAccountJson);
+
+        if (typeof serviceAccount.private_key !== 'string') {
+             throw new Error('The private_key in the decoded service account is not a string.');
+        }
+
+        const app = admin.initializeApp({
+            credential: admin.credential.cert(serviceAccount),
+        }, ADMIN_APP_NAME);
+
+        initializedProjectId = `Initialized from Base64. Project ID: ${app.options.projectId}`;
+        return {
+            db: app.firestore(),
+            auth: app.auth(),
+            admin: admin,
+        };
+    }
     
-    // Fallback to individual keys if the base64 one is not present
+    // --- Fallback to individual keys for local development ---
+    console.warn("Using fallback local .env variables for Firebase Admin. For production, set FIREBASE_SERVICE_ACCOUNT_BASE64.");
     const projectId = process.env.FIREBASE_PROJECT_ID;
     const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-    // THE FIX: Replace escaped newlines with actual newlines for Vercel/production environments.
     const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
 
     const hasAllKeys = projectId && clientEmail && privateKey;
@@ -46,7 +68,7 @@ function initializeFirebaseAdmin() {
         }),
     }, ADMIN_APP_NAME);
     
-    initializedProjectId = `Initialized named app '${ADMIN_APP_NAME}'. Project ID: ${projectId}`;
+    initializedProjectId = `Initialized from local vars. Project ID: ${projectId}`;
     return {
       db: app.firestore(),
       auth: app.auth(),
@@ -59,8 +81,8 @@ function initializeFirebaseAdmin() {
         errorMessage = `Duplicate Firebase app initialization detected. App name: ${ADMIN_APP_NAME}.`;
     } else if (error.message.includes('JSON')) {
         errorMessage = 'Initialization failed: Service account key is not valid JSON.';
-    } else if (error.code === 'auth/invalid-credential') {
-        errorMessage = `Initialization failed: Invalid credential. Check the content of your Firebase Admin environment variables. Error: ${error.message}`;
+    } else if (error.code === 'auth/invalid-credential' || error.message.includes('DECODER')) {
+        errorMessage = `Initialization failed: Invalid credential. Check the content and format of your Firebase Admin environment variables. Error: ${error.message}`;
     }
     console.error("CRITICAL FIREBASE ADMIN INITIALIZATION ERROR:", errorMessage);
     initializedProjectId = errorMessage;
