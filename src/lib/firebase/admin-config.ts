@@ -1,61 +1,103 @@
-import 'dotenv/config'; // Make sure variables from .env are loaded
+
+import { config } from 'dotenv';
+config(); // Carga las variables de entorno desde .env
+
 import admin from 'firebase-admin';
-import { getApps } from 'firebase-admin/app';
 
-// These variables are sensitive and should be stored in environment variables.
-const projectId = process.env.FIREBASE_ADMIN_PROJECT_ID;
-const clientEmail = process.env.FIREBASE_ADMIN_CLIENT_EMAIL;
-// The private key must have newlines properly escaped in the .env file.
-const privateKey = process.env.FIREBASE_ADMIN_PRIVATE_KEY?.replace(/\\n/g, '\n');
+// This needs to be a unique name for the admin app instance
+const ADMIN_APP_NAME = 'ColomboEspanolaAdmin';
+let initializedProjectId = 'Not initialized';
 
-/**
- * Initializes the Firebase Admin SDK if not already initialized.
- * This function is designed to be robust for serverless environments like Next.js.
- * Throws a detailed error if initialization fails.
- * @returns An object with the instances of Firestore (db) and Auth (auth).
- */
-function getAdminServices() {
-  // If the app is already initialized, return its services.
-  if (getApps().length > 0) {
-    const app = admin.app();
-    return {
-      db: app.firestore(),
-      auth: app.auth(),
-    };
-  }
-
-  // If no app is initialized, check for necessary credentials.
-  const missingKeys = [];
-  if (!projectId) missingKeys.push('FIREBASE_ADMIN_PROJECT_ID');
-  if (!clientEmail) missingKeys.push('FIREBASE_ADMIN_CLIENT_EMAIL');
-  if (!privateKey) missingKeys.push('FIREBASE_ADMIN_PRIVATE_KEY');
-  
-  if (missingKeys.length > 0) {
-    throw new Error(`CRITICAL: Missing Firebase Admin environment variables: ${missingKeys.join(', ')}`);
-  }
-
-  // Create and initialize a new app.
+function initializeFirebaseAdmin() {
   try {
-    const app = admin.initializeApp({
-      credential: admin.credential.cert({
-        projectId,
-        clientEmail,
-        privateKey,
-      }),
-    });
+    // Check if our specific named app is already initialized.
+    const existingApp = admin.apps.find(app => app?.name === ADMIN_APP_NAME);
+    if (existingApp) {
+      initializedProjectId = `Re-accessed named app '${ADMIN_APP_NAME}'. Project ID: ${existingApp.options.projectId || 'N/A'}`;
+      return {
+        db: existingApp.firestore(),
+        auth: existingApp.auth(),
+        admin: admin,
+      };
+    }
 
+    // --- NEW: Prioritize Base64 encoded service account for Vercel/production ---
+    const base64ServiceAccount = process.env.FIREBASE_SERVICE_ACCOUNT_BASE64;
+    if (base64ServiceAccount) {
+      let serviceAccount;
+      try {
+        const serviceAccountJson = Buffer.from(base64ServiceAccount, 'base64').toString('utf8');
+        serviceAccount = JSON.parse(serviceAccountJson);
+      } catch (e) {
+        throw new Error("Failed to decode or parse FIREBASE_SERVICE_ACCOUNT_BASE64. Make sure it's a valid Base64 encoded JSON string.");
+      }
+      
+      if (typeof serviceAccount.private_key !== 'string') {
+           throw new Error('The private_key in the decoded service account is not a string.');
+      }
+
+      const app = admin.initializeApp({
+          credential: admin.credential.cert(serviceAccount),
+      }, ADMIN_APP_NAME);
+
+      initializedProjectId = `Initialized from Base64. Project ID: ${app.options.projectId}`;
+      return {
+          db: app.firestore(),
+          auth: app.auth(),
+          admin: admin,
+      };
+    }
+    
+    // --- Fallback to individual keys for local development ---
+    console.warn("Using fallback local .env variables for Firebase Admin. For production, set FIREBASE_SERVICE_ACCOUNT_BASE64.");
+    const projectId = process.env.FIREBASE_PROJECT_ID;
+    const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+    const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
+
+    const hasAllKeys = projectId && clientEmail && privateKey;
+
+    if (!hasAllKeys) {
+        const missingKeys = [];
+        if (!projectId) missingKeys.push('FIREBASE_PROJECT_ID');
+        if (!clientEmail) missingKeys.push('FIREBASE_CLIENT_EMAIL');
+        if (!privateKey) missingKeys.push('FIREBASE_PRIVATE_KEY');
+        initializedProjectId = `CRITICAL: Missing Firebase Admin environment variables: ${missingKeys.join(', ')}`;
+        throw new Error(initializedProjectId);
+    }
+
+    const app = admin.initializeApp({
+        credential: admin.credential.cert({
+            projectId,
+            clientEmail,
+            privateKey,
+        }),
+    }, ADMIN_APP_NAME);
+    
+    initializedProjectId = `Initialized from local vars. Project ID: ${projectId}`;
     return {
       db: app.firestore(),
       auth: app.auth(),
+      admin: admin,
     };
-  } catch (error) {
-    if (error instanceof Error) {
-      throw new Error(`CRITICAL: Firebase Admin initialization failed: ${error.message}`);
+
+  } catch (error: any) {
+    let errorMessage = `Initialization failed: ${error.message}`;
+    if (error.code === 'app/duplicate-app') {
+        errorMessage = `Duplicate Firebase app initialization detected. App name: ${ADMIN_APP_NAME}.`;
+    } else if (error.code === 'auth/invalid-credential' || error.message.includes('DECODER')) {
+        errorMessage = `Initialization failed: Invalid credential. Check the content and format of your Firebase Admin environment variables. Error: ${error.message}`;
     }
-    throw new Error('An unknown error occurred during Firebase Admin initialization.');
+    console.error("CRITICAL FIREBASE ADMIN INITIALIZATION ERROR:", errorMessage);
+    initializedProjectId = errorMessage;
+    return {
+      db: null,
+      auth: null,
+      admin: null,
+    };
   }
 }
 
-// Export a single function to get the services. This ensures the initialization logic
-// is run only when the services are first requested.
-export { getAdminServices };
+// Run the initialization and export the results.
+const { db: adminDb, auth: adminAuth, admin: adminInstance } = initializeFirebaseAdmin();
+
+export { adminDb, adminAuth, adminInstance, initializedProjectId };

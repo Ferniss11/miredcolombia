@@ -1,13 +1,19 @@
 
 'use server';
 
-import { FieldValue } from "firebase-admin/firestore";
+import { adminDb, adminInstance } from "@/lib/firebase/admin-config";
 import type { ChatSession, ChatMessage, TokenUsage, ChatSessionWithTokens } from "@/lib/types";
-import { getAdminServices } from "@/lib/firebase/admin-config";
 
-const { db } = getAdminServices();
-const chatSessionsCollection = db.collection("chatSessions");
+const FieldValue = adminInstance?.firestore.FieldValue;
 
+
+function getDbInstance() {
+    if (!adminDb) {
+        // This will now correctly use the null-checked instance from admin-config
+        throw new Error("Firebase Admin SDK is not initialized. Chat service is unavailable.");
+    }
+    return adminDb;
+}
 
 function serializeMessage(doc: FirebaseFirestore.DocumentSnapshot): ChatMessage {
     const data = doc.data() as any;
@@ -41,8 +47,9 @@ function serializeSession(doc: FirebaseFirestore.DocumentSnapshot): ChatSessionW
  * @returns The chat session object if found, otherwise null.
  */
 export async function findSessionByPhone(phone: string): Promise<(ChatSession & { id: string }) | null> {
+  const db = getDbInstance();
   try {
-    const querySnapshot = await chatSessionsCollection
+    const querySnapshot = await db.collection("chatSessions")
       .where('userPhone', '==', phone)
       .orderBy('createdAt', 'desc')
       .limit(1)
@@ -76,8 +83,9 @@ export async function findSessionByPhone(phone: string): Promise<(ChatSession & 
  * @returns An array of chat messages.
  */
 export async function getChatHistory(sessionId: string): Promise<ChatMessage[]> {
+  const db = getDbInstance();
   try {
-    const messagesSnapshot = await chatSessionsCollection
+    const messagesSnapshot = await db.collection("chatSessions")
       .doc(sessionId)
       .collection('messages')
       .orderBy('timestamp', 'asc')
@@ -103,8 +111,10 @@ export async function getChatHistory(sessionId: string): Promise<ChatMessage[]> 
  * @returns The ID of the newly created chat session.
  */
 export async function startChatSession(sessionData: Omit<ChatSession, 'id' | 'createdAt'>): Promise<string> {
+  const db = getDbInstance();
+  if (!FieldValue) throw new Error("Firebase Admin SDK is not fully initialized.");
   try {
-    const docRef = await chatSessionsCollection.add({
+    const docRef = await db.collection("chatSessions").add({
       ...sessionData,
       createdAt: FieldValue.serverTimestamp(),
       totalTokens: 0,
@@ -128,19 +138,27 @@ export async function startChatSession(sessionData: Omit<ChatSession, 'id' | 'cr
  * @param usage - Optional token usage data from the AI call.
  */
 export async function saveMessage(sessionId: string, messageData: Omit<ChatMessage, 'id' | 'timestamp'>, usage?: TokenUsage): Promise<void> {
+  const db = getDbInstance();
+  if (!FieldValue) throw new Error("Firebase Admin SDK is not fully initialized.");
   try {
-    const sessionRef = chatSessionsCollection.doc(sessionId);
+    const sessionRef = db.collection("chatSessions").doc(sessionId);
     const messagesCollection = sessionRef.collection('messages');
     
-    // Use a transaction to ensure atomicity
     await db.runTransaction(async (transaction) => {
-        // 1. Add the new message
         const newMessageRef = messagesCollection.doc();
-        transaction.set(newMessageRef, {
+        
+        // Build the message object dynamically to avoid undefined fields
+        const finalMessageObject: any = {
             ...messageData,
             timestamp: FieldValue.serverTimestamp(),
-            usage, // Store token usage with the AI's response message
-        });
+        };
+
+        if (usage) {
+            finalMessageObject.usage = usage;
+        }
+
+        // 1. Add the new message
+        transaction.set(newMessageRef, finalMessageObject);
 
         // 2. Update the aggregate counts on the session document
         const sessionUpdate: { [key: string]: any } = {
@@ -169,7 +187,8 @@ export async function saveMessage(sessionId: string, messageData: Omit<ChatMessa
  * Retrieves all chat sessions with their aggregated token data.
  */
 export async function getAllChatSessions(): Promise<ChatSessionWithTokens[]> {
-    const snapshot = await chatSessionsCollection.orderBy('createdAt', 'desc').get();
+    const db = getDbInstance();
+    const snapshot = await db.collection("chatSessions").orderBy('createdAt', 'desc').get();
     if (snapshot.empty) {
         return [];
     }
@@ -188,7 +207,8 @@ export async function getAllChatSessions(): Promise<ChatSessionWithTokens[]> {
  * Retrieves a single chat session by its ID.
  */
 export async function getChatSessionById(sessionId: string): Promise<ChatSessionWithTokens | null> {
-  const docRef = chatSessionsCollection.doc(sessionId);
+  const db = getDbInstance();
+  const docRef = db.collection("chatSessions").doc(sessionId);
   const docSnap = await docRef.get();
 
   if (!docSnap.exists) {

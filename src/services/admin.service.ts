@@ -1,5 +1,5 @@
 
-import { getAdminServices } from "@/lib/firebase/admin-config";
+import { adminDb } from "@/lib/firebase/admin-config";
 import type { UserProfile } from "@/lib/types";
 
 /**
@@ -9,7 +9,9 @@ import type { UserProfile } from "@/lib/types";
  * @returns The user profile object or null if not found.
  */
 export async function getUserProfileByUid(uid: string): Promise<UserProfile | null> {
-    const { db: adminDb } = getAdminServices(); // Get the admin db instance
+    if (!adminDb) {
+        throw new Error("Firebase Admin SDK is not initialized. Check server environment variables.");
+    }
     
     const userRef = adminDb.collection("users").doc(uid);
     const userSnap = await userRef.get();

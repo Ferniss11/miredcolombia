@@ -16,8 +16,13 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { MessageCircle, X, Send, User, Bot, Loader2, Sparkles, Phone } from 'lucide-react';
 import Link from 'next/link';
 import { startChatSessionAction, postMessageAction } from '@/lib/chat-actions';
-import type { ChatMessage } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
+
+type ClientMessage = {
+    role: 'user' | 'model';
+    text: string;
+};
+
 
 const formSchema = z.object({
   userName: z.string().min(2, { message: 'El nombre es obligatorio.' }),
@@ -30,7 +35,7 @@ const formSchema = z.object({
 export default function ChatWidget() {
   const [isOpen, setIsOpen] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [messages, setMessages] = useState<ClientMessage[]>([]);
   const [isAiResponding, setIsAiResponding] = useState(false);
   const [currentMessage, setCurrentMessage] = useState('');
   const { toast } = useToast();
@@ -52,7 +57,6 @@ export default function ChatWidget() {
     const result = await startChatSessionAction({ userName: values.userName, userPhone: values.userPhone });
     
     if (result.isIndexError) {
-        // Temporary solution to display full error for debugging
         sessionStorage.setItem('fullError', result.error || 'Unknown index error.');
         router.push('/errors');
         return;
@@ -60,13 +64,7 @@ export default function ChatWidget() {
 
     if (result.success && result.sessionId) {
       setSessionId(result.sessionId);
-      
-      const initialMessages = result.history?.length 
-        ? result.history 
-        : [{ role: 'model', text: '¡Hola! Soy tu asistente de inmigración para España. ¿Cómo puedo ayudarte hoy?', timestamp: new Date().toISOString() }];
-
-      setMessages(initialMessages as ChatMessage[]);
-
+      setMessages(result.history || []);
     } else {
       toast({ variant: 'destructive', title: 'Error', description: result.error || 'No se pudo iniciar el chat. Por favor, inténtalo de nuevo.' });
     }
@@ -76,21 +74,24 @@ export default function ChatWidget() {
     e.preventDefault();
     if (!currentMessage.trim() || !sessionId || isAiResponding) return;
 
-    const userMessage: ChatMessage = { role: 'user', text: currentMessage.trim(), timestamp: new Date().toISOString() };
-    setMessages((prev) => [...prev, userMessage]);
+    const userMessage: ClientMessage = { role: 'user', text: currentMessage.trim() };
+    const newMessages = [...messages, userMessage];
+    setMessages(newMessages);
     setCurrentMessage('');
     setIsAiResponding(true);
 
-    const history = messages.map(m => ({ role: m.role, content: m.text }));
-
-    const result = await postMessageAction({ sessionId, message: userMessage.text, history });
+    const result = await postMessageAction({ 
+        sessionId, 
+        message: userMessage.text, 
+        history: messages // pass the history *before* adding the new user message
+    });
     
     if (result.success && result.response) {
-      const aiMessage: ChatMessage = { role: 'model', text: result.response, timestamp: new Date().toISOString() };
+      const aiMessage: ClientMessage = { role: 'model', text: result.response };
       setMessages((prev) => [...prev, aiMessage]);
     } else {
       toast({ variant: 'destructive', title: 'Error', description: result.error });
-       const errorResponseMessage: ChatMessage = { role: 'model', text: 'Lo siento, he tenido un problema y no puedo responder ahora mismo.', timestamp: new Date().toISOString() };
+       const errorResponseMessage: ClientMessage = { role: 'model', text: 'Lo siento, he tenido un problema y no puedo responder ahora mismo.' };
       setMessages((prev) => [...prev, errorResponseMessage]);
     }
     setIsAiResponding(false);
@@ -154,25 +155,21 @@ export default function ChatWidget() {
         <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
           <div className="space-y-4">
             {messages.map((msg, index) => (
-              <div key={index} className={cn("flex items-end gap-2", msg.role === 'user' ? 'justify-end' : 'justify-start')}>
-                {msg.role === 'model' && (
-                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground">
-                    <Bot size={20} />
-                  </div>
+              <div key={index} className={cn("flex items-start gap-3", msg.role === 'user' ? 'justify-end' : 'justify-start')}>
+                 {msg.role === 'model' && (
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground">
+                        <Bot size={20} />
+                    </div>
                 )}
-                <div
-                  className={cn(
-                    'max-w-xs md:max-w-md rounded-xl px-4 py-2 text-sm md:text-base break-words',
-                    msg.role === 'user'
-                      ? 'bg-primary text-primary-foreground rounded-br-none'
-                      : 'bg-muted rounded-bl-none'
-                  )}
-                  dangerouslySetInnerHTML={{ __html: msg.text.replace(/\n/g, '<br />') }}
-                />
+                <div className="flex flex-col gap-1 w-full max-w-lg">
+                    <div className={cn('p-3 rounded-lg', msg.role === 'user' ? 'bg-blue-100 dark:bg-blue-900/50 ml-auto' : 'bg-gray-100 dark:bg-gray-800')}>
+                        <p className="text-sm" dangerouslySetInnerHTML={{ __html: msg.text.replace(/\n/g, '<br />') }} />
+                    </div>
+                </div>
                  {msg.role === 'user' && (
-                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-muted flex items-center justify-center">
-                    <User size={20} />
-                  </div>
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+                        <User size={20} />
+                    </div>
                 )}
               </div>
             ))}

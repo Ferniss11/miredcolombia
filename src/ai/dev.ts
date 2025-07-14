@@ -1,6 +1,3 @@
-import { config } from 'dotenv';
-config();
-
 import '@/ai/flows/generate-blog-ideas.ts';
 import '@/ai/flows/generate-blog-title.ts';
 import '@/ai/flows/generate-intelligent-article.ts';

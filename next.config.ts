@@ -1,3 +1,7 @@
+
+import { config } from 'dotenv';
+config(); // Carga las variables de entorno desde .env
+
 import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
@@ -21,12 +25,22 @@ const nextConfig: NextConfig = {
         hostname: 'images.unsplash.com',
         port: '',
         pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'firebasestorage.googleapis.com',
+        port: '',
+        pathname: '/**',
       }
     ],
   },
-  experimental: {
-    serverComponentsExternalPackages: ['firebase-admin'],
+  webpack: (config, { isServer }) => {
+    if (isServer) {
+        config.externals.push('@opentelemetry/exporter-jaeger');
+    }
+    return config;
   },
+  serverExternalPackages: ['firebase-admin'],
 };
 
 export default nextConfig;

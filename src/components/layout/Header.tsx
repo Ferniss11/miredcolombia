@@ -4,7 +4,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { Menu, Feather, LogOut, User, LogIn, MessageCircle } from "lucide-react";
+import { Menu, LogOut, User, LogIn, MessageCircle } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
 import * as React from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import Image from 'next/image';
 
 const navLinks = [
   { href: "/", label: "Inicio" },
@@ -71,7 +72,7 @@ export default function Header() {
                     <SheetDescription>Navegación principal del sitio web</SheetDescription>
                   </SheetHeader>
                 <Link href="/" onClick={() => setOpen(false)} className="flex items-center space-x-2 mb-4">
-                  <Feather className="h-6 w-6 text-primary" />
+                  <Image src="https://firebasestorage.googleapis.com/v0/b/colombia-en-esp.firebasestorage.app/o/web%2FLOGO.png?alt=media&token=86f8e9f6-587a-4cb6-bae1-15b0c815f22b" alt="Colombia en España Logo" width={32} height={32} />
                   <span className="font-bold font-headline">Colombia en España</span>
                 </Link>
                 <nav className="flex flex-col space-y-4">
@@ -111,7 +112,7 @@ export default function Header() {
             </Sheet>
           </div>
           <Link href="/" className="hidden md:flex items-center space-x-2">
-            <Feather className="h-6 w-6 text-primary" />
+            <Image src="https://firebasestorage.googleapis.com/v0/b/colombia-en-esp.firebasestorage.app/o/web%2FLOGO.png?alt=media&token=86f8e9f6-587a-4cb6-bae1-15b0c815f22b" alt="Colombia en España Logo" width={32} height={32} />
             <span className="hidden font-bold sm:inline-block font-headline">Colombia en España</span>
           </Link>
           <nav className="hidden items-center space-x-6 md:flex">

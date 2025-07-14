@@ -1,11 +1,17 @@
-import { getAdminServices } from "@/lib/firebase/admin-config";
+
+import { adminDb, adminInstance } from "@/lib/firebase/admin-config";
 import type { Customer } from "@/lib/types";
-import { FieldValue } from "firebase-admin/firestore";
+
+const FieldValue = adminInstance?.firestore.FieldValue;
 
 type CustomerData = Omit<Customer, 'id' | 'createdAt'>;
 
-const { db } = getAdminServices();
-const customersCollection = db.collection("customers");
+function getDbInstance() {
+    if (!adminDb) {
+        throw new Error("Firebase Admin SDK is not initialized. Customer service is unavailable.");
+    }
+    return adminDb;
+}
 
 /**
  * Finds a customer by their email address.
@@ -13,7 +19,8 @@ const customersCollection = db.collection("customers");
  * @returns The customer document ID if found, otherwise null.
  */
 async function findCustomerByEmail(email: string): Promise<string | null> {
-    const q = customersCollection.where("email", "==", email).limit(1);
+    const db = getDbInstance();
+    const q = db.collection("customers").where("email", "==", email).limit(1);
     const querySnapshot = await q.get();
 
     if (!querySnapshot.empty) {
@@ -28,8 +35,10 @@ async function findCustomerByEmail(email: string): Promise<string | null> {
  * @returns The ID of the newly created customer document.
  */
 async function createCustomer(data: CustomerData): Promise<string> {
+    const db = getDbInstance();
+    if (!FieldValue) throw new Error("Firebase Admin SDK is not fully initialized.");
     try {
-        const docRef = await customersCollection.add({
+        const docRef = await db.collection("customers").add({
             ...data,
             createdAt: FieldValue.serverTimestamp(),
         });

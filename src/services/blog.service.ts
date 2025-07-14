@@ -1,13 +1,11 @@
 
-import { FieldValue } from "firebase-admin/firestore";
+import { adminDb, adminInstance } from "@/lib/firebase/admin-config";
 import type { BlogPost } from "@/lib/types";
-import { getAdminServices } from "@/lib/firebase/admin-config";
+
+const FieldValue = adminInstance?.firestore.FieldValue;
 
 // This type uses a subset of the full BlogPost type for creation
 type BlogPostData = Omit<BlogPost, 'id' | 'author' | 'authorId' | 'date' | 'createdAt' | 'updatedAt'>;
-
-const { db } = getAdminServices();
-const postsCollection = db.collection("posts");
 
 /**
  * Creates a new blog post document in the 'posts' collection in Firestore.
@@ -18,8 +16,11 @@ const postsCollection = db.collection("posts");
  * @returns The ID of the newly created blog post document.
  */
 export async function createBlogPost(postData: BlogPostData, authorId: string, authorName: string): Promise<string> {
+  if (!adminDb || !FieldValue) {
+      throw new Error("Firebase Admin SDK is not initialized. Cannot create blog post.");
+  }
   try {
-    const docRef = await postsCollection.add({
+    const docRef = await adminDb.collection("posts").add({
       ...postData,
       authorId: authorId,
       author: authorName,
@@ -61,7 +62,11 @@ function serializePost(doc: FirebaseFirestore.DocumentSnapshot): BlogPost {
  * Retrieves all blog posts from Firestore, ordered by creation date.
  */
 export async function getBlogPosts(): Promise<BlogPost[]> {
-    const snapshot = await postsCollection.orderBy('createdAt', 'desc').get();
+    if (!adminDb) {
+      console.warn("Firebase Admin SDK not initialized. Skipping getBlogPosts.");
+      return [];
+    }
+    const snapshot = await adminDb.collection("posts").orderBy('createdAt', 'desc').get();
     if (snapshot.empty) {
         return [];
     }
@@ -72,7 +77,11 @@ export async function getBlogPosts(): Promise<BlogPost[]> {
  * Retrieves all published blog posts from Firestore.
  */
 export async function getPublishedBlogPosts(): Promise<{ posts: BlogPost[], error?: null }> {
-    const snapshot = await postsCollection.where('status', '==', 'Published').orderBy('date', 'desc').get();
+    if (!adminDb) {
+      console.warn("Firebase Admin SDK not initialized. Skipping getPublishedBlogPosts.");
+      return { posts: [] };
+    }
+    const snapshot = await adminDb.collection("posts").where('status', '==', 'Published').orderBy('date', 'desc').get();
     if (snapshot.empty) {
         return { posts: [] };
     }
@@ -84,7 +93,11 @@ export async function getPublishedBlogPosts(): Promise<{ posts: BlogPost[], erro
  * Retrieves a single blog post by its slug.
  */
 export async function getBlogPostBySlug(slug: string): Promise<{ post: BlogPost | null, error?: null }> {
-    const snapshot = await postsCollection.where('slug', '==', slug).limit(1).get();
+    if (!adminDb) {
+      console.warn("Firebase Admin SDK not initialized. Skipping getBlogPostBySlug.");
+      return { post: null };
+    }
+    const snapshot = await adminDb.collection("posts").where('slug', '==', slug).limit(1).get();
     if (snapshot.empty) {
         return { post: null };
     }
@@ -96,7 +109,11 @@ export async function getBlogPostBySlug(slug: string): Promise<{ post: BlogPost 
  * Retrieves a single blog post by its ID.
  */
 export async function getBlogPostById(id: string): Promise<{ post: BlogPost | null, error?: null }> {
-    const docSnap = await postsCollection.doc(id).get();
+    if (!adminDb) {
+      console.warn("Firebase Admin SDK not initialized. Skipping getBlogPostById.");
+      return { post: null };
+    }
+    const docSnap = await adminDb.collection("posts").doc(id).get();
     if (!docSnap.exists) {
         return { post: null };
     }
@@ -108,7 +125,10 @@ export async function getBlogPostById(id: string): Promise<{ post: BlogPost | nu
  * Updates a blog post document.
  */
 export async function updateBlogPost(id: string, data: Partial<BlogPost>): Promise<void> {
-    const postRef = postsCollection.doc(id);
+    if (!adminDb || !FieldValue) {
+      throw new Error("Firebase Admin SDK is not initialized. Cannot update blog post.");
+    }
+    const postRef = adminDb.collection("posts").doc(id);
     await postRef.update({
         ...data,
         updatedAt: FieldValue.serverTimestamp(),
@@ -119,5 +139,8 @@ export async function updateBlogPost(id: string, data: Partial<BlogPost>): Promi
  * Deletes a blog post document.
  */
 export async function deleteBlogPost(id: string): Promise<void> {
-    await postsCollection.doc(id).delete();
+    if (!adminDb) {
+      throw new Error("Firebase Admin SDK is not initialized. Cannot delete blog post.");
+    }
+    await adminDb.collection("posts").doc(id).delete();
 }

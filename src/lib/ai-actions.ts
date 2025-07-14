@@ -7,6 +7,7 @@ import { generateBlogTitle } from '@/ai/flows/generate-blog-title';
 import { generateIntelligentArticle } from '@/ai/flows/generate-intelligent-article';
 import { unsplashSearch } from '@/ai/tools/unsplash-search';
 import { GenerateArticleInputSchema, GenerateBlogIdeasInputSchema, GenerateBlogTitleInputSchema, type GenerateArticleInput, type GenerateBlogIdeasInput, type GenerateBlogTitleInput, type IntelligentArticle } from '@/lib/types';
+import { initializedProjectId } from '@/lib/firebase/admin-config';
 
 /**
  * Enriches a generated article with actual image URLs from Unsplash.
@@ -109,5 +110,15 @@ export async function debugUnsplashSearchAction(query: string) {
     console.error('[Debug Unsplash Action] Error:', error);
     const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
     return { error: errorMessage };
+  }
+}
+
+export async function debugAdminInitAction(): Promise<{ status: string }> {
+  try {
+    // The simple act of importing this will trigger the initialization logic.
+    // The `initializedProjectId` will contain the success or failure message.
+    return { status: initializedProjectId };
+  } catch (e: any) {
+    return { status: `Caught an exception during import: ${e.message}` };
   }
 }

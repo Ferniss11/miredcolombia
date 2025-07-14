@@ -2,7 +2,6 @@ import { Button } from "@/components/ui/button";
 import { Package, MessageCircle } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import ColombiaLogo from "@/components/layout/ColombiaLogo";
 
 export default function HeroSection() {
     return (
@@ -17,7 +16,13 @@ export default function HeroSection() {
             />
             <div className="absolute inset-0 bg-black/60 z-0" />
             <div className="relative z-10 container px-4 md:px-6 text-center flex flex-col items-center">
-                <ColombiaLogo />
+                <Image
+                  src="https://firebasestorage.googleapis.com/v0/b/colombia-en-esp.firebasestorage.app/o/web%2FLOGO.png?alt=media&token=86f8e9f6-587a-4cb6-bae1-15b0c815f22b"
+                  width={100}
+                  height={100}
+                  alt="Colombia en España Logo"
+                  className="mb-6 bg-white p-2 rounded-2xl shadow-lg"
+                />
                 <h1 className="text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl lg:text-7xl font-headline">
                     Tu viaje a España <br /><span className="text-primary">empieza aquí</span>
                 </h1>

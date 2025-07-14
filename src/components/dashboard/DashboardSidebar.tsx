@@ -11,7 +11,6 @@ import {
   SidebarFooter,
 } from "@/components/ui/sidebar";
 import {
-  Feather,
   LayoutGrid,
   User,
   LogOut,
@@ -27,6 +26,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { signOutUser } from "@/lib/firebase/auth";
 import { useToast } from "@/hooks/use-toast";
+import Image from 'next/image';
 
 export function DashboardSidebar() {
   const pathname = usePathname();
@@ -67,7 +67,7 @@ export function DashboardSidebar() {
     <Sidebar>
       <SidebarHeader>
         <div className="flex items-center gap-2">
-          <Feather className="w-8 h-8 text-primary" />
+           <Image src="https://firebasestorage.googleapis.com/v0/b/colombia-en-esp.firebasestorage.app/o/web%2FLOGO.png?alt=media&token=86f8e9f6-587a-4cb6-bae1-15b0c815f22b" alt="Colombia en España Logo" width={40} height={40} />
           <div className="flex flex-col">
             <h3 className="font-semibold text-lg font-headline">Colombia-ES</h3>
             <p className="text-xs text-muted-foreground">Panel de {getRoleDisplayName()}</p>
