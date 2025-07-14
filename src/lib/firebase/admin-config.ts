@@ -44,11 +44,14 @@ function getAdminServices() {
     };
 
   } catch (error) {
-    if (error instanceof Error && error.message.includes('Firebase Admin environment variables')) {
-       console.warn("ADVERTENCIA: Las variables de entorno del Firebase Admin SDK no están configuradas. Las funciones del lado del servidor que dependen de Firebase Admin fallarán. Esto es normal para el desarrollo local si no se necesita acceso de administrador.");
-    } else {
-       console.error("ERROR CRÍTICO: Falló la inicialización del Firebase Admin SDK:", error);
+    // For production environments (like Vercel), we want to fail fast if the keys are missing.
+    if (process.env.NODE_ENV === 'production') {
+        console.error("CRITICAL: Failed to initialize Firebase Admin SDK in production:", error);
+        throw error;
     }
+    
+    // For local development, we warn but don't crash the entire application.
+    console.warn("ADVERTENCIA: Las variables de entorno del Firebase Admin SDK no están configuradas. Las funciones del lado del servidor que dependen de Firebase Admin fallarán. Esto es normal para el desarrollo local si no se necesita acceso de administrador.");
     
     // Return nulls so the app doesn't crash on startup
     return { db: null, auth: null, admin: null };
