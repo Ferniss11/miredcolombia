@@ -81,7 +81,7 @@ export async function postMessageAction(input: z.infer<typeof postMessageSchema>
 
   } catch (error) {
     console.error("Error posting message:", error);
-    const errorMessage = error instanceof Error ? error.message : "Un error desconocido ocurrió.";
+    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
     return { success: false, error: `Error de IA: ${errorMessage}` };
   }
 }
