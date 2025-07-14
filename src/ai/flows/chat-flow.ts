@@ -7,13 +7,14 @@
  */
 
 import {ai} from '@/ai/genkit';
-import type { ChatInput, ChatOutput } from '@/lib/types';
+import type { ChatInput, ChatOutput, ChatMessage } from '@/lib/types';
 import { ChatOutputSchema } from '@/lib/types';
 import { getAgentConfig } from '@/services/agent.service';
+import type { MessageData } from 'genkit';
 
 /**
  * The main function for handling chat conversations.
- * It uses the 'messages' parameter as specified in the Genkit documentation for multi-turn conversations.
+ * It transforms the incoming chat history into the format required by `ai.generate`.
  * @param input The chat input containing the history and the new message.
  * @returns A promise that resolves to the AI's response and token usage.
  */
@@ -23,22 +24,22 @@ export async function chat(input: ChatInput): Promise<ChatOutput> {
   // 1. Get the latest agent configuration from Firestore
   const agentConfig = await getAgentConfig();
 
-  // 2. Construct the message history in the correct format for the 'messages' parameter.
-  // The content for each message is a simple string, as per Genkit documentation.
-  const messages = history.map((m: any) => ({
+  // 2. Transform the history (array of {role, text}) into the required MessageData[] format.
+  // The `content` must be an array of parts, e.g., [{ text: '...' }].
+  // This resolves the "message.content.map is not a function" error.
+  const genkitMessages: MessageData[] = history.map((m: ChatMessage) => ({
     role: m.role,
-    // Use `m.text` or `m.content` for compatibility, ensuring content is a string.
-    content: m.text || m.content, 
+    content: [{ text: m.text }], 
   }));
 
-  // Add the current user message to the conversation history
-  messages.push({ role: 'user', content: message });
+  // Add the current user message to the conversation history, in the correct format.
+  genkitMessages.push({ role: 'user', content: [{ text: message }] });
   
-  // 3. Make the generate call using the 'messages' parameter for multi-turn chat.
+  // 3. Make the generate call using the 'prompt' parameter for chat conversations with MessageData[].
   const { output, usage } = await ai.generate({
     model: agentConfig.model,
     system: agentConfig.systemPrompt,
-    messages: messages, // Use the 'messages' parameter for chat conversations.
+    prompt: genkitMessages, // Use the 'prompt' parameter with the correctly formatted MessageData array.
     output: {
       schema: ChatOutputSchema,
     },
