@@ -4,8 +4,6 @@
 import { getAdminServices } from "@/lib/firebase/admin-config";
 import type { AgentConfig } from "@/lib/types";
 
-const { db } = getAdminServices();
-const configCollection = db.collection("agentConfig");
 const MAIN_CONFIG_DOC_ID = 'main';
 
 const DEFAULT_SYSTEM_PROMPT = `
@@ -48,7 +46,16 @@ Eres una inteligencia artificial especializada exclusivamente en inmigración de
  * If no configuration exists, it returns a default configuration.
  */
 export async function getAgentConfig(): Promise<AgentConfig> {
-  const docRef = configCollection.doc(MAIN_CONFIG_DOC_ID);
+  const { db } = getAdminServices();
+  if (!db) {
+    console.warn("Agent config using default because Firebase Admin SDK is not initialized.");
+    return {
+      model: 'googleai/gemini-1.5-flash-latest',
+      systemPrompt: DEFAULT_SYSTEM_PROMPT,
+    };
+  }
+
+  const docRef = db.collection("agentConfig").doc(MAIN_CONFIG_DOC_ID);
   const docSnap = await docRef.get();
 
   if (docSnap.exists) {
@@ -67,6 +74,10 @@ export async function getAgentConfig(): Promise<AgentConfig> {
  * @param config The agent configuration to save.
  */
 export async function saveAgentConfig(config: AgentConfig): Promise<void> {
-  const docRef = configCollection.doc(MAIN_CONFIG_DOC_ID);
+  const { db } = getAdminServices();
+  if (!db) {
+      throw new Error("Firebase Admin SDK is not initialized. Cannot save agent config.");
+  }
+  const docRef = db.collection("agentConfig").doc(MAIN_CONFIG_DOC_ID);
   await docRef.set(config, { merge: true });
 }
