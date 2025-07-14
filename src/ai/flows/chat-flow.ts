@@ -7,7 +7,7 @@
  */
 
 import {ai} from '@/ai/genkit';
-import type { ChatInput, ChatOutput, ChatMessage } from '@/lib/types';
+import type { ChatInput, ChatMessage } from '@/lib/types';
 import { ChatOutputSchema } from '@/lib/types';
 import { getAgentConfig } from '@/services/agent.service';
 import type { MessageData } from 'genkit';
@@ -18,7 +18,7 @@ import type { MessageData } from 'genkit';
  * @param input The chat input containing the history and the new message.
  * @returns A promise that resolves to the AI's response and token usage.
  */
-export async function chat(input: ChatInput): Promise<ChatOutput> {
+export async function chat(input: ChatInput) {
   const { history, message } = input;
   
   // 1. Get the latest agent configuration from Firestore
@@ -26,7 +26,7 @@ export async function chat(input: ChatInput): Promise<ChatOutput> {
 
   // 2. Transform the history (array of {role, text}) into the required MessageData[] format.
   // The `content` must be an array of parts, e.g., [{ text: '...' }].
-  // This resolves the "message.content.map is not a function" error.
+  // This resolves the "Unsupported Part type" error.
   const genkitMessages: MessageData[] = history.map((m: ChatMessage) => ({
     role: m.role,
     content: [{ text: m.text }], 
