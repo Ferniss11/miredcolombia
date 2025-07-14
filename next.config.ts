@@ -24,6 +24,13 @@ const nextConfig: NextConfig = {
       }
     ],
   },
+  webpack: (config, { isServer }) => {
+    // Excluir @opentelemetry/exporter-jaeger del bundle
+    if (isServer) {
+        config.externals.push('@opentelemetry/exporter-jaeger');
+    }
+    return config;
+  },
   serverExternalPackages: ['firebase-admin'],
 };
 
