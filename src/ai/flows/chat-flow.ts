@@ -8,10 +8,11 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import { ChatOutputSchema, TokenUsageSchema } from '@/lib/types';
+import { ChatOutputSchema } from '@/lib/types';
 
 // Define the input schema for this simplified chat function
 const ChatFlowInputSchema = z.object({
+    model: z.string().describe("The AI model to use for the response (e.g., 'googleai/gemini-1.5-flash-latest')."),
     systemPrompt: z.string().describe("The system prompt that defines the AI's personality and instructions."),
     prompt: z.string().describe("The user's message, potentially including the conversation history as a single string."),
 });
@@ -24,12 +25,12 @@ type ChatFlowInput = z.infer<typeof ChatFlowInputSchema>;
  */
 export async function chat(input: ChatFlowInput) {
   try {
-    const { systemPrompt, prompt } = ChatFlowInputSchema.parse(input);
+    const { model, systemPrompt, prompt } = ChatFlowInputSchema.parse(input);
 
     // Call the AI with a clear system prompt and a simple text prompt.
     // This avoids the "Unsupported Part type" error by not sending complex objects.
     const { output, usage } = await ai.generate({
-      model: 'googleai/gemini-1.5-flash-latest', // Or get from agentConfig if needed
+      model: model,
       system: systemPrompt,
       prompt: prompt,
       output: {

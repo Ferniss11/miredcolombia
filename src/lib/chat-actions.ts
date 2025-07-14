@@ -48,17 +48,20 @@ const postMessageSchema = z.object({
   history: z.array(z.object({
       role: z.enum(['user', 'model']),
       text: z.string(),
+      // Allow timestamp to be a string, as it comes from JSON
+      timestamp: z.string().optional(),
   })),
 });
 
 // Helper to format the history into a single string
-const formatHistoryAsPrompt = (history: ChatMessage[]): string => {
+const formatHistoryAsPrompt = (history: Omit<ChatMessage, 'id' | 'usage'>[]): string => {
     return history.map(msg => `${msg.role === 'user' ? 'Usuario' : 'Asistente'}: ${msg.text}`).join('\n');
 }
 
 export async function postMessageAction(input: z.infer<typeof postMessageSchema>) {
   try {
-    const { sessionId, message, history } = postMessageSchema.parse(input);
+    const { sessionId, message } = postMessageSchema.parse(input);
+    const history = await getChatHistory(sessionId);
 
     await saveMessage(sessionId, { text: message, role: 'user' });
     
@@ -68,6 +71,7 @@ export async function postMessageAction(input: z.infer<typeof postMessageSchema>
     const agentConfig = await getAgentConfig();
 
     const aiResponse = await chat({
+        model: agentConfig.model,
         systemPrompt: agentConfig.systemPrompt,
         prompt: fullPrompt,
     });
