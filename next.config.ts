@@ -1,3 +1,4 @@
+
 import { config } from 'dotenv';
 config(); // Carga las variables de entorno desde .env
 
@@ -22,6 +23,12 @@ const nextConfig: NextConfig = {
       {
         protocol: 'https',
         hostname: 'images.unsplash.com',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'firebasestorage.googleapis.com',
         port: '',
         pathname: '/**',
       }
