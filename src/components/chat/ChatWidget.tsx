@@ -20,7 +20,7 @@ import { useToast } from '@/hooks/use-toast';
 
 type ClientMessage = {
     role: 'user' | 'model';
-    content: string;
+    text: string;
 };
 
 
@@ -74,7 +74,7 @@ export default function ChatWidget() {
     e.preventDefault();
     if (!currentMessage.trim() || !sessionId || isAiResponding) return;
 
-    const userMessage: ClientMessage = { role: 'user', content: currentMessage.trim() };
+    const userMessage: ClientMessage = { role: 'user', text: currentMessage.trim() };
     const newMessages = [...messages, userMessage];
     setMessages(newMessages);
     setCurrentMessage('');
@@ -82,16 +82,16 @@ export default function ChatWidget() {
 
     const result = await postMessageAction({ 
         sessionId, 
-        message: userMessage.content, 
+        message: userMessage.text, 
         history: messages // pass the history *before* adding the new user message
     });
     
     if (result.success && result.response) {
-      const aiMessage: ClientMessage = { role: 'model', content: result.response };
+      const aiMessage: ClientMessage = { role: 'model', text: result.response };
       setMessages((prev) => [...prev, aiMessage]);
     } else {
       toast({ variant: 'destructive', title: 'Error', description: result.error });
-       const errorResponseMessage: ClientMessage = { role: 'model', content: 'Lo siento, he tenido un problema y no puedo responder ahora mismo.' };
+       const errorResponseMessage: ClientMessage = { role: 'model', text: 'Lo siento, he tenido un problema y no puedo responder ahora mismo.' };
       setMessages((prev) => [...prev, errorResponseMessage]);
     }
     setIsAiResponding(false);
@@ -168,7 +168,7 @@ export default function ChatWidget() {
                       ? 'bg-primary text-primary-foreground rounded-br-none'
                       : 'bg-muted rounded-bl-none'
                   )}
-                  dangerouslySetInnerHTML={{ __html: msg.content.replace(/\n/g, '<br />') }}
+                  dangerouslySetInnerHTML={{ __html: msg.text.replace(/\n/g, '<br />') }}
                 />
                  {msg.role === 'user' && (
                   <div className="flex-shrink-0 w-8 h-8 rounded-full bg-muted flex items-center justify-center">

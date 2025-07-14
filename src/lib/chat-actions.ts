@@ -24,13 +24,10 @@ export async function startChatSessionAction(input: z.infer<typeof startSessionS
         history.push({ role: 'model', text: '¡Hola de nuevo! Soy tu asistente de inmigración. ¿En qué más te puedo ayudar?', timestamp: new Date().toISOString() });
       }
       
-      // The history returned to the client should be in the format { role, content }
-      const clientHistory = history.map(h => ({ role: h.role, content: h.text }));
-
-      return { success: true, sessionId: existingSession.id, history: clientHistory };
+      return { success: true, sessionId: existingSession.id, history };
     } else {
       const sessionId = await startChatSession(validatedInput);
-      const initialHistory = [{ role: 'model', content: '¡Hola! Soy tu asistente de inmigración para España. ¿Cómo puedo ayudarte hoy?' }];
+      const initialHistory = [{ role: 'model', text: '¡Hola! Soy tu asistente de inmigración para España. ¿Cómo puedo ayudarte hoy?' }];
       return { success: true, sessionId, history: initialHistory };
     }
 
@@ -50,7 +47,7 @@ export async function startChatSessionAction(input: z.infer<typeof startSessionS
 const postMessageSchema = z.object({
   sessionId: z.string(),
   message: z.string(),
-  // The history from the client is an array of { role, content }
+  // The history from the client is an array of { role, text }
   history: z.array(z.any()),
 });
 

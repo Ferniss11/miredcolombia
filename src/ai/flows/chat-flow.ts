@@ -20,20 +20,21 @@ import { getAgentConfig } from '@/services/agent.service';
 export async function chat(input: ChatInput): Promise<ChatOutput> {
   const { history, message } = input;
   
-  // 1. Get the latest agent configuration from Firestore
   const agentConfig = await getAgentConfig();
 
-  // 2. Map the client-side history (which has { role, content: string })
-  // to the MessageData[] format required by ai.generate, which is { role, content: [{ text: string }] }
+  // Map the client-side history to the MessageData[] format required by ai.generate.
+  // The history can come in two formats:
+  // 1. From Firestore: { role: '...', text: '...' }
+  // 2. From client state: { role: '...', text: '...' } (after the fix)
+  // This mapping correctly handles both by looking for the 'text' property.
   const messages: MessageData[] = history.map((m: any) => ({
     role: m.role,
-    content: [{ text: m.content }],
+    content: [{ text: m.text }],
   }));
 
   // Add the current user message to the conversation history for the AI
   messages.push({ role: 'user', content: [{ text: message }] });
 
-  // 3. Make the generate call using the retrieved configuration and formatted messages
   const { output, usage } = await ai.generate({
     model: agentConfig.model,
     system: agentConfig.systemPrompt,
@@ -56,19 +57,3 @@ export async function chat(input: ChatInput): Promise<ChatOutput> {
     }
   };
 }
-
-/**
- * Defines a Genkit flow for the chat functionality.
- * This wraps the main chat logic, making it available to the Genkit developer UI.
- */
-const chatFlow = ai.defineFlow(
-  {
-    name: 'chatFlow',
-    inputSchema: ChatInputSchema,
-    outputSchema: ChatOutputSchema,
-  },
-  async (input) => {
-    // Call the underlying chat function which is easier to test
-    return await chat(input);
-  }
-);
