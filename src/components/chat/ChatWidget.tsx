@@ -155,25 +155,21 @@ export default function ChatWidget() {
         <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
           <div className="space-y-4">
             {messages.map((msg, index) => (
-              <div key={index} className={cn("flex items-end gap-2", msg.role === 'user' ? 'justify-end' : 'justify-start')}>
-                {msg.role === 'model' && (
-                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground">
-                    <Bot size={20} />
-                  </div>
+              <div key={index} className={cn("flex items-start gap-3", msg.role === 'user' ? 'justify-end' : 'justify-start')}>
+                 {msg.role === 'model' && (
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground">
+                        <Bot size={20} />
+                    </div>
                 )}
-                <div
-                  className={cn(
-                    'max-w-xs md:max-w-md rounded-xl px-4 py-2 text-sm md:text-base whitespace-pre-wrap break-words',
-                    msg.role === 'user'
-                      ? 'bg-blue-100 dark:bg-blue-900/50'
-                      : 'bg-gray-100 dark:bg-gray-800'
-                  )}
-                  dangerouslySetInnerHTML={{ __html: msg.text.replace(/\n/g, '<br />') }}
-                />
+                <div className="flex flex-col gap-1 w-full max-w-lg">
+                    <div className={cn('p-3 rounded-lg', msg.role === 'user' ? 'bg-blue-100 dark:bg-blue-900/50 ml-auto' : 'bg-gray-100 dark:bg-gray-800')}>
+                        <p className="text-sm" dangerouslySetInnerHTML={{ __html: msg.text.replace(/\n/g, '<br />') }} />
+                    </div>
+                </div>
                  {msg.role === 'user' && (
-                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-muted flex items-center justify-center">
-                    <User size={20} />
-                  </div>
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+                        <User size={20} />
+                    </div>
                 )}
               </div>
             ))}
