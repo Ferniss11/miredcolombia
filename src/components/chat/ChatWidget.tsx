@@ -163,12 +163,12 @@ export default function ChatWidget() {
                 )}
                 <div
                   className={cn(
-                    'max-w-xs md:max-w-md rounded-xl px-4 py-2 text-sm md:text-base break-words',
+                    'max-w-xs md:max-w-md rounded-xl px-4 py-2 text-sm md:text-base whitespace-pre-wrap break-words',
                     msg.role === 'user'
-                      ? 'bg-primary text-primary-foreground rounded-br-none'
-                      : 'bg-muted rounded-bl-none'
+                      ? 'bg-blue-100 dark:bg-blue-900/50'
+                      : 'bg-gray-100 dark:bg-gray-800'
                   )}
-                  dangerouslySetInnerHTML={{ __html: msg.text.replace(/\n/g, '<br />') }}
+                  dangerouslySetInnerHTML={{ __html: msg.text.replace(/\\n/g, '<br />') }}
                 />
                  {msg.role === 'user' && (
                   <div className="flex-shrink-0 w-8 h-8 rounded-full bg-muted flex items-center justify-center">
