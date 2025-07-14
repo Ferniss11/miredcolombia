@@ -34,7 +34,6 @@ function getAdminServices() {
     throw new Error(`CRITICAL: Missing Firebase Admin environment variables: ${missingKeys.join(', ')}`);
   }
 
-  // Create and initialize a new app.
   try {
     const app = admin.initializeApp({
       credential: admin.credential.cert({
@@ -56,6 +55,4 @@ function getAdminServices() {
   }
 }
 
-// Export a single function to get the services. This ensures the initialization logic
-// is run only when the services are first requested.
 export { getAdminServices };
