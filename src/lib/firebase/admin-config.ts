@@ -1,6 +1,7 @@
+
 import 'dotenv/config';
 import admin from 'firebase-admin';
-import { getApps, App } from 'firebase-admin/app';
+import { getApps } from 'firebase-admin/app';
 
 /**
  * Initializes the Firebase Admin SDK if not already initialized.
@@ -18,27 +19,19 @@ function getAdminServices() {
   }
 
   try {
-    const serviceAccountBase64 = process.env.FIREBASE_SERVICE_ACCOUNT_BASE64;
-    let serviceAccount;
+    const projectId = process.env.FIREBASE_PROJECT_ID;
+    const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+    const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
 
-    if (serviceAccountBase64) {
-      const serviceAccountJson = Buffer.from(serviceAccountBase64, 'base64').toString('utf8');
-      serviceAccount = JSON.parse(serviceAccountJson);
-    } else {
-      const projectId = process.env.FIREBASE_PROJECT_ID;
-      const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-      const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
-
-      if (!projectId || !clientEmail || !privateKey) {
+    if (!projectId || !clientEmail || !privateKey) {
         throw new Error('Firebase Admin environment variables are not fully set.');
-      }
+    }
       
-      serviceAccount = {
+    const serviceAccount = {
         projectId,
         clientEmail,
         privateKey,
-      };
-    }
+    };
 
     const app = admin.initializeApp({
       credential: admin.credential.cert(serviceAccount),
