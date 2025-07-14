@@ -3,6 +3,7 @@ import admin from 'firebase-admin';
 
 // This needs to be a unique name for the admin app instance
 const ADMIN_APP_NAME = 'ColomboEspanolaAdmin';
+let initializedProjectId = 'Not initialized';
 
 function initializeFirebaseAdmin() {
   try {
@@ -11,19 +12,15 @@ function initializeFirebaseAdmin() {
     if (existingApp) {
       try {
         // If it exists, return its services.
+        initializedProjectId = `Re-accessed named app '${ADMIN_APP_NAME}'. Project ID: ${existingApp.options.projectId || 'N/A'}`;
         return {
           db: existingApp.firestore(),
           auth: existingApp.auth(),
           admin: admin,
         };
       } catch (e: any) {
-         // This might happen if the app exists but services are unavailable.
-         console.error(`Failed to get services from existing app '${ADMIN_APP_NAME}': ${e.message}`);
-         return {
-          db: null,
-          auth: null,
-          admin: null,
-        };
+         initializedProjectId = `Failed to get services from existing app '${ADMIN_APP_NAME}': ${e.message}`;
+         return { db: null, auth: null, admin: null, };
       }
     }
     
@@ -36,15 +33,15 @@ function initializeFirebaseAdmin() {
 
     if (!hasAllKeys) {
         if (process.env.NODE_ENV === 'development') {
-            console.warn("ADVERTENCIA: Faltan las variables de entorno del Firebase Admin SDK (PROJECT_ID, CLIENT_EMAIL, PRIVATE_KEY). Las funciones del lado del servidor que dependen de Firebase Admin fallarán. Esto es normal para el desarrollo local si no se necesita acceso de administrador.");
+            initializedProjectId = "ADVERTENCIA: Faltan las variables de entorno del Firebase Admin SDK. Las funciones del lado del servidor fallarán.";
             return { db: null, auth: null, admin: null };
         }
-        // In production, we should fail hard if keys are missing
         const missingKeys = [];
         if (!projectId) missingKeys.push('FIREBASE_PROJECT_ID');
         if (!clientEmail) missingKeys.push('FIREBASE_CLIENT_EMAIL');
         if (!privateKey) missingKeys.push('FIREBASE_PRIVATE_KEY');
-        throw new Error(`CRITICAL: Missing Firebase Admin environment variables: ${missingKeys.join(', ')}`);
+        initializedProjectId = `CRITICAL: Missing Firebase Admin environment variables: ${missingKeys.join(', ')}`;
+        throw new Error(initializedProjectId);
     }
 
     const app = admin.initializeApp({
@@ -55,6 +52,7 @@ function initializeFirebaseAdmin() {
         }),
     }, ADMIN_APP_NAME);
     
+    initializedProjectId = `Initialized named app '${ADMIN_APP_NAME}'. Project ID: ${projectId}`;
     return {
       db: app.firestore(),
       auth: app.auth(),
@@ -64,11 +62,12 @@ function initializeFirebaseAdmin() {
   } catch (error: any) {
     let errorMessage = `Initialization failed: ${error.message}`;
     if (error.code === 'app/duplicate-app') {
-        errorMessage = `Duplicate Firebase app initialization detected. App name: ${ADMIN_APP_NAME}. This should not happen with the current logic.`;
+        errorMessage = `Duplicate Firebase app initialization detected. App name: ${ADMIN_APP_NAME}.`;
     } else if (error.message.includes('JSON')) {
         errorMessage = 'Initialization failed: Service account key is not valid JSON.';
     }
     console.error("CRITICAL FIREBASE ADMIN INITIALIZATION ERROR:", errorMessage);
+    initializedProjectId = errorMessage;
     return {
       db: null,
       auth: null,
@@ -80,4 +79,4 @@ function initializeFirebaseAdmin() {
 // Run the initialization and export the results.
 const { db: adminDb, auth: adminAuth, admin: adminInstance } = initializeFirebaseAdmin();
 
-export { adminDb, adminAuth, adminInstance };
+export { adminDb, adminAuth, adminInstance, initializedProjectId };
