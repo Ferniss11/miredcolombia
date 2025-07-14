@@ -32,10 +32,6 @@ function initializeFirebaseAdmin() {
     const hasAllKeys = projectId && clientEmail && privateKey;
 
     if (!hasAllKeys) {
-        if (process.env.NODE_ENV === 'development') {
-            initializedProjectId = "ADVERTENCIA: Faltan las variables de entorno del Firebase Admin SDK. Las funciones del lado del servidor fallarán.";
-            return { db: null, auth: null, admin: null };
-        }
         const missingKeys = [];
         if (!projectId) missingKeys.push('FIREBASE_PROJECT_ID');
         if (!clientEmail) missingKeys.push('FIREBASE_CLIENT_EMAIL');
