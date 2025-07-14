@@ -17,12 +17,6 @@ let auth: Auth | null = null;
 let db: Firestore | null = null;
 let firebaseInitialized = false;
 
-// A new flag to check if the server-side admin SDK is ready
-export let adminApiInitialized = false;
-export function setAdminApiInitialized(status: boolean) {
-    adminApiInitialized = status;
-}
-
 // Only initialize if the config is valid
 if (
     firebaseConfig.apiKey &&
@@ -42,7 +36,9 @@ if (
     }
 } else {
     // This warning will show on both server and client if keys are missing
-    console.warn("Firebase client config is missing or incomplete. Please check NEXT_PUBLIC_FIREBASE variables. Client-side features will be disabled.");
+    if (typeof window !== 'undefined') {
+      console.warn("Firebase client config is missing or incomplete. Please check NEXT_PUBLIC_FIREBASE variables. Client-side features will be disabled.");
+    }
 }
 
 export { app, auth, db, firebaseInitialized };

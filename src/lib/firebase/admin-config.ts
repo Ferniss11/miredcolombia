@@ -1,16 +1,23 @@
-import 'dotenv/config';
+
+import 'dotenv/config'; // Make sure variables from .env are loaded
 import admin from 'firebase-admin';
 import { getApps } from 'firebase-admin/app';
-import { setAdminApiInitialized } from './config';
+
+// These variables are sensitive and should be stored in environment variables.
+const projectId = process.env.FIREBASE_PROJECT_ID;
+const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+// The private key must have newlines properly escaped in the .env file.
+const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
 
 /**
  * Initializes the Firebase Admin SDK if not already initialized.
- * This function is designed to be robust for various environments.
- * @returns An object with the instances of Firestore (db) and Auth (auth), or nulls if initialization fails.
+ * This function is designed to be robust for serverless environments like Next.js.
+ * Throws a detailed error if initialization fails.
+ * @returns An object with the instances of Firestore (db) and Auth (auth).
  */
 function getAdminServices() {
+  // If the app is already initialized, return its services.
   if (getApps().length > 0) {
-    setAdminApiInitialized(true);
     const app = admin.app();
     return {
       db: app.firestore(),
@@ -19,45 +26,41 @@ function getAdminServices() {
     };
   }
 
-  try {
-    const projectId = process.env.FIREBASE_PROJECT_ID;
-    const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-    const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
-
-    if (!projectId || !clientEmail || !privateKey) {
-        throw new Error('Firebase Admin environment variables are not fully set.');
+  // If no app is initialized, check for necessary credentials.
+  const missingKeys = [];
+  if (!projectId) missingKeys.push('FIREBASE_PROJECT_ID');
+  if (!clientEmail) missingKeys.push('FIREBASE_CLIENT_EMAIL');
+  if (!privateKey) missingKeys.push('FIREBASE_PRIVATE_KEY');
+  
+  if (missingKeys.length > 0) {
+    // For local development, we can warn but not crash the entire application.
+    if (process.env.NODE_ENV !== 'production') {
+        console.warn(`ADVERTENCIA: Faltan las siguientes variables de entorno de Firebase Admin: ${missingKeys.join(', ')}. Las funciones del lado del servidor que dependen de Firebase Admin fallarán. Esto es normal para el desarrollo local si no se necesita acceso de administrador.`);
+        return { db: null, auth: null, admin: null };
     }
-      
-    const serviceAccount = {
+    // For production environments, we must fail fast.
+    throw new Error(`CRITICAL: Missing Firebase Admin environment variables: ${missingKeys.join(', ')}`);
+  }
+
+  try {
+    const app = admin.initializeApp({
+      credential: admin.credential.cert({
         projectId,
         clientEmail,
         privateKey,
-    };
-
-    const app = admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount),
+      }),
     });
 
-    setAdminApiInitialized(true);
     return {
       db: app.firestore(),
       auth: app.auth(),
       admin: admin
     };
-
   } catch (error) {
-    // For production environments (like Vercel), we want to fail fast if the keys are missing.
-    if (process.env.NODE_ENV === 'production') {
-        console.error("CRITICAL: Failed to initialize Firebase Admin SDK in production:", error);
-        throw error;
+    if (error instanceof Error) {
+      throw new Error(`CRITICAL: Firebase Admin initialization failed: ${error.message}`);
     }
-    
-    // For local development, we warn but don't crash the entire application.
-    console.warn("ADVERTENCIA: Las variables de entorno del Firebase Admin SDK no están configuradas. Las funciones del lado del servidor que dependen de Firebase Admin fallarán. Esto es normal para el desarrollo local si no se necesita acceso de administrador.");
-    
-    setAdminApiInitialized(false);
-    // Return nulls so the app doesn't crash on startup
-    return { db: null, auth: null, admin: null };
+    throw new Error('An unknown error occurred during Firebase Admin initialization.');
   }
 }
 
