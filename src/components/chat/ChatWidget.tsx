@@ -16,8 +16,13 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { MessageCircle, X, Send, User, Bot, Loader2, Sparkles, Phone } from 'lucide-react';
 import Link from 'next/link';
 import { startChatSessionAction, postMessageAction } from '@/lib/chat-actions';
-import type { ChatMessage } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
+
+type ClientMessage = {
+    role: 'user' | 'model';
+    content: string;
+};
+
 
 const formSchema = z.object({
   userName: z.string().min(2, { message: 'El nombre es obligatorio.' }),
@@ -30,7 +35,7 @@ const formSchema = z.object({
 export default function ChatWidget() {
   const [isOpen, setIsOpen] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [messages, setMessages] = useState<ClientMessage[]>([]);
   const [isAiResponding, setIsAiResponding] = useState(false);
   const [currentMessage, setCurrentMessage] = useState('');
   const { toast } = useToast();
@@ -52,7 +57,6 @@ export default function ChatWidget() {
     const result = await startChatSessionAction({ userName: values.userName, userPhone: values.userPhone });
     
     if (result.isIndexError) {
-        // Temporary solution to display full error for debugging
         sessionStorage.setItem('fullError', result.error || 'Unknown index error.');
         router.push('/errors');
         return;
@@ -60,13 +64,7 @@ export default function ChatWidget() {
 
     if (result.success && result.sessionId) {
       setSessionId(result.sessionId);
-      
-      const initialMessages = result.history?.length 
-        ? result.history 
-        : [{ role: 'model', text: '¡Hola! Soy tu asistente de inmigración para España. ¿Cómo puedo ayudarte hoy?', timestamp: new Date().toISOString() }];
-
-      setMessages(initialMessages as ChatMessage[]);
-
+      setMessages(result.history || []);
     } else {
       toast({ variant: 'destructive', title: 'Error', description: result.error || 'No se pudo iniciar el chat. Por favor, inténtalo de nuevo.' });
     }
@@ -76,21 +74,24 @@ export default function ChatWidget() {
     e.preventDefault();
     if (!currentMessage.trim() || !sessionId || isAiResponding) return;
 
-    const userMessage: ChatMessage = { role: 'user', text: currentMessage.trim(), timestamp: new Date().toISOString() };
-    setMessages((prev) => [...prev, userMessage]);
+    const userMessage: ClientMessage = { role: 'user', content: currentMessage.trim() };
+    const newMessages = [...messages, userMessage];
+    setMessages(newMessages);
     setCurrentMessage('');
     setIsAiResponding(true);
 
-    const history = messages.map(m => ({ role: m.role, content: m.text }));
-
-    const result = await postMessageAction({ sessionId, message: userMessage.text, history });
+    const result = await postMessageAction({ 
+        sessionId, 
+        message: userMessage.content, 
+        history: messages // pass the history *before* adding the new user message
+    });
     
     if (result.success && result.response) {
-      const aiMessage: ChatMessage = { role: 'model', text: result.response, timestamp: new Date().toISOString() };
+      const aiMessage: ClientMessage = { role: 'model', content: result.response };
       setMessages((prev) => [...prev, aiMessage]);
     } else {
       toast({ variant: 'destructive', title: 'Error', description: result.error });
-       const errorResponseMessage: ChatMessage = { role: 'model', text: 'Lo siento, he tenido un problema y no puedo responder ahora mismo.', timestamp: new Date().toISOString() };
+       const errorResponseMessage: ClientMessage = { role: 'model', content: 'Lo siento, he tenido un problema y no puedo responder ahora mismo.' };
       setMessages((prev) => [...prev, errorResponseMessage]);
     }
     setIsAiResponding(false);
@@ -167,7 +168,7 @@ export default function ChatWidget() {
                       ? 'bg-primary text-primary-foreground rounded-br-none'
                       : 'bg-muted rounded-bl-none'
                   )}
-                  dangerouslySetInnerHTML={{ __html: msg.text.replace(/\n/g, '<br />') }}
+                  dangerouslySetInnerHTML={{ __html: msg.content.replace(/\n/g, '<br />') }}
                 />
                  {msg.role === 'user' && (
                   <div className="flex-shrink-0 w-8 h-8 rounded-full bg-muted flex items-center justify-center">

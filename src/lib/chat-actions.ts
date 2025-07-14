@@ -23,12 +23,14 @@ export async function startChatSessionAction(input: z.infer<typeof startSessionS
       if (history.length === 0) {
         history.push({ role: 'model', text: '¡Hola de nuevo! Soy tu asistente de inmigración. ¿En qué más te puedo ayudar?', timestamp: new Date().toISOString() });
       }
-      // The history returned to the client is { role, text, ... }
-      // This will be mapped to { role, content } on the client side for the next request.
-      return { success: true, sessionId: existingSession.id, history };
+      
+      // The history returned to the client should be in the format { role, content }
+      const clientHistory = history.map(h => ({ role: h.role, content: h.text }));
+
+      return { success: true, sessionId: existingSession.id, history: clientHistory };
     } else {
       const sessionId = await startChatSession(validatedInput);
-      const initialHistory = [{ role: 'model', text: '¡Hola! Soy tu asistente de inmigración para España. ¿Cómo puedo ayudarte hoy?', timestamp: new Date().toISOString() }];
+      const initialHistory = [{ role: 'model', content: '¡Hola! Soy tu asistente de inmigración para España. ¿Cómo puedo ayudarte hoy?' }];
       return { success: true, sessionId, history: initialHistory };
     }
 
