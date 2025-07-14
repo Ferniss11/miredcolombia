@@ -9,7 +9,8 @@
 
 import {ai} from '@/ai/genkit';
 import type { MessageData } from 'genkit';
-import { type ChatInput, ChatOutputSchema, type ChatOutput } from '@/lib/types';
+import type { ChatInput, ChatOutput } from '@/lib/types';
+import { ChatOutputSchema } from '@/lib/types';
 import { getAgentConfig } from '@/services/agent.service';
 
 /**
