@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useTransition, useEffect } from 'react';
@@ -7,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Search, Plus, Building, MapPin, Trash2, AlertCircle, Link, UserCheck, UserX } from 'lucide-react';
+import { Loader2, Search, Plus, Building, Trash2, AlertCircle, UserCheck, UserX, UserRoundCog } from 'lucide-react';
 import { searchBusinessesOnGoogleAction, saveBusinessAction, getSavedBusinessesAction, deleteBusinessAction } from '@/lib/directory-actions';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
@@ -112,7 +111,18 @@ export default function AdminDirectoryPage() {
                 fetchSavedBusinesses(); // Refresh the list
             }
         });
+    };
+    
+    const getStatusBadge = (biz: PlaceDetails) => {
+        if (biz.verificationStatus === 'pending') {
+            return <Badge variant="destructive" className="bg-orange-500/80">Pendiente</Badge>
+        }
+        if (biz.ownerUid && biz.verificationStatus === 'approved') {
+            return <Badge className="bg-green-500/80">Verificado</Badge>
+        }
+        return <Badge variant="secondary">No Reclamado</Badge>
     }
+
 
     return (
         <div className="space-y-6">
@@ -196,15 +206,15 @@ export default function AdminDirectoryPage() {
                                         <TableCell><Badge variant="secondary">{biz.category}</Badge></TableCell>
                                         <TableCell>
                                             <div className="flex items-center gap-2">
-                                                {biz.ownerUid ? <UserCheck className="h-4 w-4 text-green-500" /> : <UserX className="h-4 w-4 text-red-500" />}
-                                                <span className='text-xs'>
-                                                   {biz.ownerUid ? "Vinculado" : "No Vinculado"}
-                                                </span>
+                                                {getStatusBadge(biz)}
                                             </div>
                                             <Badge variant="outline" className="mt-1">{biz.subscriptionTier}</Badge>
                                         </TableCell>
                                         <TableCell className="text-xs text-muted-foreground">{biz.formattedAddress}</TableCell>
                                         <TableCell className="text-right">
+                                            <Button variant="ghost" size="icon" disabled={isDeleting}>
+                                                <UserRoundCog className="h-4 w-4 text-muted-foreground" />
+                                            </Button>
                                             <Button variant="ghost" size="icon" onClick={() => handleDeleteBusiness(biz.id)} disabled={isDeleting}>
                                                 <Trash2 className="h-4 w-4 text-destructive" />
                                             </Button>

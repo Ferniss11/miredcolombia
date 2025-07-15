@@ -93,6 +93,7 @@ export type BusinessProfile = {
   website: string;
   description: string;
   placeId?: string; // The linked Google Place ID
+  verificationStatus?: 'pending' | 'approved' | 'rejected'; // Status of business ownership claim
 };
 
 export type UserProfile = {
@@ -271,7 +272,11 @@ export type PlaceDetails = {
   id: string; // The Google Place ID
   displayName: string;
   formattedAddress: string;
+  internationalPhoneNumber?: string;
+  formattedPhoneNumber?: string;
+  website?: string;
   category: string; // The category assigned in *our* system
   subscriptionTier?: string; // e.g., 'Gratuito', 'Premium'
   ownerUid?: string | null; // UID of the advertiser user who owns this
+  verificationStatus?: 'pending' | 'approved' | 'rejected';
 };

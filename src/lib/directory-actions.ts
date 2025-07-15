@@ -69,6 +69,7 @@ export async function saveBusinessAction(placeId: string, category: string, admi
             ownerUid: null,
             addedBy: adminUid,
             createdAt: FieldValue.serverTimestamp(),
+            verificationStatus: 'unclaimed',
         });
 
         revalidatePath('/dashboard/admin/directory');
@@ -83,10 +84,8 @@ export async function saveBusinessAction(placeId: string, category: string, admi
 /**
  * Fetches details for a single place ID from Google Places API.
  * This is used to enrich the data we get from Firestore.
- * @param placeId The Place ID to look up.
- * @returns The place details or null if not found.
  */
-async function getPlaceDetails(placeId: string): Promise<Omit<PlaceDetails, 'category' | 'subscriptionTier' | 'ownerUid'> | null> {
+async function getPlaceDetails(placeId: string, fields: string[]): Promise<PlaceDetails | null> {
     const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
     if (!apiKey) {
         throw new Error("NEXT_PUBLIC_GOOGLE_MAPS_API_KEY environment variable not set.");
@@ -95,7 +94,7 @@ async function getPlaceDetails(placeId: string): Promise<Omit<PlaceDetails, 'cat
         const response = await googleMapsClient.placeDetails({
             params: {
                 place_id: placeId,
-                fields: ['name', 'formatted_address', 'place_id'],
+                fields: fields,
                 key: apiKey,
             }
         });
@@ -106,6 +105,10 @@ async function getPlaceDetails(placeId: string): Promise<Omit<PlaceDetails, 'cat
                 id: result.place_id!,
                 displayName: result.name || 'Nombre no disponible',
                 formattedAddress: result.formatted_address || 'Dirección no disponible',
+                internationalPhoneNumber: result.international_phone_number,
+                formattedPhoneNumber: result.formatted_phone_number,
+                website: result.website,
+                category: '', // This will be populated from our DB
             };
         }
         return null;
@@ -115,9 +118,6 @@ async function getPlaceDetails(placeId: string): Promise<Omit<PlaceDetails, 'cat
     }
 }
 
-/**
- * Retrieves all saved businesses from Firestore and enriches them with details from Google Places API.
- */
 export async function getSavedBusinessesAction(): Promise<{ businesses?: PlaceDetails[], error?: string }> {
     const db = getDbInstance();
     try {
@@ -126,13 +126,12 @@ export async function getSavedBusinessesAction(): Promise<{ businesses?: PlaceDe
             return { businesses: [] };
         }
         
-        // Fetch details for all place IDs in parallel
         const businessDetailsPromises = snapshot.docs.map(async (doc) => {
             const docData = doc.data();
             const placeId = docData.placeId;
 
-            const details = await getPlaceDetails(placeId);
-            if (!details) return null; // Skip if Google API fails for one ID
+            const details = await getPlaceDetails(placeId, ['name', 'formatted_address', 'place_id']);
+            if (!details) return null;
 
             return {
                 ...details,
@@ -155,9 +154,6 @@ export async function getSavedBusinessesAction(): Promise<{ businesses?: PlaceDe
 }
 
 
-/**
- * Deletes a business from the Firestore directory.
- */
 export async function deleteBusinessAction(placeId: string): Promise<{ success: boolean, error?: string }> {
     const db = getDbInstance();
     try {
@@ -171,44 +167,115 @@ export async function deleteBusinessAction(placeId: string): Promise<{ success: 
     }
 }
 
-/**
- * Links a Google Place to an advertiser's user profile.
- * @param userId The advertiser's UID.
- * @param placeId The Google Place ID of their business.
- */
-export async function linkBusinessToAdvertiserAction(userId: string, placeId: string): Promise<{ success: boolean; error?: string }> {
+
+// --- Actions for Advertiser Business Linking ---
+
+export async function getBusinessDetailsForVerificationAction(placeId: string) {
+    try {
+        const details = await getPlaceDetails(placeId, ['formatted_phone_number']);
+        if (!details || !details.formattedPhoneNumber) {
+            return { error: 'No se pudo obtener el teléfono de este negocio para verificación. Intenta con otro.' };
+        }
+        
+        // Obfuscate phone number
+        const phone = details.formattedPhoneNumber;
+        const partialPhone = phone.slice(0, 3) + '***' + phone.slice(-3);
+
+        return { success: true, details: { partialPhone } };
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : "Unknown error";
+        return { error: `Error obteniendo detalles para verificación: ${errorMessage}` };
+    }
+}
+
+
+export async function verifyAndLinkBusinessAction(userId: string, placeId: string, providedPhone: string) {
     const db = getDbInstance();
+    try {
+        const details = await getPlaceDetails(placeId, ['international_phone_number', 'name', 'formatted_address', 'website', 'formatted_phone_number']);
+        if (!details || !details.internationalPhoneNumber) {
+            return { error: 'No se pudo verificar el negocio. El teléfono no está disponible en Google.' };
+        }
+
+        // Normalize phone numbers for comparison
+        const googlePhone = details.internationalPhoneNumber.replace(/[\s-()]/g, '');
+        const userPhone = providedPhone.replace(/[\s-()]/g, '');
+
+        if (googlePhone !== userPhone) {
+            return { error: 'El número de teléfono no coincide. Inténtalo de nuevo.' };
+        }
+
+        // If phone matches, proceed to link
+        const userRef = db.collection('users').doc(userId);
+        const businessRef = db.collection('directory').doc(placeId);
+
+        await db.runTransaction(async (transaction) => {
+            const businessDoc = await transaction.get(businessRef);
+            if (!businessDoc.exists) {
+                // Add the business to the directory if it wasn't there
+                transaction.set(businessRef, {
+                    placeId: placeId,
+                    category: 'Sin Categoría', // Admin can categorize later
+                    subscriptionTier: 'Gratuito',
+                    ownerUid: userId,
+                    addedBy: 'self-claimed',
+                    createdAt: FieldValue.serverTimestamp(),
+                    verificationStatus: 'pending',
+                });
+            } else {
+                if(businessDoc.data()?.ownerUid) {
+                    throw new Error('Este negocio ya ha sido reclamado por otro usuario.');
+                }
+                transaction.update(businessRef, { ownerUid: userId, verificationStatus: 'pending' });
+            }
+            
+            transaction.update(userRef, {
+                'businessProfile.placeId': placeId,
+                'businessProfile.businessName': details.displayName,
+                'businessProfile.address': details.formattedAddress,
+                'businessProfile.phone': details.internationalPhoneNumber,
+                'businessProfile.website': details.website || '',
+                'businessProfile.verificationStatus': 'pending',
+            });
+        });
+
+        revalidatePath('/dashboard/advertiser/profile');
+        revalidatePath('/dashboard/admin/directory');
+
+        return { success: true, businessDetails: details };
+
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : "Unknown error";
+        return { error: `Error al vincular el negocio: ${errorMessage}` };
+    }
+}
+
+
+export async function unlinkBusinessFromAdvertiserAction(userId: string, placeId: string) {
+    const db = getDbInstance();
+     if (!FieldValue) throw new Error("Firebase Admin SDK is not fully initialized.");
+
     try {
         const userRef = db.collection('users').doc(userId);
         const businessRef = db.collection('directory').doc(placeId);
 
-        // Check if the business exists in our directory
-        const businessSnap = await businessRef.get();
-        if (!businessSnap.exists) {
-            return { success: false, error: 'Este negocio no existe en nuestro directorio. Por favor, contacta con un administrador.' };
-        }
-        
-        // Check if the business is already claimed
-        if (businessSnap.data()?.ownerUid) {
-             return { success: false, error: 'Este negocio ya ha sido reclamado por otro usuario.' };
-        }
-
-        // Use a transaction to ensure atomicity
-        await db.runTransaction(async (transaction) => {
-            // Update the business document with the owner's UID
-            transaction.update(businessRef, { ownerUid: userId });
-            // Update the user's profile with the Place ID
-            transaction.update(userRef, { 'businessProfile.placeId': placeId });
+         await db.runTransaction(async (transaction) => {
+            transaction.update(businessRef, {
+                ownerUid: FieldValue.delete(),
+                verificationStatus: 'unclaimed'
+            });
+            transaction.update(userRef, {
+                'businessProfile.placeId': FieldValue.delete(),
+                'businessProfile.verificationStatus': FieldValue.delete(),
+            });
         });
-
-        revalidatePath('/dashboard/admin/directory');
+        
         revalidatePath('/dashboard/advertiser/profile');
-
+        revalidatePath('/dashboard/admin/directory');
+        
         return { success: true };
-
     } catch (error) {
-        console.error("Error linking business to advertiser:", error);
-        const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
-        return { success: false, error: errorMessage };
+         const errorMessage = error instanceof Error ? error.message : "Unknown error";
+        return { error: `Error al desvincular el negocio: ${errorMessage}` };
     }
 }
