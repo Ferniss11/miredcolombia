@@ -19,16 +19,15 @@ export const googlePlacesSearch = ai.defineTool(
     name: 'googlePlacesSearch',
     description: 'Searches for businesses on Google Maps. Can be used for specific queries (e.g., "Arepas El Sabor, Madrid") or generic category searches (e.g., query="Restaurante Colombiano", location="Madrid"). Returns a list of matches with their Place IDs.',
     inputSchema: z.object({
-      query: z.string().describe('The name or category of the business to search for. Example: "Arepas El Sabor" or "Restaurante Colombiano".'),
-      location: z.string().optional().describe('An optional location to restrict the search, like a city or region. Example: "Madrid".'),
+      query: z.string().describe('The name or category of the business to search for. Example: "Arepas El Sabor" or "Restaurante Colombiano en Madrid".'),
     }),
     outputSchema: z.object({
       places: z.array(PlaceSchema).describe('A list of businesses found on Google Maps.'),
     }),
   },
-  async ({ query, location }) => {
-    // Combine query and location for a more precise search if location is provided.
-    const textQuery = location ? `${query} en ${location}` : query;
+  async ({ query }) => {
+    // The query itself should contain all necessary info, e.g., "Restaurante Colombiano en Madrid"
+    const textQuery = query;
     console.log(`[Google Places Tool] Searching for: "${textQuery}"`);
     
     const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
@@ -48,8 +47,7 @@ export const googlePlacesSearch = ai.defineTool(
                 'X-Goog-Api-Key': apiKey,
                 'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress',
             },
-            // The body now contains the combined text query.
-            body: JSON.stringify({ textQuery: textQuery }),
+            body: JSON.stringify({ textQuery }),
         });
 
         if (!response.ok) {
