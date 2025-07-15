@@ -72,32 +72,76 @@ export async function saveBusinessAction(placeId: string, category: string) {
 }
 
 /**
+ * Follows a short Google URL (like share.google or maps.app.goo.gl) to find the long URL.
+ * @param shortUrl - The short URL to resolve.
+ * @returns The resolved long URL.
+ */
+async function resolveShortUrl(shortUrl: string): Promise<string> {
+    const response = await fetch(shortUrl, { method: 'HEAD', redirect: 'manual' });
+    // The long URL is in the 'Location' header of the redirect response.
+    const longUrl = response.headers.get('location');
+    if (!longUrl) {
+        throw new Error(`No se pudo resolver la URL corta: ${shortUrl}. La cabecera 'Location' no fue encontrada.`);
+    }
+    return longUrl;
+}
+
+/**
+ * Extracts a Google Place ID from a given string, which can be a full URL or just the ID.
+ * @param input - The string containing the Place ID.
+ * @returns The extracted Place ID.
+ */
+function extractPlaceIdFromUrl(input: string): string | null {
+    const placeIdRegex = /(ChI[a-zA-Z0-9_-]{25,})/;
+    const match = input.match(placeIdRegex);
+    return match ? match[0] : null;
+}
+
+
+/**
  * Server Action to get detailed information for a business from Google Places API.
- * This is the "direct search" function.
- * @param placeId - The Google Place ID of the business.
+ * This function now handles direct Place IDs, long URLs, and short URLs.
+ * @param placeIdOrUrl - The Google Place ID or URL of the business.
  * @returns The full business details from Google.
  */
-export async function getBusinessDetailsAction(placeId: string) {
+export async function getBusinessDetailsAction(placeIdOrUrl: string) {
     const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
     if (!apiKey) {
         return { success: false, error: "Google API Key is not configured." };
     }
-    if (!placeId || !placeId.startsWith('ChI')) {
-        return { success: false, error: `El Place ID proporcionado no es válido: "${placeId}"`, rawResponse: { error: "Invalid Place ID format" } };
-    }
 
-
-    const fields = [
-        'id', 'displayName', 'formattedAddress', 'websiteUri',
-        'nationalPhoneNumber', 'rating', 'userRatingCount', 'photos',
-        'regularOpeningHours', 'location'
-    ];
-    const apiUrl = `https://places.googleapis.com/v1/places/${placeId}`;
-    const fieldMask = fields.join(',');
+    let placeId = placeIdOrUrl;
 
     try {
-        const response = await fetch(apiUrl, { 
-            next: { revalidate: 3600 }, // Cache for 1 hour
+        // Step 1: Check if the input is a short URL and resolve it.
+        if (placeIdOrUrl.startsWith('https://maps.app.goo.gl') || placeIdOrUrl.startsWith('https://share.google')) {
+            const longUrl = await resolveShortUrl(placeIdOrUrl);
+            const extractedId = extractPlaceIdFromUrl(longUrl);
+            if (!extractedId) {
+                throw new Error(`No se pudo extraer el Place ID de la URL resuelta: ${longUrl}`);
+            }
+            placeId = extractedId;
+        } else if (placeIdOrUrl.includes('google.com/maps')) {
+            // Step 2: If it's a long URL, just extract the ID.
+            const extractedId = extractPlaceIdFromUrl(placeIdOrUrl);
+            if (!extractedId) {
+                throw new Error(`No se pudo extraer el Place ID de la URL: ${placeIdOrUrl}`);
+            }
+            placeId = extractedId;
+        }
+
+        // Step 3: At this point, `placeId` should be a clean ID string. Validate it.
+        if (!placeId.startsWith('ChI')) {
+            return { success: false, error: `El ID de lugar proporcionado no es válido: "${placeId}"`, rawResponse: { error: "Invalid Place ID format" } };
+        }
+
+        // Step 4: Fetch details from Google Places API.
+        const fields = ['id', 'displayName', 'formattedAddress'];
+        const apiUrl = `https://places.googleapis.com/v1/places/${placeId}`;
+        const fieldMask = fields.join(',');
+
+        const response = await fetch(apiUrl, {
+            next: { revalidate: 3600 },
             headers: {
                 'Content-Type': 'application/json',
                 'X-Goog-Api-Key': apiKey,
@@ -122,7 +166,7 @@ export async function getBusinessDetailsAction(placeId: string) {
             id: rawResponse.id,
             displayName: rawResponse.displayName?.text || 'Nombre no disponible',
             formattedAddress: rawResponse.formattedAddress || 'Dirección no disponible',
-        }
+        };
         
         return { success: true, places: [place], rawResponse };
 

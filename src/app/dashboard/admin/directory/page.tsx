@@ -24,20 +24,6 @@ const categories = [
     "Agencia de Viajes", "Peluquería", "Servicios Financieros", "Otros"
 ];
 
-function extractPlaceIdFromUrl(input: string): string {
-    if (input.includes('share.google') || input.includes('maps.app.goo.gl')) {
-        return 'invalid_short_url';
-    }
-    const placeIdRegex = /(ChI[a-zA-Z0-9_-]{25,})/;
-    const match = input.match(placeIdRegex);
-    
-    if (match && match[0]) {
-        return match[0];
-    }
-    
-    return input.trim();
-}
-
 
 export default function AdminDirectoryPage() {
     const { toast } = useToast();
@@ -57,12 +43,6 @@ export default function AdminDirectoryPage() {
             return;
         }
 
-        const finalPlaceId = extractPlaceIdFromUrl(query);
-        if (finalPlaceId === 'invalid_short_url') {
-            toast({ variant: 'destructive', title: 'URL no válida', description: 'Las URLs cortas (share.google, maps.app.goo.gl) no son compatibles. Por favor, abre la URL en tu navegador y copia la URL completa o el Place ID (empieza con "ChI").' });
-            return;
-        }
-
         startSearchTransition(async () => {
             setSearchResults(null);
             setSearchError(null);
@@ -72,7 +52,7 @@ export default function AdminDirectoryPage() {
             if (searchMode === 'text') {
                 actionResult = await searchBusinessesOnGoogleAction(query);
             } else {
-                actionResult = await getBusinessDetailsAction(finalPlaceId);
+                actionResult = await getBusinessDetailsAction(query);
             }
             
             setRawResponse(actionResult.rawResponse);
@@ -121,7 +101,7 @@ export default function AdminDirectoryPage() {
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="text">Por Texto</SelectItem>
-                                    <SelectItem value="placeId">Por Place ID o URL Completa</SelectItem>
+                                    <SelectItem value="placeId">Por Place ID o URL</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -131,7 +111,7 @@ export default function AdminDirectoryPage() {
                             </Label>
                             <Input
                                 id="search-query"
-                                placeholder={searchMode === 'text' ? 'Ej: Arepas El Sabor, Madrid' : 'Ej: ChIJ... o URL de Google Maps'}
+                                placeholder={searchMode === 'text' ? 'Ej: Arepas El Sabor, Madrid' : 'Ej: ChIJ... o https://share.google/...'}
                                 value={query}
                                 onChange={(e) => setQuery(e.target.value)}
                                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
