@@ -7,7 +7,6 @@ import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { migrationPackages } from "@/lib/placeholder-data";
 import type { MigrationPackage } from "@/lib/types";
-import { getEurToCopRate } from "@/lib/currency-actions";
 
 type PackagesSectionProps = {
     handlePurchaseClick?: (item: MigrationPackage, type: 'package') => void;
