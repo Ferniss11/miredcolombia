@@ -1,16 +1,19 @@
 
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Search, Plus, Building, MapPin, AlertCircle, Code } from 'lucide-react';
-import { searchBusinessesOnGoogleAction, saveBusinessAction } from '@/lib/directory-actions';
+import { Loader2, Search, Plus, Building, MapPin, Trash2, AlertCircle } from 'lucide-react';
+import { searchBusinessesOnGoogleAction, saveBusinessAction, getSavedBusinessesAction, deleteBusinessAction } from '@/lib/directory-actions';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import type { PlaceDetails } from '@/lib/types';
+import { Skeleton } from '@/components/ui/skeleton';
 
 type Place = {
     id: string;
@@ -23,33 +26,46 @@ const categories = [
     "Agencia de Viajes", "Peluquería", "Servicios Financieros", "Otros"
 ];
 
-
 export default function AdminDirectoryPage() {
     const { toast } = useToast();
     const [isSearching, startSearchTransition] = useTransition();
     const [isSaving, startSavingTransition] = useTransition();
-
+    const [isDeleting, startDeletingTransition] = useTransition();
+    
+    // State for Search
     const [query, setQuery] = useState('');
     const [searchResults, setSearchResults] = useState<Place[] | null>(null);
     const [selectedCategory, setSelectedCategory] = useState<string>('');
     const [searchError, setSearchError] = useState<string | null>(null);
-    const [rawResponse, setRawResponse] = useState<any>(null); // For debugging
+
+    // State for Saved Businesses
+    const [savedBusinesses, setSavedBusinesses] = useState<PlaceDetails[]>([]);
+    const [isLoadingSaved, setIsLoadingSaved] = useState(true);
+
+    const fetchSavedBusinesses = async () => {
+        setIsLoadingSaved(true);
+        const result = await getSavedBusinessesAction();
+        if (result.error) {
+            toast({ variant: 'destructive', title: 'Error al Cargar', description: result.error });
+        } else {
+            setSavedBusinesses(result.businesses);
+        }
+        setIsLoadingSaved(false);
+    };
+
+    useEffect(() => {
+        fetchSavedBusinesses();
+    }, []);
 
     const handleSearch = () => {
         if (!query) {
             toast({ variant: 'destructive', title: 'Error', description: 'Por favor, introduce una consulta.' });
             return;
         }
-
         startSearchTransition(async () => {
             setSearchResults(null);
             setSearchError(null);
-            setRawResponse(null);
-            
             const actionResult = await searchBusinessesOnGoogleAction(query);
-            
-            setRawResponse(actionResult.rawResponse);
-
             if (actionResult.error) {
                 setSearchError(actionResult.error);
                 toast({ variant: 'destructive', title: 'Error en la Búsqueda', description: actionResult.error });
@@ -71,42 +87,44 @@ export default function AdminDirectoryPage() {
             } else {
                 toast({ title: 'Éxito', description: result.message });
                 setSearchResults(prev => prev ? prev.filter(p => p.id !== placeId) : null);
+                fetchSavedBusinesses(); // Refresh the list of saved businesses
             }
         });
     };
+
+    const handleDeleteBusiness = (placeId: string) => {
+        if (!confirm('¿Estás seguro de que quieres eliminar este negocio del directorio?')) {
+            return;
+        }
+        startDeletingTransition(async () => {
+            const result = await deleteBusinessAction(placeId);
+            if (result.error) {
+                toast({ variant: 'destructive', title: 'Error al Eliminar', description: result.error });
+            } else {
+                toast({ title: 'Éxito', description: 'El negocio ha sido eliminado.' });
+                fetchSavedBusinesses(); // Refresh the list
+            }
+        });
+    }
 
     return (
         <div className="space-y-6">
             <Card>
                 <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><Building className="w-6 h-6"/>Añadir Negocio al Directorio (Gratuito)</CardTitle>
-                    <CardDescription>
-                        Busca un negocio en Google por su nombre y ciudad para añadirlo al directorio público.
-                    </CardDescription>
+                    <CardTitle className="flex items-center gap-2"><Building className="w-6 h-6"/>Añadir Negocio al Directorio</CardTitle>
+                    <CardDescription>Busca un negocio en Google por su nombre y ciudad para añadirlo.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <div className="flex flex-col md:flex-row items-end gap-2">
+                     <div className="flex flex-col md:flex-row items-end gap-2">
                         <div className="grid w-full gap-1.5">
-                            <Label htmlFor="search-query">
-                                Nombre y Ciudad del Negocio
-                            </Label>
-                            <Input
-                                id="search-query"
-                                placeholder='Ej: La Rochela, Madrid'
-                                value={query}
-                                onChange={(e) => setQuery(e.target.value)}
-                                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                            />
+                            <Label htmlFor="search-query">Búsqueda por Texto (ej: Restaurante La Rochela, Madrid)</Label>
+                            <Input id="search-query" placeholder='Restaurante colombiano en...' value={query} onChange={(e) => setQuery(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSearch()} />
                         </div>
                         <div className="grid w-full md:w-[200px] flex-shrink-0 gap-1.5">
                             <Label htmlFor="category">Categoría a Asignar</Label>
                              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                                <SelectTrigger id="category">
-                                    <SelectValue placeholder="Selecciona categoría" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {categories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
-                                </SelectContent>
+                                <SelectTrigger id="category"><SelectValue placeholder="Selecciona" /></SelectTrigger>
+                                <SelectContent>{categories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}</SelectContent>
                             </Select>
                         </div>
                         <Button onClick={handleSearch} disabled={isSearching} className="w-full md:w-auto flex-shrink-0">
@@ -117,83 +135,76 @@ export default function AdminDirectoryPage() {
                 </CardContent>
             </Card>
 
-            {isSearching && (
-                <div className="text-center p-8 space-y-4">
-                    <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" />
-                    <p className="text-muted-foreground">Buscando en Google Places...</p>
-                </div>
-            )}
-
-            {searchError && (
-                <Alert variant="destructive">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertTitle>Error en la Búsqueda</AlertTitle>
-                    <AlertDescription>
-                        Ocurrió un error al contactar con la API de Google. Esto puede deberse a un problema de configuración de permisos en la consola de Google Cloud.
-                        <pre className="mt-2 text-xs whitespace-pre-wrap break-all p-2 bg-black/10 rounded-md">
-                            {searchError}
-                        </pre>
-                    </AlertDescription>
-                </Alert>
-            )}
-
-            {searchResults !== null && !isSearching && !searchError && (
+            {isSearching && <div className="text-center p-4"><Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" /></div>}
+            {searchError && <Alert variant="destructive"><AlertCircle className="h-4 w-4" /><AlertTitle>Error en Búsqueda</AlertTitle><AlertDescription>{searchError}</AlertDescription></Alert>}
+            
+            {searchResults && searchResults.length > 0 && (
                 <Card>
-                    <CardHeader>
-                        <CardTitle>Resultados de la Búsqueda</CardTitle>
-                         <CardDescription>
-                            {searchResults.length > 0
-                                ? `Se encontraron ${searchResults.length} resultados. Selecciona una categoría y añade los negocios al directorio.`
-                                : "No se encontraron resultados para tu búsqueda. Intenta con otros términos."}
-                        </CardDescription>
-                    </CardHeader>
-                    {searchResults.length > 0 && (
-                        <CardContent className="space-y-4">
-                            {searchResults.map(place => (
-                                <Card key={place.id} className="bg-muted/50">
-                                    <CardContent className="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                                        <div className="space-y-1">
-                                            <h4 className="font-bold">{place.displayName}</h4>
-                                            <p className="text-sm text-muted-foreground flex items-center gap-2">
-                                                <MapPin className="h-4 w-4"/>
-                                                {place.formattedAddress}
-                                            </p>
-                                        </div>
-                                        <Button 
-                                            size="sm" 
-                                            className="w-full sm:w-auto flex-shrink-0"
-                                            onClick={() => handleAddBusiness(place.id)}
-                                            disabled={isSaving || !selectedCategory}
-                                        >
-                                            {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
-                                            Añadir
-                                        </Button>
-                                    </CardContent>
-                                </Card>
-                            ))}
-                        </CardContent>
-                    )}
-                </Card>
-            )}
-
-            {rawResponse && (
-                 <Card className="mt-6">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2 text-base">
-                            <Code className="h-5 w-5" />
-                            Respuesta de la API de Google (Depuración)
-                        </CardTitle>
-                        <CardDescription>
-                            Este es el objeto JSON exacto devuelto por la API de Google Places. Úsalo para entender por qué una búsqueda podría no funcionar. Si ves un error de "PERMISSION_DENIED" o "SERVICE_BLOCKED", verifica la configuración de tu clave de API en la Google Cloud Console.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                         <pre className="text-xs whitespace-pre-wrap break-all p-4 bg-black text-white rounded-md overflow-x-auto">
-                            {JSON.stringify(rawResponse, null, 2)}
-                        </pre>
+                    <CardHeader><CardTitle>Resultados de Búsqueda</CardTitle></CardHeader>
+                    <CardContent className="space-y-2">
+                        {searchResults.map(place => (
+                            <Card key={place.id} className="bg-muted/50">
+                                <CardContent className="p-3 flex items-center justify-between gap-2">
+                                    <div>
+                                        <p className="font-bold">{place.displayName}</p>
+                                        <p className="text-sm text-muted-foreground">{place.formattedAddress}</p>
+                                    </div>
+                                    <Button size="sm" onClick={() => handleAddBusiness(place.id)} disabled={isSaving || !selectedCategory}>
+                                        {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />} Añadir
+                                    </Button>
+                                </CardContent>
+                            </Card>
+                        ))}
                     </CardContent>
                 </Card>
             )}
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Directorio Guardado</CardTitle>
+                    <CardDescription>Lista de todos los negocios actualmente en el directorio.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Nombre del Negocio</TableHead>
+                                <TableHead>Categoría</TableHead>
+                                <TableHead>Dirección</TableHead>
+                                <TableHead className="text-right">Acciones</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {isLoadingSaved ? (
+                                Array.from({ length: 3 }).map((_, i) => (
+                                    <TableRow key={i}>
+                                        <TableCell colSpan={4}><Skeleton className="h-5 w-full" /></TableCell>
+                                    </TableRow>
+                                ))
+                            ) : savedBusinesses.length > 0 ? (
+                                savedBusinesses.map(biz => (
+                                    <TableRow key={biz.id}>
+                                        <TableCell className="font-medium">{biz.displayName}</TableCell>
+                                        <TableCell>{biz.category}</TableCell>
+                                        <TableCell>{biz.formattedAddress}</TableCell>
+                                        <TableCell className="text-right">
+                                            <Button variant="ghost" size="icon" onClick={() => handleDeleteBusiness(biz.id)} disabled={isDeleting}>
+                                                <Trash2 className="h-4 w-4 text-destructive" />
+                                            </Button>
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            ) : (
+                                <TableRow>
+                                    <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                                        No hay negocios en el directorio todavía.
+                                    </TableCell>
+                                </TableRow>
+                            )}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
         </div>
     );
 }

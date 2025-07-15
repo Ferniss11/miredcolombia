@@ -263,3 +263,12 @@ export const AgentConfigSchema = z.object({
   systemPrompt: z.string().default('You are a helpful assistant.'),
 });
 export type AgentConfig = z.infer<typeof AgentConfigSchema>;
+
+
+// Directory / Places types
+export type PlaceDetails = {
+  id: string;
+  displayName: string;
+  formattedAddress: string;
+  category: string;
+};
