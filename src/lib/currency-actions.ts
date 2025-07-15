@@ -49,3 +49,4 @@ export async function getEurToCopRate(): Promise<number> {
         return 4300; 
     }
 }
+
