@@ -3,12 +3,15 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { ArrowRight, Newspaper, Calendar, User } from "lucide-react";
-import { getPublishedBlogPosts } from "@/services/blog.service";
 import Image from "next/image";
+import type { BlogPost } from "@/lib/types";
 
-export default async function BlogSection() {
-    const { posts } = await getPublishedBlogPosts();
-    const latestPosts = posts?.slice(0, 3) || [];
+type BlogSectionProps = {
+    posts: BlogPost[];
+};
+
+export default function BlogSection({ posts }: BlogSectionProps) {
+    const latestPosts = posts.slice(0, 3);
 
     return (
         <section className="w-full py-12 md:py-24 lg:py-32">
@@ -84,4 +87,3 @@ export default async function BlogSection() {
         </section>
     );
 }
-

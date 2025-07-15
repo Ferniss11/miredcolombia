@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import StripeCheckoutForm from "@/components/checkout/StripeCheckoutForm";
-import type { MigrationPackage, MigrationService, PurchaseableItem } from '@/lib/types';
+import type { MigrationPackage, MigrationService, PurchaseableItem, BlogPost } from '@/lib/types';
 import ChatWidget from '@/components/chat/ChatWidget';
 import VideoModal from '@/components/ui/video-modal';
 
@@ -17,8 +17,11 @@ import TimezoneSection from './TimezoneSection';
 import BlogSection from './BlogSection';
 import BusinessSection from './BusinessSection';
 
+type HomePageClientProps = {
+  initialPosts: BlogPost[];
+}
 
-export default function HomePageClient() {
+export default function HomePageClient({ initialPosts }: HomePageClientProps) {
   const [isCheckoutOpen, setCheckoutOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<PurchaseableItem | null>(null);
 
@@ -46,7 +49,7 @@ export default function HomePageClient() {
         <PackagesSection handlePurchaseClick={handlePurchaseClick} />
         <ServicesSection handlePurchaseClick={handlePurchaseClick} />
         <TimezoneSection />
-        <BlogSection />
+        <BlogSection posts={initialPosts} />
         <BusinessSection />
       </main>
 
