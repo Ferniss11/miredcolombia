@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useForm } from "react-hook-form";
@@ -18,6 +19,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Loader2, Search, Link as LinkIcon, Building, UserCheck, XCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { cn } from "@/lib/utils";
 
 const businessProfileSchema = z.object({
     businessName: z.string().min(2, { message: "El nombre del negocio debe tener al menos 2 caracteres." }),
@@ -343,3 +345,5 @@ export default function AdvertiserProfilePage() {
         </div>
     );
 }
+
+    
