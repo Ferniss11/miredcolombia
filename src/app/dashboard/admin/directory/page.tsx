@@ -7,13 +7,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Search, Plus, Building, MapPin, Trash2, AlertCircle } from 'lucide-react';
+import { Loader2, Search, Plus, Building, MapPin, Trash2, AlertCircle, Link, UserCheck, UserX } from 'lucide-react';
 import { searchBusinessesOnGoogleAction, saveBusinessAction, getSavedBusinessesAction, deleteBusinessAction } from '@/lib/directory-actions';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import type { PlaceDetails } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useAuth } from '@/context/AuthContext';
+import { Badge } from '@/components/ui/badge';
 
 type Place = {
     id: string;
@@ -28,6 +30,7 @@ const categories = [
 
 export default function AdminDirectoryPage() {
     const { toast } = useToast();
+    const { user } = useAuth();
     const [isSearching, startSearchTransition] = useTransition();
     const [isSaving, startSavingTransition] = useTransition();
     const [isDeleting, startDeletingTransition] = useTransition();
@@ -47,7 +50,7 @@ export default function AdminDirectoryPage() {
         const result = await getSavedBusinessesAction();
         if (result.error) {
             toast({ variant: 'destructive', title: 'Error al Cargar', description: result.error });
-        } else {
+        } else if (result.businesses) {
             setSavedBusinesses(result.businesses);
         }
         setIsLoadingSaved(false);
@@ -80,8 +83,12 @@ export default function AdminDirectoryPage() {
             toast({ variant: 'destructive', title: 'Error', description: 'Por favor, selecciona una categoría para el negocio.' });
             return;
         }
+        if (!user) {
+             toast({ variant: 'destructive', title: 'Error', description: 'Debes estar autenticado para realizar esta acción.' });
+            return;
+        }
         startSavingTransition(async () => {
-            const result = await saveBusinessAction(placeId, selectedCategory);
+            const result = await saveBusinessAction(placeId, selectedCategory, user.uid);
             if (result.error) {
                 toast({ variant: 'destructive', title: 'Error al Guardar', description: result.error });
             } else {
@@ -170,6 +177,7 @@ export default function AdminDirectoryPage() {
                             <TableRow>
                                 <TableHead>Nombre del Negocio</TableHead>
                                 <TableHead>Categoría</TableHead>
+                                <TableHead>Estado</TableHead>
                                 <TableHead>Dirección</TableHead>
                                 <TableHead className="text-right">Acciones</TableHead>
                             </TableRow>
@@ -178,15 +186,24 @@ export default function AdminDirectoryPage() {
                             {isLoadingSaved ? (
                                 Array.from({ length: 3 }).map((_, i) => (
                                     <TableRow key={i}>
-                                        <TableCell colSpan={4}><Skeleton className="h-5 w-full" /></TableCell>
+                                        <TableCell colSpan={5}><Skeleton className="h-5 w-full" /></TableCell>
                                     </TableRow>
                                 ))
                             ) : savedBusinesses.length > 0 ? (
                                 savedBusinesses.map(biz => (
                                     <TableRow key={biz.id}>
                                         <TableCell className="font-medium">{biz.displayName}</TableCell>
-                                        <TableCell>{biz.category}</TableCell>
-                                        <TableCell>{biz.formattedAddress}</TableCell>
+                                        <TableCell><Badge variant="secondary">{biz.category}</Badge></TableCell>
+                                        <TableCell>
+                                            <div className="flex items-center gap-2">
+                                                {biz.ownerUid ? <UserCheck className="h-4 w-4 text-green-500" /> : <UserX className="h-4 w-4 text-red-500" />}
+                                                <span className='text-xs'>
+                                                   {biz.ownerUid ? "Vinculado" : "No Vinculado"}
+                                                </span>
+                                            </div>
+                                            <Badge variant="outline" className="mt-1">{biz.subscriptionTier}</Badge>
+                                        </TableCell>
+                                        <TableCell className="text-xs text-muted-foreground">{biz.formattedAddress}</TableCell>
                                         <TableCell className="text-right">
                                             <Button variant="ghost" size="icon" onClick={() => handleDeleteBusiness(biz.id)} disabled={isDeleting}>
                                                 <Trash2 className="h-4 w-4 text-destructive" />
@@ -196,7 +213,7 @@ export default function AdminDirectoryPage() {
                                 ))
                             ) : (
                                 <TableRow>
-                                    <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                                    <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
                                         No hay negocios en el directorio todavía.
                                     </TableCell>
                                 </TableRow>

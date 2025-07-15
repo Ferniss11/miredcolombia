@@ -20,11 +20,14 @@ function getDbInstance() {
 /**
  * Server Action to search for businesses using the Google Places Genkit tool.
  * @param query - The search query (e.g., "Business Name, City").
- * @returns An object containing the list of places and the raw API response for debugging.
+ * @returns An object containing the list of places.
  */
 export async function searchBusinessesOnGoogleAction(query: string) {
     try {
         const result = await googlePlacesSearch({ query });
+        if (result.error) {
+            throw new Error(result.error);
+        }
         return { 
             success: true, 
             places: result.places,
@@ -35,7 +38,7 @@ export async function searchBusinessesOnGoogleAction(query: string) {
         const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
         return { 
             success: false, 
-            error: errorMessage,
+            error: `Error en la búsqueda de Google: ${errorMessage}`,
             rawResponse: { error: errorMessage, from: "Action" }
         };
     }
@@ -47,7 +50,7 @@ export async function searchBusinessesOnGoogleAction(query: string) {
  * @param category - The category assigned by the admin.
  * @returns An object indicating success or failure.
  */
-export async function saveBusinessAction(placeId: string, category: string) {
+export async function saveBusinessAction(placeId: string, category: string, adminUid: string) {
     const db = getDbInstance();
      if (!FieldValue) throw new Error("Firebase Admin SDK is not fully initialized.");
     try {
@@ -61,8 +64,11 @@ export async function saveBusinessAction(placeId: string, category: string) {
         await businessRef.set({
             placeId: placeId,
             category: category,
+            subscriptionTier: 'Gratuito', // Default tier
+            isFeatured: false,
+            ownerUid: null,
+            addedBy: adminUid,
             createdAt: FieldValue.serverTimestamp(),
-            source: 'AdminGratuito'
         });
 
         revalidatePath('/dashboard/admin/directory');
@@ -76,10 +82,11 @@ export async function saveBusinessAction(placeId: string, category: string) {
 
 /**
  * Fetches details for a single place ID from Google Places API.
+ * This is used to enrich the data we get from Firestore.
  * @param placeId The Place ID to look up.
  * @returns The place details or null if not found.
  */
-async function getPlaceDetails(placeId: string): Promise<PlaceDetails | null> {
+async function getPlaceDetails(placeId: string): Promise<Omit<PlaceDetails, 'category' | 'subscriptionTier' | 'ownerUid'> | null> {
     const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
     if (!apiKey) {
         throw new Error("NEXT_PUBLIC_GOOGLE_MAPS_API_KEY environment variable not set.");
@@ -88,7 +95,7 @@ async function getPlaceDetails(placeId: string): Promise<PlaceDetails | null> {
         const response = await googleMapsClient.placeDetails({
             params: {
                 place_id: placeId,
-                fields: ['name', 'formatted_address', 'place_id', 'types'],
+                fields: ['name', 'formatted_address', 'place_id'],
                 key: apiKey,
             }
         });
@@ -99,7 +106,6 @@ async function getPlaceDetails(placeId: string): Promise<PlaceDetails | null> {
                 id: result.place_id!,
                 displayName: result.name || 'Nombre no disponible',
                 formattedAddress: result.formatted_address || 'Dirección no disponible',
-                category: result.types?.[0] || 'General'
             };
         }
         return null;
@@ -112,7 +118,7 @@ async function getPlaceDetails(placeId: string): Promise<PlaceDetails | null> {
 /**
  * Retrieves all saved businesses from Firestore and enriches them with details from Google Places API.
  */
-export async function getSavedBusinessesAction(): Promise<{ businesses: PlaceDetails[], error?: string }> {
+export async function getSavedBusinessesAction(): Promise<{ businesses?: PlaceDetails[], error?: string }> {
     const db = getDbInstance();
     try {
         const snapshot = await db.collection('directory').orderBy('createdAt', 'desc').get();
@@ -120,29 +126,31 @@ export async function getSavedBusinessesAction(): Promise<{ businesses: PlaceDet
             return { businesses: [] };
         }
         
-        const placeIds = snapshot.docs.map(doc => doc.data().placeId);
-        
         // Fetch details for all place IDs in parallel
-        const businessDetailsPromises = placeIds.map(id => getPlaceDetails(id));
-        const resolvedDetails = await Promise.all(businessDetailsPromises);
+        const businessDetailsPromises = snapshot.docs.map(async (doc) => {
+            const docData = doc.data();
+            const placeId = docData.placeId;
 
-        // Filter out any null results from failed API calls
-        const businesses = resolvedDetails.filter((detail): detail is PlaceDetails => detail !== null);
-        
-        // Map Firestore category to the final object
-        businesses.forEach(business => {
-            const firestoreDoc = snapshot.docs.find(doc => doc.id === business.id);
-            if (firestoreDoc) {
-                business.category = firestoreDoc.data().category || business.category;
-            }
+            const details = await getPlaceDetails(placeId);
+            if (!details) return null; // Skip if Google API fails for one ID
+
+            return {
+                ...details,
+                category: docData.category,
+                subscriptionTier: docData.subscriptionTier,
+                ownerUid: docData.ownerUid,
+            } as PlaceDetails;
         });
+        
+        const resolvedDetails = await Promise.all(businessDetailsPromises);
+        const businesses = resolvedDetails.filter((detail): detail is PlaceDetails => detail !== null);
 
         return { businesses };
 
     } catch (error) {
         console.error("Error getting saved businesses:", error);
         const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
-        return { businesses: [], error: errorMessage };
+        return { error: errorMessage };
     }
 }
 
@@ -158,6 +166,48 @@ export async function deleteBusinessAction(placeId: string): Promise<{ success: 
         return { success: true };
     } catch (error) {
         console.error("Error deleting business:", error);
+        const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
+        return { success: false, error: errorMessage };
+    }
+}
+
+/**
+ * Links a Google Place to an advertiser's user profile.
+ * @param userId The advertiser's UID.
+ * @param placeId The Google Place ID of their business.
+ */
+export async function linkBusinessToAdvertiserAction(userId: string, placeId: string): Promise<{ success: boolean; error?: string }> {
+    const db = getDbInstance();
+    try {
+        const userRef = db.collection('users').doc(userId);
+        const businessRef = db.collection('directory').doc(placeId);
+
+        // Check if the business exists in our directory
+        const businessSnap = await businessRef.get();
+        if (!businessSnap.exists) {
+            return { success: false, error: 'Este negocio no existe en nuestro directorio. Por favor, contacta con un administrador.' };
+        }
+        
+        // Check if the business is already claimed
+        if (businessSnap.data()?.ownerUid) {
+             return { success: false, error: 'Este negocio ya ha sido reclamado por otro usuario.' };
+        }
+
+        // Use a transaction to ensure atomicity
+        await db.runTransaction(async (transaction) => {
+            // Update the business document with the owner's UID
+            transaction.update(businessRef, { ownerUid: userId });
+            // Update the user's profile with the Place ID
+            transaction.update(userRef, { 'businessProfile.placeId': placeId });
+        });
+
+        revalidatePath('/dashboard/admin/directory');
+        revalidatePath('/dashboard/advertiser/profile');
+
+        return { success: true };
+
+    } catch (error) {
+        console.error("Error linking business to advertiser:", error);
         const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
         return { success: false, error: errorMessage };
     }

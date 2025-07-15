@@ -92,6 +92,7 @@ export type BusinessProfile = {
   phone: string;
   website: string;
   description: string;
+  placeId?: string; // The linked Google Place ID
 };
 
 export type UserProfile = {
@@ -267,8 +268,10 @@ export type AgentConfig = z.infer<typeof AgentConfigSchema>;
 
 // Directory / Places types
 export type PlaceDetails = {
-  id: string;
+  id: string; // The Google Place ID
   displayName: string;
   formattedAddress: string;
-  category: string;
+  category: string; // The category assigned in *our* system
+  subscriptionTier?: string; // e.g., 'Gratuito', 'Premium'
+  ownerUid?: string | null; // UID of the advertiser user who owns this
 };
