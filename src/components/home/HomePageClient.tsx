@@ -61,11 +61,11 @@ export default function HomePageClient({ initialPosts, eurToCopRate }: HomePageC
         <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Completa tu compra</DialogTitle>
-            {selectedItem && 
+            {selectedItem && (
                 <DialogDescription>
-                    Estás a un paso de adquirir {selectedItem.type === 'package' ? selectedItem.name : selectedItem.title}.
+                    Estás a un paso de adquirir {selectedItem.name}.
                 </DialogDescription>
-            }
+            )}
           </DialogHeader>
           {selectedItem && (
             <StripeCheckoutForm item={selectedItem} />

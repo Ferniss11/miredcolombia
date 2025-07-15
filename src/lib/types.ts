@@ -159,6 +159,7 @@ export type SubscriptionPlan = {
 export type MigrationPackage = {
     id:string;
     name: string;
+    title: string; // For consistency
     price: number;
     priceCOP: string;
     description: string;
@@ -172,6 +173,7 @@ export type MigrationService = {
     id: string;
     icon: string;
     title: string;
+    name: string; // For consistency
     price: number;
     priceCol: string;
     description: string;

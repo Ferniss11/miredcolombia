@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -106,7 +107,7 @@ const CheckoutFormWithSteps = ({ item }: CheckoutFormProps) => {
                 wantsWhatsAppContact: formData.wantsWhatsAppContact,
                 comments: formData.comments,
                 itemId: item.id,
-                itemName: item.name || item.title,
+                itemName: item.name,
                 amount: item.price,
                 currency: 'eur',
                 status: 'succeeded',
@@ -261,7 +262,7 @@ const CheckoutFormWithSteps = ({ item }: CheckoutFormProps) => {
                     <CardContent className="space-y-2 text-sm">
                         <div className="flex justify-between">
                             <span className="text-muted-foreground">Producto:</span>
-                            <span className="font-medium">{item.name || item.title}</span>
+                            <span className="font-medium">{item.name}</span>
                         </div>
                         <div className="flex justify-between">
                             <span className="text-muted-foreground">Comprador:</span>
@@ -326,7 +327,7 @@ const StripeCheckoutForm = ({ item }: CheckoutFormProps) => {
 
     useEffect(() => {
         if (item) {
-            createPaymentIntentAction({ amount: item.price, metadata: { itemId: item.id, itemName: item.name || item.title } })
+            createPaymentIntentAction({ amount: item.price, metadata: { itemId: item.id, itemName: item.name } })
                 .then(data => {
                     if (data.error) {
                         setError(data.error);
