@@ -240,7 +240,7 @@ export const migrationPackages: MigrationPackage[] = [
     id: 'esencial',
     name: 'Esencial',
     price: 500,
-    priceCOP: '$2,150,000 COP',
+    priceCOP: '',
     description: 'Perfecto para comenzar tu proceso migratorio con lo fundamental en España',
     features: [
       'Asesoría inicial personalizada (2 horas)',
@@ -259,7 +259,7 @@ export const migrationPackages: MigrationPackage[] = [
     id: 'vip',
     name: 'VIP',
     price: 700,
-    priceCOP: '$6,450,000 COP',
+    priceCOP: '',
     description: 'Acompañamiento completo durante todo tu proceso de migración',
     features: [
       'Todo lo del paquete Esencial',
@@ -277,7 +277,7 @@ export const migrationPackages: MigrationPackage[] = [
     id: 'empresarial',
     name: 'Empresarial',
     price: 1500,
-    priceCOP: '$10,750,000 COP',
+    priceCOP: '',
     description: 'Servicio premium con atención personalizada y exclusiva para emprendedores colombianos',
     features: [
       'Todo lo del paquete Integral',
@@ -299,7 +299,7 @@ export const migrationServices: MigrationService[] = [
     icon: "User",
     title: "Asesoría Inicial",
     price: 125,
-    priceCol: "$645.000 COP",
+    priceCol: "",
     description: "Consulta personalizada de 2 horas para evaluar tu caso y crear plan de migración",
     borderColor: "border-blue-500",
     buttonColor: "bg-blue-600 hover:bg-blue-700"
@@ -309,7 +309,7 @@ export const migrationServices: MigrationService[] = [
     icon: "FileText",
     title: "Gestión NIE/TIE",
     price: 350,
-    priceCol: "$1.700.000 COP",
+    priceCol: "",
     description: "Tramitación completa de documentos de identificación para extranjeros",
     borderColor: "border-green-500",
     buttonColor: "bg-green-600 hover:bg-green-700"
@@ -319,7 +319,7 @@ export const migrationServices: MigrationService[] = [
     icon: "Home",
     title: "Búsqueda Vivienda",
     price: 125,
-    priceCol: "$1.505.000 COP",
+    priceCol: "",
     description: "Búsqueda personalizada de apartamentos y apoyo en contratos de alquiler",
     borderColor: "border-yellow-500",
     buttonColor: "bg-yellow-600 hover:bg-yellow-700"
@@ -329,7 +329,7 @@ export const migrationServices: MigrationService[] = [
     icon: "CreditCard",
     title: "Asesoramiento para apertura Cuenta Bancaria",
     price: 50,
-    priceCol: "$860.000 COP",
+    priceCol: "",
     description: "Acompañamiento para apertura de cuenta bancaria y gestión inicial",
     borderColor: "border-red-500",
     buttonColor: "bg-red-600 hover:bg-red-700"
@@ -339,7 +339,7 @@ export const migrationServices: MigrationService[] = [
     icon: "Shield",
     title: "Seguro de Salud",
     price: 100,
-    priceCol: "$774.000 COP",
+    priceCol: "",
     description: "Asesoramiento y contratación de seguro médico privado",
     borderColor: "border-indigo-500",
     buttonColor: "bg-indigo-600 hover:bg-indigo-700"
@@ -349,7 +349,7 @@ export const migrationServices: MigrationService[] = [
     icon: "Plane",
     title: "Recogida Aeropuerto",
     price: 50,
-    priceCol: "$516.000 COP",
+    priceCol: "",
     description: "Servicio de bienvenida y traslado desde el aeropuerto a tu alojamiento. Sólo Madrid",
     borderColor: "border-purple-500",
     buttonColor: "bg-purple-600 hover:bg-purple-700"
@@ -359,7 +359,7 @@ export const migrationServices: MigrationService[] = [
     icon: "MapPin",
     title: "Alojamiento Temporal",
     price: 50,
-    priceCol: "$344.000 COP/día",
+    priceCol: "",
     description: "Hospedaje en apartamentos seguros mientras encuentras tu vivienda definitiva.",
     borderColor: "border-orange-500",
     buttonColor: "bg-orange-600 hover:bg-orange-700"
@@ -369,7 +369,7 @@ export const migrationServices: MigrationService[] = [
     icon: "Clock",
     title: "Soporte 24/7",
     price: 90,
-    priceCol: "$1.290.000 COP/mes",
+    priceCol: "",
     description: "Asistencia telefónica y WhatsApp las 24 horas durante tu primer mes",
     borderColor: "border-teal-500",
     buttonColor: "bg-teal-600 hover:bg-teal-700"

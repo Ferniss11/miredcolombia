@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState } from 'react';
@@ -19,9 +20,10 @@ import BusinessSection from './BusinessSection';
 
 type HomePageClientProps = {
   initialPosts: BlogPost[];
+  eurToCopRate: number;
 }
 
-export default function HomePageClient({ initialPosts }: HomePageClientProps) {
+export default function HomePageClient({ initialPosts, eurToCopRate }: HomePageClientProps) {
   const [isCheckoutOpen, setCheckoutOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<PurchaseableItem | null>(null);
 
@@ -46,8 +48,8 @@ export default function HomePageClient({ initialPosts }: HomePageClientProps) {
         <HeroSection />
         <AboutSection handleVideoClick={handleVideoClick} />
         <StepsSection />
-        <PackagesSection handlePurchaseClick={handlePurchaseClick} />
-        <ServicesSection handlePurchaseClick={handlePurchaseClick} />
+        <PackagesSection handlePurchaseClick={handlePurchaseClick} eurToCopRate={eurToCopRate} />
+        <ServicesSection handlePurchaseClick={handlePurchaseClick} eurToCopRate={eurToCopRate} />
         <TimezoneSection />
         <BlogSection posts={initialPosts} />
         <BusinessSection />

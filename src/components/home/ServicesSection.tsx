@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Card, CardHeader, CardContent, CardFooter, CardTitle } from "@/components/ui/card";
@@ -30,14 +31,19 @@ const serviceIcons: { [key: string]: LucideIcon } = {
 
 type ServicesSectionProps = {
     handlePurchaseClick?: (item: MigrationService, type: 'service') => void;
+    eurToCopRate: number;
 };
 
-const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(price);
+const formatPrice = (price: number, currency: 'EUR' | 'COP') => {
+    return new Intl.NumberFormat(currency === 'EUR' ? 'es-ES' : 'es-CO', { 
+        style: 'currency', 
+        currency,
+        maximumFractionDigits: 0,
+    }).format(price);
 };
 
 
-export default function ServicesSection({ handlePurchaseClick }: ServicesSectionProps) {
+export default function ServicesSection({ handlePurchaseClick, eurToCopRate }: ServicesSectionProps) {
     return (
         <section id="services" className="w-full py-12 md:py-24 lg:py-32 bg-gray-100 dark:bg-gray-800">
             <div className="container px-4 md:px-6">
@@ -53,6 +59,7 @@ export default function ServicesSection({ handlePurchaseClick }: ServicesSection
                 <div className="mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 py-12">
                     {migrationServices.map((service) => {
                         const Icon = serviceIcons[service.icon];
+                        const priceInCop = service.price * eurToCopRate;
                         return (
                             <Card key={service.id} className={cn("overflow-hidden shadow-md hover:shadow-xl transition-shadow duration-300 flex flex-col")}>
                                 <div className="h-1.5 flex w-full">
@@ -66,8 +73,8 @@ export default function ServicesSection({ handlePurchaseClick }: ServicesSection
                                     <CardTitle className="font-headline text-xl mt-4">{service.title}</CardTitle>
                                 </CardHeader>
                                 <CardContent className="text-center flex-grow">
-                                    <p className="text-2xl font-bold">{formatPrice(service.price)}</p>
-                                    <p className="text-xs text-muted-foreground">{service.priceCol}</p>
+                                    <p className="text-2xl font-bold">{formatPrice(service.price, 'EUR')}</p>
+                                    <p className="text-xs text-muted-foreground">Aprox. {formatPrice(priceInCop, 'COP')}</p>
                                     <p className="mt-2 text-sm">{service.description}</p>
                                 </CardContent>
                                 <CardFooter>
