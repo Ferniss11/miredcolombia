@@ -49,7 +49,7 @@ export default function BlogSection({ posts }: BlogSectionProps) {
                                     <div className="flex items-center space-x-4 text-xs text-muted-foreground pt-2">
                                     <div className="flex items-center">
                                         <Calendar className="w-4 h-4 mr-1.5" />
-                                        {new Date(post.date).toLocaleDateString()}
+                                        {new Date(post.date).toLocaleDateString('es-ES')}
                                     </div>
                                     <div className="flex items-center">
                                         <User className="w-4 h-4 mr-1.5" />
