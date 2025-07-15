@@ -77,21 +77,29 @@ export async function saveBusinessAction(placeId: string, category: string) {
  * @returns The resolved long URL.
  */
 async function resolveShortUrl(shortUrl: string): Promise<string> {
-    const response = await fetch(shortUrl, { method: 'HEAD', redirect: 'manual' });
-    // The long URL is in the 'Location' header of the redirect response.
-    const longUrl = response.headers.get('location');
-    if (!longUrl) {
-        throw new Error(`No se pudo resolver la URL corta: ${shortUrl}. La cabecera 'Location' no fue encontrada.`);
+    try {
+        const response = await fetch(shortUrl, { method: 'HEAD', redirect: 'manual' });
+        // The long URL is in the 'Location' header of the redirect response.
+        const longUrl = response.headers.get('location');
+        if (!longUrl) {
+            throw new Error(`No se pudo resolver la URL corta: ${shortUrl}. La cabecera 'Location' no fue encontrada.`);
+        }
+        return longUrl;
+    } catch (e) {
+        // This can happen due to network issues or if the URL isn't a valid redirect
+        throw new Error(`Error al intentar resolver la URL corta: ${(e as Error).message}`);
     }
-    return longUrl;
 }
+
 
 /**
  * Extracts a Google Place ID from a given string, which can be a full URL or just the ID.
+ * Uses a robust regex to find Place IDs which always start with "ChI".
  * @param input - The string containing the Place ID.
- * @returns The extracted Place ID.
+ * @returns The extracted Place ID, or null if not found.
  */
 function extractPlaceIdFromUrl(input: string): string | null {
+    // This regex specifically looks for the Place ID format (starts with ChI...)
     const placeIdRegex = /(ChI[a-zA-Z0-9_-]{25,})/;
     const match = input.match(placeIdRegex);
     return match ? match[0] : null;
@@ -110,28 +118,29 @@ export async function getBusinessDetailsAction(placeIdOrUrl: string) {
         return { success: false, error: "Google API Key is not configured." };
     }
 
-    let placeId = placeIdOrUrl;
+    let placeId: string | null = null;
+    let effectiveInput = placeIdOrUrl.trim();
 
     try {
         // Step 1: Check if the input is a short URL and resolve it.
-        if (placeIdOrUrl.startsWith('https://maps.app.goo.gl') || placeIdOrUrl.startsWith('https://share.google')) {
-            const longUrl = await resolveShortUrl(placeIdOrUrl);
-            const extractedId = extractPlaceIdFromUrl(longUrl);
-            if (!extractedId) {
+        if (effectiveInput.startsWith('https://maps.app.goo.gl') || effectiveInput.startsWith('https://g.co/kgs') || effectiveInput.startsWith('https://share.google')) {
+            const longUrl = await resolveShortUrl(effectiveInput);
+            placeId = extractPlaceIdFromUrl(longUrl);
+             if (!placeId) {
                 throw new Error(`No se pudo extraer el Place ID de la URL resuelta: ${longUrl}`);
             }
-            placeId = extractedId;
-        } else if (placeIdOrUrl.includes('google.com/maps')) {
-            // Step 2: If it's a long URL, just extract the ID.
-            const extractedId = extractPlaceIdFromUrl(placeIdOrUrl);
-            if (!extractedId) {
-                throw new Error(`No se pudo extraer el Place ID de la URL: ${placeIdOrUrl}`);
+        } else if (effectiveInput.includes('google.com/maps') || effectiveInput.includes('google.com/search')) {
+            // Step 2: If it's a long URL, just try to extract the ID.
+            placeId = extractPlaceIdFromUrl(effectiveInput);
+            if (!placeId) {
+                throw new Error(`No se pudo extraer el Place ID de la URL: ${effectiveInput}`);
             }
-            placeId = extractedId;
+        } else {
+             // Step 3: Assume it's a direct Place ID.
+             placeId = effectiveInput;
         }
 
-        // Step 3: At this point, `placeId` should be a clean ID string. Validate it.
-        if (!placeId.startsWith('ChI')) {
+        if (!placeId || !placeId.startsWith('ChI')) {
             return { success: false, error: `El ID de lugar proporcionado no es válido: "${placeId}"`, rawResponse: { error: "Invalid Place ID format" } };
         }
 
