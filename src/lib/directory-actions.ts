@@ -78,21 +78,18 @@ export async function saveBusinessAction(placeId: string, category: string) {
  */
 async function resolveShortUrl(shortUrl: string): Promise<string> {
     try {
-        // Use a more robust fetch with a user-agent to mimic a browser
         const response = await fetch(shortUrl, {
             method: 'GET',
-            redirect: 'follow', // Let fetch handle the redirects automatically
+            redirect: 'follow',
             headers: {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
             }
         });
-        // The final URL after all redirects
         if (!response.url) {
             throw new Error(`No se pudo resolver la URL corta: ${shortUrl}. La URL final no fue encontrada.`);
         }
         return response.url;
     } catch (e) {
-        // This can happen due to network issues or if the URL isn't a valid redirect
         throw new Error(`Error al intentar resolver la URL corta: ${(e as Error).message}`);
     }
 }
@@ -105,8 +102,6 @@ async function resolveShortUrl(shortUrl: string): Promise<string> {
  * @returns The extracted Place ID, or null if not found.
  */
 function extractPlaceIdFromUrl(input: string): string | null {
-    // This regex specifically looks for the Place ID format (starts with ChI...)
-    // It's more reliable than trying to parse different URL structures.
     const placeIdRegex = /(ChI[a-zA-Z0-9_-]{25,})/;
     const match = input.match(placeIdRegex);
     return match ? match[0] : null;
@@ -129,24 +124,20 @@ export async function getBusinessDetailsAction(placeIdOrUrl: string) {
     let effectiveInput = placeIdOrUrl.trim();
 
     try {
-        // Step 1: Check if the input is a short URL and resolve it.
-        if (effectiveInput.startsWith('https://maps.app.goo.gl') || effectiveInput.startsWith('https://g.co/kgs') || effectiveInput.startsWith('https://share.google')) {
+        if (effectiveInput.startsWith('http')) {
             const longUrl = await resolveShortUrl(effectiveInput);
             placeId = extractPlaceIdFromUrl(longUrl);
              if (!placeId) {
                 throw new Error(`No se pudo extraer el Place ID de la URL resuelta: ${longUrl}`);
             }
         } else {
-             // Step 2: For any other input (long URL or direct ID), just try to extract the ID.
              placeId = extractPlaceIdFromUrl(effectiveInput);
         }
 
-        if (!placeId || !placeId.startsWith('ChI')) {
-             // If no Place ID was found, it's an invalid input.
+        if (!placeId) {
             return { success: false, error: `El ID de lugar o la URL no son válidos: "${placeIdOrUrl}"`, rawResponse: { error: "Invalid Place ID format or URL" } };
         }
 
-        // Step 3: Fetch details from Google Places API.
         const fields = ['id', 'displayName', 'formattedAddress'];
         const apiUrl = `https://places.googleapis.com/v1/places/${placeId}`;
         const fieldMask = fields.join(',');
@@ -171,7 +162,6 @@ export async function getBusinessDetailsAction(placeIdOrUrl: string) {
             throw new Error(`Google Places API error: ${JSON.stringify(rawResponse)}`);
         }
 
-        // Remap the raw response to the format our UI expects
         const place = {
             id: rawResponse.id,
             displayName: rawResponse.displayName?.text || 'Nombre no disponible',
