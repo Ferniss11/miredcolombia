@@ -3,6 +3,7 @@
 
 /**
  * @fileOverview Defines a Genkit tool for searching businesses using the Google Places API.
+ * This tool now supports both specific text queries and more generic, location-based category searches.
  */
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
@@ -16,16 +17,19 @@ const PlaceSchema = z.object({
 export const googlePlacesSearch = ai.defineTool(
   {
     name: 'googlePlacesSearch',
-    description: 'Searches for businesses on Google Maps and returns a list of potential matches with their Place IDs.',
+    description: 'Searches for businesses on Google Maps. Can be used for specific queries (e.g., "Arepas El Sabor, Madrid") or generic category searches (e.g., query="Restaurante Colombiano", location="Madrid"). Returns a list of matches with their Place IDs.',
     inputSchema: z.object({
-      query: z.string().describe('The name and/or address of the business to search for. Example: "Arepas El Sabor, Madrid".'),
+      query: z.string().describe('The name or category of the business to search for. Example: "Arepas El Sabor" or "Restaurante Colombiano".'),
+      location: z.string().optional().describe('An optional location to restrict the search, like a city or region. Example: "Madrid".'),
     }),
     outputSchema: z.object({
       places: z.array(PlaceSchema).describe('A list of businesses found on Google Maps.'),
     }),
   },
-  async ({ query }) => {
-    console.log(`[Google Places Tool] Searching for: "${query}"`);
+  async ({ query, location }) => {
+    // Combine query and location for a more precise search if location is provided.
+    const textQuery = location ? `${query} en ${location}` : query;
+    console.log(`[Google Places Tool] Searching for: "${textQuery}"`);
     
     const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
     if (!apiKey) {
@@ -42,10 +46,10 @@ export const googlePlacesSearch = ai.defineTool(
             headers: {
                 'Content-Type': 'application/json',
                 'X-Goog-Api-Key': apiKey,
-                // We want to get the ID, display name, and formatted address
                 'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress',
             },
-            body: JSON.stringify({ textQuery: query }),
+            // The body now contains the combined text query.
+            body: JSON.stringify({ textQuery: textQuery }),
         });
 
         if (!response.ok) {
