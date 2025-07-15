@@ -3,8 +3,10 @@
 
 import { googlePlacesSearch } from "@/ai/tools/google-places-search";
 import { adminDb, adminInstance } from "./firebase/admin-config";
+import { Client } from "@googlemaps/google-maps-services-js";
 
 const FieldValue = adminInstance?.firestore.FieldValue;
+const googleMapsClient = new Client({});
 
 function getDbInstance() {
     if (!adminDb) {
@@ -78,12 +80,10 @@ export async function saveBusinessAction(placeId: string, category: string) {
  */
 async function resolveShortUrl(shortUrl: string): Promise<string> {
     try {
+        // Using 'HEAD' can be faster as it doesn't download the body
         const response = await fetch(shortUrl, {
-            method: 'GET',
+            method: 'HEAD',
             redirect: 'follow',
-            headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-            }
         });
         if (!response.url) {
             throw new Error(`No se pudo resolver la URL corta: ${shortUrl}. La URL final no fue encontrada.`);
@@ -102,6 +102,7 @@ async function resolveShortUrl(shortUrl: string): Promise<string> {
  * @returns The extracted Place ID, or null if not found.
  */
 function extractPlaceIdFromUrl(input: string): string | null {
+    // This regex specifically looks for the "ChIJ..." pattern which is unique to Place IDs
     const placeIdRegex = /(ChI[a-zA-Z0-9_-]{25,})/;
     const match = input.match(placeIdRegex);
     return match ? match[0] : null;
@@ -135,44 +136,42 @@ export async function getBusinessDetailsAction(placeIdOrUrl: string) {
         }
 
         if (!placeId) {
-            return { success: false, error: `El ID de lugar o la URL no son válidos: "${placeIdOrUrl}"`, rawResponse: { error: "Invalid Place ID format or URL" } };
+            return { success: false, error: `El ID de lugar o la URL no son válidos: "${placeIdOrUrl}"`, rawResponse: { error: "Invalid Place ID format" } };
         }
 
-        const fields = ['id', 'displayName', 'formattedAddress'];
-        const apiUrl = `https://places.googleapis.com/v1/places/${placeId}`;
-        const fieldMask = fields.join(',');
-
-        const response = await fetch(apiUrl, {
-            headers: {
-                'Content-Type': 'application/json',
-                'X-Goog-Api-Key': apiKey,
-                'X-Goog-FieldMask': fieldMask,
+        const response = await googleMapsClient.placeDetails({
+            params: {
+                place_id: placeId,
+                fields: ['place_id', 'name', 'vicinity'],
+                key: apiKey,
             }
         });
-        
-        const textResponse = await response.text();
-        let rawResponse;
-        try {
-            rawResponse = JSON.parse(textResponse);
-        } catch (e) {
-             throw new Error(`Respuesta no válida de la API de Google: ${textResponse}`);
+
+        if (response.data.status !== 'OK') {
+             throw new Error(`Google Places API error: ${response.data.status} - ${response.data.error_message || ''}`);
         }
 
-        if (!response.ok) {
-            throw new Error(`Google Places API error: ${JSON.stringify(rawResponse)}`);
-        }
-
+        const result = response.data.result;
         const place = {
-            id: rawResponse.id,
-            displayName: rawResponse.displayName?.text || 'Nombre no disponible',
-            formattedAddress: rawResponse.formattedAddress || 'Dirección no disponible',
+            id: result.place_id!,
+            displayName: result.name || 'Nombre no disponible',
+            formattedAddress: result.vicinity || 'Dirección no disponible',
         };
         
-        return { success: true, places: [place], rawResponse };
+        return { success: true, places: [place], rawResponse: response.data };
 
-    } catch (error) {
+    } catch (error: any) {
         console.error("Error in getBusinessDetailsAction:", error);
-        const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
-        return { success: false, error: errorMessage, rawResponse: { error: errorMessage, from: "getBusinessDetailsAction" } };
+        const errorMessage = error?.response?.data?.error_message || error.message || "An unknown error occurred.";
+        return { 
+            success: false, 
+            error: errorMessage, 
+            rawResponse: { 
+                error: errorMessage, 
+                from: "getBusinessDetailsAction",
+                status: error?.response?.data?.status, 
+                details: error?.response?.data 
+            } 
+        };
     }
 }
