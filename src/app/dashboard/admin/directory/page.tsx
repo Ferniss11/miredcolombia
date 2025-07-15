@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Search, Plus, Building, MapPin, AlertCircle, Code } from 'lucide-react';
-import { saveBusinessAction, searchBusinessesOnGoogleAction, getBusinessDetailsAction } from '@/lib/directory-actions';
+import { searchBusinessesOnGoogleAction, saveBusinessAction } from '@/lib/directory-actions';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
@@ -17,8 +17,6 @@ type Place = {
     displayName: string;
     formattedAddress: string;
 }
-
-type SearchMode = 'text' | 'placeId';
 
 const categories = [
     "Restaurante", "Moda", "Cafetería", "Servicios Legales", "Supermercado",
@@ -32,7 +30,6 @@ export default function AdminDirectoryPage() {
     const [isSaving, startSavingTransition] = useTransition();
 
     const [query, setQuery] = useState('');
-    const [searchMode, setSearchMode] = useState<SearchMode>('text');
     const [searchResults, setSearchResults] = useState<Place[] | null>(null);
     const [selectedCategory, setSelectedCategory] = useState<string>('');
     const [searchError, setSearchError] = useState<string | null>(null);
@@ -49,12 +46,7 @@ export default function AdminDirectoryPage() {
             setSearchError(null);
             setRawResponse(null);
             
-            let actionResult;
-            if (searchMode === 'text') {
-                actionResult = await searchBusinessesOnGoogleAction(query);
-            } else {
-                actionResult = await getBusinessDetailsAction(query);
-            }
+            const actionResult = await searchBusinessesOnGoogleAction(query);
             
             setRawResponse(actionResult.rawResponse);
 
@@ -89,30 +81,18 @@ export default function AdminDirectoryPage() {
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2"><Building className="w-6 h-6"/>Añadir Negocio al Directorio (Gratuito)</CardTitle>
                     <CardDescription>
-                        Busca un negocio en Google y añádelo al directorio público. Puedes buscar por nombre y ciudad, o directamente por su "Place ID" o URL para mayor precisión.
+                        Busca un negocio en Google por su nombre y ciudad para añadirlo al directorio público.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
                     <div className="flex flex-col md:flex-row items-end gap-2">
-                         <div className="grid w-full md:w-[220px] flex-shrink-0 gap-1.5">
-                            <Label htmlFor="search-mode">Modo Búsqueda</Label>
-                            <Select value={searchMode} onValueChange={(v) => setSearchMode(v as SearchMode)}>
-                                <SelectTrigger id="search-mode">
-                                    <SelectValue placeholder="Modo..." />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="text">Por Texto</SelectItem>
-                                    <SelectItem value="placeId">Por Place ID o URL</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
                         <div className="grid w-full gap-1.5">
                             <Label htmlFor="search-query">
-                                {searchMode === 'text' ? 'Nombre y Ciudad del Negocio' : 'Google Place ID o URL de Maps'}
+                                Nombre y Ciudad del Negocio
                             </Label>
                             <Input
                                 id="search-query"
-                                placeholder={searchMode === 'text' ? 'Ej: La Fogata, Gijón' : 'Ej: ChIJ... o https://share.google/...'}
+                                placeholder='Ej: La Rochela, Madrid'
                                 value={query}
                                 onChange={(e) => setQuery(e.target.value)}
                                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
@@ -149,7 +129,7 @@ export default function AdminDirectoryPage() {
                     <AlertCircle className="h-4 w-4" />
                     <AlertTitle>Error en la Búsqueda</AlertTitle>
                     <AlertDescription>
-                        Ocurrió un error al contactar con la API de Google. Esto puede deberse a que la API aún se está activando o a un problema de configuración de permisos en la consola de Google Cloud.
+                        Ocurrió un error al contactar con la API de Google. Esto puede deberse a un problema de configuración de permisos en la consola de Google Cloud.
                         <pre className="mt-2 text-xs whitespace-pre-wrap break-all p-2 bg-black/10 rounded-md">
                             {searchError}
                         </pre>
@@ -164,7 +144,7 @@ export default function AdminDirectoryPage() {
                          <CardDescription>
                             {searchResults.length > 0
                                 ? `Se encontraron ${searchResults.length} resultados. Selecciona una categoría y añade los negocios al directorio.`
-                                : "No se encontraron resultados para tu búsqueda. Intenta con otros términos o verifica que el 'Place ID' sea correcto."}
+                                : "No se encontraron resultados para tu búsqueda. Intenta con otros términos."}
                         </CardDescription>
                     </CardHeader>
                     {searchResults.length > 0 && (
