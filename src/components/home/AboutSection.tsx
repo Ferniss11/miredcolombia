@@ -1,6 +1,16 @@
+
+'use client';
+
 import { Heart, Handshake, Users, PlayCircle } from "lucide-react";
 
-export default function AboutSection() {
+type AboutSectionProps = {
+    handleVideoClick?: (url: string, title: string) => void;
+};
+
+export default function AboutSection({ handleVideoClick }: AboutSectionProps) {
+    const videoUrl = "https://firebasestorage.googleapis.com/v0/b/colombia-en-esp.firebasestorage.app/o/web%2FColombiasubir.mp4?alt=media&token=0158b045-9c77-4e91-958e-d17ba5b04068";
+    const videoTitle = "Conoce mi historia de migración";
+
     return (
         <section id="quienes-somos" className="w-full py-12 md:py-24 lg:py-32 bg-gray-50 dark:bg-gray-900/50">
             <div className="container px-4 md:px-6">
@@ -37,18 +47,22 @@ export default function AboutSection() {
                         </div>
                     </div>
                     <div className="flex items-center justify-center">
-                        <div className="bg-white rounded-xl shadow-lg p-6 sm:p-10 w-full max-w-sm text-center cursor-pointer transition-all duration-300 hover:shadow-2xl hover:scale-105">
+                        <button 
+                            onClick={() => handleVideoClick?.(videoUrl, videoTitle)}
+                            className="bg-white rounded-xl shadow-lg p-6 sm:p-10 w-full max-w-sm text-center cursor-pointer transition-all duration-300 hover:shadow-2xl hover:scale-105 group"
+                            aria-label="Play Jennifer's Video"
+                        >
                             <div className="relative inline-block">
-                                <button aria-label="Play Jennifer's Video">
-                                    <PlayCircle className="w-20 h-20 sm:w-24 sm:h-24 text-[#C70039] mx-auto transition-transform hover:scale-110" />
-                                </button>
+                                <PlayCircle className="w-20 h-20 sm:w-24 sm:h-24 text-[#C70039] mx-auto transition-transform group-hover:scale-110" />
                             </div>
-                            <h3 className="text-lg sm:text-xl font-bold mt-4 font-headline">Video de Jennifer</h3>
-                            <p className="text-muted-foreground text-sm sm:text-base mt-1">Conoce mi historia de migración</p>
-                        </div>
+                            <h3 className="text-lg sm:text-xl font-bold mt-4 font-headline">{videoTitle}</h3>
+                            <p className="text-muted-foreground text-sm sm:text-base mt-1">Haz clic para ver el video</p>
+                        </button>
                     </div>
                 </div>
             </div>
         </section>
     );
 }
+
+AboutSection.displayName = 'AboutSection';

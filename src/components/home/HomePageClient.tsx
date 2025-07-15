@@ -5,15 +5,26 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import StripeCheckoutForm from "@/components/checkout/StripeCheckoutForm";
 import type { MigrationPackage, MigrationService, PurchaseableItem } from '@/lib/types';
 import ChatWidget from '@/components/chat/ChatWidget';
+import VideoModal from '@/components/ui/video-modal';
 
 export default function HomePageClient({ children }: { children: React.ReactNode }) {
   const [isCheckoutOpen, setCheckoutOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<PurchaseableItem | null>(null);
 
+  const [isVideoOpen, setVideoOpen] = useState(false);
+  const [videoUrl, setVideoUrl] = useState('');
+  const [videoTitle, setVideoTitle] = useState('');
+
   const handlePurchaseClick = (item: MigrationPackage | MigrationService, type: 'package' | 'service') => {
     setSelectedItem({ ...item, type });
     setCheckoutOpen(true);
   };
+
+  const handleVideoClick = (url: string, title: string) => {
+    setVideoUrl(url);
+    setVideoTitle(title);
+    setVideoOpen(true);
+  }
 
   const childrenWithProps = React.Children.map(children, (child) => {
     if (React.isValidElement(child)) {
@@ -22,6 +33,9 @@ export default function HomePageClient({ children }: { children: React.ReactNode
       
       if (displayName === 'PackagesSection' || displayName === 'ServicesSection') {
         return React.cloneElement(child, { handlePurchaseClick } as any);
+      }
+      if (displayName === 'AboutSection') {
+        return React.cloneElement(child, { handleVideoClick } as any);
       }
     }
     return child;
@@ -50,6 +64,13 @@ export default function HomePageClient({ children }: { children: React.ReactNode
           )}
         </DialogContent>
       </Dialog>
+
+      <VideoModal 
+        isOpen={isVideoOpen} 
+        setIsOpen={setVideoOpen} 
+        videoUrl={videoUrl} 
+        title={videoTitle} 
+      />
     </div>
   );
 }

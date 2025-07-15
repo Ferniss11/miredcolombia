@@ -24,10 +24,10 @@ export default function HeroSection() {
                   className="mb-6 bg-white p-2 rounded-2xl shadow-lg"
                 />
                 <h1 className="text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl lg:text-7xl font-headline">
-                    Tu viaje a España <br /><span className="text-primary">empieza aquí</span>
+                    Tu experiencia en España <br /><span className="text-primary">empieza aquí</span>
                 </h1>
-                <p className="mt-4 max-w-2xl text-lg md:text-xl text-gray-200 font-body">
-                    Acompañamiento integral para colombianos que sueñan con vivir en España. Desde trámites hasta integración cultural.
+                <p className="mt-4 max-w-3xl text-lg md:text-xl text-gray-200 font-body">
+                    El sitio de reunión para colombianos en España. Conecta, comparte y crece en tu nuevo hogar.
                 </p>
                 <div className="mt-8 flex flex-col gap-4 min-[400px]:flex-row">
                     <Button asChild size="lg" className="bg-destructive hover:bg-destructive/90 text-destructive-foreground px-8 py-6 text-base">
