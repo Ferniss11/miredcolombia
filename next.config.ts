@@ -38,6 +38,12 @@ const nextConfig: NextConfig = {
     if (isServer) {
         config.externals.push('@opentelemetry/exporter-jaeger');
     }
+    if (!isServer) {
+        config.resolve.fallback = {
+            ...config.resolve.fallback,
+            child_process: false,
+        };
+    }
     return config;
   },
   serverExternalPackages: ['firebase-admin'],
