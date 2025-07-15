@@ -7,8 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Search, Plus, Building, MapPin, AlertCircle, Code } from 'lucide-react';
-import { saveBusinessAction, searchBusinessesOnGoogleAction } from '@/lib/directory-actions';
+import { Loader2, Search, Plus, Building, MapPin, AlertCircle, Code, ListFilter } from 'lucide-react';
+import { saveBusinessAction, searchBusinessesOnGoogleAction, getBusinessDetailsAction } from '@/lib/directory-actions';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 type Place = {
@@ -16,6 +16,8 @@ type Place = {
     displayName: string;
     formattedAddress: string;
 }
+
+type SearchMode = 'text' | 'placeId';
 
 const categories = [
     "Restaurante", "Moda", "Cafetería", "Servicios Legales", "Supermercado",
@@ -28,6 +30,7 @@ export default function AdminDirectoryPage() {
     const [isSaving, startSavingTransition] = useTransition();
 
     const [query, setQuery] = useState('');
+    const [searchMode, setSearchMode] = useState<SearchMode>('text');
     const [searchResults, setSearchResults] = useState<Place[] | null>(null);
     const [selectedCategory, setSelectedCategory] = useState<string>('');
     const [searchError, setSearchError] = useState<string | null>(null);
@@ -41,10 +44,16 @@ export default function AdminDirectoryPage() {
         startSearchTransition(async () => {
             setSearchResults(null);
             setSearchError(null);
-            setRawResponse(null); // Reset debugger on new search
-            const actionResult = await searchBusinessesOnGoogleAction(query);
+            setRawResponse(null);
             
-            setRawResponse(actionResult.rawResponse); // Always set the raw response for debugging
+            let actionResult;
+            if (searchMode === 'text') {
+                actionResult = await searchBusinessesOnGoogleAction(query);
+            } else {
+                actionResult = await getBusinessDetailsAction(query);
+            }
+            
+            setRawResponse(actionResult.rawResponse);
 
             if (actionResult.error) {
                 setSearchError(actionResult.error);
@@ -77,26 +86,39 @@ export default function AdminDirectoryPage() {
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2"><Building className="w-6 h-6"/>Añadir Negocio al Directorio (Gratuito)</CardTitle>
                     <CardDescription>
-                        Busca un negocio en Google y añádelo al directorio público de Mi Red Colombia.
-                        Esto crea perfiles gratuitos gestionados por el administrador.
+                        Busca un negocio en Google y añádelo al directorio público. Puedes buscar por nombre y ciudad, o directamente por su "Place ID" para mayor precisión.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
                     <div className="flex flex-col md:flex-row items-end gap-2">
+                         <div className="grid w-full md:w-[180px] flex-shrink-0 gap-1.5">
+                            <Label htmlFor="search-mode">Modo Búsqueda</Label>
+                            <Select value={searchMode} onValueChange={(v) => setSearchMode(v as SearchMode)}>
+                                <SelectTrigger id="search-mode">
+                                    <SelectValue placeholder="Modo..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="text">Por Texto</SelectItem>
+                                    <SelectItem value="placeId">Por Place ID</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
                         <div className="grid w-full gap-1.5">
-                            <Label htmlFor="search-query">Nombre y Ciudad del Negocio</Label>
+                            <Label htmlFor="search-query">
+                                {searchMode === 'text' ? 'Nombre y Ciudad del Negocio' : 'Google Place ID'}
+                            </Label>
                             <Input
                                 id="search-query"
-                                placeholder="Ej: Arepas El Sabor, Madrid"
+                                placeholder={searchMode === 'text' ? 'Ej: Arepas El Sabor, Madrid' : 'Ej: ChIJ...'}
                                 value={query}
                                 onChange={(e) => setQuery(e.target.value)}
                                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                             />
                         </div>
-                        <div className="grid w-full md:w-auto gap-1.5">
-                            <Label htmlFor="category">Categoría</Label>
+                        <div className="grid w-full md:w-[200px] flex-shrink-0 gap-1.5">
+                            <Label htmlFor="category">Categoría a Asignar</Label>
                              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                                <SelectTrigger id="category" className="w-full md:w-[200px]">
+                                <SelectTrigger id="category">
                                     <SelectValue placeholder="Selecciona categoría" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -104,7 +126,7 @@ export default function AdminDirectoryPage() {
                                 </SelectContent>
                             </Select>
                         </div>
-                        <Button onClick={handleSearch} disabled={isSearching} className="w-full md:w-auto">
+                        <Button onClick={handleSearch} disabled={isSearching} className="w-full md:w-auto flex-shrink-0">
                             {isSearching ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Search className="mr-2 h-4 w-4" />}
                             Buscar
                         </Button>
@@ -117,21 +139,6 @@ export default function AdminDirectoryPage() {
                     <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" />
                     <p className="text-muted-foreground">Buscando en Google Places...</p>
                 </div>
-            )}
-
-            {searchError && (
-                <Card className="border-destructive">
-                    <CardHeader>
-                        <CardTitle className="text-destructive flex items-center gap-2">
-                            <AlertCircle className="w-5 h-5" />
-                            Error en la Búsqueda
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <p className="text-sm text-muted-foreground">Ocurrió un error al contactar con la API de Google Places. Detalles:</p>
-                        <pre className="text-sm bg-muted p-4 rounded-md mt-2 font-mono">{searchError}</pre>
-                    </CardContent>
-                </Card>
             )}
 
             {searchResults !== null && !isSearching && (
@@ -173,7 +180,6 @@ export default function AdminDirectoryPage() {
                 </Card>
             )}
 
-            {/* Debugger section to show raw API response */}
             {rawResponse && (
                  <Card className="mt-6">
                     <CardHeader>
@@ -182,7 +188,7 @@ export default function AdminDirectoryPage() {
                             Respuesta de la API de Google (Depuración)
                         </CardTitle>
                         <CardDescription>
-                            Este es el objeto JSON exacto devuelto por la API de Google Places. Útil para entender por qué una búsqueda podría no funcionar.
+                            Este es el objeto JSON exacto devuelto por la API de Google Places. Útil para entender por qué una búsqueda podría no funcionar o para ver los datos completos.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>

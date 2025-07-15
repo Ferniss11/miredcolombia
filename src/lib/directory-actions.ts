@@ -32,7 +32,7 @@ export async function searchBusinessesOnGoogleAction(query: string) {
         return { 
             success: false, 
             error: errorMessage,
-            rawResponse: { error: errorMessage } // Pass error in raw response format
+            rawResponse: { error: errorMessage, from: "Action" } // Pass error in raw response format
         };
     }
 }
@@ -50,6 +50,12 @@ export async function saveBusinessAction(placeId: string, category: string) {
     try {
         const businessRef = db.collection('directory').doc(placeId);
         
+        // Check if the business already exists
+        const docSnap = await businessRef.get();
+        if (docSnap.exists) {
+            return { success: false, error: "Este negocio ya ha sido añadido al directorio." };
+        }
+
         await businessRef.set({
             placeId: placeId,
             category: category,
@@ -67,6 +73,7 @@ export async function saveBusinessAction(placeId: string, category: string) {
 
 /**
  * Server Action to get detailed information for a business from Google Places API.
+ * This is the "direct search" function.
  * @param placeId - The Google Place ID of the business.
  * @returns The full business details from Google.
  */
@@ -81,30 +88,38 @@ export async function getBusinessDetailsAction(placeId: string) {
         'nationalPhoneNumber', 'rating', 'userRatingCount', 'photos',
         'regularOpeningHours', 'location'
     ];
-    const apiUrl = `https://places.googleapis.com/v1/places/${placeId}?fields=${fields.join(',')}&key=${apiKey}`;
+    // This is the correct endpoint for getting details by Place ID.
+    const apiUrl = `https://places.googleapis.com/v1/places/${placeId}`;
+    const fieldMask = fields.join(',');
 
     try {
-        const response = await fetch(apiUrl, { next: { revalidate: 3600 } }); // Cache for 1 hour
+        const response = await fetch(apiUrl, { 
+            next: { revalidate: 3600 }, // Cache for 1 hour
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Goog-Api-Key': apiKey,
+                'X-Goog-FieldMask': fieldMask,
+            }
+        });
+        
+        const rawResponse = await response.json();
 
         if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(`Google Places API error: ${errorData.error.message}`);
+            throw new Error(`Google Places API error: ${JSON.stringify(rawResponse)}`);
         }
 
-        const data = await response.json();
-
-        // Remap photo names to full URLs
-        if (data.photos) {
-            data.photos = data.photos.map((photo: any) => {
-                const photoUrl = `https://places.googleapis.com/v1/${photo.name}/media?maxHeightPx=1000&key=${apiKey}`;
-                return { ...photo, url: photoUrl };
-            });
+        // Remap the raw response to the format our UI expects
+        const place = {
+            id: rawResponse.id,
+            displayName: rawResponse.displayName?.text || 'Nombre no disponible',
+            formattedAddress: rawResponse.formattedAddress || 'Dirección no disponible',
         }
         
-        return { success: true, details: data };
+        return { success: true, places: [place], rawResponse };
+
     } catch (error) {
         console.error("Error in getBusinessDetailsAction:", error);
         const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
-        return { success: false, error: errorMessage };
+        return { success: false, error: errorMessage, rawResponse: { error: errorMessage, from: "getBusinessDetailsAction" } };
     }
 }
