@@ -18,6 +18,8 @@ const PlaceSchema = z.object({
 // Defines the structure for the raw JSON response, useful for debugging.
 const RawApiResponseSchema = z.object({
     places: z.array(z.record(z.string(), z.any())).optional(),
+    error: z.string().optional(),
+    status: z.number().optional(),
 });
 
 export const googlePlacesSearch = ai.defineTool(
@@ -29,7 +31,7 @@ export const googlePlacesSearch = ai.defineTool(
     }),
     outputSchema: z.object({
       places: z.array(PlaceSchema).describe('A list of businesses found on Google Maps.'),
-      rawResponse: RawApiResponseSchema.describe('The raw, unprocessed JSON response from the Google Places API for debugging purposes.'),
+      rawResponse: z.any().describe('The raw, unprocessed response from the Google Places API for debugging purposes.'),
     }),
   },
   async ({ query }) => {
@@ -42,9 +44,7 @@ export const googlePlacesSearch = ai.defineTool(
         throw new Error(errorMsg);
     }
 
-    // Use the a more specific endpoint that is better for text-based searches.
     const apiUrl = 'https://places.googleapis.com/v1/places:searchText';
-    // Define the fields we want to get back from the API.
     const fieldMask = 'places.id,places.displayName,places.formattedAddress';
 
     try {
@@ -55,23 +55,24 @@ export const googlePlacesSearch = ai.defineTool(
                 'X-Goog-Api-Key': apiKey,
                 'X-Goog-FieldMask': fieldMask,
             },
-            // The body is simple: just the text query.
             body: JSON.stringify({ textQuery: query }),
         });
         
-        const rawData = await response.json();
+        const responseText = await response.text();
+        let rawData;
+        try {
+            rawData = JSON.parse(responseText);
+        } catch (e) {
+            // If parsing fails, the response was not valid JSON. Return the raw text.
+            console.error('[Google Places Tool] API response was not valid JSON:', responseText);
+            throw new Error(`Invalid response from Google API (Status: ${response.status}): ${responseText}`);
+        }
 
         if (!response.ok) {
             console.error(`[Google Places Tool] API error: ${response.statusText}`, rawData);
-            throw new Error(`Failed to fetch data from Google Places API. Status: ${response.status}`);
+            throw new Error(`Failed to fetch data from Google Places API. Status: ${response.status}. Body: ${JSON.stringify(rawData)}`);
         }
         
-        // Sanitize the raw data before sending it back for debugging.
-        const rawResponseForDebug: z.infer<typeof RawApiResponseSchema> = {
-            places: rawData.places ? rawData.places.map((p: any) => ({...p})) : []
-        };
-        
-        // Process the places for the main application logic.
         const places = (rawData.places || []).map((place: any) => ({
             id: place.id,
             displayName: place.displayName?.text || 'Nombre no disponible',
@@ -79,12 +80,13 @@ export const googlePlacesSearch = ai.defineTool(
         }));
         
         console.log(`[Google Places Tool] Found ${places.length} potential matches.`);
-        return { places, rawResponse: rawResponseForDebug };
+        return { places, rawResponse: rawData };
 
     } catch (error) {
         console.error("[Google Places Tool] Error calling API:", error);
+        const errorMessage = error instanceof Error ? error.message : "An unknown error occurred during the fetch operation.";
         // In case of error, return empty results but still provide a debuggable response.
-        return { places: [], rawResponse: { error: (error as Error).message } as any };
+        return { places: [], rawResponse: { error: errorMessage } };
     }
   }
 );
