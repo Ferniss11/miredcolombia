@@ -3,28 +3,16 @@
 
 const FRANKFURTER_API_URL = 'https://api.frankfurter.app/latest';
 
-// Simple in-memory cache to avoid hitting the API on every request
-let cachedRate: { rate: number; timestamp: number } | null = null;
-const CACHE_DURATION_MS = 60 * 60 * 1000; // 1 hour
-
 /**
  * Gets the latest EUR to COP conversion rate.
- * Uses a simple in-memory cache to avoid excessive API calls.
+ * Uses Next.js fetch caching to avoid excessive API calls.
  * @returns The numeric conversion rate for EUR to COP.
  */
 export async function getEurToCopRate(): Promise<number> {
-    const now = Date.now();
-    if (cachedRate && now - cachedRate.timestamp < CACHE_DURATION_MS) {
-        return cachedRate.rate;
-    }
-
     try {
-        // Use { cache: 'no-store' } to bypass Next.js fetch caching for this specific call
+        // Use Next.js fetch caching, revalidating every hour.
         const response = await fetch(`${FRANKFURTER_API_URL}?from=EUR&to=COP`, {
-            cache: 'no-store', 
-            headers: {
-                'User-Agent': 'colombia-en-esp-app/1.0',
-            }
+            next: { revalidate: 3600 }, 
         });
 
         if (!response.ok) {
@@ -40,14 +28,11 @@ export async function getEurToCopRate(): Promise<number> {
             throw new Error('Invalid rate format received from API');
         }
         
-        // Update the cache
-        cachedRate = { rate, timestamp: now };
-
         return rate;
 
     } catch (error) {
         console.error("Error fetching or parsing currency conversion rate:", error);
         // Fallback to a safe, static rate if the API fails
-        return cachedRate?.rate || 4300; 
+        return 4300; 
     }
 }
