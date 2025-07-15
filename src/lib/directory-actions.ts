@@ -82,13 +82,16 @@ export async function getBusinessDetailsAction(placeId: string) {
     if (!apiKey) {
         return { success: false, error: "Google API Key is not configured." };
     }
+    if (!placeId || !placeId.startsWith('ChI')) {
+        return { success: false, error: `El Place ID proporcionado no es válido: "${placeId}"`, rawResponse: { error: "Invalid Place ID format" } };
+    }
+
 
     const fields = [
         'id', 'displayName', 'formattedAddress', 'websiteUri',
         'nationalPhoneNumber', 'rating', 'userRatingCount', 'photos',
         'regularOpeningHours', 'location'
     ];
-    // This is the correct endpoint for getting details by Place ID.
     const apiUrl = `https://places.googleapis.com/v1/places/${placeId}`;
     const fieldMask = fields.join(',');
 
@@ -102,7 +105,13 @@ export async function getBusinessDetailsAction(placeId: string) {
             }
         });
         
-        const rawResponse = await response.json();
+        const textResponse = await response.text();
+        let rawResponse;
+        try {
+            rawResponse = JSON.parse(textResponse);
+        } catch (e) {
+             throw new Error(`Respuesta no válida de la API de Google: ${textResponse}`);
+        }
 
         if (!response.ok) {
             throw new Error(`Google Places API error: ${JSON.stringify(rawResponse)}`);

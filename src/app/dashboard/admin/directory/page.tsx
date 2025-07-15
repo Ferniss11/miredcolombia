@@ -25,15 +25,16 @@ const categories = [
 ];
 
 function extractPlaceIdFromUrl(input: string): string {
-    // Regular expression to find a Google Place ID (starts with "ChI" and is 27 chars long)
-    const placeIdRegex = /(ChI[a-zA-Z0-9_-]{25})/;
+    if (input.includes('share.google') || input.includes('maps.app.goo.gl')) {
+        return 'invalid_short_url';
+    }
+    const placeIdRegex = /(ChI[a-zA-Z0-9_-]{25,})/;
     const match = input.match(placeIdRegex);
     
-    if (match && match[1]) {
-        return match[1]; // Return the extracted Place ID
+    if (match && match[0]) {
+        return match[0];
     }
     
-    // If no match, assume the input itself is the Place ID
     return input.trim();
 }
 
@@ -55,6 +56,13 @@ export default function AdminDirectoryPage() {
             toast({ variant: 'destructive', title: 'Error', description: 'Por favor, introduce una consulta.' });
             return;
         }
+
+        const finalPlaceId = extractPlaceIdFromUrl(query);
+        if (finalPlaceId === 'invalid_short_url') {
+            toast({ variant: 'destructive', title: 'URL no válida', description: 'Las URLs cortas (share.google, maps.app.goo.gl) no son compatibles. Por favor, abre la URL en tu navegador y copia la URL completa o el Place ID (empieza con "ChI").' });
+            return;
+        }
+
         startSearchTransition(async () => {
             setSearchResults(null);
             setSearchError(null);
@@ -64,7 +72,6 @@ export default function AdminDirectoryPage() {
             if (searchMode === 'text') {
                 actionResult = await searchBusinessesOnGoogleAction(query);
             } else {
-                const finalPlaceId = extractPlaceIdFromUrl(query);
                 actionResult = await getBusinessDetailsAction(finalPlaceId);
             }
             
@@ -106,7 +113,7 @@ export default function AdminDirectoryPage() {
                 </CardHeader>
                 <CardContent>
                     <div className="flex flex-col md:flex-row items-end gap-2">
-                         <div className="grid w-full md:w-[180px] flex-shrink-0 gap-1.5">
+                         <div className="grid w-full md:w-[220px] flex-shrink-0 gap-1.5">
                             <Label htmlFor="search-mode">Modo Búsqueda</Label>
                             <Select value={searchMode} onValueChange={(v) => setSearchMode(v as SearchMode)}>
                                 <SelectTrigger id="search-mode">
@@ -114,7 +121,7 @@ export default function AdminDirectoryPage() {
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="text">Por Texto</SelectItem>
-                                    <SelectItem value="placeId">Por Place ID o URL</SelectItem>
+                                    <SelectItem value="placeId">Por Place ID o URL Completa</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
