@@ -78,13 +78,19 @@ export async function saveBusinessAction(placeId: string, category: string) {
  */
 async function resolveShortUrl(shortUrl: string): Promise<string> {
     try {
-        const response = await fetch(shortUrl, { method: 'HEAD', redirect: 'manual' });
-        // The long URL is in the 'Location' header of the redirect response.
-        const longUrl = response.headers.get('location');
-        if (!longUrl) {
-            throw new Error(`No se pudo resolver la URL corta: ${shortUrl}. La cabecera 'Location' no fue encontrada.`);
+        // Use a more robust fetch with a user-agent to mimic a browser
+        const response = await fetch(shortUrl, {
+            method: 'GET',
+            redirect: 'follow', // Let fetch handle the redirects automatically
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            }
+        });
+        // The final URL after all redirects
+        if (!response.url) {
+            throw new Error(`No se pudo resolver la URL corta: ${shortUrl}. La URL final no fue encontrada.`);
         }
-        return longUrl;
+        return response.url;
     } catch (e) {
         // This can happen due to network issues or if the URL isn't a valid redirect
         throw new Error(`Error al intentar resolver la URL corta: ${(e as Error).message}`);
@@ -100,6 +106,7 @@ async function resolveShortUrl(shortUrl: string): Promise<string> {
  */
 function extractPlaceIdFromUrl(input: string): string | null {
     // This regex specifically looks for the Place ID format (starts with ChI...)
+    // It's more reliable than trying to parse different URL structures.
     const placeIdRegex = /(ChI[a-zA-Z0-9_-]{25,})/;
     const match = input.match(placeIdRegex);
     return match ? match[0] : null;
@@ -129,28 +136,22 @@ export async function getBusinessDetailsAction(placeIdOrUrl: string) {
              if (!placeId) {
                 throw new Error(`No se pudo extraer el Place ID de la URL resuelta: ${longUrl}`);
             }
-        } else if (effectiveInput.includes('google.com/maps') || effectiveInput.includes('google.com/search')) {
-            // Step 2: If it's a long URL, just try to extract the ID.
-            placeId = extractPlaceIdFromUrl(effectiveInput);
-            if (!placeId) {
-                throw new Error(`No se pudo extraer el Place ID de la URL: ${effectiveInput}`);
-            }
         } else {
-             // Step 3: Assume it's a direct Place ID.
-             placeId = effectiveInput;
+             // Step 2: For any other input (long URL or direct ID), just try to extract the ID.
+             placeId = extractPlaceIdFromUrl(effectiveInput);
         }
 
         if (!placeId || !placeId.startsWith('ChI')) {
-            return { success: false, error: `El ID de lugar proporcionado no es válido: "${placeId}"`, rawResponse: { error: "Invalid Place ID format" } };
+             // If no Place ID was found, it's an invalid input.
+            return { success: false, error: `El ID de lugar o la URL no son válidos: "${placeIdOrUrl}"`, rawResponse: { error: "Invalid Place ID format or URL" } };
         }
 
-        // Step 4: Fetch details from Google Places API.
+        // Step 3: Fetch details from Google Places API.
         const fields = ['id', 'displayName', 'formattedAddress'];
         const apiUrl = `https://places.googleapis.com/v1/places/${placeId}`;
         const fieldMask = fields.join(',');
 
         const response = await fetch(apiUrl, {
-            next: { revalidate: 3600 },
             headers: {
                 'Content-Type': 'application/json',
                 'X-Goog-Api-Key': apiKey,
