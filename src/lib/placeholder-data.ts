@@ -1,4 +1,3 @@
-
 import type { Business, BlogPost, SubscriptionPlan, MigrationPackage, MigrationService } from './types';
 
 export const featuredBusinesses: Business[] = [

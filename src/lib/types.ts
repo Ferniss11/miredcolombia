@@ -1,4 +1,3 @@
-
 import { z } from 'zod';
 
 // Schema for Blog Content Generation
@@ -159,7 +158,7 @@ export type SubscriptionPlan = {
 export type MigrationPackage = {
     id:string;
     name: string;
-    title: string; // For consistency
+    title: string;
     price: number;
     priceCOP: string;
     description: string;
@@ -173,7 +172,7 @@ export type MigrationService = {
     id: string;
     icon: string;
     title: string;
-    name: string; // For consistency
+    name: string;
     price: number;
     priceCol: string;
     description: string;
