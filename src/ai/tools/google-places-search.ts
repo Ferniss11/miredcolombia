@@ -2,8 +2,10 @@
 'use server';
 
 /**
- * @fileOverview Defines a Genkit tool for searching businesses using the Google Places API's searchText method.
- * This tool is optimized for finding places based on a text query like "Restaurant Name in City".
+ * @fileOverview Defines a Genkit tool for searching businesses using the Google Places API.
+ * This tool now uses a two-step process for text searches:
+ * 1. Geocoding API to get coordinates for a location.
+ * 2. Places API (Nearby Search) to find places of a certain type near those coordinates.
  */
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
@@ -15,19 +17,12 @@ const PlaceSchema = z.object({
     formattedAddress: z.string().describe('The full address of the business.'),
 });
 
-// Defines the structure for the raw JSON response, useful for debugging.
-const RawApiResponseSchema = z.object({
-    places: z.array(z.record(z.string(), z.any())).optional(),
-    error: z.string().optional(),
-    status: z.number().optional(),
-});
-
 export const googlePlacesSearch = ai.defineTool(
   {
     name: 'googlePlacesSearch',
-    description: 'Searches for businesses on Google Maps using a text query (e.g., "Arepas El Sabor, Madrid"). Returns a list of matches with their Place IDs and the raw API response for debugging.',
+    description: 'Searches for businesses on Google Maps using a text query (e.g., "Restaurantes en Madrid"). Returns a list of matches with their Place IDs and the raw API response for debugging.',
     inputSchema: z.object({
-      query: z.string().describe('The name and location of the business to search for. Example: "Arepas El Sabor en Madrid".'),
+      query: z.string().describe('The category and location to search for. Example: "Restaurantes Colombianos en Madrid".'),
     }),
     outputSchema: z.object({
       places: z.array(PlaceSchema).describe('A list of businesses found on Google Maps.'),
@@ -35,7 +30,7 @@ export const googlePlacesSearch = ai.defineTool(
     }),
   },
   async ({ query }) => {
-    console.log(`[Google Places Tool] Searching for: "${query}"`);
+    console.log(`[Google Places Tool V2] Searching for: "${query}"`);
     
     const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
     if (!apiKey) {
@@ -44,49 +39,93 @@ export const googlePlacesSearch = ai.defineTool(
         throw new Error(errorMsg);
     }
 
-    const apiUrl = 'https://places.googleapis.com/v1/places:searchText';
-    const fieldMask = 'places.id,places.displayName,places.formattedAddress';
-
     try {
-        const response = await fetch(apiUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-Goog-Api-Key': apiKey,
-                'X-Goog-FieldMask': fieldMask,
-            },
-            body: JSON.stringify({ textQuery: query }),
-        });
-        
-        const responseText = await response.text();
-        let rawData;
-        try {
-            rawData = JSON.parse(responseText);
-        } catch (e) {
-            // If parsing fails, the response was not valid JSON. Return the raw text.
-            console.error('[Google Places Tool] API response was not valid JSON:', responseText);
-            throw new Error(`Invalid response from Google API (Status: ${response.status}): ${responseText}`);
+        // Step 1: Geocode the location part of the query to get lat/lng
+        // A simple regex to separate the "what" from the "where"
+        const match = query.match(/(.+)\s+en\s+(.+)/i);
+        let textQuery = query;
+        let locationQuery = '';
+
+        if (match && match.length === 3) {
+            textQuery = match[1];
+            locationQuery = match[2];
+        } else {
+             // If no "en" is found, assume the whole query is the business name
+             // and we can use the original searchText method.
+             return await searchTextFallback(query, apiKey);
         }
 
-        if (!response.ok) {
-            console.error(`[Google Places Tool] API error: ${response.statusText}`, rawData);
-            throw new Error(`Failed to fetch data from Google Places API. Status: ${response.status}. Body: ${JSON.stringify(rawData)}`);
+        const geocodingUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(locationQuery)}&key=${apiKey}`;
+        const geocodingResponse = await fetch(geocodingUrl);
+        const geocodingData = await geocodingResponse.json();
+
+        if (geocodingData.status !== 'OK' || !geocodingData.results[0]) {
+            throw new Error(`No se pudo geolocalizar la ubicación: ${locationQuery}. Estado: ${geocodingData.status}`);
         }
+
+        const { lat, lng } = geocodingData.results[0].geometry.location;
+        console.log(`[Google Places Tool V2] Geocoded "${locationQuery}" to: ${lat}, ${lng}`);
+
+        // Step 2: Use Nearby Search with the geocoded location
+        const nearbySearchUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=5000&keyword=${encodeURIComponent(textQuery)}&key=${apiKey}`;
         
-        const places = (rawData.places || []).map((place: any) => ({
-            id: place.id,
-            displayName: place.displayName?.text || 'Nombre no disponible',
-            formattedAddress: place.formattedAddress || 'Dirección no disponible',
+        const nearbyResponse = await fetch(nearbySearchUrl);
+        const nearbyData = await nearbyResponse.json();
+
+        if (nearbyData.status !== 'OK' && nearbyData.status !== 'ZERO_RESULTS') {
+            throw new Error(`Error en la API de Nearby Search: ${nearbyData.status} - ${nearbyData.error_message || ''}`);
+        }
+
+        const places = (nearbyData.results || []).map((place: any) => ({
+            id: place.place_id,
+            displayName: place.name || 'Nombre no disponible',
+            formattedAddress: place.vicinity || 'Dirección no disponible',
         }));
-        
-        console.log(`[Google Places Tool] Found ${places.length} potential matches.`);
-        return { places, rawResponse: rawData };
+
+        console.log(`[Google Places Tool V2] Found ${places.length} potential matches.`);
+        return { places, rawResponse: nearbyData };
 
     } catch (error) {
-        console.error("[Google Places Tool] Error calling API:", error);
+        console.error("[Google Places Tool V2] Error calling API:", error);
         const errorMessage = error instanceof Error ? error.message : "An unknown error occurred during the fetch operation.";
-        // In case of error, return empty results but still provide a debuggable response.
         return { places: [], rawResponse: { error: errorMessage } };
     }
   }
 );
+
+
+// Fallback to the original searchText method if the query doesn't fit the new pattern
+async function searchTextFallback(query: string, apiKey: string) {
+    const apiUrl = 'https://places.googleapis.com/v1/places:searchText';
+    const fieldMask = 'places.id,places.displayName,places.formattedAddress';
+
+    const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Goog-Api-Key': apiKey,
+            'X-Goog-FieldMask': fieldMask,
+        },
+        body: JSON.stringify({ textQuery: query }),
+    });
+    
+    const textResponse = await response.text();
+    let rawData;
+    try {
+        rawData = JSON.parse(textResponse);
+    } catch (e) {
+        throw new Error(`Invalid response from Google API (Status: ${response.status}): ${textResponse}`);
+    }
+
+    if (!response.ok) {
+        throw new Error(`Failed to fetch data from Google Places API. Status: ${response.status}. Body: ${JSON.stringify(rawData)}`);
+    }
+    
+    const places = (rawData.places || []).map((place: any) => ({
+        id: place.id,
+        displayName: place.displayName?.text || 'Nombre no disponible',
+        formattedAddress: place.formattedAddress || 'Dirección no disponible',
+    }));
+    
+    return { places, rawResponse: rawData };
+}
