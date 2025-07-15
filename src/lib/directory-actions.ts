@@ -82,15 +82,15 @@ async function resolveShortUrl(shortUrl: string): Promise<string> {
     try {
         // Using 'HEAD' can be faster as it doesn't download the body
         const response = await fetch(shortUrl, {
-            method: 'HEAD',
-            redirect: 'follow',
+            redirect: 'follow', // follow redirects
         });
         if (!response.url) {
             throw new Error(`No se pudo resolver la URL corta: ${shortUrl}. La URL final no fue encontrada.`);
         }
         return response.url;
     } catch (e) {
-        throw new Error(`Error al intentar resolver la URL corta: ${(e as Error).message}`);
+        const errorMessage = e instanceof Error ? e.message : String(e);
+        throw new Error(`Error al intentar resolver la URL corta: ${errorMessage}`);
     }
 }
 
@@ -125,18 +125,15 @@ export async function getBusinessDetailsAction(placeIdOrUrl: string) {
     let effectiveInput = placeIdOrUrl.trim();
 
     try {
+        let finalUrl = effectiveInput;
         if (effectiveInput.startsWith('http')) {
-            const longUrl = await resolveShortUrl(effectiveInput);
-            placeId = extractPlaceIdFromUrl(longUrl);
-             if (!placeId) {
-                throw new Error(`No se pudo extraer el Place ID de la URL resuelta: ${longUrl}`);
-            }
-        } else {
-             placeId = extractPlaceIdFromUrl(effectiveInput);
+             finalUrl = await resolveShortUrl(effectiveInput);
         }
 
+        placeId = extractPlaceIdFromUrl(finalUrl);
+
         if (!placeId) {
-            return { success: false, error: `El ID de lugar o la URL no son válidos: "${placeIdOrUrl}"`, rawResponse: { error: "Invalid Place ID format" } };
+            throw new Error(`No se pudo extraer un Place ID válido de la entrada proporcionada o de la URL resuelta: ${finalUrl}`);
         }
 
         const response = await googleMapsClient.placeDetails({
