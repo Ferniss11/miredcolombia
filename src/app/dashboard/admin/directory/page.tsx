@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Search, Plus, Building, MapPin } from 'lucide-react';
+import { Loader2, Search, Plus, Building, MapPin, AlertCircle } from 'lucide-react';
 import { saveBusinessAction, searchBusinessesOnGoogleAction } from '@/lib/directory-actions';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
@@ -28,7 +28,7 @@ export default function AdminDirectoryPage() {
     const [isSaving, startSavingTransition] = useTransition();
 
     const [query, setQuery] = useState('');
-    const [searchResults, setSearchResults] = useState<Place[]>([]);
+    const [searchResults, setSearchResults] = useState<Place[] | null>(null);
     const [selectedCategory, setSelectedCategory] = useState<string>('');
     const [searchError, setSearchError] = useState<string | null>(null);
 
@@ -38,7 +38,7 @@ export default function AdminDirectoryPage() {
             return;
         }
         startSearchTransition(async () => {
-            setSearchResults([]);
+            setSearchResults(null);
             setSearchError(null);
             const actionResult = await searchBusinessesOnGoogleAction(query);
             if (actionResult.error) {
@@ -61,8 +61,7 @@ export default function AdminDirectoryPage() {
                 toast({ variant: 'destructive', title: 'Error al Guardar', description: result.error });
             } else {
                 toast({ title: 'Éxito', description: result.message });
-                // Optional: remove the added business from the search results
-                setSearchResults(prev => prev.filter(p => p.id !== placeId));
+                setSearchResults(prev => prev ? prev.filter(p => p.id !== placeId) : null);
             }
         });
     };
@@ -118,40 +117,55 @@ export default function AdminDirectoryPage() {
             {searchError && (
                 <Card className="border-destructive">
                     <CardHeader>
-                        <CardTitle className="text-destructive">Error</CardTitle>
+                        <CardTitle className="text-destructive flex items-center gap-2">
+                            <AlertCircle className="w-5 h-5" />
+                            Error en la Búsqueda
+                        </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <pre className="text-sm bg-muted p-4 rounded-md">{searchError}</pre>
+                        <p className="text-sm text-muted-foreground">Ocurrió un error al contactar con la API de Google Places. Detalles:</p>
+                        <pre className="text-sm bg-muted p-4 rounded-md mt-2 font-mono">{searchError}</pre>
                     </CardContent>
                 </Card>
             )}
 
-            {searchResults.length > 0 && (
-                <div className="space-y-4">
-                    <h3 className="text-lg font-semibold">Resultados de la Búsqueda</h3>
-                     {searchResults.map(place => (
-                        <Card key={place.id}>
-                            <CardContent className="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                                <div className="space-y-1">
-                                    <h4 className="font-bold">{place.displayName}</h4>
-                                    <p className="text-sm text-muted-foreground flex items-center gap-2">
-                                        <MapPin className="h-4 w-4"/>
-                                        {place.formattedAddress}
-                                    </p>
-                                </div>
-                                <Button 
-                                    size="sm" 
-                                    className="w-full sm:w-auto"
-                                    onClick={() => handleAddBusiness(place.id)}
-                                    disabled={isSaving}
-                                >
-                                    {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
-                                    Añadir
-                                </Button>
-                            </CardContent>
-                        </Card>
-                    ))}
-                </div>
+            {searchResults !== null && !isSearching && (
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Resultados de la Búsqueda</CardTitle>
+                         <CardDescription>
+                            {searchResults.length > 0
+                                ? `Se encontraron ${searchResults.length} resultados. Selecciona una categoría y añade los negocios al directorio.`
+                                : "No se encontraron resultados para tu búsqueda. Intenta con otros términos."}
+                        </CardDescription>
+                    </CardHeader>
+                    {searchResults.length > 0 && (
+                        <CardContent className="space-y-4">
+                            {searchResults.map(place => (
+                                <Card key={place.id} className="bg-muted/50">
+                                    <CardContent className="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                                        <div className="space-y-1">
+                                            <h4 className="font-bold">{place.displayName}</h4>
+                                            <p className="text-sm text-muted-foreground flex items-center gap-2">
+                                                <MapPin className="h-4 w-4"/>
+                                                {place.formattedAddress}
+                                            </p>
+                                        </div>
+                                        <Button 
+                                            size="sm" 
+                                            className="w-full sm:w-auto flex-shrink-0"
+                                            onClick={() => handleAddBusiness(place.id)}
+                                            disabled={isSaving || !selectedCategory}
+                                        >
+                                            {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
+                                            Añadir
+                                        </Button>
+                                    </CardContent>
+                                </Card>
+                            ))}
+                        </CardContent>
+                    )}
+                </Card>
             )}
         </div>
     );
