@@ -7,9 +7,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Search, Plus, Building, MapPin, AlertCircle, Code, ListFilter } from 'lucide-react';
+import { Loader2, Search, Plus, Building, MapPin, AlertCircle, Code } from 'lucide-react';
 import { saveBusinessAction, searchBusinessesOnGoogleAction, getBusinessDetailsAction } from '@/lib/directory-actions';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
 type Place = {
     id: string;
@@ -111,7 +112,7 @@ export default function AdminDirectoryPage() {
                             </Label>
                             <Input
                                 id="search-query"
-                                placeholder={searchMode === 'text' ? 'Ej: Arepas El Sabor, Madrid' : 'Ej: ChIJ... o https://share.google/...'}
+                                placeholder={searchMode === 'text' ? 'Ej: La Fogata, Gijón' : 'Ej: ChIJ... o https://share.google/...'}
                                 value={query}
                                 onChange={(e) => setQuery(e.target.value)}
                                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
@@ -144,17 +145,16 @@ export default function AdminDirectoryPage() {
             )}
 
             {searchError && (
-                <Card className="border-destructive">
-                    <CardHeader>
-                        <CardTitle className="text-destructive flex items-center gap-2"><AlertCircle />Error en la Búsqueda</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <p className="text-sm">Ocurrió un error al contactar con la API de Google. Esto puede deberse a que la API aún se está activando o a un problema de configuración.</p>
-                        <pre className="mt-4 text-xs whitespace-pre-wrap break-all p-4 bg-black text-white rounded-md overflow-x-auto">
+                <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Error en la Búsqueda</AlertTitle>
+                    <AlertDescription>
+                        Ocurrió un error al contactar con la API de Google. Esto puede deberse a que la API aún se está activando o a un problema de configuración de permisos en la consola de Google Cloud.
+                        <pre className="mt-2 text-xs whitespace-pre-wrap break-all p-2 bg-black/10 rounded-md">
                             {searchError}
                         </pre>
-                    </CardContent>
-                </Card>
+                    </AlertDescription>
+                </Alert>
             )}
 
             {searchResults !== null && !isSearching && !searchError && (
@@ -164,7 +164,7 @@ export default function AdminDirectoryPage() {
                          <CardDescription>
                             {searchResults.length > 0
                                 ? `Se encontraron ${searchResults.length} resultados. Selecciona una categoría y añade los negocios al directorio.`
-                                : "No se encontraron resultados para tu búsqueda. Intenta con otros términos."}
+                                : "No se encontraron resultados para tu búsqueda. Intenta con otros términos o verifica que el 'Place ID' sea correcto."}
                         </CardDescription>
                     </CardHeader>
                     {searchResults.length > 0 && (
@@ -204,7 +204,7 @@ export default function AdminDirectoryPage() {
                             Respuesta de la API de Google (Depuración)
                         </CardTitle>
                         <CardDescription>
-                            Este es el objeto JSON exacto devuelto por la API de Google Places. Útil para entender por qué una búsqueda podría no funcionar o para ver los datos completos.
+                            Este es el objeto JSON exacto devuelto por la API de Google Places. Úsalo para entender por qué una búsqueda podría no funcionar. Si ves un error de "PERMISSION_DENIED" o "SERVICE_BLOCKED", verifica la configuración de tu clave de API en la Google Cloud Console.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
