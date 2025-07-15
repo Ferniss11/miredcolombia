@@ -3,7 +3,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { ArrowRight, Newspaper, Calendar, User } from "lucide-react";
-import { getPublishedBlogPosts } from "@/lib/blog-actions";
+import { getPublishedBlogPosts } from "@/services/blog.service";
 import Image from "next/image";
 
 export default async function BlogSection() {
@@ -84,3 +84,4 @@ export default async function BlogSection() {
         </section>
     );
 }
+

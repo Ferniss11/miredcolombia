@@ -7,7 +7,18 @@ import type { MigrationPackage, MigrationService, PurchaseableItem } from '@/lib
 import ChatWidget from '@/components/chat/ChatWidget';
 import VideoModal from '@/components/ui/video-modal';
 
-export default function HomePageClient({ children }: { children: React.ReactNode }) {
+// Import sections directly
+import HeroSection from './HeroSection';
+import AboutSection from './AboutSection';
+import StepsSection from './StepsSection';
+import PackagesSection from './PackagesSection';
+import ServicesSection from './ServicesSection';
+import TimezoneSection from './TimezoneSection';
+import BlogSection from './BlogSection';
+import BusinessSection from './BusinessSection';
+
+
+export default function HomePageClient() {
   const [isCheckoutOpen, setCheckoutOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<PurchaseableItem | null>(null);
 
@@ -26,25 +37,17 @@ export default function HomePageClient({ children }: { children: React.ReactNode
     setVideoOpen(true);
   }
 
-  const childrenWithProps = React.Children.map(children, (child) => {
-    if (React.isValidElement(child)) {
-      const childType = child.type as React.FunctionComponent;
-      const displayName = childType.displayName || childType.name;
-      
-      if (displayName === 'PackagesSection' || displayName === 'ServicesSection') {
-        return React.cloneElement(child, { handlePurchaseClick } as any);
-      }
-      if (displayName === 'AboutSection') {
-        return React.cloneElement(child, { handleVideoClick } as any);
-      }
-    }
-    return child;
-  });
-
   return (
     <div className="flex flex-col min-h-[100dvh]">
       <main className="flex-1">
-        {childrenWithProps}
+        <HeroSection />
+        <AboutSection handleVideoClick={handleVideoClick} />
+        <StepsSection />
+        <PackagesSection handlePurchaseClick={handlePurchaseClick} />
+        <ServicesSection handlePurchaseClick={handlePurchaseClick} />
+        <TimezoneSection />
+        <BlogSection />
+        <BusinessSection />
       </main>
 
       <ChatWidget />
