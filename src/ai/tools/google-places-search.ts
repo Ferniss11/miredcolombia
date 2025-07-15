@@ -2,33 +2,38 @@
 'use server';
 
 /**
- * @fileOverview Defines a Genkit tool for searching businesses using the Google Places API.
- * This tool now supports both specific text queries and more generic, location-based category searches.
+ * @fileOverview Defines a Genkit tool for searching businesses using the Google Places API's searchText method.
+ * This tool is optimized for finding places based on a text query like "Restaurant Name in City".
  */
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 
+// Defines the structure for a single place returned by the search.
 const PlaceSchema = z.object({
     id: z.string().describe('The unique Place ID from Google.'),
     displayName: z.string().describe('The name of the business.'),
     formattedAddress: z.string().describe('The full address of the business.'),
 });
 
+// Defines the structure for the raw JSON response, useful for debugging.
+const RawApiResponseSchema = z.object({
+    places: z.array(z.record(z.string(), z.any())).optional(),
+});
+
 export const googlePlacesSearch = ai.defineTool(
   {
     name: 'googlePlacesSearch',
-    description: 'Searches for businesses on Google Maps. Can be used for specific queries (e.g., "Arepas El Sabor, Madrid") or generic category searches (e.g., query="Restaurante Colombiano", location="Madrid"). Returns a list of matches with their Place IDs.',
+    description: 'Searches for businesses on Google Maps using a text query (e.g., "Arepas El Sabor, Madrid"). Returns a list of matches with their Place IDs and the raw API response for debugging.',
     inputSchema: z.object({
-      query: z.string().describe('The name or category of the business to search for. Example: "Arepas El Sabor" or "Restaurante Colombiano en Madrid".'),
+      query: z.string().describe('The name and location of the business to search for. Example: "Arepas El Sabor en Madrid".'),
     }),
     outputSchema: z.object({
       places: z.array(PlaceSchema).describe('A list of businesses found on Google Maps.'),
+      rawResponse: RawApiResponseSchema.describe('The raw, unprocessed JSON response from the Google Places API for debugging purposes.'),
     }),
   },
   async ({ query }) => {
-    // The query itself should contain all necessary info, e.g., "Restaurante Colombiano en Madrid"
-    const textQuery = query;
-    console.log(`[Google Places Tool] Searching for: "${textQuery}"`);
+    console.log(`[Google Places Tool] Searching for: "${query}"`);
     
     const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
     if (!apiKey) {
@@ -37,7 +42,10 @@ export const googlePlacesSearch = ai.defineTool(
         throw new Error(errorMsg);
     }
 
+    // Use the a more specific endpoint that is better for text-based searches.
     const apiUrl = 'https://places.googleapis.com/v1/places:searchText';
+    // Define the fields we want to get back from the API.
+    const fieldMask = 'places.id,places.displayName,places.formattedAddress';
 
     try {
         const response = await fetch(apiUrl, {
@@ -45,30 +53,38 @@ export const googlePlacesSearch = ai.defineTool(
             headers: {
                 'Content-Type': 'application/json',
                 'X-Goog-Api-Key': apiKey,
-                'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress',
+                'X-Goog-FieldMask': fieldMask,
             },
-            body: JSON.stringify({ textQuery }),
+            // The body is simple: just the text query.
+            body: JSON.stringify({ textQuery: query }),
         });
+        
+        const rawData = await response.json();
 
         if (!response.ok) {
-            const errorData = await response.json();
-            console.error(`[Google Places Tool] API error: ${response.statusText}`, errorData);
+            console.error(`[Google Places Tool] API error: ${response.statusText}`, rawData);
             throw new Error(`Failed to fetch data from Google Places API. Status: ${response.status}`);
         }
-
-        const data = await response.json();
-        const places = (data.places || []).map((place: any) => ({
+        
+        // Sanitize the raw data before sending it back for debugging.
+        const rawResponseForDebug: z.infer<typeof RawApiResponseSchema> = {
+            places: rawData.places ? rawData.places.map((p: any) => ({...p})) : []
+        };
+        
+        // Process the places for the main application logic.
+        const places = (rawData.places || []).map((place: any) => ({
             id: place.id,
             displayName: place.displayName?.text || 'Nombre no disponible',
             formattedAddress: place.formattedAddress || 'Dirección no disponible',
         }));
         
         console.log(`[Google Places Tool] Found ${places.length} potential matches.`);
-        return { places };
+        return { places, rawResponse: rawResponseForDebug };
 
     } catch (error) {
         console.error("[Google Places Tool] Error calling API:", error);
-        return { places: [] };
+        // In case of error, return empty results but still provide a debuggable response.
+        return { places: [], rawResponse: { error: (error as Error).message } as any };
     }
   }
 );

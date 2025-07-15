@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Search, Plus, Building, MapPin, AlertCircle } from 'lucide-react';
+import { Loader2, Search, Plus, Building, MapPin, AlertCircle, Code } from 'lucide-react';
 import { saveBusinessAction, searchBusinessesOnGoogleAction } from '@/lib/directory-actions';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
@@ -31,6 +31,7 @@ export default function AdminDirectoryPage() {
     const [searchResults, setSearchResults] = useState<Place[] | null>(null);
     const [selectedCategory, setSelectedCategory] = useState<string>('');
     const [searchError, setSearchError] = useState<string | null>(null);
+    const [rawResponse, setRawResponse] = useState<any>(null); // For debugging
 
     const handleSearch = () => {
         if (!query) {
@@ -40,7 +41,11 @@ export default function AdminDirectoryPage() {
         startSearchTransition(async () => {
             setSearchResults(null);
             setSearchError(null);
+            setRawResponse(null); // Reset debugger on new search
             const actionResult = await searchBusinessesOnGoogleAction(query);
+            
+            setRawResponse(actionResult.rawResponse); // Always set the raw response for debugging
+
             if (actionResult.error) {
                 setSearchError(actionResult.error);
                 toast({ variant: 'destructive', title: 'Error en la Búsqueda', description: actionResult.error });
@@ -165,6 +170,26 @@ export default function AdminDirectoryPage() {
                             ))}
                         </CardContent>
                     )}
+                </Card>
+            )}
+
+            {/* Debugger section to show raw API response */}
+            {rawResponse && (
+                 <Card className="mt-6">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-base">
+                            <Code className="h-5 w-5" />
+                            Respuesta de la API de Google (Depuración)
+                        </CardTitle>
+                        <CardDescription>
+                            Este es el objeto JSON exacto devuelto por la API de Google Places. Útil para entender por qué una búsqueda podría no funcionar.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                         <pre className="text-xs whitespace-pre-wrap break-all p-4 bg-black text-white rounded-md overflow-x-auto">
+                            {JSON.stringify(rawResponse, null, 2)}
+                        </pre>
+                    </CardContent>
                 </Card>
             )}
         </div>

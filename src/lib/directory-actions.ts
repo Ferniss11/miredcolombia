@@ -16,16 +16,24 @@ function getDbInstance() {
 /**
  * Server Action to search for businesses using the Google Places Genkit tool.
  * @param query - The search query (e.g., "Business Name, City").
- * @returns A list of potential business matches.
+ * @returns An object containing the list of places and the raw API response for debugging.
  */
 export async function searchBusinessesOnGoogleAction(query: string) {
     try {
         const result = await googlePlacesSearch({ query });
-        return { success: true, places: result.places };
+        return { 
+            success: true, 
+            places: result.places,
+            rawResponse: result.rawResponse // Pass the raw response to the client
+        };
     } catch (error) {
         console.error("Error in searchBusinessesOnGoogleAction:", error);
         const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
-        return { success: false, error: errorMessage };
+        return { 
+            success: false, 
+            error: errorMessage,
+            rawResponse: { error: errorMessage } // Pass error in raw response format
+        };
     }
 }
 
