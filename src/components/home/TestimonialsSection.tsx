@@ -7,28 +7,28 @@ const testimonials = [
   {
     name: "Valentina Rojas",
     location: "desde Valencia",
-    avatar: "https://placehold.co/100x100.png",
+    avatar: "https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?w=100&h=100&fit=crop&q=80",
     rating: 5,
     text: "¡El servicio fue increíble! Me ayudaron con cada paso del proceso de mi visa de estudiante. Resolvieron todas mis dudas con mucha paciencia y profesionalismo. ¡Totalmente recomendados!",
   },
   {
     name: "Santiago Bernal",
     location: "desde Madrid",
-    avatar: "https://placehold.co/100x100.png",
+    avatar: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=100&h=100&fit=crop&q=80",
     rating: 5,
     text: "No sabía por dónde empezar con la homologación de mi título. El equipo de Colombia en España me guió perfectamente y gracias a ellos pude empezar a trabajar mucho antes de lo que esperaba.",
   },
   {
     name: "Isabella Cruz",
     location: "desde Barcelona",
-    avatar: "https://placehold.co/100x100.png",
+    avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop&q=80",
     rating: 5,
     text: "Contraté el paquete de búsqueda de vivienda y fue la mejor decisión. Encontraron un piso perfecto para mi familia en una zona genial. Me ahorraron muchísimo estrés y tiempo.",
   },
   {
     name: "Mateo Giraldo",
     location: "desde Sevilla",
-    avatar: "https://placehold.co/100x100.png",
+    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&q=80",
     rating: 5,
     text: "Como emprendedor, necesitaba asesoría para montar mi negocio. Su conocimiento del sistema español y su apoyo fueron fundamentales para lanzar mi cafetería. ¡Mil gracias por todo!",
   },
@@ -55,7 +55,7 @@ export default function TestimonialsSection() {
                                     width={80}
                                     height={80}
                                     data-ai-hint="person avatar"
-                                    className="rounded-full mb-4 border-2 border-primary/50"
+                                    className="rounded-full mb-4 border-2 border-primary/50 object-cover"
                                 />
                                 <h3 className="font-bold font-headline text-lg">{testimonial.name}</h3>
                                 <p className="text-sm text-muted-foreground">{testimonial.location}</p>
