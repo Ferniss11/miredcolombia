@@ -17,6 +17,7 @@ import ServicesSection from './ServicesSection';
 import TimezoneSection from './TimezoneSection';
 import BlogSection from './BlogSection';
 import BusinessSection from './BusinessSection';
+import TestimonialsSection from './TestimonialsSection';
 
 type HomePageClientProps = {
   initialPosts: BlogPost[];
@@ -53,6 +54,7 @@ export default function HomePageClient({ initialPosts, eurToCopRate }: HomePageC
         <TimezoneSection />
         <BlogSection posts={initialPosts} />
         <BusinessSection />
+        <TestimonialsSection />
       </main>
 
       <ChatWidget />
