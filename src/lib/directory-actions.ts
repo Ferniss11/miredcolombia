@@ -138,6 +138,7 @@ export async function getSavedBusinessesAction(): Promise<{ businesses?: PlaceDe
                 category: docData.category,
                 subscriptionTier: docData.subscriptionTier,
                 ownerUid: docData.ownerUid,
+                verificationStatus: docData.verificationStatus,
             } as PlaceDetails;
         });
         
@@ -191,6 +192,7 @@ export async function getBusinessDetailsForVerificationAction(placeId: string) {
 
 export async function verifyAndLinkBusinessAction(userId: string, placeId: string, providedPhone: string) {
     const db = getDbInstance();
+    if (!FieldValue) throw new Error("Firebase Admin SDK is not fully initialized.");
     try {
         const details = await getPlaceDetails(placeId, ['international_phone_number', 'name', 'formatted_address', 'website', 'formatted_phone_number']);
         if (!details || !details.internationalPhoneNumber) {
@@ -278,4 +280,51 @@ export async function unlinkBusinessFromAdvertiserAction(userId: string, placeId
          const errorMessage = error instanceof Error ? error.message : "Unknown error";
         return { error: `Error al desvincular el negocio: ${errorMessage}` };
     }
+}
+
+export async function updateBusinessVerificationStatusAction(
+  placeId: string,
+  ownerUid: string,
+  status: 'approved' | 'rejected'
+) {
+  const db = getDbInstance();
+  if (!FieldValue) throw new Error("Firebase Admin SDK is not fully initialized.");
+  
+  const businessRef = db.collection('directory').doc(placeId);
+  const userRef = db.collection('users').doc(ownerUid);
+
+  try {
+    await db.runTransaction(async (transaction) => {
+      // Update the business document in the directory
+      transaction.update(businessRef, {
+        verificationStatus: status,
+      });
+
+      // Update the user's business profile
+      if (status === 'approved') {
+        transaction.update(userRef, {
+          'businessProfile.verificationStatus': 'approved',
+        });
+      } else { // 'rejected'
+        // If rejected, we unlink the business from the user completely
+        transaction.update(businessRef, {
+            ownerUid: FieldValue.delete(),
+            verificationStatus: 'unclaimed'
+        });
+        transaction.update(userRef, {
+          'businessProfile.placeId': FieldValue.delete(),
+          'businessProfile.verificationStatus': FieldValue.delete(),
+        });
+      }
+    });
+
+    revalidatePath('/dashboard/admin/directory');
+    revalidatePath(`/dashboard/advertiser/profile`); // The specific user's profile also changes
+
+    return { success: true };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    console.error("Error updating verification status:", errorMessage);
+    return { error: `No se pudo actualizar el estado: ${errorMessage}` };
+  }
 }

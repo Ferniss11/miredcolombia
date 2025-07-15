@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Search, Plus, Building, Trash2, AlertCircle, UserCheck, UserX, UserRoundCog } from 'lucide-react';
-import { searchBusinessesOnGoogleAction, saveBusinessAction, getSavedBusinessesAction, deleteBusinessAction } from '@/lib/directory-actions';
+import { searchBusinessesOnGoogleAction, saveBusinessAction, getSavedBusinessesAction, deleteBusinessAction, updateBusinessVerificationStatusAction } from '@/lib/directory-actions';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -33,6 +33,7 @@ export default function AdminDirectoryPage() {
     const [isSearching, startSearchTransition] = useTransition();
     const [isSaving, startSavingTransition] = useTransition();
     const [isDeleting, startDeletingTransition] = useTransition();
+    const [isUpdatingStatus, startUpdatingStatusTransition] = useTransition();
     
     // State for Search
     const [query, setQuery] = useState('');
@@ -112,6 +113,18 @@ export default function AdminDirectoryPage() {
             }
         });
     };
+
+    const handleVerificationUpdate = (placeId: string, ownerUid: string, status: 'approved' | 'rejected') => {
+        startUpdatingStatusTransition(async () => {
+            const result = await updateBusinessVerificationStatusAction(placeId, ownerUid, status);
+            if (result.error) {
+                toast({ variant: 'destructive', title: 'Error', description: result.error });
+            } else {
+                toast({ title: 'Éxito', description: `El estado del negocio ha sido actualizado a ${status === 'approved' ? 'Aprobado' : 'Rechazado'}.` });
+                fetchSavedBusinesses();
+            }
+        });
+    }
     
     const getStatusBadge = (biz: PlaceDetails) => {
         if (biz.verificationStatus === 'pending') {
@@ -211,7 +224,17 @@ export default function AdminDirectoryPage() {
                                             <Badge variant="outline" className="mt-1">{biz.subscriptionTier}</Badge>
                                         </TableCell>
                                         <TableCell className="text-xs text-muted-foreground">{biz.formattedAddress}</TableCell>
-                                        <TableCell className="text-right">
+                                        <TableCell className="text-right space-x-1">
+                                            {biz.verificationStatus === 'pending' && biz.ownerUid && (
+                                                <>
+                                                    <Button variant="ghost" size="icon" className='text-green-600 hover:text-green-700' onClick={() => handleVerificationUpdate(biz.id, biz.ownerUid!, 'approved')} disabled={isUpdatingStatus}>
+                                                        <UserCheck className="h-4 w-4" />
+                                                    </Button>
+                                                    <Button variant="ghost" size="icon" className='text-red-600 hover:text-red-700' onClick={() => handleVerificationUpdate(biz.id, biz.ownerUid!, 'rejected')} disabled={isUpdatingStatus}>
+                                                        <UserX className="h-4 w-4" />
+                                                    </Button>
+                                                </>
+                                            )}
                                             <Button variant="ghost" size="icon" disabled={isDeleting}>
                                                 <UserRoundCog className="h-4 w-4 text-muted-foreground" />
                                             </Button>
