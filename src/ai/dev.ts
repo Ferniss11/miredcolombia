@@ -5,3 +5,4 @@ import '@/ai/flows/chat-flow.ts';
 import '@/ai/tools/unsplash-search.ts';
 import '@/ai/tools/web-search.ts';
 import '@/ai/tools/knowledge-base-search.ts';
+import '@/ai/tools/google-places-search.ts';
