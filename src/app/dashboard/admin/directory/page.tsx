@@ -24,6 +24,20 @@ const categories = [
     "Agencia de Viajes", "Peluquería", "Servicios Financieros", "Otros"
 ];
 
+function extractPlaceIdFromUrl(input: string): string {
+    // Regular expression to find a Google Place ID (starts with "ChI" and is 27 chars long)
+    const placeIdRegex = /(ChI[a-zA-Z0-9_-]{25})/;
+    const match = input.match(placeIdRegex);
+    
+    if (match && match[1]) {
+        return match[1]; // Return the extracted Place ID
+    }
+    
+    // If no match, assume the input itself is the Place ID
+    return input.trim();
+}
+
+
 export default function AdminDirectoryPage() {
     const { toast } = useToast();
     const [isSearching, startSearchTransition] = useTransition();
@@ -50,7 +64,8 @@ export default function AdminDirectoryPage() {
             if (searchMode === 'text') {
                 actionResult = await searchBusinessesOnGoogleAction(query);
             } else {
-                actionResult = await getBusinessDetailsAction(query);
+                const finalPlaceId = extractPlaceIdFromUrl(query);
+                actionResult = await getBusinessDetailsAction(finalPlaceId);
             }
             
             setRawResponse(actionResult.rawResponse);
@@ -86,7 +101,7 @@ export default function AdminDirectoryPage() {
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2"><Building className="w-6 h-6"/>Añadir Negocio al Directorio (Gratuito)</CardTitle>
                     <CardDescription>
-                        Busca un negocio en Google y añádelo al directorio público. Puedes buscar por nombre y ciudad, o directamente por su "Place ID" para mayor precisión.
+                        Busca un negocio en Google y añádelo al directorio público. Puedes buscar por nombre y ciudad, o directamente por su "Place ID" o URL para mayor precisión.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -99,17 +114,17 @@ export default function AdminDirectoryPage() {
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="text">Por Texto</SelectItem>
-                                    <SelectItem value="placeId">Por Place ID</SelectItem>
+                                    <SelectItem value="placeId">Por Place ID o URL</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
                         <div className="grid w-full gap-1.5">
                             <Label htmlFor="search-query">
-                                {searchMode === 'text' ? 'Nombre y Ciudad del Negocio' : 'Google Place ID'}
+                                {searchMode === 'text' ? 'Nombre y Ciudad del Negocio' : 'Google Place ID o URL de Maps'}
                             </Label>
                             <Input
                                 id="search-query"
-                                placeholder={searchMode === 'text' ? 'Ej: Arepas El Sabor, Madrid' : 'Ej: ChIJ...'}
+                                placeholder={searchMode === 'text' ? 'Ej: Arepas El Sabor, Madrid' : 'Ej: ChIJ... o URL de Google Maps'}
                                 value={query}
                                 onChange={(e) => setQuery(e.target.value)}
                                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
@@ -141,7 +156,21 @@ export default function AdminDirectoryPage() {
                 </div>
             )}
 
-            {searchResults !== null && !isSearching && (
+            {searchError && (
+                <Card className="border-destructive">
+                    <CardHeader>
+                        <CardTitle className="text-destructive flex items-center gap-2"><AlertCircle />Error en la Búsqueda</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-sm">Ocurrió un error al contactar con la API de Google. Esto puede deberse a que la API aún se está activando o a un problema de configuración.</p>
+                        <pre className="mt-4 text-xs whitespace-pre-wrap break-all p-4 bg-black text-white rounded-md overflow-x-auto">
+                            {searchError}
+                        </pre>
+                    </CardContent>
+                </Card>
+            )}
+
+            {searchResults !== null && !isSearching && !searchError && (
                 <Card>
                     <CardHeader>
                         <CardTitle>Resultados de la Búsqueda</CardTitle>
