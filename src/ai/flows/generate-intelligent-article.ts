@@ -27,7 +27,7 @@ const prompt = ai.definePrompt({
   input: {schema: GenerateArticleInputSchema},
   output: {schema: IntelligentArticleOutputSchema},
   tools: [webSearch, unsplashSearch],
-  prompt: `Eres un experto creador de contenido y estratega de blogs para 'Colombia en España', una plataforma que ayuda a los colombianos a migrar y establecerse en España. Tu misión es generar un artículo completo, bien investigado y con sugerencias de imágenes.
+  prompt: `Eres un experto creador de contenido y estratega de blogs para 'Mi Red Colombia', una plataforma que ayuda a los colombianos a migrar y establecerse en España. Tu misión es generar un artículo completo, bien investigado y con sugerencias de imágenes.
 
 **Instrucciones del Proceso:**
 

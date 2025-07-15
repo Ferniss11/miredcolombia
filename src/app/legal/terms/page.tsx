@@ -13,11 +13,11 @@ export default function TermsAndConditionsPage() {
             <li><strong>Razón social:</strong> HEALTHHUB CONNECT SL</li>
             <li><strong>CIF:</strong> B70795075</li>
             <li><strong>Domicilio social:</strong> Calle Doctor Marañón, 22 bajo, 33401 Avilés (Asturias), España</li>
-            <li><strong>Correo electrónico:</strong> info@colombiaenespaña.com</li>
+            <li><strong>Correo electrónico:</strong> info@miredcolombia.com</li>
         </ul>
 
         <h3>Objeto:</h3>
-        <p>El portal colombiaenespaña.com ofrece información, venta y prestación de servicios de asesoría, eventos y contenidos para la comunidad colombiana en España.</p>
+        <p>El portal miredcolombia.com ofrece información, venta y prestación de servicios de asesoría, eventos y contenidos para la comunidad colombiana en España.</p>
         
         <h3>Propiedad intelectual e industrial:</h3>
         <p>Todos los contenidos, marcas, nombres comerciales y signos distintivos son titularidad de HEALTHHUB CONNECT SL o de terceros autorizados. Queda prohibida su reproducción, distribución, comunicación pública o transformación sin autorización expresa.</p>
@@ -41,7 +41,7 @@ export default function TermsAndConditionsPage() {
         <h2>2. Condiciones Generales de Contratación</h2>
 
         <h3>2.1. Ámbito</h3>
-        <p>Las presentes Condiciones regulan la contratación electrónica de servicios ofrecidos por HEALTHHUB CONNECT SL a través de colombiaenespaña.com, de conformidad con la Directiva 2011/83/UE (Derechos del Consumidor) y el Real Decreto 7/2021.</p>
+        <p>Las presentes Condiciones regulan la contratación electrónica de servicios ofrecidos por HEALTHHUB CONNECT SL a través de miredcolombia.com, de conformidad con la Directiva 2011/83/UE (Derechos del Consumidor) y el Real Decreto 7/2021.</p>
         
         <h3>2.2. Proceso de contratación</h3>
         <ol>
@@ -68,7 +68,7 @@ export default function TermsAndConditionsPage() {
         <h3>2.5. Derecho de desistimiento</h3>
         <p>De acuerdo con el artículo 102 del Real Decreto Legislativo 1/2007 y Directiva 2011/83/UE, el consumidor dispone de un plazo de 14 días naturales para desistir sin indicar causa.</p>
         <p><strong>Excepciones:</strong> No procede en contratos de prestación de servicios plenamente ejecutados con consentimiento previo expreso y aceptación de pérdida del derecho de desistimiento.</p>
-        <p><strong>Procedimiento de devolución:</strong> El usuario notificará su decisión por email a info@colombiaenespaña.com antes de que venza el plazo. HEALTHHUB CONNECT SL confirmará la recepción y procesará el reembolso en 14 días.</p>
+        <p><strong>Procedimiento de devolución:</strong> El usuario notificará su decisión por email a info@miredcolombia.com antes de que venza el plazo. HEALTHHUB CONNECT SL confirmará la recepción y procesará el reembolso en 14 días.</p>
         
         <h3>2.6. Reembolso</h3>
         <p>Los reembolsos se realizarán por el mismo medio de pago empleado por el usuario, salvo acuerdo expreso en contrario.</p>
