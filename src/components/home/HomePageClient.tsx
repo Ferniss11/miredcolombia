@@ -63,7 +63,7 @@ export default function HomePageClient({ initialPosts, eurToCopRate }: HomePageC
             <DialogTitle>Completa tu compra</DialogTitle>
             {selectedItem && 
                 <DialogDescription>
-                    Estás a un paso de adquirir {selectedItem?.name || selectedItem?.title}.
+                    Estás a un paso de adquirir {selectedItem.type === 'package' ? selectedItem.name : selectedItem.title}.
                 </DialogDescription>
             }
           </DialogHeader>
