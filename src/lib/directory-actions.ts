@@ -328,3 +328,19 @@ export async function updateBusinessVerificationStatusAction(
     return { error: `No se pudo actualizar el estado: ${errorMessage}` };
   }
 }
+
+export async function publishBusinessAction(placeId: string) {
+    const db = getDbInstance();
+    try {
+        const businessRef = db.collection('directory').doc(placeId);
+        await businessRef.update({
+            verificationStatus: 'approved',
+        });
+        revalidatePath('/dashboard/admin/directory');
+        return { success: true };
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : "Unknown error";
+        console.error("Error publishing business:", errorMessage);
+        return { error: `No se pudo publicar el negocio: ${errorMessage}` };
+    }
+}

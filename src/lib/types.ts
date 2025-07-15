@@ -1,3 +1,4 @@
+
 import { z } from 'zod';
 
 // Schema for Blog Content Generation
@@ -93,7 +94,7 @@ export type BusinessProfile = {
   website: string;
   description: string;
   placeId?: string; // The linked Google Place ID
-  verificationStatus?: 'pending' | 'approved' | 'rejected'; // Status of business ownership claim
+  verificationStatus?: 'pending' | 'approved' | 'rejected' | 'unclaimed'; // Status of business ownership claim
 };
 
 export type UserProfile = {
@@ -269,7 +270,7 @@ export type AgentConfig = z.infer<typeof AgentConfigSchema>;
 
 // Directory / Places types
 export type PlaceDetails = {
-  id: string; // The Google Place ID
+  id?: string; // The Google Place ID
   displayName: string;
   formattedAddress: string;
   internationalPhoneNumber?: string;
@@ -278,5 +279,5 @@ export type PlaceDetails = {
   category: string; // The category assigned in *our* system
   subscriptionTier?: string; // e.g., 'Gratuito', 'Premium'
   ownerUid?: string | null; // UID of the advertiser user who owns this
-  verificationStatus?: 'pending' | 'approved' | 'rejected';
+  verificationStatus?: 'pending' | 'approved' | 'rejected' | 'unclaimed';
 };

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useTransition, useEffect } from 'react';
@@ -6,8 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Search, Plus, Building, Trash2, AlertCircle, UserCheck, UserX, UserRoundCog } from 'lucide-react';
-import { searchBusinessesOnGoogleAction, saveBusinessAction, getSavedBusinessesAction, deleteBusinessAction, updateBusinessVerificationStatusAction } from '@/lib/directory-actions';
+import { Loader2, Search, Plus, Building, Trash2, AlertCircle, UserCheck, UserX, UserRoundCog, CheckCircle } from 'lucide-react';
+import { searchBusinessesOnGoogleAction, saveBusinessAction, getSavedBusinessesAction, deleteBusinessAction, updateBusinessVerificationStatusAction, publishBusinessAction } from '@/lib/directory-actions';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -126,12 +127,24 @@ export default function AdminDirectoryPage() {
         });
     }
     
+    const handlePublishBusiness = (placeId: string) => {
+        startUpdatingStatusTransition(async () => {
+            const result = await publishBusinessAction(placeId);
+            if (result.error) {
+                toast({ variant: 'destructive', title: 'Error', description: result.error });
+            } else {
+                toast({ title: 'Éxito', description: `El negocio ha sido publicado.` });
+                fetchSavedBusinesses();
+            }
+        });
+    }
+    
     const getStatusBadge = (biz: PlaceDetails) => {
         if (biz.verificationStatus === 'pending') {
             return <Badge variant="destructive" className="bg-orange-500/80">Pendiente</Badge>
         }
-        if (biz.ownerUid && biz.verificationStatus === 'approved') {
-            return <Badge className="bg-green-500/80">Verificado</Badge>
+        if (biz.verificationStatus === 'approved') {
+            return <Badge className="bg-green-500/80">Publicado</Badge>
         }
         return <Badge variant="secondary">No Reclamado</Badge>
     }
@@ -234,6 +247,11 @@ export default function AdminDirectoryPage() {
                                                         <UserX className="h-4 w-4" />
                                                     </Button>
                                                 </>
+                                            )}
+                                            {biz.verificationStatus === 'unclaimed' && (
+                                                <Button variant="outline" size="sm" onClick={() => handlePublishBusiness(biz.id)} disabled={isUpdatingStatus}>
+                                                    <CheckCircle className="mr-2 h-4 w-4 text-green-600"/> Publicar
+                                                </Button>
                                             )}
                                             <Button variant="ghost" size="icon" disabled={isDeleting}>
                                                 <UserRoundCog className="h-4 w-4 text-muted-foreground" />
