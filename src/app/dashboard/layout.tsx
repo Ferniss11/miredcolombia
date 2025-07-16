@@ -11,14 +11,14 @@ export default function DashboardLayout({
     <SidebarProvider>
       <div className="flex h-screen overflow-hidden bg-background text-foreground">
         <DashboardSidebar />
-        <div className="flex flex-col flex-1 min-w-0">
-          <header className="flex h-14 items-center gap-4 border-b bg-background px-4 md:hidden">
+        <main className="flex flex-1 flex-col overflow-y-auto">
+           <header className="flex h-14 items-center gap-4 border-b bg-background px-4 md:hidden">
             <SidebarTrigger />
           </header>
-          <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
-            {children}
-          </main>
-        </div>
+          <div className="flex-1 p-4 sm:p-6 lg:p-8">
+             {children}
+          </div>
+        </main>
       </div>
     </SidebarProvider>
   );
