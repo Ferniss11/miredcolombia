@@ -49,7 +49,7 @@ export default function DirectorySection({ businesses }: DirectorySectionProps) 
                                 </p>
                             </CardContent>
                             <CardFooter className="p-4 pt-0 mt-auto">
-                                <Button asChild variant="link" className="text-accent-foreground p-0 h-auto font-semibold">
+                                <Button asChild variant="link" className="text-primary p-0 h-auto font-semibold">
                                 <Link href={`/directory/${business.id}`}>
                                     Ver Perfil <ArrowRight className="ml-2 h-4 w-4" />
                                 </Link>
