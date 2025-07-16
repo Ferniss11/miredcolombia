@@ -59,7 +59,7 @@ export default async function DirectoryPage() {
                   {business.category}
                 </p>
               </CardContent>
-              <CardFooter className="p-4 pt-0 mt-auto">
+              <CardFooter className="p-4 pt-0 mt-auto bg-card">
                 <Button asChild variant="link" className="text-accent-foreground p-0 h-auto font-semibold">
                   <Link href={`/directory/${business.id}`}>
                     Ver Perfil <ArrowRight className="ml-2 h-4 w-4" />
