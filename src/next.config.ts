@@ -46,19 +46,6 @@ const nextConfig: NextConfig = {
       }
     ],
   },
-  webpack: (config, { isServer }) => {
-    if (!isServer) {
-      // Don't resolve server-only modules on the client
-      config.resolve.fallback = {
-        ...config.resolve.fallback,
-        fs: false,
-        net: false,
-        child_process: false,
-      };
-    }
-    config.externals.push('@opentelemetry/exporter-jaeger');
-    return config;
-  },
   serverExternalPackages: ['firebase-admin'],
 };
 
