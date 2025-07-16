@@ -15,8 +15,7 @@ export default function DashboardLayout({
           <header className="flex h-14 items-center gap-4 border-b bg-background px-4 md:hidden">
             <SidebarTrigger />
           </header>
-          {/* Eliminamos overflow-auto de aquí para un control más granular en cada página */}
-          <main className="flex-1 p-4 sm:p-6 lg:p-8">
+          <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-x-auto">
             {children}
           </main>
         </div>
