@@ -278,6 +278,14 @@ export type Photo = {
     url: string;
 };
 
+export type Review = {
+    author_name: string;
+    profile_photo_url: string;
+    rating: number;
+    relative_time_description: string;
+    text: string;
+};
+
 export type PlaceDetails = {
   id?: string; // The Google Place ID
   displayName: string;
@@ -294,4 +302,12 @@ export type PlaceDetails = {
   rating?: number;
   userRatingsTotal?: number;
   openingHours?: string[];
+  isOpenNow?: boolean;
+  reviews?: Review[];
+  geometry?: {
+      location: {
+          lat: number;
+          lng: number;
+      }
+  };
 };

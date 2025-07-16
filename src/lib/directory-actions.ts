@@ -4,7 +4,7 @@
 import { googlePlacesSearch } from "@/ai/tools/google-places-search";
 import { adminDb, adminInstance } from "./firebase/admin-config";
 import { revalidatePath } from "next/cache";
-import type { PlaceDetails, Photo } from "./types";
+import type { PlaceDetails, Photo, Review } from "./types";
 import { Client } from '@googlemaps/google-maps-services-js';
 
 const googleMapsClient = new Client({});
@@ -364,7 +364,8 @@ export async function getPublicBusinessDetailsAction(placeId: string): Promise<{
 
         const fields = [
             'name', 'formatted_address', 'place_id', 'international_phone_number',
-            'website', 'rating', 'user_ratings_total', 'photos', 'opening_hours'
+            'website', 'rating', 'user_ratings_total', 'photos', 'opening_hours',
+            'geometry', 'reviews'
         ];
         const details = await getPlaceDetails(placeId, fields);
 
@@ -373,7 +374,7 @@ export async function getPublicBusinessDetailsAction(placeId: string): Promise<{
         }
 
         const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-        const photos: Photo[] = (details.photos || []).slice(0, 5).map((p: any) => ({
+        const photos: Photo[] = (details.photos || []).slice(0, 10).map((p: any) => ({
              photo_reference: p.photo_reference,
              height: p.height,
              width: p.width,
@@ -390,7 +391,10 @@ export async function getPublicBusinessDetailsAction(placeId: string): Promise<{
             rating: details.rating,
             userRatingsTotal: details.user_ratings_total,
             openingHours: details.opening_hours?.weekday_text,
+            isOpenNow: details.opening_hours?.open_now,
             photos: photos,
+            reviews: (details.reviews || []) as Review[],
+            geometry: details.geometry,
             category: category
         };
 
