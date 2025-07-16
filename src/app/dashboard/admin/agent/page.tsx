@@ -3,17 +3,17 @@
 
 import { useState, useEffect, useTransition } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Save, Bot, TestTube, Power, PowerOff, Sparkles, MessageSquareText, Search, Book } from 'lucide-react';
+import { Loader2, Save, Bot, TestTube, Power, PowerOff, Sparkles, Search, Book } from 'lucide-react';
 import { getAgentConfigAction, saveAgentConfigAction } from '@/lib/agent-actions';
 import type { AgentConfig } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
-import { SiGoogleplaces } from "react-icons/si";
+import { MdPlace } from "react-icons/md";
 
 // Reusable ToolCard Component
 type ToolCardProps = {
@@ -174,7 +174,7 @@ export default function AgentManagementPage() {
                         disabled={true}
                     />
                      <ToolCard
-                        icon={<SiGoogleplaces className="text-[#34A853]" />}
+                        icon={<MdPlace className="text-[#34A853]" />}
                         title="Google Places"
                         description="Permite al agente buscar negocios en el directorio."
                         isConnected={false}
