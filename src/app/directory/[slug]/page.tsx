@@ -238,7 +238,9 @@ export default async function BusinessProfilePage({ params }: { params: { slug: 
         </div>
         </div>
     </div>
-    {business.isAgentEnabled && business.id && <ChatWidget businessId={business.id} />}
+    {business.isAgentEnabled && business.id && (
+        <ChatWidget businessId={business.id} businessName={business.displayName} />
+    )}
     </>
   );
 }

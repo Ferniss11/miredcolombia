@@ -26,6 +26,7 @@ type ClientMessage = {
 
 type ChatWidgetProps = {
   businessId?: string;
+  businessName?: string;
 };
 
 const formSchema = z.object({
@@ -36,7 +37,7 @@ const formSchema = z.object({
   }),
 });
 
-export default function ChatWidget({ businessId }: ChatWidgetProps) {
+export default function ChatWidget({ businessId, businessName }: ChatWidgetProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ClientMessage[]>([]);
@@ -74,7 +75,15 @@ export default function ChatWidget({ businessId }: ChatWidgetProps) {
 
     if (result.success && result.sessionId) {
       setSessionId(result.sessionId);
-      setMessages(result.history || []);
+      const welcomeText = isBusinessChat 
+        ? `¡Hola! Soy el asistente virtual de ${businessName}. ¿Cómo puedo ayudarte hoy?`
+        : '¡Hola! Soy tu asistente de inmigración para España. ¿Cómo puedo ayudarte hoy?';
+
+      const initialHistory = result.history && result.history.length > 0
+        ? result.history
+        : [{ role: 'model', text: welcomeText, timestamp: new Date().toISOString() }];
+
+      setMessages(initialHistory);
     } else {
       toast({ variant: 'destructive', title: 'Error', description: result.error || 'No se pudo iniciar el chat. Por favor, inténtalo de nuevo.' });
     }
@@ -117,12 +126,15 @@ export default function ChatWidget({ businessId }: ChatWidgetProps) {
       return (
         <Card className="border-none shadow-none">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+             <CardTitle className="flex items-center gap-2">
                 {isBusinessChat ? <Building className="h-5 w-5 text-primary"/> : <Phone className="h-5 w-5 text-primary"/>}
-                {isBusinessChat ? "Asistente del Negocio" : "Contacto Directo"}
+                {isBusinessChat ? `Asistente de ${businessName}` : "Contacto Directo"}
             </CardTitle>
             <CardDescription>
-                Necesitamos unos datos para poder ayudarte mejor. Si ya has hablado con nosotros, usa el mismo teléfono para continuar la conversación.
+                 {isBusinessChat
+                    ? `Hola, ¿listo para chatear con ${businessName}? Solo necesitamos unos datos para empezar.`
+                    : 'Necesitamos unos datos para poder ayudarte mejor. Si ya has hablado con nosotros, usa el mismo teléfono para continuar la conversación.'
+                }
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -239,7 +251,7 @@ export default function ChatWidget({ businessId }: ChatWidgetProps) {
               <div className='flex items-center gap-2'>
                  {isBusinessChat ? <Building className="h-6 w-6 text-primary" /> : <Sparkles className="h-6 w-6 text-primary" />}
                 <CardTitle className="font-headline text-lg">
-                  {isBusinessChat ? "Asistente del Negocio" : "Asistente de Inmigración"}
+                  {isBusinessChat ? `Asistente de ${businessName}` : "Asistente de Inmigración"}
                 </CardTitle>
               </div>
               <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)} className="h-7 w-7">

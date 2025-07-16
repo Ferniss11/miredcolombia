@@ -4,6 +4,8 @@
 import { z } from 'zod';
 import { adminDb, adminInstance } from "@/lib/firebase/admin-config";
 import type { ChatMessage, ChatSession, TokenUsage } from '@/lib/types';
+import { getAgentConfig } from '@/services/agent.service';
+import { chat } from '@/ai/flows/chat-flow'; // Re-use the simple chat flow for now
 
 const FieldValue = adminInstance?.firestore.FieldValue;
 
@@ -66,9 +68,6 @@ export async function startBusinessChatSessionAction(input: z.infer<typeof start
         let existingSession = await findBusinessSessionByPhone(businessId, userPhone);
         if (existingSession) {
             const history = await getBusinessChatHistory(businessId, existingSession.id);
-            if (history.length === 0) {
-                history.push({ role: 'model', text: '¡Hola de nuevo! Soy el asistente de este negocio. ¿En qué más te puedo ayudar?', timestamp: new Date().toISOString() });
-            }
             return { success: true, sessionId: existingSession.id, history };
         }
 
@@ -78,9 +77,9 @@ export async function startBusinessChatSessionAction(input: z.infer<typeof start
             userPhone,
             createdAt: FieldValue.serverTimestamp(),
         });
-
-        const initialHistory = [{ role: 'model', text: '¡Hola! Soy el asistente virtual de este negocio. ¿Cómo puedo ayudarte hoy?', timestamp: new Date().toISOString() }];
-        return { success: true, sessionId: newSessionRef.id, history: initialHistory };
+        
+        // No initial message here, it will be added in the ChatWidget based on context.
+        return { success: true, sessionId: newSessionRef.id, history: [] };
 
     } catch (error) {
         console.error("Error starting business chat session:", error);
@@ -88,6 +87,12 @@ export async function startBusinessChatSessionAction(input: z.infer<typeof start
         return { success: false, error: `No se pudo iniciar el chat: ${errorMessage}` };
     }
 }
+
+
+const formatHistoryAsPrompt = (history: Omit<ChatMessage, 'id' | 'usage'>[]): string => {
+    return history.map(msg => `${msg.role === 'user' ? 'Usuario' : 'Asistente'}: ${msg.text}`).join('\n');
+}
+
 
 export async function postBusinessMessageAction(input: z.infer<typeof postMessageSchema>) {
     const db = getDbInstance();
@@ -106,21 +111,32 @@ export async function postBusinessMessageAction(input: z.infer<typeof postMessag
             timestamp: FieldValue.serverTimestamp(),
         });
         
-        // --- AI LOGIC WILL GO HERE IN PHASE 2 ---
-        // For Phase 1, we just return a canned response.
-        const cannedResponse = "Gracias por tu mensaje. Un representante del negocio se pondrá en contacto contigo pronto.";
-        const aiUsage: TokenUsage = { inputTokens: 0, outputTokens: 0, totalTokens: 0 };
-        // ---
+        // --- AI LOGIC (Phase 2 placeholder, re-using main agent logic) ---
+        const history = await getBusinessChatHistory(businessId, sessionId);
+        const fullPrompt = `${formatHistoryAsPrompt(history)}\nUsuario: ${message}`;
         
-        // Save AI (canned) response
-        await messagesRef.add({
-            text: cannedResponse,
-            role: 'model',
-            timestamp: FieldValue.serverTimestamp(),
-            usage: aiUsage,
+        // NOTE: In a real Phase 2, this would be a specialized business agent config.
+        // For now, we re-use the main agent's config.
+        const agentConfig = await getAgentConfig();
+
+        const aiResponse = await chat({
+            model: agentConfig.model,
+            systemPrompt: agentConfig.systemPrompt, // This will be specialized later
+            prompt: fullPrompt,
         });
 
-        return { success: true, response: cannedResponse };
+        if (aiResponse && aiResponse.response) {
+            await messagesRef.add({
+                text: aiResponse.response,
+                role: 'model',
+                timestamp: FieldValue.serverTimestamp(),
+                usage: aiResponse.usage,
+            });
+            return { success: true, response: aiResponse.response };
+        } else {
+             throw new Error("La respuesta de la IA fue nula o inválida.");
+        }
+        // --- End AI Logic ---
 
     } catch (error) {
         console.error("Error posting business message:", error);
