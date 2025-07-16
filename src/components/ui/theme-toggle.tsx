@@ -16,7 +16,7 @@ export function ThemeToggle() {
 
   return (
     <div className="w-full">
-      <div className="group-data-[collapsible=icon]:hidden">
+      <div className="group-data-[state=expanded]:block group-data-[state=collapsed]:hidden">
         <SidebarMenu>
           <SidebarMenuItem className="group/menu-item relative">
             <SidebarMenuButton
@@ -32,7 +32,7 @@ export function ThemeToggle() {
         </SidebarMenu>
       </div>
 
-      <div className="hidden group-data-[collapsible=icon]:block">
+      <div className="hidden group-data-[state=collapsed]:block">
          <SidebarMenu>
           <SidebarMenuItem className="group/menu-item relative">
             <SidebarMenuButton
