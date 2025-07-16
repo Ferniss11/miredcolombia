@@ -3,7 +3,7 @@
 
 import { AgentConfigSchema, type AgentConfig } from "./types";
 import { getAgentConfig, saveAgentConfig } from "@/services/agent.service";
-import { getAllChatSessions, getChatHistory, getChatSessionById } from "@/services/chat.service";
+import { getAllChatSessions, getChatHistory, getChatSessionById, saveAdminMessage } from "@/services/chat.service";
 import { revalidatePath } from "next/cache";
 
 
@@ -51,5 +51,19 @@ export async function getChatSessionDetailsAction(sessionId: string) {
     } catch (error) {
         console.error(`Error getting details for session ${sessionId}:`, error);
         return { error: 'No se pudo obtener el detalle de la conversación.' };
+    }
+}
+
+
+export async function postAdminMessageAction(input: { sessionId: string; text: string; authorName: string }) {
+    try {
+        const { sessionId, text, authorName } = input;
+        const newMessage = await saveAdminMessage(sessionId, text, authorName);
+        revalidatePath(`/dashboard/admin/conversations/${sessionId}`);
+        return { success: true, newMessage };
+    } catch (error) {
+        console.error("Error posting admin message:", error);
+        const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
+        return { success: false, error: `No se pudo enviar el mensaje: ${errorMessage}` };
     }
 }

@@ -2,7 +2,7 @@
 'use server';
 
 import { adminDb, adminInstance } from "@/lib/firebase/admin-config";
-import type { ChatSession, ChatMessage, TokenUsage, ChatSessionWithTokens } from "@/lib/types";
+import type { ChatSession, ChatMessage, TokenUsage, ChatSessionWithTokens, UserProfile } from "@/lib/types";
 
 const FieldValue = adminInstance?.firestore.FieldValue;
 
@@ -22,7 +22,8 @@ function serializeMessage(doc: FirebaseFirestore.DocumentSnapshot): ChatMessage 
         text: data.text,
         role: data.role,
         timestamp: data.timestamp.toDate().toISOString(),
-        usage: data.usage
+        usage: data.usage,
+        authorName: data.authorName,
     };
 }
 
@@ -32,6 +33,7 @@ function serializeSession(doc: FirebaseFirestore.DocumentSnapshot): ChatSessionW
         id: doc.id,
         userName: data.userName,
         userPhone: data.userPhone,
+        userEmail: data.userEmail,
         createdAt: data.createdAt.toDate().toISOString(),
         messageCount: data.messageCount || 0, // Fallback for safety
         totalInputTokens: data.totalInputTokens || 0,
@@ -185,6 +187,36 @@ export async function saveMessage(sessionId: string, messageData: Omit<ChatMessa
   }
 }
 
+export async function saveAdminMessage(sessionId: string, text: string, authorName: string): Promise<ChatMessage> {
+    const db = getDbInstance();
+    if (!FieldValue) throw new Error("Firebase Admin SDK is not fully initialized.");
+    try {
+        const messageData = {
+            text,
+            role: 'admin' as const,
+            authorName,
+            timestamp: FieldValue.serverTimestamp(),
+        };
+        const messageRef = await db.collection("chatSessions").doc(sessionId).collection("messages").add(messageData);
+        
+        // We return the object with a serialized timestamp to update the client immediately
+        return {
+            id: messageRef.id,
+            text: text,
+            role: 'admin',
+            authorName: authorName,
+            timestamp: new Date().toISOString()
+        };
+    } catch (error) {
+         console.error(`Error saving admin message for session ${sessionId}:`, error);
+        if (error instanceof Error) {
+            throw new Error(`Failed to save admin message in Firestore: ${error.message}`);
+        }
+        throw new Error('Failed to save admin message in Firestore due to an unknown server error.');
+    }
+}
+
+
 /**
  * Retrieves all chat sessions with their aggregated token data.
  */
@@ -206,7 +238,7 @@ export async function getAllChatSessions(): Promise<ChatSessionWithTokens[]> {
 }
 
 /**
- * Retrieves a single chat session by its ID.
+ * Retrieves a single chat session by its ID, enriching it with the user's email if possible.
  */
 export async function getChatSessionById(sessionId: string): Promise<ChatSessionWithTokens | null> {
   const db = getDbInstance();
@@ -218,6 +250,26 @@ export async function getChatSessionById(sessionId: string): Promise<ChatSession
   }
   
   const session = serializeSession(docSnap);
+
+  // Enrich with email by finding a user with a matching phone number
+  const usersRef = db.collection('users');
+  const userQuery = usersRef.where('businessProfile.phone', '==', session.userPhone).limit(1);
+  const userSnapshot = await userQuery.get();
+  
+  if (!userSnapshot.empty) {
+    const userProfile = userSnapshot.docs[0].data() as UserProfile;
+    session.userEmail = userProfile.email || 'No registrado';
+  } else {
+    // Check if the user exists but phone is in a different field
+     const userQueryByMainPhone = usersRef.where('phone', '==', session.userPhone).limit(1);
+     const userSnapshotByMain = await userQueryByMainPhone.get();
+      if (!userSnapshotByMain.empty) {
+        const userProfile = userSnapshotByMain.docs[0].data() as UserProfile;
+        session.userEmail = userProfile.email || 'No registrado';
+      }
+  }
+
+
   const messagesSnapshot = await docRef.collection('messages').get();
   session.messageCount = messagesSnapshot.size;
 

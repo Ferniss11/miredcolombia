@@ -238,6 +238,7 @@ export type ChatSession = {
   id?: string;
   userName: string;
   userPhone: string;
+  userEmail?: string;
   createdAt: any; // Firestore Timestamp
   updatedAt?: any;
   totalTokens?: number;
@@ -249,6 +250,7 @@ export type ChatSessionWithTokens = {
   id: string;
   userName: string;
   userPhone: string;
+  userEmail?: string;
   createdAt: string;
   messageCount: number;
   totalTokens: number;
@@ -259,9 +261,10 @@ export type ChatSessionWithTokens = {
 export type ChatMessage = {
   id?: string;
   text: string;
-  role: 'user' | 'model';
+  role: 'user' | 'model' | 'admin';
   timestamp: any; // Firestore Timestamp or ISO string
   usage?: TokenUsage;
+  authorName?: string; // Used for admin messages
 }
 
 export const AgentConfigSchema = z.object({
