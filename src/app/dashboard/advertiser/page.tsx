@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,7 +29,7 @@ const chartConfig = {
 
 export default function AdvertiserDashboardPage() {
     return (
-        <div>
+        <div className="space-y-6">
             <h1 className="text-3xl font-bold font-headline mb-6">Resumen del Anunciante</h1>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 <Card>
@@ -69,15 +70,17 @@ export default function AdvertiserDashboardPage() {
                         <CardDescription>Enero - Junio 2024</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
-                            <LineChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
-                                <CartesianGrid vertical={false} />
-                                <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={8} />
-                                <ChartTooltip content={<ChartTooltipContent />} />
-                                <Line dataKey="desktop" type="monotone" stroke="var(--color-desktop)" strokeWidth={2} dot={false} />
-                                <Line dataKey="mobile" type="monotone" stroke="var(--color-mobile)" strokeWidth={2} dot={false} />
-                            </LineChart>
-                        </ChartContainer>
+                        <div className="overflow-x-auto">
+                            <ChartContainer config={chartConfig} className="min-h-[200px] w-full min-w-[600px]">
+                                <LineChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+                                    <CartesianGrid vertical={false} />
+                                    <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={8} />
+                                    <ChartTooltip content={<ChartTooltipContent />} />
+                                    <Line dataKey="desktop" type="monotone" stroke="var(--color-desktop)" strokeWidth={2} dot={false} />
+                                    <Line dataKey="mobile" type="monotone" stroke="var(--color-mobile)" strokeWidth={2} dot={false} />
+                                </LineChart>
+                            </ChartContainer>
+                        </div>
                     </CardContent>
                 </Card>
             </div>

@@ -165,38 +165,41 @@ export default function AdminBlogManagementPage() {
         </Button>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold">{statusCounts.total}</div>
-            <p className="text-xs text-muted-foreground">Total</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold">{statusCounts.published}</div>
-            <p className="text-xs text-muted-foreground">Publicados</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold">{statusCounts.draft}</div>
-            <p className="text-xs text-muted-foreground">Borradores</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold">{statusCounts.inReview}</div>
-            <p className="text-xs text-muted-foreground">En Revisión</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold">{statusCounts.archived}</div>
-            <p className="text-xs text-muted-foreground">Archivados</p>
-          </CardContent>
-        </Card>
+      <div className="overflow-x-auto">
+        <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 min-w-[700px]">
+            <Card>
+            <CardContent className="p-4">
+                <div className="text-2xl font-bold">{statusCounts.total}</div>
+                <p className="text-xs text-muted-foreground">Total</p>
+            </CardContent>
+            </Card>
+            <Card>
+            <CardContent className="p-4">
+                <div className="text-2xl font-bold">{statusCounts.published}</div>
+                <p className="text-xs text-muted-foreground">Publicados</p>
+            </CardContent>
+            </Card>
+            <Card>
+            <CardContent className="p-4">
+                <div className="text-2xl font-bold">{statusCounts.draft}</div>
+                <p className="text-xs text-muted-foreground">Borradores</p>
+            </CardContent>
+            </Card>
+            <Card>
+            <CardContent className="p-4">
+                <div className="text-2xl font-bold">{statusCounts.inReview}</div>
+                <p className="text-xs text-muted-foreground">En Revisión</p>
+            </CardContent>
+            </Card>
+            <Card>
+            <CardContent className="p-4">
+                <div className="text-2xl font-bold">{statusCounts.archived}</div>
+                <p className="text-xs text-muted-foreground">Archivados</p>
+            </CardContent>
+            </Card>
+        </div>
       </div>
+
 
       <div className="flex flex-col md:flex-row items-center gap-4">
         <div className="relative w-full">
