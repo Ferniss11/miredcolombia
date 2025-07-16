@@ -93,6 +93,7 @@ export type BusinessProfile = {
   phone: string;
   website: string;
   description: string;
+  category?: string; // The category of the business
   placeId?: string; // The linked Google Place ID
   verificationStatus?: 'pending' | 'approved' | 'rejected' | 'unclaimed'; // Status of business ownership claim
   isAgentEnabled?: boolean; // NEW: To enable/disable the business-specific agent

@@ -27,7 +27,20 @@ export async function getUserProfileByUid(uid: string): Promise<UserProfile | nu
     const userSnap = await userRef.get();
 
     if (userSnap.exists) {
-        return userSnap.data() as UserProfile;
+        const profile = userSnap.data() as UserProfile;
+        
+        // If user is an advertiser, also fetch the category from the main directory collection
+        // This is a temporary measure to unify data sources until a refactor.
+        if (profile.role === 'Advertiser' && profile.businessProfile?.placeId) {
+            const businessRef = db.collection('directory').doc(profile.businessProfile.placeId);
+            const businessSnap = await businessRef.get();
+            if (businessSnap.exists && businessSnap.data()?.category) {
+                if (!profile.businessProfile.category) { // Avoid overwriting if it somehow exists
+                    profile.businessProfile.category = businessSnap.data()?.category;
+                }
+            }
+        }
+        return profile;
     }
     
     return null;

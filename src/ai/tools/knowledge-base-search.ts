@@ -5,10 +5,8 @@
  * @fileOverview Defines a Genkit tool for searching the knowledge base vector store.
  */
 import { ai } from '@/ai/genkit';
-import { getAdminServices } from '@/lib/firebase/admin-config';
+import { adminDb } from '@/lib/firebase/admin-config';
 import { z } from 'zod';
-
-const { db } = getAdminServices();
 
 const KnowledgeSearchResultSchema = z.object({
   content: z.string().describe('A chunk of text from the knowledge base relevant to the user query.'),
@@ -28,9 +26,15 @@ export const knowledgeBaseSearch = ai.defineTool(
   },
   async ({ query }) => {
     console.log(`[Knowledge Base] Searching for: "${query}"`);
+
+    if (!adminDb) {
+      console.error("[Knowledge Base] Firestore not initialized.");
+      return { results: [] };
+    }
+
     try {
       // The Firebase Vector Search extension makes documents searchable via the findNeighbors operator.
-      const results = await db.collection('knowledge').findNeighbors('embedding', {
+      const results = await adminDb.collection('knowledge').findNeighbors('embedding', {
         query: query,
         limit: 5, // Retrieve the top 5 most relevant chunks
         distanceMeasure: 'COSINE',

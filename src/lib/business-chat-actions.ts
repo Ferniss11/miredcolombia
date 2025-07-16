@@ -4,8 +4,7 @@
 import { z } from 'zod';
 import { adminDb, adminInstance } from "@/lib/firebase/admin-config";
 import type { ChatMessage, ChatSession, TokenUsage } from '@/lib/types';
-import { getAgentConfig } from '@/services/agent.service';
-import { chat } from '@/ai/flows/chat-flow'; // Re-use the simple chat flow for now
+import { businessChat } from '@/ai/businessAgent/flows/business-chat-flow';
 
 const FieldValue = adminInstance?.firestore.FieldValue;
 
@@ -93,17 +92,12 @@ export async function startBusinessChatSessionAction(input: z.infer<typeof start
 }
 
 
-const formatHistoryAsPrompt = (history: Omit<ChatMessage, 'id' | 'usage'>[]): string => {
-    return history.map(msg => `${msg.role === 'user' ? 'Usuario' : 'Asistente'}: ${msg.text}`).join('\n');
-}
-
-
 export async function postBusinessMessageAction(input: z.infer<typeof postMessageSchema>) {
     const db = getDbInstance();
     if (!FieldValue) throw new Error("Firebase Admin SDK is not fully initialized.");
     
     try {
-        const { businessId, sessionId, message } = postMessageSchema.parse(input);
+        const { businessId, sessionId, message, history } = postMessageSchema.parse(input);
 
         const sessionRef = db.collection('directory').doc(businessId).collection('businessChatSessions').doc(sessionId);
         const messagesRef = sessionRef.collection('messages');
@@ -115,18 +109,11 @@ export async function postBusinessMessageAction(input: z.infer<typeof postMessag
             timestamp: FieldValue.serverTimestamp(),
         });
         
-        // --- AI LOGIC (Phase 2 placeholder, re-using main agent logic) ---
-        const history = await getBusinessChatHistory(businessId, sessionId);
-        const fullPrompt = `${formatHistoryAsPrompt(history)}\nUsuario: ${message}`;
-        
-        // NOTE: In a real Phase 2, this would be a specialized business agent config.
-        // For now, we re-use the main agent's config.
-        const agentConfig = await getAgentConfig();
-
-        const aiResponse = await chat({
-            model: agentConfig.model,
-            systemPrompt: agentConfig.systemPrompt, // This will be specialized later
-            prompt: fullPrompt,
+        // --- NEW: Call the specialized business agent ---
+        const aiResponse = await businessChat({
+            businessId,
+            chatHistory: history,
+            currentMessage: message
         });
 
         if (aiResponse && aiResponse.response) {
