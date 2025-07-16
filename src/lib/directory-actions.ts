@@ -4,7 +4,7 @@
 import { googlePlacesSearch } from "@/ai/tools/google-places-search";
 import { adminDb, adminInstance } from "./firebase/admin-config";
 import { revalidatePath } from "next/cache";
-import type { PlaceDetails } from "./types";
+import type { PlaceDetails, Photo } from "./types";
 import { Client } from '@googlemaps/google-maps-services-js';
 
 const googleMapsClient = new Client({});
@@ -25,8 +25,8 @@ function getDbInstance() {
 export async function searchBusinessesOnGoogleAction(query: string) {
     try {
         const result = await googlePlacesSearch({ query });
-        if (result.error) {
-            throw new Error(result.error);
+        if ('error' in result && result.error) {
+            throw new Error(String(result.error));
         }
         return { 
             success: true, 
@@ -82,10 +82,9 @@ export async function saveBusinessAction(placeId: string, category: string, admi
 }
 
 /**
- * Fetches details for a single place ID from Google Places API.
- * This is used to enrich the data we get from Firestore.
+ * Fetches basic details for a place ID from Google Places API.
  */
-async function getPlaceDetails(placeId: string, fields: string[]): Promise<PlaceDetails | null> {
+async function getPlaceDetails(placeId: string, fields: string[]): Promise<any | null> {
     const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
     if (!apiKey) {
         throw new Error("NEXT_PUBLIC_GOOGLE_MAPS_API_KEY environment variable not set.");
@@ -96,20 +95,12 @@ async function getPlaceDetails(placeId: string, fields: string[]): Promise<Place
                 place_id: placeId,
                 fields: fields,
                 key: apiKey,
+                language: 'es',
             }
         });
 
         if (response.data.status === 'OK') {
-            const result = response.data.result;
-            return {
-                id: result.place_id!,
-                displayName: result.name || 'Nombre no disponible',
-                formattedAddress: result.formatted_address || 'Dirección no disponible',
-                internationalPhoneNumber: result.international_phone_number,
-                formattedPhoneNumber: result.formatted_phone_number,
-                website: result.website,
-                category: '', // This will be populated from our DB
-            };
+            return response.data.result;
         }
         return null;
     } catch (error) {
@@ -118,10 +109,19 @@ async function getPlaceDetails(placeId: string, fields: string[]): Promise<Place
     }
 }
 
-export async function getSavedBusinessesAction(): Promise<{ businesses?: PlaceDetails[], error?: string }> {
+export async function getSavedBusinessesAction(forPublic: boolean = false): Promise<{ businesses?: PlaceDetails[], error?: string }> {
     const db = getDbInstance();
     try {
-        const snapshot = await db.collection('directory').orderBy('createdAt', 'desc').get();
+        let query: FirebaseFirestore.Query<FirebaseFirestore.DocumentData> = db.collection('directory');
+        
+        if (forPublic) {
+            query = query.where('verificationStatus', '==', 'approved');
+        } else {
+            query = query.orderBy('createdAt', 'desc');
+        }
+        
+        const snapshot = await query.get();
+
         if (snapshot.empty) {
             return { businesses: [] };
         }
@@ -130,15 +130,20 @@ export async function getSavedBusinessesAction(): Promise<{ businesses?: PlaceDe
             const docData = doc.data();
             const placeId = docData.placeId;
 
-            const details = await getPlaceDetails(placeId, ['name', 'formatted_address', 'place_id']);
+            const fields = forPublic ? ['name', 'place_id', 'photos'] : ['name', 'formatted_address', 'place_id'];
+            const details = await getPlaceDetails(placeId, fields);
             if (!details) return null;
 
             return {
-                ...details,
+                id: details.place_id!,
+                displayName: details.name || 'Nombre no disponible',
+                formattedAddress: details.formatted_address || 'Dirección no disponible',
                 category: docData.category,
                 subscriptionTier: docData.subscriptionTier,
                 ownerUid: docData.ownerUid,
                 verificationStatus: docData.verificationStatus,
+                // Include a photo for the public directory cards
+                photoUrl: details.photos?.[0] ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${details.photos[0].photo_reference}&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}` : "https://placehold.co/400x250.png",
             } as PlaceDetails;
         });
         
@@ -174,12 +179,12 @@ export async function deleteBusinessAction(placeId: string): Promise<{ success: 
 export async function getBusinessDetailsForVerificationAction(placeId: string) {
     try {
         const details = await getPlaceDetails(placeId, ['formatted_phone_number']);
-        if (!details || !details.formattedPhoneNumber) {
+        if (!details || !details.formatted_phone_number) {
             return { error: 'No se pudo obtener el teléfono de este negocio para verificación. Intenta con otro.' };
         }
         
         // Obfuscate phone number
-        const phone = details.formattedPhoneNumber;
+        const phone = details.formatted_phone_number;
         const partialPhone = phone.slice(0, 3) + '***' + phone.slice(-3);
 
         return { success: true, details: { partialPhone } };
@@ -195,12 +200,12 @@ export async function verifyAndLinkBusinessAction(userId: string, placeId: strin
     if (!FieldValue) throw new Error("Firebase Admin SDK is not fully initialized.");
     try {
         const details = await getPlaceDetails(placeId, ['international_phone_number', 'name', 'formatted_address', 'website', 'formatted_phone_number']);
-        if (!details || !details.internationalPhoneNumber) {
+        if (!details || !details.international_phone_number) {
             return { error: 'No se pudo verificar el negocio. El teléfono no está disponible en Google.' };
         }
 
         // Normalize phone numbers for comparison
-        const googlePhone = details.internationalPhoneNumber.replace(/[\s-()]/g, '');
+        const googlePhone = details.international_phone_number.replace(/[\s-()]/g, '');
         const userPhone = providedPhone.replace(/[\s-()]/g, '');
 
         if (googlePhone !== userPhone) {
@@ -233,9 +238,9 @@ export async function verifyAndLinkBusinessAction(userId: string, placeId: strin
             
             transaction.update(userRef, {
                 'businessProfile.placeId': placeId,
-                'businessProfile.businessName': details.displayName,
-                'businessProfile.address': details.formattedAddress,
-                'businessProfile.phone': details.internationalPhoneNumber,
+                'businessProfile.businessName': details.name,
+                'businessProfile.address': details.formatted_address,
+                'businessProfile.phone': details.international_phone_number,
                 'businessProfile.website': details.website || '',
                 'businessProfile.verificationStatus': 'pending',
             });
@@ -337,10 +342,62 @@ export async function publishBusinessAction(placeId: string) {
             verificationStatus: 'approved',
         });
         revalidatePath('/dashboard/admin/directory');
+        revalidatePath('/directory');
         return { success: true };
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : "Unknown error";
         console.error("Error publishing business:", errorMessage);
         return { error: `No se pudo publicar el negocio: ${errorMessage}` };
+    }
+}
+
+// --- Actions for Public Directory Pages ---
+
+export async function getPublicBusinessDetailsAction(placeId: string): Promise<{ business?: PlaceDetails, error?: string }> {
+    try {
+        const dbData = await db.collection('directory').doc(placeId).get();
+        if (!dbData.exists) {
+            return { error: 'Este negocio no forma parte de nuestro directorio.' };
+        }
+        const category = dbData.data()?.category || 'Sin categoría';
+
+        const fields = [
+            'name', 'formatted_address', 'place_id', 'international_phone_number',
+            'website', 'rating', 'user_ratings_total', 'photos', 'opening_hours'
+        ];
+        const details = await getPlaceDetails(placeId, fields);
+
+        if (!details) {
+            return { error: 'No se pudieron obtener los detalles del negocio desde Google.' };
+        }
+
+        const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+        const photos: Photo[] = (details.photos || []).slice(0, 5).map((p: any) => ({
+             photo_reference: p.photo_reference,
+             height: p.height,
+             width: p.width,
+             html_attributions: p.html_attributions,
+             url: `https://maps.googleapis.com/maps/api/place/photo?maxwidth=1000&photoreference=${p.photo_reference}&key=${apiKey}`
+        }));
+
+        const business: PlaceDetails = {
+            id: details.place_id,
+            displayName: details.name,
+            formattedAddress: details.formatted_address,
+            internationalPhoneNumber: details.international_phone_number,
+            website: details.website,
+            rating: details.rating,
+            userRatingsTotal: details.user_ratings_total,
+            openingHours: details.opening_hours?.weekday_text,
+            photos: photos,
+            category: category
+        };
+
+        return { business };
+
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : "Unknown error";
+        console.error(`Error in getPublicBusinessDetailsAction for ${placeId}:`, errorMessage);
+        return { error: 'Ocurrió un error al cargar los detalles del negocio.' };
     }
 }

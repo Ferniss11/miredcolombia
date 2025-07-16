@@ -1,4 +1,5 @@
 
+
 import { z } from 'zod';
 
 // Schema for Blog Content Generation
@@ -240,7 +241,7 @@ export type ChatSession = {
   totalTokens?: number;
   totalInputTokens?: number;
   totalOutputTokens?: number;
-}
+};
 
 export type ChatSessionWithTokens = {
   id: string;
@@ -269,6 +270,14 @@ export type AgentConfig = z.infer<typeof AgentConfigSchema>;
 
 
 // Directory / Places types
+export type Photo = {
+    photo_reference: string;
+    height: number;
+    width: number;
+    html_attributions: string[];
+    url: string;
+};
+
 export type PlaceDetails = {
   id?: string; // The Google Place ID
   displayName: string;
@@ -280,4 +289,9 @@ export type PlaceDetails = {
   subscriptionTier?: string; // e.g., 'Gratuito', 'Premium'
   ownerUid?: string | null; // UID of the advertiser user who owns this
   verificationStatus?: 'pending' | 'approved' | 'rejected' | 'unclaimed';
+  photoUrl?: string; // For the list view
+  photos?: Photo[]; // For the detail view
+  rating?: number;
+  userRatingsTotal?: number;
+  openingHours?: string[];
 };
