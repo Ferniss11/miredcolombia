@@ -114,7 +114,7 @@ export function DashboardSidebar() {
             <SidebarMenuItem>
               <Link href="/">
                   <SidebarMenuButton icon={Home} tooltip="Volver al Sitio">
-                  Volver al Sitio
+                    Volver al Sitio
                   </SidebarMenuButton>
               </Link>
             </SidebarMenuItem>
