@@ -22,6 +22,7 @@ import {
   Bot,
   Building,
   Bug,
+  MessageSquare,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -49,6 +50,7 @@ export function DashboardSidebar() {
     { href: "/dashboard/admin/blog", label: "Blog", icon: FileText },
     { href: "/dashboard/admin/content", label: "Contenido IA", icon: Sparkles },
     { href: "/dashboard/admin/agent", label: "Agente Global", icon: Bot },
+    { href: "/dashboard/admin/conversations", label: "Conversaciones", icon: MessageSquare },
     { href: "/dashboard/admin/directory", label: "Directorio", icon: Building },
     { href: "/dashboard/admin/debug", label: "Depuración", icon: Bug },
   ];
