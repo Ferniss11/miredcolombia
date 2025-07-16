@@ -4,7 +4,7 @@
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import StripeCheckoutForm from "@/components/checkout/StripeCheckoutForm";
-import type { MigrationPackage, MigrationService, PurchaseableItem, BlogPost } from '@/lib/types';
+import type { MigrationPackage, MigrationService, PurchaseableItem, BlogPost, PlaceDetails } from '@/lib/types';
 import ChatWidget from '@/components/chat/ChatWidget';
 import VideoModal from '@/components/ui/video-modal';
 
@@ -18,13 +18,15 @@ import TimezoneSection from './TimezoneSection';
 import BlogSection from './BlogSection';
 import BusinessSection from './BusinessSection';
 import TestimonialsSection from './TestimonialsSection';
+import DirectorySection from './DirectorySection';
 
 type HomePageClientProps = {
   initialPosts: BlogPost[];
   eurToCopRate: number;
+  initialBusinesses: PlaceDetails[];
 }
 
-export default function HomePageClient({ initialPosts, eurToCopRate }: HomePageClientProps) {
+export default function HomePageClient({ initialPosts, eurToCopRate, initialBusinesses }: HomePageClientProps) {
   const [isCheckoutOpen, setCheckoutOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<PurchaseableItem | null>(null);
 
@@ -51,6 +53,7 @@ export default function HomePageClient({ initialPosts, eurToCopRate }: HomePageC
         <StepsSection />
         <PackagesSection handlePurchaseClick={handlePurchaseClick} eurToCopRate={eurToCopRate} />
         <ServicesSection handlePurchaseClick={handlePurchaseClick} eurToCopRate={eurToCopRate} />
+        <DirectorySection businesses={initialBusinesses} />
         <TimezoneSection />
         <BlogSection posts={initialPosts} />
         <BusinessSection />

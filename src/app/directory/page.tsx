@@ -40,7 +40,7 @@ export default async function DirectoryPage() {
 
       {businesses && businesses.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
-          {businesses.map((business, index) => (
+          {businesses.map((business) => (
             <Card key={business.id} className="overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 flex flex-col">
               <CardHeader className="p-0">
                 <Image
@@ -53,14 +53,14 @@ export default async function DirectoryPage() {
                 />
               </CardHeader>
               <CardContent className="p-4 flex-grow">
-                <h3 className="text-lg font-bold font-headline">{business.displayName}</h3>
+                <h3 className="text-lg font-bold font-headline line-clamp-2">{business.displayName}</h3>
                 <p className="text-sm text-muted-foreground flex items-center mt-1">
                   <Building className="w-4 h-4 mr-2" />
                   {business.category}
                 </p>
               </CardContent>
-              <CardFooter className="p-4 pt-0">
-                <Button asChild variant="link" className="text-accent-foreground p-0 h-auto">
+              <CardFooter className="p-4 pt-0 mt-auto">
+                <Button asChild variant="link" className="text-accent-foreground p-0 h-auto font-semibold">
                   <Link href={`/directory/${business.id}`}>
                     Ver Perfil <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
