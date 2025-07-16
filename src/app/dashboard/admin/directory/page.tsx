@@ -41,6 +41,8 @@ export default function AdminDirectoryPage() {
     const [searchResults, setSearchResults] = useState<Place[] | null>(null);
     const [selectedCategory, setSelectedCategory] = useState<string>('');
     const [searchError, setSearchError] = useState<string | null>(null);
+    const [rawApiResponse, setRawApiResponse] = useState<any>(null);
+
 
     // State for Saved Businesses
     const [savedBusinesses, setSavedBusinesses] = useState<PlaceDetails[]>([]);
@@ -69,7 +71,12 @@ export default function AdminDirectoryPage() {
         startSearchTransition(async () => {
             setSearchResults(null);
             setSearchError(null);
+            setRawApiResponse(null);
+
             const actionResult = await searchBusinessesOnGoogleAction(query);
+            
+            setRawApiResponse(actionResult.rawResponse || { error: actionResult.error });
+
             if (actionResult.error) {
                 setSearchError(actionResult.error);
                 toast({ variant: 'destructive', title: 'Error en la Búsqueda', description: actionResult.error });
@@ -179,6 +186,7 @@ export default function AdminDirectoryPage() {
             </Card>
 
             {isSearching && <div className="text-center p-4"><Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" /></div>}
+            
             {searchError && <Alert variant="destructive"><AlertCircle className="h-4 w-4" /><AlertTitle>Error en Búsqueda</AlertTitle><AlertDescription>{searchError}</AlertDescription></Alert>}
             
             {searchResults && searchResults.length > 0 && (
@@ -198,6 +206,22 @@ export default function AdminDirectoryPage() {
                                 </CardContent>
                             </Card>
                         ))}
+                    </CardContent>
+                </Card>
+            )}
+
+            {rawApiResponse && (
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Respuesta de la API de Google (Depuración)</CardTitle>
+                        <CardDescription>
+                            Este es el objeto JSON exacto devuelto por la API de Google Places. Úsalo para entender por qué una búsqueda podría no funcionar. Si ves un error de "PERMISSION_DENIED" o "SERVICE_BLOCKED", verifica la configuración de tu clave de API en la Google Cloud Console.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                         <pre className="text-xs whitespace-pre-wrap break-all p-4 bg-black/80 text-white rounded-md overflow-x-auto">
+                            {JSON.stringify(rawApiResponse, null, 2)}
+                        </pre>
                     </CardContent>
                 </Card>
             )}
@@ -234,29 +258,29 @@ export default function AdminDirectoryPage() {
                                             <div className="flex items-center gap-2">
                                                 {getStatusBadge(biz)}
                                             </div>
-                                            <Badge variant="outline" className="mt-1">{biz.subscriptionTier}</Badge>
+                                            {biz.subscriptionTier && <Badge variant="outline" className="mt-1">{biz.subscriptionTier}</Badge>}
                                         </TableCell>
                                         <TableCell className="text-xs text-muted-foreground">{biz.formattedAddress}</TableCell>
                                         <TableCell className="text-right space-x-1">
                                             {biz.verificationStatus === 'pending' && biz.ownerUid && (
                                                 <>
-                                                    <Button variant="ghost" size="icon" className='text-green-600 hover:text-green-700' onClick={() => handleVerificationUpdate(biz.id, biz.ownerUid!, 'approved')} disabled={isUpdatingStatus}>
+                                                    <Button variant="ghost" size="icon" className='text-green-600 hover:text-green-700' onClick={() => handleVerificationUpdate(biz.id!, biz.ownerUid!, 'approved')} disabled={isUpdatingStatus}>
                                                         <UserCheck className="h-4 w-4" />
                                                     </Button>
-                                                    <Button variant="ghost" size="icon" className='text-red-600 hover:text-red-700' onClick={() => handleVerificationUpdate(biz.id, biz.ownerUid!, 'rejected')} disabled={isUpdatingStatus}>
+                                                    <Button variant="ghost" size="icon" className='text-red-600 hover:text-red-700' onClick={() => handleVerificationUpdate(biz.id!, biz.ownerUid!, 'rejected')} disabled={isUpdatingStatus}>
                                                         <UserX className="h-4 w-4" />
                                                     </Button>
                                                 </>
                                             )}
                                             {biz.verificationStatus === 'unclaimed' && (
-                                                <Button variant="outline" size="sm" onClick={() => handlePublishBusiness(biz.id)} disabled={isUpdatingStatus}>
+                                                <Button variant="outline" size="sm" onClick={() => handlePublishBusiness(biz.id!)} disabled={isUpdatingStatus}>
                                                     <CheckCircle className="mr-2 h-4 w-4 text-green-600"/> Publicar
                                                 </Button>
                                             )}
                                             <Button variant="ghost" size="icon" disabled={isDeleting}>
                                                 <UserRoundCog className="h-4 w-4 text-muted-foreground" />
                                             </Button>
-                                            <Button variant="ghost" size="icon" onClick={() => handleDeleteBusiness(biz.id)} disabled={isDeleting}>
+                                            <Button variant="ghost" size="icon" onClick={() => handleDeleteBusiness(biz.id!)} disabled={isDeleting}>
                                                 <Trash2 className="h-4 w-4 text-destructive" />
                                             </Button>
                                         </TableCell>
