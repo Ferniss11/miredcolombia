@@ -76,7 +76,7 @@ export function DashboardSidebar() {
     <Sidebar>
       <SidebarHeader>
         <div className="flex items-center gap-2">
-           <Image src="https://firebasestorage.googleapis.com/v0/b/colombia-en-esp.firebasestorage.app/o/web%2FLOGO.png?alt=media&token=86f8e9f6-587a-4cb6-bae1-15b0c815f22b" alt="Mi Red Colombia Logo" width={40} height={40} className="group-data-[collapsible=icon]:hidden"/>
+           <Image src="https://firebasestorage.googleapis.com/v0/b/colombia-en-esp.firebasestorage.app/o/web%2FLOGO.png?alt=media&token=86f8e9f6-587a-4cb6-bae1-15b0c815f22b" alt="Mi Red Colombia Logo" width={40} height={40} className="rounded-md"/>
           <div className="flex flex-col group-data-[collapsible=icon]:hidden">
             <h3 className="font-semibold text-lg font-headline">Mi Red Colombia</h3>
             <p className="text-xs text-muted-foreground">Panel de {getRoleDisplayName()}</p>
@@ -92,7 +92,7 @@ export function DashboardSidebar() {
             <SidebarMenuItem key={item.href}>
               <Link href={item.href}>
                 <SidebarMenuButton
-                  isActive={pathname.startsWith(item.href)}
+                  isActive={pathname === item.href || (item.href !== '/dashboard/admin' && pathname.startsWith(item.href))}
                   icon={item.icon}
                   tooltip={item.label}
                 >
