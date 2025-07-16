@@ -105,19 +105,21 @@ export function DashboardSidebar() {
       </SidebarContent>
       <SidebarFooter>
          <SidebarMenu>
+          <SidebarMenuItem>
             <ThemeToggle/>
-            <SidebarMenuItem>
-              <Link href="/">
-                  <SidebarMenuButton icon={Home} tooltip="Volver al Sitio">
-                    Volver al Sitio
-                  </SidebarMenuButton>
-              </Link>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton icon={LogOut} tooltip="Cerrar Sesión" onClick={handleSignOut}>
-                Cerrar Sesión
-              </SidebarMenuButton>
-            </SidebarMenuItem>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <Link href="/">
+                <SidebarMenuButton icon={Home} tooltip="Volver al Sitio">
+                  Volver al Sitio
+                </SidebarMenuButton>
+            </Link>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton icon={LogOut} tooltip="Cerrar Sesión" onClick={handleSignOut}>
+              Cerrar Sesión
+            </SidebarMenuButton>
+          </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
     </Sidebar>
