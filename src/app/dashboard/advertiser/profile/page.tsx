@@ -265,7 +265,10 @@ export default function AdvertiserProfilePage() {
             </Card>
 
             {isBusinessLinked && (
-                 <Card>
+                 <Card className={cn(
+                    "transition-all duration-300", 
+                    isAgentEnabled && "border-primary shadow-lg shadow-primary/20"
+                )}>
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2"><Bot className="w-6 h-6"/>Agente de IA para tu Negocio</CardTitle>
                         <CardDescription>
