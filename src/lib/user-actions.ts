@@ -2,8 +2,7 @@
 'use server';
 
 import { z } from 'zod';
-import { adminDb } from '@/lib/firebase/admin-config';
-import { getAdminServices } from '@/services/admin.service';
+import { adminDb, adminAuth } from '@/lib/firebase/admin-config';
 import type { BusinessProfile } from './types';
 import { revalidatePath } from 'next/cache';
 
@@ -16,16 +15,13 @@ const businessProfileSchema = z.object({
 });
 
 async function verifyUserAndGetDb(uid: string) {
-    // This is a simplified check. In a real app, you might verify a token.
-    // For now, we trust the UID passed from the client action context.
     if (!uid) {
         throw new Error('Usuario no autenticado');
     }
-    const { db } = getAdminServices();
-    if (!db) {
+    if (!adminDb) {
         throw new Error('La base de datos del administrador no está disponible.');
     }
-    return db;
+    return adminDb;
 }
 
 

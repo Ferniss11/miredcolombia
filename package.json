@@ -55,6 +55,7 @@
     "firebase": "^10.14.0",
     "firebase-admin": "^12.3.0",
     "genkit": "^1.13.0",
+    "googleapis": "^142.0.0",
     "lucide-react": "^0.475.0",
     "next": "15.3.3",
     "react": "^18.3.1",

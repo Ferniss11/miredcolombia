@@ -96,7 +96,8 @@ export type BusinessProfile = {
   category?: string; // The category of the business
   placeId?: string; // The linked Google Place ID
   verificationStatus?: 'pending' | 'approved' | 'rejected' | 'unclaimed'; // Status of business ownership claim
-  isAgentEnabled?: boolean; // NEW: To enable/disable the business-specific agent
+  isAgentEnabled?: boolean;
+  googleCalendarConnected?: boolean;
 };
 
 export type UserProfile = {
@@ -312,4 +313,13 @@ export type PlaceDetails = {
           lng: number;
       }
   };
+};
+
+// Google Calendar
+export type GoogleTokens = {
+    access_token: string;
+    refresh_token?: string;
+    scope: string;
+    token_type: string;
+    expiry_date: number;
 };

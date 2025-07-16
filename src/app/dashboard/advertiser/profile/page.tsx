@@ -9,7 +9,9 @@ import { useTransition, useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { updateBusinessProfileAction, updateBusinessAgentStatusAction } from "@/lib/user-actions";
 import { searchBusinessesOnGoogleAction, getBusinessDetailsForVerificationAction, verifyAndLinkBusinessAction, unlinkBusinessFromAdvertiserAction } from "@/lib/directory-actions";
+import { getGoogleAuthUrlAction } from "@/lib/gcal-actions";
 import type { BusinessProfile, PlaceDetails, UserProfile } from "@/lib/types";
+import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -18,9 +20,10 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Loader2, Search, Link as LinkIcon, Building, UserCheck, XCircle, Bot } from "lucide-react";
+import { Loader2, Search, Link as LinkIcon, Building, UserCheck, XCircle, Bot, TestTube, Power, PowerOff } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
+import Image from "next/image";
 
 const businessProfileSchema = z.object({
     businessName: z.string().min(2, { message: "El nombre del negocio debe tener al menos 2 caracteres." }),
@@ -132,7 +135,9 @@ function BusinessLinker({ userProfile, onBusinessLinked }: { userProfile: UserPr
 export default function AdvertiserProfilePage() {
     const { user, userProfile, loading, refreshUserProfile } = useAuth();
     const [isPending, startTransition] = useTransition();
+    const [isConnecting, startConnectingTransition] = useTransition();
     const { toast } = useToast();
+    const router = useRouter();
 
     const form = useForm<BusinessProfileFormValues>({
         resolver: zodResolver(businessProfileSchema),
@@ -145,7 +150,6 @@ export default function AdvertiserProfilePage() {
         },
     });
     
-    // Effect to populate form when userProfile is available or updated
     useEffect(() => {
         if (userProfile?.businessProfile) {
             form.reset({
@@ -218,6 +222,24 @@ export default function AdvertiserProfilePage() {
         });
     };
 
+    const handleConnectGoogleCalendar = async () => {
+        if (!user) return;
+        startConnectingTransition(async () => {
+            const result = await getGoogleAuthUrlAction(user.uid);
+            if (result.error) {
+                toast({ variant: 'destructive', title: 'Error', description: result.error });
+            } else if (result.authUrl) {
+                // Redirect user to Google's consent screen
+                router.push(result.authUrl);
+            }
+        });
+    };
+
+    const handleDisconnectGoogleCalendar = async () => {
+        // TODO: Implement disconnect logic
+        toast({ title: "Función no implementada", description: "La desconexión se añadirá pronto." });
+    };
+
 
     if (loading) {
         return <div><Loader2 className="animate-spin" /></div>;
@@ -226,6 +248,7 @@ export default function AdvertiserProfilePage() {
     const isBusinessLinked = !!userProfile?.businessProfile?.placeId;
     const verificationStatus = userProfile?.businessProfile?.verificationStatus;
     const isAgentEnabled = !!userProfile?.businessProfile?.isAgentEnabled;
+    const isGcalConnected = !!userProfile?.businessProfile?.googleCalendarConnected;
 
     return (
         <div className="space-y-6">
@@ -265,10 +288,8 @@ export default function AdvertiserProfilePage() {
             </Card>
 
             {isBusinessLinked && (
-                 <Card className={cn(
-                    "transition-all duration-300", 
-                    isAgentEnabled && "border-primary shadow-lg shadow-primary/20"
-                )}>
+                <>
+                <Card className={cn("transition-all duration-300", isAgentEnabled && "border-primary shadow-lg shadow-primary/20")}>
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2"><Bot className="w-6 h-6"/>Agente de IA para tu Negocio</CardTitle>
                         <CardDescription>
@@ -294,6 +315,42 @@ export default function AdvertiserProfilePage() {
                         )}
                     </CardContent>
                 </Card>
+
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2"><TestTube className="w-6 h-6"/>Conexiones de Herramientas</CardTitle>
+                        <CardDescription>
+                            Conecta herramientas externas como Google Calendar para darle superpoderes a tu agente de IA.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="flex items-center justify-between rounded-lg border p-4">
+                            <div className="flex items-center gap-3">
+                                <Image src="https://upload.wikimedia.org/wikipedia/commons/a/a5/Google_Calendar_icon_%282020%29.svg" alt="Google Calendar" width={32} height={32}/>
+                                <div>
+                                    <h3 className="font-medium">Google Calendar</h3>
+                                    <p className={cn("text-sm", isGcalConnected ? "text-green-600" : "text-muted-foreground")}>
+                                        {isGcalConnected ? "Conectado" : "No conectado"}
+                                    </p>
+                                </div>
+                            </div>
+                            {isGcalConnected ? (
+                                <Button variant="destructive" onClick={handleDisconnectGoogleCalendar} disabled={isConnecting}>
+                                    <PowerOff className="mr-2 h-4 w-4" /> Desconectar
+                                </Button>
+                            ) : (
+                                <Button variant="outline" onClick={handleConnectGoogleCalendar} disabled={isConnecting}>
+                                    {isConnecting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Power className="mr-2 h-4 w-4"/>}
+                                    Conectar
+                                </Button>
+                            )}
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-2">
+                            Permitir que el agente lea tu calendario para encontrar huecos libres y cree eventos para agendar citas.
+                        </p>
+                    </CardContent>
+                </Card>
+                </>
             )}
 
             <Card>
