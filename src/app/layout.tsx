@@ -22,8 +22,6 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es" suppressHydrationWarning>
-      <head>
-      </head>
       <body className={cn("min-h-screen bg-background font-body antialiased")}>
         <ThemeProvider
           attribute="class"

@@ -11,18 +11,10 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, Bot, TestTube, Power, PowerOff, Sparkles } from "lucide-react";
+import { Loader2, Bot, TestTube, Power, PowerOff, Sparkles, MessageSquareText } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-import { 
-    SiGooglecalendar, 
-    SiGooglereviews, 
-    SiWhatsapp, 
-    SiStripe, 
-    SiGoogleanalytics, 
-    SiGoogleads, 
-    SiGooglephotos 
-} from "react-icons/si";
+import { SiGooglecalendar, SiWhatsapp, SiStripe, SiGoogleanalytics, SiGoogleads, SiGooglephotos } from "react-icons/si";
 
 
 // ToolCard Component
@@ -189,7 +181,7 @@ export default function AdvertiserAgentPage() {
                         disabled={!isAgentEnabled}
                     />
                     <ToolCard
-                        icon={<SiGooglereviews className="text-[#F9BC05]" />}
+                        icon={<MessageSquareText className="text-[#F9BC05]" />}
                         title="Google Reviews"
                         description="Permite al agente leer y responder a las reseñas de los clientes."
                         isConnected={false}
