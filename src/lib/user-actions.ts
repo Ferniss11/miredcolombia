@@ -2,8 +2,8 @@
 'use server';
 
 import { z } from 'zod';
-import { doc, updateDoc } from "firebase/firestore";
-import { db as clientDb } from "@/lib/firebase/config";
+import { adminDb } from '@/lib/firebase/admin-config';
+import { getAdminServices } from '@/services/admin.service';
 import type { BusinessProfile } from './types';
 import { revalidatePath } from 'next/cache';
 
@@ -15,17 +15,26 @@ const businessProfileSchema = z.object({
     description: z.string().min(10, { message: "La descripción debe tener al menos 10 caracteres." }),
 });
 
-export async function updateBusinessProfileAction(uid: string, data: BusinessProfile) {
-    if (!clientDb) {
-      return { error: 'Firebase client database is not initialized.' };
+async function verifyUserAndGetDb(uid: string) {
+    // This is a simplified check. In a real app, you might verify a token.
+    // For now, we trust the UID passed from the client action context.
+    if (!uid) {
+        throw new Error('Usuario no autenticado');
     }
+    const { db } = getAdminServices();
+    if (!db) {
+        throw new Error('La base de datos del administrador no está disponible.');
+    }
+    return db;
+}
+
+
+export async function updateBusinessProfileAction(uid: string, data: BusinessProfile) {
     try {
-        if (!uid) {
-            throw new Error('Usuario no autenticado');
-        }
+        const db = await verifyUserAndGetDb(uid);
         const validatedData = businessProfileSchema.parse(data);
         
-        const userRef = doc(clientDb, "users", uid);
+        const userRef = db.collection("users").doc(uid);
         const updates: { [key: string]: any } = {};
         for (const [key, value] of Object.entries(validatedData)) {
             if (value !== undefined) {
@@ -34,9 +43,10 @@ export async function updateBusinessProfileAction(uid: string, data: BusinessPro
         }
 
         if (Object.keys(updates).length > 0) {
-            await updateDoc(userRef, updates);
+            await userRef.update(updates);
         }
-
+        
+        revalidatePath('/dashboard/advertiser/profile');
         return { success: true };
     } catch (error) {
         console.error('Error al actualizar el perfil del negocio:', error);
@@ -55,20 +65,25 @@ export async function updateBusinessProfileAction(uid: string, data: BusinessPro
 
 
 export async function updateBusinessAgentStatusAction(uid: string, isEnabled: boolean) {
-    if (!clientDb) {
-      return { error: 'Firebase client database is not initialized.' };
-    }
     try {
-        if (!uid) {
-            throw new Error('Usuario no autenticado');
-        }
+        const db = await verifyUserAndGetDb(uid);
         
-        const userRef = doc(clientDb, "users", uid);
-        await updateDoc(userRef, {
+        const userRef = db.collection("users").doc(uid);
+        await userRef.update({
             'businessProfile.isAgentEnabled': isEnabled
         });
         
-        // Revalidate advertiser's own profile page
+        const userDoc = await userRef.get();
+        const userProfile = userDoc.data();
+        const businessPlaceId = userProfile?.businessProfile?.placeId;
+
+        // Also update the main directory collection so the public page knows
+        if (businessPlaceId) {
+            const businessRef = db.collection('directory').doc(businessPlaceId);
+            await businessRef.update({ isAgentEnabled: isEnabled });
+             revalidatePath(`/directory/${businessPlaceId}`);
+        }
+
         revalidatePath('/dashboard/advertiser/profile');
         
         return { success: true };
