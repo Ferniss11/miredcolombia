@@ -2,10 +2,11 @@
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileText, Users, HandCoins, Bug, Bot, Building } from "lucide-react";
+import { FileText, Users, HandCoins, Bug, Bot, Building, Sparkles, MessageSquare, LayoutGrid } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
+import DebugInfoCard from "@/components/debug/DebugInfoCard";
 
 export default function AdminDashboardPage() {
     const { user, userProfile } = useAuth();
@@ -54,35 +55,47 @@ export default function AdminDashboardPage() {
                     <CardContent className="flex flex-wrap gap-4">
                         <Button asChild>
                            <Link href="/dashboard/admin/content">
+                             <Sparkles className="mr-2 h-4 w-4"/>
                              Suite de Contenido IA
                            </Link>
                         </Button>
                          <Button asChild variant="outline">
                            <Link href="/dashboard/admin/blog">
+                            <FileText className="mr-2 h-4 w-4"/>
                              Gestionar Blog
                            </Link>
                         </Button>
-                         <Button asChild variant="secondary">
+                         <Button asChild variant="outline">
                            <Link href="/dashboard/admin/agent">
                              <Bot className="mr-2 h-4 w-4"/>
-                             Gestionar Agente
+                             Agente Global
                            </Link>
                         </Button>
-                        <Button asChild variant="outline" className="text-indigo-600 border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700">
+                        <Button asChild variant="outline">
+                           <Link href="/dashboard/admin/conversations">
+                             <MessageSquare className="mr-2 h-4 w-4"/>
+                             Conversaciones
+                           </Link>
+                        </Button>
+                        <Button asChild variant="outline">
                            <Link href="/dashboard/admin/directory">
                              <Building className="mr-2 h-4 w-4"/>
                              Gestionar Directorio
                            </Link>
                         </Button>
-                         <Button asChild variant="destructive" className="bg-orange-500 hover:bg-orange-600 border-orange-500">
+                         <Button asChild variant="outline" className="text-orange-500 border-orange-500/50 hover:bg-orange-500/10 hover:text-orange-600">
                            <Link href="/dashboard/admin/debug">
                              <Bug className="mr-2 h-4 w-4"/>
-                             Depuración de Herramientas
+                             Depuración
                            </Link>
                         </Button>
                     </CardContent>
                 </Card>
              </div>
+              <div className="grid gap-6 md:grid-cols-2">
+                <DebugInfoCard title="Auth User Object" description="Datos del usuario desde Firebase Authentication." data={user} />
+                <DebugInfoCard title="User Profile Object" description="Datos del perfil desde Firestore." data={userProfile} />
+            </div>
         </div>
     );
 }
