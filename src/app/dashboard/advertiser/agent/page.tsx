@@ -11,7 +11,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, Bot, TestTube, Power, PowerOff, Sparkles } from "lucide-react";
+import { Loader2, Bot, TestTube, Power, PowerOff, Sparkles, Building2, BarChart, BadgeDollarSign } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 
@@ -147,6 +147,54 @@ export default function AdvertiserAgentPage() {
                     </p>
                 </CardContent>
             </Card>
+
+            <Card className="border-dashed">
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">Próximas Integraciones</CardTitle>
+                    <CardDescription>
+                        Estamos trabajando para darle aún más superpoderes a tu agente. Estas son algunas de las herramientas que podrás conectar pronto.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="flex items-center justify-between rounded-lg border p-4 opacity-60">
+                        <div className="flex items-center gap-3">
+                            <Building2 className="h-8 w-8 text-blue-500"/>
+                            <div>
+                                <h3 className="font-medium">Google Business Profile</h3>
+                                <p className="text-sm text-muted-foreground">Gestiona tu perfil y responde a reseñas.</p>
+                            </div>
+                        </div>
+                        <Button variant="outline" disabled>
+                            Conectar
+                        </Button>
+                    </div>
+                    <div className="flex items-center justify-between rounded-lg border p-4 opacity-60">
+                        <div className="flex items-center gap-3">
+                           <BarChart className="h-8 w-8 text-yellow-500" />
+                            <div>
+                                <h3 className="font-medium">Google Analytics</h3>
+                                <p className="text-sm text-muted-foreground">Obtén datos sobre quién visita tu perfil.</p>
+                            </div>
+                        </div>
+                        <Button variant="outline" disabled>
+                            Conectar
+                        </Button>
+                    </div>
+                    <div className="flex items-center justify-between rounded-lg border p-4 opacity-60">
+                        <div className="flex items-center gap-3">
+                            <BadgeDollarSign className="h-8 w-8 text-green-500"/>
+                            <div>
+                                <h3 className="font-medium">Google Ads</h3>
+                                <p className="text-sm text-muted-foreground">Crea y gestiona campañas de anuncios.</p>
+                            </div>
+                        </div>
+                        <Button variant="outline" disabled>
+                            Conectar
+                        </Button>
+                    </div>
+                </CardContent>
+            </Card>
+
         </div>
     )
 }
