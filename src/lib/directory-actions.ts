@@ -9,6 +9,8 @@ import { Client } from '@googlemaps/google-maps-services-js';
 
 const googleMapsClient = new Client({});
 const FieldValue = adminInstance?.firestore.FieldValue;
+const CACHE_DURATION_HOURS = 24;
+
 
 function getDbInstance() {
     if (!adminDb) {
@@ -353,52 +355,100 @@ export async function publishBusinessAction(placeId: string) {
 
 // --- Actions for Public Directory Pages ---
 
+async function fetchAndCacheBusinessDetails(placeId: string): Promise<PlaceDetails> {
+    const db = getDbInstance();
+    if (!FieldValue) throw new Error("Firebase Admin SDK is not fully initialized.");
+
+    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+    if (!apiKey) throw new Error("Google Maps API key is not configured.");
+
+    // Fetch details from Google
+    const fields = [
+        'name', 'formatted_address', 'place_id', 'international_phone_number',
+        'website', 'rating', 'user_ratings_total', 'photos', 'opening_hours',
+        'geometry', 'reviews'
+    ];
+    const details = await getPlaceDetails(placeId, fields);
+    if (!details) {
+        throw new Error('No se pudieron obtener los detalles del negocio desde Google.');
+    }
+
+    const photos: Photo[] = (details.photos || []).slice(0, 10).map((p: any) => ({
+        photo_reference: p.photo_reference,
+        height: p.height,
+        width: p.width,
+        html_attributions: p.html_attributions,
+        url: `https://maps.googleapis.com/maps/api/place/photo?maxwidth=1000&photoreference=${p.photo_reference}&key=${apiKey}`
+    }));
+
+    const businessData: PlaceDetails = {
+        id: details.place_id,
+        displayName: details.name,
+        formattedAddress: details.formatted_address,
+        internationalPhoneNumber: details.international_phone_number,
+        website: details.website,
+        rating: details.rating,
+        userRatingsTotal: details.user_ratings_total,
+        openingHours: details.opening_hours?.weekday_text,
+        isOpenNow: details.opening_hours?.open_now,
+        photos: photos,
+        reviews: (details.reviews || []) as Review[],
+        geometry: details.geometry,
+        category: 'Sin Categoría' // This will be enriched later
+    };
+
+    // Asynchronously save to cache without waiting
+    db.collection('directoryCache').doc(placeId).set({
+        ...businessData,
+        cachedAt: FieldValue.serverTimestamp()
+    }).catch(cacheError => {
+        console.error(`Failed to update cache for placeId ${placeId}:`, cacheError);
+    });
+
+    return businessData;
+}
+
+
 export async function getPublicBusinessDetailsAction(placeId: string): Promise<{ business?: PlaceDetails, error?: string }> {
     try {
         const db = getDbInstance();
-        const dbData = await db.collection('directory').doc(placeId).get();
-        if (!dbData.exists) {
+        
+        // 1. Get our internal directory data (like category)
+        const directoryDoc = await db.collection('directory').doc(placeId).get();
+        if (!directoryDoc.exists) {
             return { error: 'Este negocio no forma parte de nuestro directorio.' };
         }
-        const category = dbData.data()?.category || 'Sin categoría';
+        const directoryData = directoryDoc.data()!;
 
-        const fields = [
-            'name', 'formatted_address', 'place_id', 'international_phone_number',
-            'website', 'rating', 'user_ratings_total', 'photos', 'opening_hours',
-            'geometry', 'reviews'
-        ];
-        const details = await getPlaceDetails(placeId, fields);
+        // 2. Check for a valid cache entry
+        const cacheRef = db.collection('directoryCache').doc(placeId);
+        const cacheDoc = await cacheRef.get();
 
-        if (!details) {
-            return { error: 'No se pudieron obtener los detalles del negocio desde Google.' };
+        if (cacheDoc.exists) {
+            const cachedData = cacheDoc.data() as any;
+            const cacheTime = cachedData.cachedAt.toDate();
+            const now = new Date();
+            const hoursDiff = (now.getTime() - cacheTime.getTime()) / (1000 * 60 * 60);
+
+            if (hoursDiff < CACHE_DURATION_HOURS) {
+                console.log(`[Cache] HIT for placeId: ${placeId}`);
+                // Return cached data, but enrich it with our internal category
+                const businessFromCache: PlaceDetails = {
+                    ...cachedData,
+                    category: directoryData.category || 'Sin Categoría',
+                };
+                return { business: businessFromCache };
+            }
         }
+        
+        // 3. If no valid cache, fetch from Google API and update cache
+        console.log(`[Cache] MISS for placeId: ${placeId}. Fetching from Google.`);
+        const businessFromApi = await fetchAndCacheBusinessDetails(placeId);
+        
+        // Enrich with our internal category
+        businessFromApi.category = directoryData.category || 'Sin Categoría';
 
-        const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-        const photos: Photo[] = (details.photos || []).slice(0, 10).map((p: any) => ({
-             photo_reference: p.photo_reference,
-             height: p.height,
-             width: p.width,
-             html_attributions: p.html_attributions,
-             url: `https://maps.googleapis.com/maps/api/place/photo?maxwidth=1000&photoreference=${p.photo_reference}&key=${apiKey}`
-        }));
-
-        const business: PlaceDetails = {
-            id: details.place_id,
-            displayName: details.name,
-            formattedAddress: details.formatted_address,
-            internationalPhoneNumber: details.international_phone_number,
-            website: details.website,
-            rating: details.rating,
-            userRatingsTotal: details.user_ratings_total,
-            openingHours: details.opening_hours?.weekday_text,
-            isOpenNow: details.opening_hours?.open_now,
-            photos: photos,
-            reviews: (details.reviews || []) as Review[],
-            geometry: details.geometry,
-            category: category
-        };
-
-        return { business };
+        return { business: businessFromApi };
 
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : "Unknown error";
