@@ -393,7 +393,7 @@ async function fetchAndCacheBusinessDetails(placeId: string): Promise<PlaceDetai
         displayName: details.name,
         formattedAddress: details.formatted_address,
         internationalPhoneNumber: details.international_phone_number,
-        website: details.website,
+        website: details.website || '', // <<<< FIX: Ensure website is never undefined
         rating: details.rating,
         userRatingsTotal: details.user_ratings_total,
         openingHours: details.opening_hours?.weekday_text,
