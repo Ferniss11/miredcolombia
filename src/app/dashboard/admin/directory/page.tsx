@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Search, Plus, Building, Trash2, AlertCircle, UserCheck, UserX, UserRoundCog, CheckCircle } from 'lucide-react';
+import { Loader2, Search, Plus, Building, Trash2, AlertCircle, UserCheck, UserX, UserRoundCog, CheckCircle, ChevronDown, Copy } from 'lucide-react';
 import { searchBusinessesOnGoogleAction, saveBusinessAction, getSavedBusinessesAction, deleteBusinessAction, updateBusinessVerificationStatusAction, publishBusinessAction } from '@/lib/directory-actions';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
@@ -16,6 +16,7 @@ import type { PlaceDetails } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/context/AuthContext';
 import { Badge } from '@/components/ui/badge';
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible';
 
 type Place = {
     id: string;
@@ -145,6 +146,11 @@ export default function AdminDirectoryPage() {
             }
         });
     }
+
+    const handleCopyRawResponse = () => {
+        navigator.clipboard.writeText(JSON.stringify(rawApiResponse, null, 2));
+        toast({ title: 'Copiado', description: 'La respuesta de la API ha sido copiada.' });
+    };
     
     const getStatusBadge = (biz: PlaceDetails) => {
         if (biz.verificationStatus === 'pending') {
@@ -211,19 +217,31 @@ export default function AdminDirectoryPage() {
             )}
 
             {rawApiResponse && (
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Respuesta de la API de Google (Depuración)</CardTitle>
-                        <CardDescription>
-                            Este es el objeto JSON exacto devuelto por la API de Google Places. Úsalo para entender por qué una búsqueda podría no funcionar. Si ves un error de "PERMISSION_DENIED" o "SERVICE_BLOCKED", verifica la configuración de tu clave de API en la Google Cloud Console.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                         <pre className="text-xs whitespace-pre-wrap break-all p-4 bg-black/80 text-white rounded-md overflow-x-auto">
-                            {JSON.stringify(rawApiResponse, null, 2)}
-                        </pre>
-                    </CardContent>
-                </Card>
+                <Collapsible>
+                    <Card>
+                        <CollapsibleTrigger asChild>
+                            <CardHeader className="flex flex-row items-center justify-between cursor-pointer hover:bg-muted/50">
+                                <div>
+                                    <CardTitle>Respuesta de la API de Google (Depuración)</CardTitle>
+                                    <CardDescription className="mt-1">
+                                        Haz clic aquí para mostrar u ocultar el objeto JSON devuelto por la API de Google.
+                                    </CardDescription>
+                                </div>
+                                <ChevronDown className="h-5 w-5 transition-transform [&[data-state=open]]:rotate-180" />
+                            </CardHeader>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                             <CardContent className="relative">
+                                 <Button variant="ghost" size="icon" className="absolute top-4 right-4 h-7 w-7" onClick={handleCopyRawResponse}>
+                                     <Copy className="h-4 w-4" />
+                                 </Button>
+                                 <pre className="text-xs whitespace-pre-wrap break-all p-4 bg-black/80 text-white rounded-md overflow-x-auto">
+                                    {JSON.stringify(rawApiResponse, null, 2)}
+                                </pre>
+                             </CardContent>
+                        </CollapsibleContent>
+                    </Card>
+                </Collapsible>
             )}
 
             <Card>
