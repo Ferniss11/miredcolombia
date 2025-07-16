@@ -9,7 +9,7 @@ import { Client } from '@googlemaps/google-maps-services-js';
 
 const googleMapsClient = new Client({});
 const FieldValue = adminInstance?.firestore.FieldValue;
-const CACHE_DURATION_HOURS = 24;
+const CACHE_DURATION_HOURS = 720; // 30 days
 
 
 function getDbInstance() {
