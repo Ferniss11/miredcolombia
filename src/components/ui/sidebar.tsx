@@ -135,7 +135,7 @@ const SidebarProvider = React.forwardRef<
                 ...style,
               } as React.CSSProperties
             }
-            className={cn("group", className)}
+            className={cn("group/sidebar-wrapper", className)}
             ref={ref}
             {...props}
           >
@@ -312,14 +312,14 @@ const SidebarMenuItem = React.forwardRef<
   <li
     ref={ref}
     data-sidebar="menu-item"
-    className={cn("group/menu-item relative", className)}
+    className={cn("relative", className)}
     {...props}
   />
 ))
 SidebarMenuItem.displayName = "SidebarMenuItem"
 
 const sidebarMenuButtonVariants = cva(
-  "peer/menu-button flex w-full items-center rounded-md p-2 text-left text-sm outline-none ring-sidebar-ring transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[active=true]:text-sidebar-accent-foreground group-data-[state=collapsed]:px-2 [&>svg]:size-5 [&>svg]:shrink-0",
+  "peer/menu-button flex w-full items-center rounded-md p-2 text-left text-sm outline-none ring-sidebar-ring transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[active=true]:text-sidebar-accent-foreground",
   {
     variants: {
       variant: {
@@ -372,11 +372,16 @@ const SidebarMenuButton = React.forwardRef<
         data-sidebar="menu-button"
         data-size={size}
         data-active={isActive}
-        className={cn(sidebarMenuButtonVariants({ variant, size }), "gap-3 group-data-[state=collapsed]:justify-center", className)}
+        data-state={state}
+        className={cn(
+          sidebarMenuButtonVariants({ variant, size }),
+          "gap-3 data-[state=collapsed]:justify-center data-[state=collapsed]:gap-0",
+          className
+        )}
         {...props}
       >
-        {Icon && <Icon />}
-        <span className="group-data-[state=collapsed]:hidden">{children}</span>
+        {Icon && <Icon className="shrink-0" />}
+        <span className="data-[state=collapsed]:hidden">{children}</span>
       </Comp>
     )
 
