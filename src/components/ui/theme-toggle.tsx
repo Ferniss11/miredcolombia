@@ -14,39 +14,26 @@ import {
 export function ThemeToggle() {
   const { setTheme, theme } = useTheme()
 
-  return (
-    <div className="w-full">
-      <div className="group-data-[state=expanded]:block group-data-[state=collapsed]:hidden">
-        <SidebarMenu>
-          <SidebarMenuItem className="group/menu-item relative">
-            <SidebarMenuButton
-              variant="ghost"
-              className="w-full justify-start"
-              onClick={() => setTheme(theme === "light" ? "dark" : "light")}
-            >
-              <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-              <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-              <span className="pl-2">Cambiar Tema</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </div>
+  const toggleTheme = () => {
+    setTheme(theme === "light" ? "dark" : "light")
+  }
 
-      <div className="hidden group-data-[state=collapsed]:block">
-         <SidebarMenu>
-          <SidebarMenuItem className="group/menu-item relative">
-            <SidebarMenuButton
-              variant="ghost"
-              className="w-full justify-start"
-              onClick={() => setTheme(theme === "light" ? "dark" : "light")}
-              tooltip={theme === "light" ? "Modo Oscuro" : "Modo Claro"}
-            >
-              <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-              <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </div>
-    </div>
+  const tooltipText = theme === "light" ? "Modo Oscuro" : "Modo Claro"
+
+  return (
+    <SidebarMenu>
+      <SidebarMenuItem>
+        <SidebarMenuButton
+          variant="ghost"
+          className="w-full justify-start"
+          onClick={toggleTheme}
+          tooltip={tooltipText}
+        >
+          <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+          <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+          <span className="group-data-[state=collapsed]:hidden pl-3">Cambiar Tema</span>
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+    </SidebarMenu>
   )
 }

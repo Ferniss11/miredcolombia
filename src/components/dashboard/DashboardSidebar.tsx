@@ -75,12 +75,10 @@ export function DashboardSidebar() {
   return (
     <Sidebar>
       <SidebarHeader>
-        <div className="flex items-center gap-2">
-           <Image src="https://firebasestorage.googleapis.com/v0/b/colombia-en-esp.firebasestorage.app/o/web%2FLOGO.png?alt=media&token=86f8e9f6-587a-4cb6-bae1-15b0c815f22b" alt="Mi Red Colombia Logo" width={40} height={40} className="rounded-md"/>
-          <div className="flex flex-col group-data-[state=collapsed]/sidebar-wrapper:hidden">
-            <h3 className="font-semibold text-lg font-headline">Mi Red Colombia</h3>
-            <p className="text-xs text-muted-foreground">Panel de {getRoleDisplayName()}</p>
-          </div>
+        <Image src="https://firebasestorage.googleapis.com/v0/b/colombia-en-esp.firebasestorage.app/o/web%2FLOGO.png?alt=media&token=86f8e9f6-587a-4cb6-bae1-15b0c815f22b" alt="Mi Red Colombia Logo" width={40} height={40} className="rounded-md"/>
+        <div className="group-data-[state=collapsed]:hidden">
+          <h3 className="font-semibold text-lg font-headline">Mi Red Colombia</h3>
+          <p className="text-xs text-muted-foreground">Panel de {getRoleDisplayName()}</p>
         </div>
         <div className="hidden md:block ml-auto">
             <SidebarTrigger />
