@@ -42,7 +42,7 @@ function serializeSession(doc: FirebaseFirestore.DocumentSnapshot): ChatSessionW
 
 /**
  * Finds the most recent chat session for a given phone number.
- * Firestore requires a composite index for this query. If the query fails, it's likely due to a missing index.
+ * This query no longer requires a composite index.
  * @param phone - The user's phone number.
  * @returns The chat session object if found, otherwise null.
  */
@@ -51,21 +51,23 @@ export async function findSessionByPhone(phone: string): Promise<(ChatSession & 
   try {
     const querySnapshot = await db.collection("chatSessions")
       .where('userPhone', '==', phone)
-      .orderBy('createdAt', 'desc')
-      .limit(1)
       .get();
 
     if (querySnapshot.empty) {
       return null;
     }
     
-    const doc = querySnapshot.docs[0];
-    const data = doc.data() as ChatSession;
+    // Sort by creation date in the server to find the most recent one
+    const sessions = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+    })).sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
+    
+    const latestSession = sessions[0];
     
     return {
-        ...data,
-        id: doc.id,
-        createdAt: data.createdAt.toDate().toISOString(),
+        ...latestSession,
+        createdAt: latestSession.createdAt.toDate().toISOString(),
     } as ChatSession & { id: string };
 
   } catch (error) {

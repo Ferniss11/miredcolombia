@@ -35,12 +35,16 @@ const postMessageSchema = z.object({
 async function findBusinessSessionByPhone(businessId: string, phone: string) {
     const db = getDbInstance();
     const sessionsRef = db.collection('directory').doc(businessId).collection('businessChatSessions');
-    const querySnapshot = await sessionsRef.where('userPhone', '==', phone).orderBy('createdAt', 'desc').limit(1).get();
+    const querySnapshot = await sessionsRef.where('userPhone', '==', phone).get();
 
     if (querySnapshot.empty) return null;
     
-    const doc = querySnapshot.docs[0];
-    return { id: doc.id, ...doc.data() } as ChatSession & { id: string };
+    // Sort on the server to find the most recent
+    const sessions = querySnapshot.docs
+        .map(doc => ({ id: doc.id, ...doc.data() }))
+        .sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
+
+    return sessions[0] as ChatSession & { id: string };
 }
 
 async function getBusinessChatHistory(businessId: string, sessionId: string) {
