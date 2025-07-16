@@ -11,7 +11,7 @@ export default function AdminDashboardPage() {
     const { user, userProfile } = useAuth();
 
     return (
-        <div>
+        <div className="space-y-6">
             <h1 className="text-3xl font-bold font-headline mb-6">Resumen de Administración</h1>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 <Card>
