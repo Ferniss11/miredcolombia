@@ -16,6 +16,7 @@ const PlaceSchema = z.object({
     id: z.string().describe('The unique Place ID from Google.'),
     displayName: z.string().describe('The name of the business.'),
     formattedAddress: z.string().describe('The full address of the business.'),
+    photoUrl: z.string().optional().describe('The URL of the primary photo for the business.'),
 });
 
 export const googlePlacesSearch = ai.defineTool(
@@ -43,14 +44,24 @@ export const googlePlacesSearch = ai.defineTool(
         params: {
           query,
           key: apiKey,
+          // We add photos to the fields we want to retrieve
+          fields: ['place_id', 'name', 'formatted_address', 'photos']
         }
       });
 
-      const places = (response.data.results || []).map((place: any) => ({
-          id: place.place_id!,
-          displayName: place.name || 'Nombre no disponible',
-          formattedAddress: place.vicinity || 'Dirección no disponible',
-      }));
+      const places = (response.data.results || []).map((place: any) => {
+          let photoUrl;
+          if (place.photos && place.photos[0] && place.photos[0].photo_reference) {
+              photoUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${place.photos[0].photo_reference}&key=${apiKey}`;
+          }
+
+          return {
+              id: place.place_id!,
+              displayName: place.name || 'Nombre no disponible',
+              formattedAddress: place.vicinity || place.formatted_address || 'Dirección no disponible',
+              photoUrl: photoUrl
+          };
+      });
 
       return { places, rawResponse: response.data };
 
