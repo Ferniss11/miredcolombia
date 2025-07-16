@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { Eye, MessageSquare } from 'lucide-react';
+import { Eye, MessageSquare, TrendingUp } from 'lucide-react';
 import { getChatSessionsAction } from '@/lib/agent-actions';
 import type { ChatSessionWithTokens } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -66,7 +66,10 @@ export default function ConversationsPage() {
                                     <TableHead>Usuario</TableHead>
                                     <TableHead>Fecha Creación</TableHead>
                                     <TableHead className="text-right">Mensajes</TableHead>
-                                    <TableHead className="text-right">Coste Total Tokens</TableHead>
+                                    <TableHead className="text-right flex items-center justify-end gap-1">
+                                        <TrendingUp className="w-4 h-4" />
+                                        Tokens
+                                    </TableHead>
                                     <TableHead className="text-right">Acciones</TableHead>
                                 </TableRow>
                             </TableHeader>

@@ -6,7 +6,7 @@ import { getChatSessionDetailsAction, postAdminMessageAction } from '@/lib/agent
 import type { ChatSessionWithTokens, ChatMessage } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Bot, User, Clock, Hash, Mail, Phone, Send, UserCog } from 'lucide-react';
+import { ArrowLeft, Bot, User, Clock, Hash, Mail, Phone, Send, UserCog, TrendingUp } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -85,18 +85,15 @@ function ChatConversationPage() {
         const isFromAdmin = msg.role === 'admin';
         const isFromModel = msg.role === 'model';
         
-        let Icon = Bot;
         let alignment = 'justify-start';
         let bgColor = 'bg-gray-100 dark:bg-gray-800';
         let avatarIcon = <Bot size={20} />;
 
         if (isFromUser) {
-            Icon = User;
             alignment = 'justify-end';
             bgColor = 'bg-blue-100 dark:bg-blue-900/50';
             avatarIcon = <User size={20} />;
         } else if (isFromAdmin) {
-            Icon = UserCog;
             alignment = 'justify-end';
             bgColor = 'bg-yellow-100 dark:bg-yellow-900/50';
             avatarIcon = <UserCog size={20} />;
@@ -236,9 +233,9 @@ function ChatConversationPage() {
                                     <span>{session.messageCount}</span>
                                 </div>
                                  <div className="flex items-center justify-between">
-                                    <span className="text-muted-foreground">Tokens Totales</span>
+                                    <span className="text-muted-foreground flex items-center gap-2"><TrendingUp className="w-4 h-4"/>Tokens Totales</span>
                                     <span className="font-mono font-bold">{session.totalTokens}</span>
-                                </div>
+                                 </div>
                             </CardContent>
                         </Card>
                     </div>
