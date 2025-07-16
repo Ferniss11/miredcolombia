@@ -38,6 +38,7 @@ export function DashboardSidebar() {
   const advertiserNav = [
     { href: "/dashboard/advertiser", label: "Resumen", icon: BarChart2 },
     { href: "/dashboard/advertiser/ads", label: "Anuncios", icon: Megaphone },
+    { href: "/dashboard/advertiser/agent", label: "Agente IA", icon: Bot },
     { href: "/dashboard/advertiser/profile", label: "Perfil", icon: User },
   ];
 
