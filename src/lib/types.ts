@@ -296,6 +296,7 @@ export type PlaceDetails = {
   formattedPhoneNumber?: string;
   website?: string;
   category: string; // The category assigned in *our* system
+  city: string; // The city of the business
   subscriptionTier?: string; // e.g., 'Gratuito', 'Premium'
   ownerUid?: string | null; // UID of the advertiser user who owns this
   verificationStatus?: 'pending' | 'approved' | 'rejected' | 'unclaimed';

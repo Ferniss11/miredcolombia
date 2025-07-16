@@ -2,8 +2,9 @@
 'use client';
 
 import { useState, useTransition, useEffect } from 'react';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
@@ -17,11 +18,13 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/context/AuthContext';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible';
+import { cn } from '@/lib/utils';
 
 type Place = {
     id: string;
     displayName: string;
     formattedAddress: string;
+    photoUrl?: string;
 }
 
 const categories = [
@@ -82,7 +85,7 @@ export default function AdminDirectoryPage() {
                 setSearchError(actionResult.error);
                 toast({ variant: 'destructive', title: 'Error en la Búsqueda', description: actionResult.error });
             } else if (actionResult.places) {
-                setSearchResults(actionResult.places);
+                setSearchResults(actionResult.places as Place[]);
             }
         });
     };
@@ -195,23 +198,39 @@ export default function AdminDirectoryPage() {
             
             {searchError && <Alert variant="destructive"><AlertCircle className="h-4 w-4" /><AlertTitle>Error en Búsqueda</AlertTitle><AlertDescription>{searchError}</AlertDescription></Alert>}
             
-            {searchResults && searchResults.length > 0 && (
+             {searchResults && (
                 <Card>
-                    <CardHeader><CardTitle>Resultados de Búsqueda</CardTitle></CardHeader>
-                    <CardContent className="space-y-2">
-                        {searchResults.map(place => (
-                            <Card key={place.id} className="bg-muted/50">
-                                <CardContent className="p-3 flex items-center justify-between gap-2">
-                                    <div>
-                                        <p className="font-bold">{place.displayName}</p>
-                                        <p className="text-sm text-muted-foreground">{place.formattedAddress}</p>
-                                    </div>
-                                    <Button size="sm" onClick={() => handleAddBusiness(place.id)} disabled={isSaving || !selectedCategory}>
+                    <CardHeader>
+                        <CardTitle>Resultados de Búsqueda ({searchResults.length})</CardTitle>
+                        <CardDescription>Estos son los negocios encontrados en Google. Añade los que correspondan al directorio.</CardDescription>
+                    </CardHeader>
+                    <CardContent className={cn("grid gap-4", searchResults.length > 0 && "sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4")}>
+                        {searchResults.length > 0 ? searchResults.map(place => (
+                           <Card key={place.id} className="flex flex-col overflow-hidden">
+                                <CardHeader className="p-0 relative h-40">
+                                     <Image
+                                        src={place.photoUrl || "https://placehold.co/400x250.png"}
+                                        alt={place.displayName}
+                                        fill
+                                        data-ai-hint="business exterior"
+                                        className="object-cover"
+                                    />
+                                </CardHeader>
+                                <CardContent className="p-4 flex-grow">
+                                    <h3 className="font-bold font-headline text-lg leading-snug line-clamp-2">
+                                        {place.displayName}
+                                    </h3>
+                                    <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{place.formattedAddress}</p>
+                                </CardContent>
+                                <CardFooter className="p-4 pt-0">
+                                    <Button size="sm" className="w-full" onClick={() => handleAddBusiness(place.id)} disabled={isSaving || !selectedCategory}>
                                         {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />} Añadir
                                     </Button>
-                                </CardContent>
+                                </CardFooter>
                             </Card>
-                        ))}
+                        )) : (
+                            <p className="text-muted-foreground text-center col-span-full py-8">No se encontraron resultados para tu búsqueda.</p>
+                        )}
                     </CardContent>
                 </Card>
             )}
