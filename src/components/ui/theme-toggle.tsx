@@ -7,7 +7,7 @@ import { Moon, Sun } from "lucide-react"
 
 import { SidebarMenuButton } from "@/components/ui/sidebar"
 
-export function ThemeToggle() {
+export function ThemeToggle(props: { "data-state"?: "expanded" | "collapsed" }) {
   const { setTheme, theme } = useTheme()
 
   const toggleTheme = () => {
@@ -23,6 +23,7 @@ export function ThemeToggle() {
       onClick={toggleTheme}
       tooltip={tooltipText}
       icon={Icon}
+      {...props}
     >
       Cambiar Tema
     </SidebarMenuButton>

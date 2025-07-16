@@ -202,7 +202,7 @@ const Sidebar = React.forwardRef<
       <div
         ref={ref}
         className={cn(
-          "hidden md:flex flex-col text-sidebar-foreground bg-sidebar border-r transition-[width] duration-300",
+          "group hidden md:flex flex-col text-sidebar-foreground bg-sidebar border-r transition-[width] duration-300",
            state === "expanded" ? "w-[--sidebar-width]" : "w-[--sidebar-width-icon]",
            className
         )}
@@ -266,7 +266,7 @@ const SidebarFooter = React.forwardRef<
     <div
       ref={ref}
       data-sidebar="footer"
-      className={cn("mt-auto p-2", className)}
+      className={cn("mt-auto", className)}
       {...props}
     />
   )
@@ -347,6 +347,7 @@ const SidebarMenuButton = React.forwardRef<
     isActive?: boolean
     tooltip?: string | React.ComponentProps<typeof TooltipContent>
     icon?: React.ElementType
+    "data-state"?: "expanded" | "collapsed"
   } & VariantProps<typeof sidebarMenuButtonVariants>
 >(
   (
@@ -359,12 +360,14 @@ const SidebarMenuButton = React.forwardRef<
       icon: Icon,
       children,
       className,
+      "data-state": stateProp,
       ...props
     },
     ref
   ) => {
     const Comp = asChild ? Slot : "button"
-    const { isMobile, state } = useSidebar()
+    const { isMobile, state: contextState } = useSidebar()
+    const state = stateProp || contextState;
 
     const button = (
       <Comp
@@ -375,13 +378,16 @@ const SidebarMenuButton = React.forwardRef<
         data-state={state}
         className={cn(
           sidebarMenuButtonVariants({ variant, size }),
-          "gap-3 data-[state=collapsed]:justify-center data-[state=collapsed]:gap-0",
+          "gap-3",
+          state === 'collapsed' && "justify-center gap-0",
           className
         )}
         {...props}
       >
         {Icon && <Icon className="shrink-0" />}
-        <span className="data-[state=collapsed]:hidden">{children}</span>
+        <span style={{ display: state === 'collapsed' ? 'none' : 'inline' }}>
+          {children}
+        </span>
       </Comp>
     )
 

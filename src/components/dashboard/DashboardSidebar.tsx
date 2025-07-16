@@ -79,7 +79,7 @@ export function DashboardSidebar() {
       <SidebarHeader>
         <div className="flex items-center gap-3 overflow-hidden">
           <Image src="https://firebasestorage.googleapis.com/v0/b/colombia-en-esp.firebasestorage.app/o/web%2FLOGO.png?alt=media&token=86f8e9f6-587a-4cb6-bae1-15b0c815f22b" alt="Mi Red Colombia Logo" width={40} height={40} className="rounded-md shrink-0"/>
-          <div className="data-[state=collapsed]:hidden">
+          <div style={{ display: state === 'collapsed' ? 'none' : 'block' }}>
             <h3 className="font-semibold text-lg font-headline truncate">Mi Red Colombia</h3>
             <p className="text-xs text-muted-foreground truncate">Panel de {getRoleDisplayName()}</p>
           </div>
@@ -109,7 +109,7 @@ export function DashboardSidebar() {
       <SidebarFooter>
          <SidebarMenu>
           <SidebarMenuItem>
-            <ThemeToggle/>
+            <ThemeToggle data-state={state} />
           </SidebarMenuItem>
           <SidebarMenuItem>
             <Link href="/">
