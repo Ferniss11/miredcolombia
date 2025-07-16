@@ -94,15 +94,15 @@ export default function AdminDashboardPage() {
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-4">
-                            <div>
+                            <div className="overflow-x-auto">
                                 <h3 className="font-semibold">Objeto User (de Firebase Auth)</h3>
-                                <pre className="mt-2 w-full overflow-x-auto rounded-md bg-muted p-4 text-sm">
+                                <pre className="mt-2 w-full rounded-md bg-muted p-4 text-sm">
                                     {user ? JSON.stringify(user, null, 2) : 'No hay usuario autenticado.'}
                                 </pre>
                             </div>
-                            <div>
+                            <div className="overflow-x-auto">
                                 <h3 className="font-semibold">Objeto UserProfile (de Firestore)</h3>
-                                <pre className="mt-2 w-full overflow-x-auto rounded-md bg-muted p-4 text-sm">
+                                <pre className="mt-2 w-full rounded-md bg-muted p-4 text-sm">
                                     {userProfile ? JSON.stringify(userProfile, null, 2) : 'No se encontró perfil en Firestore.'}
                                 </pre>
                             </div>
@@ -112,4 +112,3 @@ export default function AdminDashboardPage() {
             </div>
         </div>
     );
-}
