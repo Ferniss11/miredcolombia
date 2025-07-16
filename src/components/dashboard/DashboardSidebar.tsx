@@ -21,6 +21,7 @@ import {
   FileText,
   Bot,
   Building,
+  Bug,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -28,6 +29,7 @@ import { useAuth } from "@/context/AuthContext";
 import { signOutUser } from "@/lib/firebase/auth";
 import { useToast } from "@/hooks/use-toast";
 import Image from 'next/image';
+import { ThemeToggle } from "../ui/theme-toggle";
 
 export function DashboardSidebar() {
   const pathname = usePathname();
@@ -44,10 +46,11 @@ export function DashboardSidebar() {
 
   const adminNav = [
     { href: "/dashboard/admin", label: "Resumen", icon: LayoutGrid },
-    { href: "/dashboard/admin/blog", label: "Gestión de Blog", icon: FileText },
-    { href: "/dashboard/admin/content", label: "Suite de Contenido IA", icon: Sparkles },
-    { href: "/dashboard/admin/agent", label: "Gestión de Agente", icon: Bot },
+    { href: "/dashboard/admin/blog", label: "Blog", icon: FileText },
+    { href: "/dashboard/admin/content", label: "Contenido IA", icon: Sparkles },
+    { href: "/dashboard/admin/agent", label: "Agente Global", icon: Bot },
     { href: "/dashboard/admin/directory", label: "Directorio", icon: Building },
+    { href: "/dashboard/admin/debug", label: "Depuración", icon: Bug },
   ];
 
   const handleSignOut = async () => {
@@ -96,6 +99,9 @@ export function DashboardSidebar() {
       </SidebarContent>
       <SidebarFooter>
          <SidebarMenu>
+            <SidebarMenuItem>
+                <ThemeToggle/>
+            </SidebarMenuItem>
             <SidebarMenuItem>
               <Link href="/">
                   <SidebarMenuButton icon={Home} tooltip="Volver al Sitio">

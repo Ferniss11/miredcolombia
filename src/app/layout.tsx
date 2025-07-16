@@ -4,6 +4,8 @@ import { Toaster } from "@/components/ui/toaster"
 import { cn } from '@/lib/utils';
 import { AuthProvider } from '@/context/AuthContext';
 import LayoutProvider from '@/components/layout/LayoutProvider';
+import { ThemeProvider } from '@/components/ui/theme-provider';
+
 
 export const metadata: Metadata = {
   title: 'Mi Red Colombia',
@@ -23,12 +25,19 @@ export default function RootLayout({
       <head>
       </head>
       <body className={cn("min-h-screen bg-background font-body antialiased")}>
-        <AuthProvider>
-          <LayoutProvider>
-            {children}
-          </LayoutProvider>
-          <Toaster />
-        </AuthProvider>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <AuthProvider>
+            <LayoutProvider>
+              {children}
+            </LayoutProvider>
+            <Toaster />
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
