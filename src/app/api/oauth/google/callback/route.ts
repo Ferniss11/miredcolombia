@@ -37,13 +37,13 @@ export async function GET(request: NextRequest) {
     }
 
     // Redirect user back to their profile page
-    const redirectUrl = new URL('/dashboard/advertiser/profile', request.url);
+    const redirectUrl = new URL('/dashboard/advertiser/agent', request.url);
     redirectUrl.searchParams.set('gcal-status', 'success');
     return NextResponse.redirect(redirectUrl);
 
   } catch (error) {
     console.error('Error exchanging authorization code:', error);
-    const redirectUrl = new URL('/dashboard/advertiser/profile', request.url);
+    const redirectUrl = new URL('/dashboard/advertiser/agent', request.url);
     redirectUrl.searchParams.set('gcal-status', 'error');
     return NextResponse.redirect(redirectUrl);
   }

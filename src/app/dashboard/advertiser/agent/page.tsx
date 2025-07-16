@@ -44,7 +44,8 @@ export default function AdvertiserAgentPage() {
             if (result.error) {
                 toast({ variant: 'destructive', title: 'Error', description: result.error });
             } else if (result.authUrl) {
-                router.push(result.authUrl);
+                // Redirect to Google's consent screen
+                window.location.href = result.authUrl;
             }
         });
     };
