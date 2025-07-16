@@ -1,5 +1,4 @@
 
-
 import { z } from 'zod';
 
 // Schema for Blog Content Generation
@@ -96,6 +95,7 @@ export type BusinessProfile = {
   description: string;
   placeId?: string; // The linked Google Place ID
   verificationStatus?: 'pending' | 'approved' | 'rejected' | 'unclaimed'; // Status of business ownership claim
+  isAgentEnabled?: boolean; // NEW: To enable/disable the business-specific agent
 };
 
 export type UserProfile = {
@@ -297,6 +297,7 @@ export type PlaceDetails = {
   subscriptionTier?: string; // e.g., 'Gratuito', 'Premium'
   ownerUid?: string | null; // UID of the advertiser user who owns this
   verificationStatus?: 'pending' | 'approved' | 'rejected' | 'unclaimed';
+  isAgentEnabled?: boolean; // For the business-specific agent
   photoUrl?: string; // For the list view
   photos?: Photo[]; // For the detail view
   rating?: number;

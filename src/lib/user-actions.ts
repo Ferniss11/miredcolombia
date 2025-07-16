@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { doc, updateDoc } from "firebase/firestore";
 import { db as clientDb } from "@/lib/firebase/config";
 import type { BusinessProfile } from './types';
+import { revalidatePath } from 'next/cache';
 
 const businessProfileSchema = z.object({
     businessName: z.string().min(2, { message: "El nombre del negocio debe tener al menos 2 caracteres." }),
@@ -49,5 +50,31 @@ export async function updateBusinessProfileAction(uid: string, data: BusinessPro
             return { error: friendlyMessage };
         }
         return { error: 'No se pudo actualizar el perfil. Por favor, inténtalo de nuevo.' };
+    }
+}
+
+
+export async function updateBusinessAgentStatusAction(uid: string, isEnabled: boolean) {
+    if (!clientDb) {
+      return { error: 'Firebase client database is not initialized.' };
+    }
+    try {
+        if (!uid) {
+            throw new Error('Usuario no autenticado');
+        }
+        
+        const userRef = doc(clientDb, "users", uid);
+        await updateDoc(userRef, {
+            'businessProfile.isAgentEnabled': isEnabled
+        });
+        
+        // Revalidate advertiser's own profile page
+        revalidatePath('/dashboard/advertiser/profile');
+        
+        return { success: true };
+    } catch (error) {
+        console.error('Error updating business agent status:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        return { error: `No se pudo actualizar el estado del agente: ${errorMessage}` };
     }
 }

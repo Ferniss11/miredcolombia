@@ -12,6 +12,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import BusinessMap from "@/components/directory/BusinessMap";
 import { cn } from "@/lib/utils";
+import ChatWidget from "@/components/chat/ChatWidget";
 
 const StarRating = ({ rating }: { rating: number }) => {
     return (
@@ -36,6 +37,7 @@ export default async function BusinessProfilePage({ params }: { params: { slug: 
 
 
   return (
+    <>
     <div className="bg-gray-50 dark:bg-gray-950">
         <div className="container mx-auto px-4 py-12 md:px-6">
         <div className="grid lg:grid-cols-3 gap-8">
@@ -236,5 +238,7 @@ export default async function BusinessProfilePage({ params }: { params: { slug: 
         </div>
         </div>
     </div>
+    {business.isAgentEnabled && business.id && <ChatWidget businessId={business.id} />}
+    </>
   );
 }

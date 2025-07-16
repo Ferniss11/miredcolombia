@@ -72,6 +72,7 @@ export async function saveBusinessAction(placeId: string, category: string, admi
             addedBy: adminUid,
             createdAt: FieldValue.serverTimestamp(),
             verificationStatus: 'unclaimed',
+            isAgentEnabled: false,
         });
 
         revalidatePath('/dashboard/admin/directory');
@@ -230,6 +231,7 @@ export async function verifyAndLinkBusinessAction(userId: string, placeId: strin
                     addedBy: 'self-claimed',
                     createdAt: FieldValue.serverTimestamp(),
                     verificationStatus: 'pending',
+                    isAgentEnabled: false,
                 });
             } else {
                 if(businessDoc.data()?.ownerUid) {
@@ -245,6 +247,7 @@ export async function verifyAndLinkBusinessAction(userId: string, placeId: strin
                 'businessProfile.phone': details.international_phone_number,
                 'businessProfile.website': details.website || '',
                 'businessProfile.verificationStatus': 'pending',
+                'businessProfile.isAgentEnabled': false,
             });
         });
 
@@ -432,10 +435,11 @@ export async function getPublicBusinessDetailsAction(placeId: string): Promise<{
 
             if (hoursDiff < CACHE_DURATION_HOURS) {
                 console.log(`[Cache] HIT for placeId: ${placeId}`);
-                // Return cached data, but enrich it with our internal category
+                // Return cached data, but enrich it with our internal category and agent status
                 const businessFromCache: PlaceDetails = {
                     ...cachedData,
                     category: directoryData.category || 'Sin Categoría',
+                    isAgentEnabled: directoryData.isAgentEnabled || false,
                 };
                 return { business: businessFromCache };
             }
@@ -445,8 +449,9 @@ export async function getPublicBusinessDetailsAction(placeId: string): Promise<{
         console.log(`[Cache] MISS for placeId: ${placeId}. Fetching from Google.`);
         const businessFromApi = await fetchAndCacheBusinessDetails(placeId);
         
-        // Enrich with our internal category
+        // Enrich with our internal category and agent status
         businessFromApi.category = directoryData.category || 'Sin Categoría';
+        businessFromApi.isAgentEnabled = directoryData.isAgentEnabled || false;
 
         return { business: businessFromApi };
 

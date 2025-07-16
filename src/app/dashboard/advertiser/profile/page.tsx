@@ -7,7 +7,7 @@ import * as z from "zod";
 import { useAuth } from "@/context/AuthContext";
 import { useTransition, useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { updateBusinessProfileAction } from "@/lib/user-actions";
+import { updateBusinessProfileAction, updateBusinessAgentStatusAction } from "@/lib/user-actions";
 import { searchBusinessesOnGoogleAction, getBusinessDetailsForVerificationAction, verifyAndLinkBusinessAction, unlinkBusinessFromAdvertiserAction } from "@/lib/directory-actions";
 import type { BusinessProfile, PlaceDetails, UserProfile } from "@/lib/types";
 
@@ -15,9 +15,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Loader2, Search, Link as LinkIcon, Building, UserCheck, XCircle } from "lucide-react";
+import { Loader2, Search, Link as LinkIcon, Building, UserCheck, XCircle, Bot } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
 
@@ -202,6 +203,21 @@ export default function AdvertiserProfilePage() {
             }
         });
     }
+    
+     const handleAgentToggle = async (isAgentEnabled: boolean) => {
+        if (!user) return;
+        
+        startTransition(async () => {
+            const result = await updateBusinessAgentStatusAction(user.uid, isAgentEnabled);
+            if (result.error) {
+                toast({ variant: 'destructive', title: 'Error', description: result.error });
+            } else {
+                toast({ title: 'Éxito', 'description': `Agente de IA ${isAgentEnabled ? 'activado' : 'desactivado'}.` });
+                await refreshUserProfile();
+            }
+        });
+    };
+
 
     if (loading) {
         return <div><Loader2 className="animate-spin" /></div>;
@@ -209,6 +225,7 @@ export default function AdvertiserProfilePage() {
 
     const isBusinessLinked = !!userProfile?.businessProfile?.placeId;
     const verificationStatus = userProfile?.businessProfile?.verificationStatus;
+    const isAgentEnabled = !!userProfile?.businessProfile?.isAgentEnabled;
 
     return (
         <div className="space-y-6">
@@ -246,6 +263,35 @@ export default function AdvertiserProfilePage() {
                     )}
                 </CardContent>
             </Card>
+
+            {isBusinessLinked && (
+                 <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2"><Bot className="w-6 h-6"/>Agente de IA para tu Negocio</CardTitle>
+                        <CardDescription>
+                            Activa un asistente virtual en tu perfil público para responder preguntas de clientes y gestionar reservas automáticamente.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="flex items-center justify-between rounded-lg border p-4">
+                            <div>
+                                <h3 className="font-medium">Asistente Virtual</h3>
+                                <p className="text-sm text-muted-foreground">
+                                    {isAgentEnabled ? "Tu agente está activo y visible." : "Tu agente está desactivado."}
+                                </p>
+                            </div>
+                             <Switch
+                                checked={isAgentEnabled}
+                                onCheckedChange={handleAgentToggle}
+                                disabled={isPending || verificationStatus !== 'approved'}
+                            />
+                        </div>
+                        {verificationStatus !== 'approved' && (
+                             <p className="text-xs text-destructive mt-2">Debes tener tu negocio verificado para poder activar el agente.</p>
+                        )}
+                    </CardContent>
+                </Card>
+            )}
 
             <Card>
                 <CardHeader>
@@ -345,5 +391,3 @@ export default function AdvertiserProfilePage() {
         </div>
     );
 }
-
-    
