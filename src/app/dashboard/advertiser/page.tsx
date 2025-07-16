@@ -71,7 +71,7 @@ export default function AdvertiserDashboardPage() {
                     </CardHeader>
                     <CardContent>
                         <div className="overflow-x-auto">
-                            <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
+                            <ChartContainer config={chartConfig} className="min-h-[200px] w-full min-w-[600px]">
                                 <LineChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
                                     <CartesianGrid vertical={false} />
                                     <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={8} />

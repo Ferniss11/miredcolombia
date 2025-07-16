@@ -269,69 +269,71 @@ export default function AdminDirectoryPage() {
                     <CardDescription>Lista de todos los negocios actualmente en el directorio.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Nombre del Negocio</TableHead>
-                                <TableHead>Categoría</TableHead>
-                                <TableHead>Estado</TableHead>
-                                <TableHead>Dirección</TableHead>
-                                <TableHead className="text-right">Acciones</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {isLoadingSaved ? (
-                                Array.from({ length: 3 }).map((_, i) => (
-                                    <TableRow key={i}>
-                                        <TableCell colSpan={5}><Skeleton className="h-5 w-full" /></TableCell>
-                                    </TableRow>
-                                ))
-                            ) : savedBusinesses.length > 0 ? (
-                                savedBusinesses.map(biz => (
-                                    <TableRow key={biz.id}>
-                                        <TableCell className="font-medium">{biz.displayName}</TableCell>
-                                        <TableCell><Badge variant="secondary">{biz.category}</Badge></TableCell>
-                                        <TableCell>
-                                            <div className="flex items-center gap-2">
-                                                {getStatusBadge(biz)}
-                                            </div>
-                                            {biz.subscriptionTier && <Badge variant="outline" className="mt-1">{biz.subscriptionTier}</Badge>}
-                                        </TableCell>
-                                        <TableCell className="text-xs text-muted-foreground">{biz.formattedAddress}</TableCell>
-                                        <TableCell className="text-right space-x-1">
-                                            {biz.verificationStatus === 'pending' && biz.ownerUid && (
-                                                <>
-                                                    <Button variant="ghost" size="icon" className='text-green-600 hover:text-green-700' onClick={() => handleVerificationUpdate(biz.id!, biz.ownerUid!, 'approved')} disabled={isUpdatingStatus}>
-                                                        <UserCheck className="h-4 w-4" />
-                                                    </Button>
-                                                    <Button variant="ghost" size="icon" className='text-red-600 hover:text-red-700' onClick={() => handleVerificationUpdate(biz.id!, biz.ownerUid!, 'rejected')} disabled={isUpdatingStatus}>
-                                                        <UserX className="h-4 w-4" />
-                                                    </Button>
-                                                </>
-                                            )}
-                                            {biz.verificationStatus === 'unclaimed' && (
-                                                <Button variant="outline" size="sm" onClick={() => handlePublishBusiness(biz.id!)} disabled={isUpdatingStatus}>
-                                                    <CheckCircle className="mr-2 h-4 w-4 text-green-600"/> Publicar
-                                                </Button>
-                                            )}
-                                            <Button variant="ghost" size="icon" disabled={isDeleting}>
-                                                <UserRoundCog className="h-4 w-4 text-muted-foreground" />
-                                            </Button>
-                                            <Button variant="ghost" size="icon" onClick={() => handleDeleteBusiness(biz.id!)} disabled={isDeleting}>
-                                                <Trash2 className="h-4 w-4 text-destructive" />
-                                            </Button>
-                                        </TableCell>
-                                    </TableRow>
-                                ))
-                            ) : (
+                    <div className="overflow-x-auto">
+                        <Table>
+                            <TableHeader>
                                 <TableRow>
-                                    <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
-                                        No hay negocios en el directorio todavía.
-                                    </TableCell>
+                                    <TableHead>Nombre del Negocio</TableHead>
+                                    <TableHead>Categoría</TableHead>
+                                    <TableHead>Estado</TableHead>
+                                    <TableHead>Dirección</TableHead>
+                                    <TableHead className="text-right">Acciones</TableHead>
                                 </TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
+                            </TableHeader>
+                            <TableBody>
+                                {isLoadingSaved ? (
+                                    Array.from({ length: 3 }).map((_, i) => (
+                                        <TableRow key={i}>
+                                            <TableCell colSpan={5}><Skeleton className="h-5 w-full" /></TableCell>
+                                        </TableRow>
+                                    ))
+                                ) : savedBusinesses.length > 0 ? (
+                                    savedBusinesses.map(biz => (
+                                        <TableRow key={biz.id}>
+                                            <TableCell className="font-medium">{biz.displayName}</TableCell>
+                                            <TableCell><Badge variant="secondary">{biz.category}</Badge></TableCell>
+                                            <TableCell>
+                                                <div className="flex items-center gap-2">
+                                                    {getStatusBadge(biz)}
+                                                </div>
+                                                {biz.subscriptionTier && <Badge variant="outline" className="mt-1">{biz.subscriptionTier}</Badge>}
+                                            </TableCell>
+                                            <TableCell className="text-xs text-muted-foreground">{biz.formattedAddress}</TableCell>
+                                            <TableCell className="text-right space-x-1">
+                                                {biz.verificationStatus === 'pending' && biz.ownerUid && (
+                                                    <>
+                                                        <Button variant="ghost" size="icon" className='text-green-600 hover:text-green-700' onClick={() => handleVerificationUpdate(biz.id!, biz.ownerUid!, 'approved')} disabled={isUpdatingStatus}>
+                                                            <UserCheck className="h-4 w-4" />
+                                                        </Button>
+                                                        <Button variant="ghost" size="icon" className='text-red-600 hover:text-red-700' onClick={() => handleVerificationUpdate(biz.id!, biz.ownerUid!, 'rejected')} disabled={isUpdatingStatus}>
+                                                            <UserX className="h-4 w-4" />
+                                                        </Button>
+                                                    </>
+                                                )}
+                                                {biz.verificationStatus === 'unclaimed' && (
+                                                    <Button variant="outline" size="sm" onClick={() => handlePublishBusiness(biz.id!)} disabled={isUpdatingStatus}>
+                                                        <CheckCircle className="mr-2 h-4 w-4 text-green-600"/> Publicar
+                                                    </Button>
+                                                )}
+                                                <Button variant="ghost" size="icon" disabled={isDeleting}>
+                                                    <UserRoundCog className="h-4 w-4 text-muted-foreground" />
+                                                </Button>
+                                                <Button variant="ghost" size="icon" onClick={() => handleDeleteBusiness(biz.id!)} disabled={isDeleting}>
+                                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                                </Button>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                                ) : (
+                                    <TableRow>
+                                        <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                                            No hay negocios en el directorio todavía.
+                                        </TableCell>
+                                    </TableRow>
+                                )}
+                            </TableBody>
+                        </Table>
+                    </div>
                 </CardContent>
             </Card>
         </div>
