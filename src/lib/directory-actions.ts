@@ -355,6 +355,7 @@ export async function publishBusinessAction(placeId: string) {
 
 export async function getPublicBusinessDetailsAction(placeId: string): Promise<{ business?: PlaceDetails, error?: string }> {
     try {
+        const db = getDbInstance();
         const dbData = await db.collection('directory').doc(placeId).get();
         if (!dbData.exists) {
             return { error: 'Este negocio no forma parte de nuestro directorio.' };
