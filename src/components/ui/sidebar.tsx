@@ -136,10 +136,7 @@ const SidebarProvider = React.forwardRef<
                 ...style,
               } as React.CSSProperties
             }
-            className={cn(
-              "group",
-              className
-            )}
+            className={cn("group", className)}
             ref={ref}
             {...props}
           >
@@ -276,7 +273,7 @@ const SidebarHeader = React.forwardRef<
     <div
       ref={ref}
       data-sidebar="header"
-      className={cn("flex h-16 items-center gap-3 p-3.5 pr-2 overflow-hidden", className)}
+      className={cn("flex h-16 shrink-0 items-center justify-between gap-3 p-3.5 pr-2", className)}
       {...props}
     />
   )
