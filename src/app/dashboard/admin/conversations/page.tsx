@@ -60,56 +60,54 @@ export default function ConversationsPage() {
                     <CardDescription>Supervisa las interacciones de los usuarios con el agente de IA.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <div className="overflow-x-auto">
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Usuario</TableHead>
-                                    <TableHead>Fecha Creación</TableHead>
-                                    <TableHead className="text-right">Mensajes</TableHead>
-                                    <TableHead className="text-right">Coste Total Tokens</TableHead>
-                                    <TableHead className="text-right">Acciones</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {isLoadingSessions ? (
-                                    Array.from({ length: 5 }).map((_, i) => (
-                                        <TableRow key={i}>
-                                            <TableCell><Skeleton className="h-5 w-32" /></TableCell>
-                                            <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-                                            <TableCell className="text-right"><Skeleton className="h-5 w-12 ml-auto" /></TableCell>
-                                            <TableCell className="text-right"><Skeleton className="h-5 w-20 ml-auto" /></TableCell>
-                                            <TableCell className="text-right"><Skeleton className="h-8 w-16 ml-auto" /></TableCell>
-                                        </TableRow>
-                                    ))
-                                ) : sessions.length > 0 ? (
-                                    sessions.map(session => (
-                                        <TableRow key={session.id} onClick={() => handleRowClick(session.id)} className="cursor-pointer hover:bg-muted/50">
-                                            <TableCell>
-                                                <div className="font-medium">{session.userName}</div>
-                                                <div className="text-sm text-muted-foreground">{session.userPhone}</div>
-                                            </TableCell>
-                                            <TableCell>{formatDate(session.createdAt)}</TableCell>
-                                            <TableCell className="text-right">{session.messageCount}</TableCell>
-                                            <TableCell className="text-right font-bold font-mono">{session.totalTokens}</TableCell>
-                                            <TableCell className="text-right">
-                                                <Button variant="outline" size="sm">
-                                                    <Eye className="mr-2 h-3 w-3" />
-                                                    Ver
-                                                </Button>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))
-                                ) : (
-                                    <TableRow>
-                                        <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
-                                            No hay conversaciones todavía.
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Usuario</TableHead>
+                                <TableHead>Fecha Creación</TableHead>
+                                <TableHead className="text-right">Mensajes</TableHead>
+                                <TableHead className="text-right">Coste Total Tokens</TableHead>
+                                <TableHead className="text-right">Acciones</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {isLoadingSessions ? (
+                                Array.from({ length: 5 }).map((_, i) => (
+                                    <TableRow key={i}>
+                                        <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                                        <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                                        <TableCell className="text-right"><Skeleton className="h-5 w-12 ml-auto" /></TableCell>
+                                        <TableCell className="text-right"><Skeleton className="h-5 w-20 ml-auto" /></TableCell>
+                                        <TableCell className="text-right"><Skeleton className="h-8 w-16 ml-auto" /></TableCell>
+                                    </TableRow>
+                                ))
+                            ) : sessions.length > 0 ? (
+                                sessions.map(session => (
+                                    <TableRow key={session.id} onClick={() => handleRowClick(session.id)} className="cursor-pointer hover:bg-muted/50">
+                                        <TableCell>
+                                            <div className="font-medium">{session.userName}</div>
+                                            <div className="text-sm text-muted-foreground">{session.userPhone}</div>
+                                        </TableCell>
+                                        <TableCell>{formatDate(session.createdAt)}</TableCell>
+                                        <TableCell className="text-right">{session.messageCount}</TableCell>
+                                        <TableCell className="text-right font-bold font-mono">{session.totalTokens}</TableCell>
+                                        <TableCell className="text-right">
+                                            <Button variant="outline" size="sm">
+                                                <Eye className="mr-2 h-3 w-3" />
+                                                Ver
+                                            </Button>
                                         </TableCell>
                                     </TableRow>
-                                )}
-                            </TableBody>
-                        </Table>
-                    </div>
+                                ))
+                            ) : (
+                                <TableRow>
+                                    <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                                        No hay conversaciones todavía.
+                                    </TableCell>
+                                </TableRow>
+                            )}
+                        </TableBody>
+                    </Table>
                 </CardContent>
             </Card>
 
