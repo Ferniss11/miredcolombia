@@ -394,7 +394,7 @@ const SidebarMenuButton = React.forwardRef<
     const buttonContent = (
       <>
         {Icon && <Icon />}
-        <span className="group-data-[state=collapsed]:hidden">{children}</span>
+        <span className="group-data-[state=collapsed]/sidebar-wrapper:hidden">{children}</span>
       </>
     )
 
