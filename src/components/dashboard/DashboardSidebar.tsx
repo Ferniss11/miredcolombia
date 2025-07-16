@@ -82,7 +82,7 @@ export function DashboardSidebar() {
             <p className="text-xs text-muted-foreground">Panel de {getRoleDisplayName()}</p>
           </div>
         </div>
-         <div className="hidden md:block ml-auto">
+         <div className="hidden md:block ml-auto group-data-[collapsible=icon]:hidden">
             <SidebarTrigger />
         </div>
       </SidebarHeader>
@@ -104,6 +104,9 @@ export function DashboardSidebar() {
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter>
+         <div className="hidden md:block pb-2">
+            <SidebarTrigger />
+        </div>
          <SidebarMenu>
             <SidebarMenuItem>
                 <ThemeToggle/>
