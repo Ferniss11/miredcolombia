@@ -93,6 +93,11 @@ export type BusinessProfile = {
   phone: string;
   website: string;
   description: string;
+  category?: string; // The category of the business
+  placeId?: string; // The linked Google Place ID
+  verificationStatus?: 'pending' | 'approved' | 'rejected' | 'unclaimed'; // Status of business ownership claim
+  isAgentEnabled?: boolean;
+  googleCalendarConnected?: boolean;
 };
 
 export type UserProfile = {
@@ -159,6 +164,7 @@ export type SubscriptionPlan = {
 export type MigrationPackage = {
     id:string;
     name: string;
+    title: string;
     price: number;
     priceCOP: string;
     description: string;
@@ -172,6 +178,7 @@ export type MigrationService = {
     id: string;
     icon: string;
     title: string;
+    name: string;
     price: number;
     priceCol: string;
     description: string;
@@ -236,7 +243,7 @@ export type ChatSession = {
   totalTokens?: number;
   totalInputTokens?: number;
   totalOutputTokens?: number;
-}
+};
 
 export type ChatSessionWithTokens = {
   id: string;
@@ -262,3 +269,57 @@ export const AgentConfigSchema = z.object({
   systemPrompt: z.string().default('You are a helpful assistant.'),
 });
 export type AgentConfig = z.infer<typeof AgentConfigSchema>;
+
+
+// Directory / Places types
+export type Photo = {
+    photo_reference: string;
+    height: number;
+    width: number;
+    html_attributions: string[];
+    url: string;
+};
+
+export type Review = {
+    author_name: string;
+    profile_photo_url: string;
+    rating: number;
+    relative_time_description: string;
+    text: string;
+};
+
+export type PlaceDetails = {
+  id?: string; // The Google Place ID
+  displayName: string;
+  formattedAddress: string;
+  internationalPhoneNumber?: string;
+  formattedPhoneNumber?: string;
+  website?: string;
+  category: string; // The category assigned in *our* system
+  subscriptionTier?: string; // e.g., 'Gratuito', 'Premium'
+  ownerUid?: string | null; // UID of the advertiser user who owns this
+  verificationStatus?: 'pending' | 'approved' | 'rejected' | 'unclaimed';
+  isAgentEnabled?: boolean; // For the business-specific agent
+  photoUrl?: string; // For the list view
+  photos?: Photo[]; // For the detail view
+  rating?: number;
+  userRatingsTotal?: number;
+  openingHours?: string[];
+  isOpenNow?: boolean;
+  reviews?: Review[];
+  geometry?: {
+      location: {
+          lat: number;
+          lng: number;
+      }
+  };
+};
+
+// Google Calendar
+export type GoogleTokens = {
+    access_token: string;
+    refresh_token?: string;
+    scope: string;
+    token_type: string;
+    expiry_date: number;
+};

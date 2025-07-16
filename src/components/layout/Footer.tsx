@@ -9,8 +9,8 @@ export default function Footer() {
         <div className="xl:grid xl:grid-cols-3 xl:gap-8">
           <div className="space-y-8 xl:col-span-1">
              <Link href="/" className="flex items-center space-x-2">
-                <Image src="https://firebasestorage.googleapis.com/v0/b/colombia-en-esp.firebasestorage.app/o/web%2FLOGO.png?alt=media&token=86f8e9f6-587a-4cb6-bae1-15b0c815f22b" alt="Colombia en España Logo" width={32} height={32} />
-                <span className="font-bold text-xl font-headline">Colombia en España</span>
+                <Image src="https://firebasestorage.googleapis.com/v0/b/colombia-en-esp.firebasestorage.app/o/web%2FLOGO.png?alt=media&token=86f8e9f6-587a-4cb6-bae1-15b0c815f22b" alt="Mi Red Colombia Logo" width={32} height={32} />
+                <span className="font-bold text-xl font-headline">Mi Red Colombia</span>
             </Link>
             <p className="text-gray-500 dark:text-gray-400 text-base">
               Conectando a la comunidad colombiana en España.
@@ -51,7 +51,7 @@ export default function Footer() {
           </div>
         </div>
         <div className="mt-12 border-t border-gray-200 dark:border-gray-700 pt-8">
-          <p className="text-base text-gray-400 dark:text-gray-500 xl:text-center">&copy; {new Date().getFullYear()} Colombia en España. Todos los derechos reservados.</p>
+          <p className="text-base text-gray-400 dark:text-gray-500 xl:text-center">&copy; {new Date().getFullYear()} Mi Red Colombia. Todos los derechos reservados.</p>
         </div>
       </div>
     </footer>

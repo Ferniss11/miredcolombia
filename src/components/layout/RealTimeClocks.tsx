@@ -39,7 +39,12 @@ const RealTimeClocks = () => {
   return (
     <div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-2xl mx-auto">
-            <Card className="text-center shadow-lg">
+            <Card className="text-center shadow-lg overflow-hidden">
+                <div className="h-1.5 flex w-full">
+                    <div className="w-1/2 bg-[#FFCD00]"></div>
+                    <div className="w-1/4 bg-[#003893]"></div>
+                    <div className="w-1/4 bg-[#C70039]"></div>
+                </div>
                 <CardHeader>
                     <CardTitle className="flex items-center justify-center gap-2 text-2xl font-headline">
                         <Clock className="w-6 h-6"/>
@@ -55,7 +60,12 @@ const RealTimeClocks = () => {
                     </p>
                 </CardContent>
             </Card>
-            <Card className="text-center shadow-lg">
+            <Card className="text-center shadow-lg overflow-hidden">
+                <div className="h-1.5 flex w-full">
+                    <div className="w-1/4 bg-[#AA151B]"></div>
+                    <div className="w-1/2 bg-[#F1BF00]"></div>
+                    <div className="w-1/4 bg-[#AA151B]"></div>
+                </div>
                 <CardHeader>
                     <CardTitle className="flex items-center justify-center gap-2 text-2xl font-headline">
                         <Clock className="w-6 h-6"/>

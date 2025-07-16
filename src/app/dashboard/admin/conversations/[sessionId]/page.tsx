@@ -5,9 +5,9 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { getChatSessionDetailsAction } from '@/lib/agent-actions';
 import type { ChatSessionWithTokens, ChatMessage } from '@/lib/types';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Bot, Loader2, User, Clock, Hash } from 'lucide-react';
+import { ArrowLeft, Bot, User, Clock, Hash } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -29,7 +29,7 @@ function ChatConversationPage() {
                 if (result.error) {
                     // Handle error, e.g., show a toast and redirect
                     console.error(result.error);
-                    router.push('/dashboard/admin/agent');
+                    router.push('/dashboard/admin/conversations');
                 } else if (result.session && result.messages) {
                     setSession(result.session);
                     setMessages(result.messages);
@@ -73,7 +73,7 @@ function ChatConversationPage() {
             <div className="flex items-center justify-between">
                 <div>
                      <Button variant="outline" size="sm" asChild className="mb-4">
-                        <Link href="/dashboard/admin/agent">
+                        <Link href="/dashboard/admin/conversations">
                             <ArrowLeft className="mr-2 h-4 w-4" />
                             Volver a Todas las Conversaciones
                         </Link>

@@ -1,36 +1,63 @@
+
 'use client';
 
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import StripeCheckoutForm from "@/components/checkout/StripeCheckoutForm";
-import type { MigrationPackage, MigrationService, PurchaseableItem } from '@/lib/types';
+import type { MigrationPackage, MigrationService, PurchaseableItem, BlogPost, PlaceDetails } from '@/lib/types';
 import ChatWidget from '@/components/chat/ChatWidget';
+import VideoModal from '@/components/ui/video-modal';
 
-export default function HomePageClient({ children }: { children: React.ReactNode }) {
+// Import sections directly
+import HeroSection from './HeroSection';
+import AboutSection from './AboutSection';
+import StepsSection from './StepsSection';
+import PackagesSection from './PackagesSection';
+import ServicesSection from './ServicesSection';
+import TimezoneSection from './TimezoneSection';
+import BlogSection from './BlogSection';
+import BusinessSection from './BusinessSection';
+import TestimonialsSection from './TestimonialsSection';
+import DirectorySection from './DirectorySection';
+
+type HomePageClientProps = {
+  initialPosts: BlogPost[];
+  eurToCopRate: number;
+  initialBusinesses: PlaceDetails[];
+}
+
+export default function HomePageClient({ initialPosts, eurToCopRate, initialBusinesses }: HomePageClientProps) {
   const [isCheckoutOpen, setCheckoutOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<PurchaseableItem | null>(null);
+
+  const [isVideoOpen, setVideoOpen] = useState(false);
+  const [videoUrl, setVideoUrl] = useState('');
+  const [videoTitle, setVideoTitle] = useState('');
 
   const handlePurchaseClick = (item: MigrationPackage | MigrationService, type: 'package' | 'service') => {
     setSelectedItem({ ...item, type });
     setCheckoutOpen(true);
   };
 
-  const childrenWithProps = React.Children.map(children, (child) => {
-    if (React.isValidElement(child)) {
-      const childType = child.type as React.FunctionComponent;
-      const displayName = childType.displayName || childType.name;
-      
-      if (displayName === 'PackagesSection' || displayName === 'ServicesSection') {
-        return React.cloneElement(child, { handlePurchaseClick } as any);
-      }
-    }
-    return child;
-  });
+  const handleVideoClick = (url: string, title: string) => {
+    setVideoUrl(url);
+    setVideoTitle(title);
+    setVideoOpen(true);
+  }
 
   return (
     <div className="flex flex-col min-h-[100dvh]">
       <main className="flex-1">
-        {childrenWithProps}
+        <HeroSection />
+        <AboutSection handleVideoClick={handleVideoClick} />
+        <StepsSection />
+        <PackagesSection handlePurchaseClick={handlePurchaseClick} eurToCopRate={eurToCopRate} />
+        <ServicesSection handlePurchaseClick={handlePurchaseClick} eurToCopRate={eurToCopRate} />
+        <DirectorySection businesses={initialBusinesses} />
+        <TimezoneSection />
+        <BlogSection posts={initialPosts} />
+        <BusinessSection />
+        <TestimonialsSection />
       </main>
 
       <ChatWidget />
@@ -39,17 +66,24 @@ export default function HomePageClient({ children }: { children: React.ReactNode
         <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Completa tu compra</DialogTitle>
-            {selectedItem && 
+            {selectedItem && (
                 <DialogDescription>
-                    Estás a un paso de adquirir {selectedItem?.name || selectedItem?.title}.
+                    Estás a un paso de adquirir {selectedItem.name}.
                 </DialogDescription>
-            }
+            )}
           </DialogHeader>
           {selectedItem && (
             <StripeCheckoutForm item={selectedItem} />
           )}
         </DialogContent>
       </Dialog>
+
+      <VideoModal 
+        isOpen={isVideoOpen} 
+        setIsOpen={setVideoOpen} 
+        videoUrl={videoUrl} 
+        title={videoTitle} 
+      />
     </div>
   );
 }

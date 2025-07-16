@@ -1,7 +1,8 @@
+
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileText, Users, HandCoins, Bug, Bot } from "lucide-react";
+import { FileText, Users, HandCoins, Bug, Bot, Building } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
@@ -65,6 +66,12 @@ export default function AdminDashboardPage() {
                            <Link href="/dashboard/admin/agent">
                              <Bot className="mr-2 h-4 w-4"/>
                              Gestionar Agente
+                           </Link>
+                        </Button>
+                        <Button asChild variant="outline" className="text-indigo-600 border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700">
+                           <Link href="/dashboard/admin/directory">
+                             <Building className="mr-2 h-4 w-4"/>
+                             Gestionar Directorio
                            </Link>
                         </Button>
                          <Button asChild variant="destructive" className="bg-orange-500 hover:bg-orange-600 border-orange-500">

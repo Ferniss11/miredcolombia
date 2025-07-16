@@ -13,9 +13,10 @@ import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Checkbox } from '@/components/ui/checkbox';
-import { MessageCircle, X, Send, User, Bot, Loader2, Sparkles, Phone } from 'lucide-react';
+import { MessageCircle, X, Send, User, Bot, Loader2, Sparkles, Phone, Building } from 'lucide-react';
 import Link from 'next/link';
 import { startChatSessionAction, postMessageAction } from '@/lib/chat-actions';
+import { startBusinessChatSessionAction, postBusinessMessageAction } from '@/lib/business-chat-actions';
 import { useToast } from '@/hooks/use-toast';
 
 type ClientMessage = {
@@ -23,6 +24,10 @@ type ClientMessage = {
     text: string;
 };
 
+type ChatWidgetProps = {
+  businessId?: string;
+  businessName?: string;
+};
 
 const formSchema = z.object({
   userName: z.string().min(2, { message: 'El nombre es obligatorio.' }),
@@ -32,7 +37,7 @@ const formSchema = z.object({
   }),
 });
 
-export default function ChatWidget() {
+export default function ChatWidget({ businessId, businessName }: ChatWidgetProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ClientMessage[]>([]);
@@ -41,6 +46,8 @@ export default function ChatWidget() {
   const { toast } = useToast();
   const router = useRouter();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+
+  const isBusinessChat = !!businessId;
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -54,7 +61,11 @@ export default function ChatWidget() {
   }, [messages]);
 
   const handleStartSession = async (values: z.infer<typeof formSchema>) => {
-    const result = await startChatSessionAction({ userName: values.userName, userPhone: values.userPhone });
+    const action = isBusinessChat ? startBusinessChatSessionAction : startChatSessionAction;
+    const params = isBusinessChat ? { ...values, businessId: businessId!, businessName: businessName! } : values;
+    
+    // @ts-ignore
+    const result = await action(params);
     
     if (result.isIndexError) {
         sessionStorage.setItem('fullError', result.error || 'Unknown index error.');
@@ -80,11 +91,16 @@ export default function ChatWidget() {
     setCurrentMessage('');
     setIsAiResponding(true);
 
-    const result = await postMessageAction({ 
+    const action = isBusinessChat ? postBusinessMessageAction : postMessageAction;
+    const params = { 
         sessionId, 
         message: userMessage.text, 
-        history: messages // pass the history *before* adding the new user message
-    });
+        history: messages,
+        ...(isBusinessChat && { businessId: businessId! })
+    };
+
+    // @ts-ignore
+    const result = await action(params);
     
     if (result.success && result.response) {
       const aiMessage: ClientMessage = { role: 'model', text: result.response };
@@ -102,12 +118,15 @@ export default function ChatWidget() {
       return (
         <Card className="border-none shadow-none">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-                <Phone className="h-5 w-5 text-primary"/>
-                Contacto Directo
+             <CardTitle className="flex items-center gap-2">
+                {isBusinessChat ? <Building className="h-5 w-5 text-primary"/> : <Phone className="h-5 w-5 text-primary"/>}
+                {isBusinessChat ? `Asistente de ${businessName}` : "Contacto Directo"}
             </CardTitle>
             <CardDescription>
-                Necesitamos unos datos para poder ayudarte mejor. Si ya has hablado con nosotros, usa el mismo teléfono para continuar la conversación.
+                 {isBusinessChat
+                    ? `Hola, ¿listo para chatear con ${businessName}? Solo necesitamos unos datos para empezar.`
+                    : 'Necesitamos unos datos para poder ayudarte mejor. Si ya has hablado con nosotros, usa el mismo teléfono para continuar la conversación.'
+                }
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -222,8 +241,10 @@ export default function ChatWidget() {
         <Card className="h-full flex flex-col shadow-2xl">
            <CardHeader className="flex flex-row items-center justify-between">
               <div className='flex items-center gap-2'>
-                <Sparkles className="h-6 w-6 text-primary" />
-                <CardTitle className="font-headline text-lg">Asistente de Inmigración</CardTitle>
+                 {isBusinessChat ? <Building className="h-6 w-6 text-primary" /> : <Sparkles className="h-6 w-6 text-primary" />}
+                <CardTitle className="font-headline text-lg">
+                  {isBusinessChat ? `Asistente de ${businessName}` : "Asistente de Inmigración"}
+                </CardTitle>
               </div>
               <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)} className="h-7 w-7">
                   <X size={16}/>

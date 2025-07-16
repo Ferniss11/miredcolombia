@@ -9,7 +9,7 @@ export default function PrivacyPolicyPage() {
         <p>De conformidad con el RGPD (UE) 2016/679 y la Ley Orgánica 3/2018, HEALTHHUB CONNECT SL informa:</p>
         
         <h3>Responsable del tratamiento</h3>
-        <p>HEALTHHUB CONNECT SL (CIF B70795075), Calle Doctor Marañón, 22 bajo, 33401 Avilés, Asturias. Email: info@colombiaenespaña.com</p>
+        <p>HEALTHHUB CONNECT SL (CIF B70795075), Calle Doctor Marañón, 22 bajo, 33401 Avilés, Asturias. Email: info@miredcolombia.com</p>
 
         <h3>Finalidades</h3>
         <ul>

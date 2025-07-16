@@ -20,6 +20,9 @@ import {
   Home,
   FileText,
   Bot,
+  Building,
+  Bug,
+  MessageSquare,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -27,6 +30,7 @@ import { useAuth } from "@/context/AuthContext";
 import { signOutUser } from "@/lib/firebase/auth";
 import { useToast } from "@/hooks/use-toast";
 import Image from 'next/image';
+import { ThemeToggle } from "../ui/theme-toggle";
 
 export function DashboardSidebar() {
   const pathname = usePathname();
@@ -37,14 +41,18 @@ export function DashboardSidebar() {
   const advertiserNav = [
     { href: "/dashboard/advertiser", label: "Resumen", icon: BarChart2 },
     { href: "/dashboard/advertiser/ads", label: "Anuncios", icon: Megaphone },
+    { href: "/dashboard/advertiser/agent", label: "Agente IA", icon: Bot },
     { href: "/dashboard/advertiser/profile", label: "Perfil", icon: User },
   ];
 
   const adminNav = [
     { href: "/dashboard/admin", label: "Resumen", icon: LayoutGrid },
-    { href: "/dashboard/admin/blog", label: "Gestión de Blog", icon: FileText },
-    { href: "/dashboard/admin/content", label: "Suite de Contenido IA", icon: Sparkles },
-    { href: "/dashboard/admin/agent", label: "Gestión de Agente", icon: Bot },
+    { href: "/dashboard/admin/blog", label: "Blog", icon: FileText },
+    { href: "/dashboard/admin/content", label: "Contenido IA", icon: Sparkles },
+    { href: "/dashboard/admin/agent", label: "Agente Global", icon: Bot },
+    { href: "/dashboard/admin/conversations", label: "Conversaciones", icon: MessageSquare },
+    { href: "/dashboard/admin/directory", label: "Directorio", icon: Building },
+    { href: "/dashboard/admin/debug", label: "Depuración", icon: Bug },
   ];
 
   const handleSignOut = async () => {
@@ -67,9 +75,9 @@ export function DashboardSidebar() {
     <Sidebar>
       <SidebarHeader>
         <div className="flex items-center gap-2">
-           <Image src="https://firebasestorage.googleapis.com/v0/b/colombia-en-esp.firebasestorage.app/o/web%2FLOGO.png?alt=media&token=86f8e9f6-587a-4cb6-bae1-15b0c815f22b" alt="Colombia en España Logo" width={40} height={40} />
+           <Image src="https://firebasestorage.googleapis.com/v0/b/colombia-en-esp.firebasestorage.app/o/web%2FLOGO.png?alt=media&token=86f8e9f6-587a-4cb6-bae1-15b0c815f22b" alt="Mi Red Colombia Logo" width={40} height={40} />
           <div className="flex flex-col">
-            <h3 className="font-semibold text-lg font-headline">Colombia-ES</h3>
+            <h3 className="font-semibold text-lg font-headline">Mi Red Colombia</h3>
             <p className="text-xs text-muted-foreground">Panel de {getRoleDisplayName()}</p>
           </div>
         </div>
@@ -93,6 +101,9 @@ export function DashboardSidebar() {
       </SidebarContent>
       <SidebarFooter>
          <SidebarMenu>
+            <SidebarMenuItem>
+                <ThemeToggle/>
+            </SidebarMenuItem>
             <SidebarMenuItem>
               <Link href="/">
                   <SidebarMenuButton icon={Home} tooltip="Volver al Sitio">

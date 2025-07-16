@@ -31,13 +31,26 @@ const nextConfig: NextConfig = {
         hostname: 'firebasestorage.googleapis.com',
         port: '',
         pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'maps.googleapis.com',
+        port: '',
+        pathname: '/**',
       }
     ],
   },
   webpack: (config, { isServer }) => {
-    if (isServer) {
-        config.externals.push('@opentelemetry/exporter-jaeger');
+    if (!isServer) {
+      // Don't resolve server-only modules on the client
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        net: false,
+        child_process: false,
+      };
     }
+    config.externals.push('@opentelemetry/exporter-jaeger');
     return config;
   },
   serverExternalPackages: ['firebase-admin'],

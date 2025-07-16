@@ -2,9 +2,9 @@
 'use server';
 
 import { z } from 'zod';
-import { doc, updateDoc } from "firebase/firestore";
-import { db as clientDb } from "@/lib/firebase/config";
+import { adminDb, adminAuth } from '@/lib/firebase/admin-config';
 import type { BusinessProfile } from './types';
+import { revalidatePath } from 'next/cache';
 
 const businessProfileSchema = z.object({
     businessName: z.string().min(2, { message: "El nombre del negocio debe tener al menos 2 caracteres." }),
@@ -14,17 +14,23 @@ const businessProfileSchema = z.object({
     description: z.string().min(10, { message: "La descripción debe tener al menos 10 caracteres." }),
 });
 
-export async function updateBusinessProfileAction(uid: string, data: BusinessProfile) {
-    if (!clientDb) {
-      return { error: 'Firebase client database is not initialized.' };
+async function verifyUserAndGetDb(uid: string) {
+    if (!uid) {
+        throw new Error('Usuario no autenticado');
     }
+    if (!adminDb) {
+        throw new Error('La base de datos del administrador no está disponible.');
+    }
+    return adminDb;
+}
+
+
+export async function updateBusinessProfileAction(uid: string, data: BusinessProfile) {
     try {
-        if (!uid) {
-            throw new Error('Usuario no autenticado');
-        }
+        const db = await verifyUserAndGetDb(uid);
         const validatedData = businessProfileSchema.parse(data);
         
-        const userRef = doc(clientDb, "users", uid);
+        const userRef = db.collection("users").doc(uid);
         const updates: { [key: string]: any } = {};
         for (const [key, value] of Object.entries(validatedData)) {
             if (value !== undefined) {
@@ -33,9 +39,10 @@ export async function updateBusinessProfileAction(uid: string, data: BusinessPro
         }
 
         if (Object.keys(updates).length > 0) {
-            await updateDoc(userRef, updates);
+            await userRef.update(updates);
         }
-
+        
+        revalidatePath('/dashboard/advertiser/profile');
         return { success: true };
     } catch (error) {
         console.error('Error al actualizar el perfil del negocio:', error);
@@ -49,5 +56,36 @@ export async function updateBusinessProfileAction(uid: string, data: BusinessPro
             return { error: friendlyMessage };
         }
         return { error: 'No se pudo actualizar el perfil. Por favor, inténtalo de nuevo.' };
+    }
+}
+
+
+export async function updateBusinessAgentStatusAction(uid: string, isEnabled: boolean) {
+    try {
+        const db = await verifyUserAndGetDb(uid);
+        
+        const userRef = db.collection("users").doc(uid);
+        await userRef.update({
+            'businessProfile.isAgentEnabled': isEnabled
+        });
+        
+        const userDoc = await userRef.get();
+        const userProfile = userDoc.data();
+        const businessPlaceId = userProfile?.businessProfile?.placeId;
+
+        // Also update the main directory collection so the public page knows
+        if (businessPlaceId) {
+            const businessRef = db.collection('directory').doc(businessPlaceId);
+            await businessRef.update({ isAgentEnabled: isEnabled });
+             revalidatePath(`/directory/${businessPlaceId}`);
+        }
+
+        revalidatePath('/dashboard/advertiser/profile');
+        
+        return { success: true };
+    } catch (error) {
+        console.error('Error updating business agent status:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        return { error: `No se pudo actualizar el estado del agente: ${errorMessage}` };
     }
 }
