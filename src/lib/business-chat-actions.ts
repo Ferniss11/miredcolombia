@@ -18,6 +18,7 @@ function getDbInstance() {
 // --- Schemas for validation ---
 const startSessionSchema = z.object({
   businessId: z.string(),
+  businessName: z.string(),
   userName: z.string().min(2, "El nombre es obligatorio."),
   userPhone: z.string().min(7, "El teléfono es obligatorio."),
 });
@@ -66,7 +67,7 @@ export async function startBusinessChatSessionAction(input: z.infer<typeof start
     if (!FieldValue) throw new Error("Firebase Admin SDK is not fully initialized.");
 
     try {
-        const { businessId, userName, userPhone } = startSessionSchema.parse(input);
+        const { businessId, businessName, userName, userPhone } = startSessionSchema.parse(input);
 
         let existingSession = await findBusinessSessionByPhone(businessId, userPhone);
         if (existingSession) {
@@ -81,8 +82,17 @@ export async function startBusinessChatSessionAction(input: z.infer<typeof start
             createdAt: FieldValue.serverTimestamp(),
         });
         
-        // No initial message here, it will be added in the ChatWidget based on context.
-        return { success: true, sessionId: newSessionRef.id, history: [] };
+        const welcomeText = `¡Hola! Soy el asistente virtual de ${businessName}. ¿Cómo puedo ayudarte hoy?`;
+        const initialHistory = [{ role: 'model', text: welcomeText, timestamp: new Date().toISOString() }];
+
+        // Add the initial welcome message to the new session
+        await newSessionRef.collection('messages').add({
+            text: welcomeText,
+            role: 'model',
+            timestamp: FieldValue.serverTimestamp(),
+        });
+
+        return { success: true, sessionId: newSessionRef.id, history: initialHistory };
 
     } catch (error) {
         console.error("Error starting business chat session:", error);

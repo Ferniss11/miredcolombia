@@ -62,7 +62,7 @@ export default function ChatWidget({ businessId, businessName }: ChatWidgetProps
 
   const handleStartSession = async (values: z.infer<typeof formSchema>) => {
     const action = isBusinessChat ? startBusinessChatSessionAction : startChatSessionAction;
-    const params = isBusinessChat ? { ...values, businessId: businessId! } : values;
+    const params = isBusinessChat ? { ...values, businessId: businessId!, businessName: businessName! } : values;
     
     // @ts-ignore
     const result = await action(params);
@@ -75,15 +75,7 @@ export default function ChatWidget({ businessId, businessName }: ChatWidgetProps
 
     if (result.success && result.sessionId) {
       setSessionId(result.sessionId);
-      const welcomeText = isBusinessChat 
-        ? `¡Hola! Soy el asistente virtual de ${businessName}. ¿Cómo puedo ayudarte hoy?`
-        : '¡Hola! Soy tu asistente de inmigración para España. ¿Cómo puedo ayudarte hoy?';
-
-      const initialHistory = result.history && result.history.length > 0
-        ? result.history
-        : [{ role: 'model', text: welcomeText, timestamp: new Date().toISOString() }];
-
-      setMessages(initialHistory);
+      setMessages(result.history || []);
     } else {
       toast({ variant: 'destructive', title: 'Error', description: result.error || 'No se pudo iniciar el chat. Por favor, inténtalo de nuevo.' });
     }
