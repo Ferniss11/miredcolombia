@@ -14,13 +14,13 @@ import { Switch } from "@/components/ui/switch";
 import { Loader2, Bot, TestTube, Power, PowerOff, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-import { SiGooglecalendar } from "react-icons/si";
-import { SiGooglereviews } from "react-icons/si";
-import { SiWhatsapp } from "react-icons/si";
-import { SiStripe } from "react-icons/si";
-import { SiGoogleanalytics } from "react-icons/si";
-import { SiGoogleads } from "react-icons/si";
-import { SiGooglephotos } from "react-icons/si";
+import { SiGooglecalendar } from "react-icons/si/index.js";
+import { SiGooglereviews } from "react-icons/si/index.js";
+import { SiWhatsapp } from "react-icons/si/index.js";
+import { SiStripe } from "react-icons/si/index.js";
+import { SiGoogleanalytics } from "react-icons/si/index.js";
+import { SiGoogleads } from "react-icons/si/index.js";
+import { SiGooglephotos } from "react-icons/si/index.js";
 
 // ToolCard Component
 type ToolCardProps = {
