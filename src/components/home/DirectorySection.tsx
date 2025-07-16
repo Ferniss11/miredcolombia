@@ -2,15 +2,14 @@
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { ArrowRight, Building, Map } from "lucide-react";
+import { ArrowRight, Building, Map, Star, MapPin } from "lucide-react";
 import Image from "next/image";
 import type { PlaceDetails } from "@/lib/types";
+import { Badge } from "../ui/badge";
+import { cn } from "@/lib/utils";
 
-type DirectorySectionProps = {
-    businesses: PlaceDetails[];
-};
 
-export default function DirectorySection({ businesses }: DirectorySectionProps) {
+export default function DirectorySection({ businesses }: { businesses: PlaceDetails[] }) {
     if (businesses.length === 0) {
         return null; // Don't render the section if there are no businesses
     }
@@ -30,22 +29,33 @@ export default function DirectorySection({ businesses }: DirectorySectionProps) 
 
                 <div className="mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 py-12">
                     {businesses.map((business) => (
-                         <Card key={business.id} className="flex flex-col overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300">
-                             <CardHeader className="p-0">
-                                <Image
-                                    src={business.photoUrl || "https://placehold.co/400x250.png"}
-                                    alt={business.displayName}
-                                    width={400}
-                                    height={250}
-                                    data-ai-hint={`${business.category} storefront`}
-                                    className="w-full h-48 object-cover"
-                                />
-                             </CardHeader>
+                         <Card key={business.id} className="overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 flex flex-col group">
+                            <Link href={`/directory/${business.id}`} className="block">
+                                <CardHeader className="p-0 relative">
+                                    <Image
+                                        src={business.photoUrl || "https://placehold.co/400x250.png"}
+                                        alt={business.displayName}
+                                        width={400}
+                                        height={250}
+                                        data-ai-hint={`${business.category} storefront`}
+                                        className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105"
+                                    />
+                                     {business.rating && (
+                                        <Badge variant="secondary" className="absolute top-2 right-2 bg-background/80 backdrop-blur-sm">
+                                            {business.rating.toFixed(1)} <Star className="w-3 h-3 ml-1 text-yellow-400 fill-yellow-400" />
+                                        </Badge>
+                                    )}
+                                </CardHeader>
+                            </Link>
                             <CardContent className="p-4 flex-grow">
-                                <h3 className="text-lg font-bold font-headline line-clamp-2">{business.displayName}</h3>
-                                <p className="text-sm text-muted-foreground flex items-center mt-1">
-                                    <Building className="w-4 h-4 mr-2" />
+                                <p className="text-sm text-muted-foreground flex items-center">
+                                    <Building className="w-4 h-4 mr-2 text-primary/70" />
                                     {business.category}
+                                </p>
+                                <h3 className="text-lg font-bold font-headline line-clamp-2 mt-1">{business.displayName}</h3>
+                                <p className="text-sm text-muted-foreground flex items-center mt-2">
+                                    <MapPin className="w-4 h-4 mr-2 text-primary/70" />
+                                    {business.city}
                                 </p>
                             </CardContent>
                             <CardFooter className="p-4 pt-0 mt-auto">

@@ -3,10 +3,22 @@ import { getSavedBusinessesAction } from "@/lib/directory-actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { ArrowRight, Building, Search, AlertCircle } from "lucide-react";
+import { ArrowRight, Building, Search, AlertCircle, Star, MapPin } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+
+const StarRating = ({ rating, className }: { rating: number, className?: string }) => {
+    return (
+        <div className={cn("flex items-center gap-0.5", className)}>
+            {Array.from({ length: 5 }, (_, i) => (
+                <Star key={i} className={cn("w-4 h-4", i < Math.round(rating) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300')} />
+            ))}
+        </div>
+    );
+};
 
 export default async function DirectoryPage() {
   const { businesses, error } = await getSavedBusinessesAction(true);
@@ -41,22 +53,33 @@ export default async function DirectoryPage() {
       {businesses && businesses.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
           {businesses.map((business) => (
-            <Card key={business.id} className="overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 flex flex-col">
-              <CardHeader className="p-0">
-                <Image
-                  src={business.photoUrl || "https://placehold.co/400x250.png"}
-                  alt={business.displayName}
-                  width={400}
-                  height={250}
-                  data-ai-hint={`${business.category} storefront`}
-                  className="w-full h-48 object-cover"
-                />
-              </CardHeader>
+            <Card key={business.id} className="overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 flex flex-col group">
+              <Link href={`/directory/${business.id}`} className="block">
+                <CardHeader className="p-0 relative">
+                  <Image
+                    src={business.photoUrl || "https://placehold.co/400x250.png"}
+                    alt={business.displayName}
+                    width={400}
+                    height={250}
+                    data-ai-hint={`${business.category} storefront`}
+                    className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105"
+                  />
+                  {business.rating && (
+                     <Badge variant="secondary" className="absolute top-2 right-2 bg-background/80 backdrop-blur-sm">
+                        {business.rating.toFixed(1)} <Star className="w-3 h-3 ml-1 text-yellow-400 fill-yellow-400" />
+                    </Badge>
+                  )}
+                </CardHeader>
+              </Link>
               <CardContent className="p-4 flex-grow">
-                <h3 className="text-lg font-bold font-headline line-clamp-2">{business.displayName}</h3>
-                <p className="text-sm text-muted-foreground flex items-center mt-1">
-                  <Building className="w-4 h-4 mr-2" />
-                  {business.category}
+                <p className="text-sm text-muted-foreground flex items-center">
+                    <Building className="w-4 h-4 mr-2 text-primary/70" />
+                    {business.category}
+                </p>
+                <h3 className="text-lg font-bold font-headline line-clamp-2 mt-1">{business.displayName}</h3>
+                 <p className="text-sm text-muted-foreground flex items-center mt-2">
+                    <MapPin className="w-4 h-4 mr-2 text-primary/70" />
+                    {business.city}
                 </p>
               </CardContent>
               <CardFooter className="p-4 pt-0 mt-auto bg-transparent">

@@ -133,9 +133,12 @@ export async function getSavedBusinessesAction(forPublic: boolean = false): Prom
             const docData = doc.data();
             const placeId = docData.placeId;
 
-            const fields = forPublic ? ['name', 'place_id', 'photos'] : ['name', 'formatted_address', 'place_id'];
+            const fields = ['name', 'place_id', 'photos', 'rating', 'address_components'];
             const details = await getPlaceDetails(placeId, fields);
             if (!details) return null;
+
+            const cityComponent = details.address_components.find((c: any) => c.types.includes('locality'));
+            const city = cityComponent ? cityComponent.long_name : 'Ciudad no disponible';
 
             return {
                 id: details.place_id!,
@@ -145,8 +148,9 @@ export async function getSavedBusinessesAction(forPublic: boolean = false): Prom
                 subscriptionTier: docData.subscriptionTier,
                 ownerUid: docData.ownerUid,
                 verificationStatus: docData.verificationStatus,
-                // Include a photo for the public directory cards
                 photoUrl: details.photos?.[0] ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${details.photos[0].photo_reference}&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}` : "https://placehold.co/400x250.png",
+                rating: details.rating,
+                city: city,
             } as PlaceDetails;
         });
         
