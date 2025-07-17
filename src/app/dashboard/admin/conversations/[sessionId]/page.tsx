@@ -6,7 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { getChatSessionDetailsAction, postAdminMessageAction } from '@/lib/agent-actions';
 import type { ChatSessionWithTokens, ChatMessage, AgentConfig } from '@/lib/chat-types';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Bot, User, Send, UserCog, BrainCircuit, ChevronDown, Copy, CheckCheck, Clock, Reply, X } from 'lucide-react';
+import { ArrowLeft, Bot, User, Send, UserCog, BrainCircuit, ChevronDown, Copy, Clock, Reply, X } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -87,7 +87,7 @@ function ChatConversationPage() {
             replyTo: replyTo ? {
                 messageId: replyTo.id,
                 text: replyTo.text,
-                author: replyTo.role === 'user' ? 'Tú' : (replyTo.authorName || 'Agente')
+                author: replyTo.role === 'user' ? (session.userName || 'Usuario') : (replyTo.authorName || 'Agente')
             } : null,
         }
         setMessages(prev => [...prev, pendingMessage]);
@@ -101,7 +101,7 @@ function ChatConversationPage() {
             replyTo: replyTo ? {
                 messageId: replyTo.id,
                 text: replyTo.text,
-                author: replyTo.role === 'user' ? session.userName : (replyTo.authorName || 'Agente')
+                author: replyTo.role === 'user' ? (session.userName || 'Usuario') : (replyTo.authorName || 'Agente')
             } : undefined,
         });
         
@@ -130,7 +130,7 @@ function ChatConversationPage() {
         const isAdmin = msg.role === 'admin';
         
         const alignment = isUser ? 'justify-end' : 'justify-start';
-        const bgColor = isUser ? 'bg-blue-600 text-white' : isAdmin ? 'bg-yellow-100 dark:bg-yellow-900/50' : 'bg-gray-100 dark:bg-gray-800';
+        const bgColor = isUser ? 'bg-primary/10 text-primary-foreground' : isAdmin ? 'bg-yellow-100 dark:bg-yellow-900/50' : 'bg-muted';
         const avatar = isUser ? (
              <Avatar className="w-8 h-8 flex-shrink-0">
                <AvatarFallback className="bg-muted"><User size={18} /></AvatarFallback>
@@ -142,14 +142,17 @@ function ChatConversationPage() {
                </AvatarFallback>
             </Avatar>
         );
+        
+        const authorName = isAdmin ? (msg.authorName || 'Admin') : isUser ? (session?.userName || 'Usuario') : 'Agente IA';
 
         return (
-             <div key={msg.id} className={cn("group flex items-end gap-2", alignment)}>
+             <div key={msg.id} className={cn("group flex items-end gap-2 w-full", alignment)}>
                {!isUser && avatar}
                 <div className="flex flex-col gap-1 w-full max-w-lg">
-                    <div className={cn('relative p-3 rounded-lg shadow-sm w-fit', bgColor, isUser ? 'ml-auto' : 'mr-auto')}>
+                     <span className={cn("text-xs text-muted-foreground", isUser ? 'text-right' : 'text-left')}>{authorName}</span>
+                    <div className={cn('relative p-3 rounded-lg shadow-sm w-fit', bgColor, isUser ? 'ml-auto rounded-br-none' : 'mr-auto rounded-bl-none')}>
                         {msg.replyTo && (
-                            <div className="p-2 mb-2 border-l-2 border-primary/50 bg-black/10 dark:bg-white/10 rounded-md min-w-0">
+                            <div className="p-2 mb-2 border-l-2 border-primary/50 bg-black/5 dark:bg-white/5 rounded-md min-w-0">
                                 <p className="font-bold text-xs">{msg.replyTo.author}</p>
                                 <p className="text-xs opacity-80 truncate">{msg.replyTo.text}</p>
                             </div>
@@ -164,7 +167,6 @@ function ChatConversationPage() {
                      <div className={cn("flex items-center gap-1.5 text-xs text-muted-foreground pr-2", isUser && "justify-end")}>
                         <Clock className="h-3 w-3" />
                         <span>{formatTimestamp(msg.timestamp)}</span>
-                        {isAdmin && <CheckCheck className="h-4 w-4 text-blue-500" />}
                     </div>
                 </div>
                 {isUser && avatar}
@@ -179,7 +181,7 @@ function ChatConversationPage() {
     if (!session) return <div>No se encontró la sesión.</div>;
 
     return (
-        <div className="flex flex-col h-[calc(100vh-theme(space.24))]">
+        <div className="flex flex-col h-[calc(100vh-theme(space.24))] bg-background">
             <header className="p-3 border-b bg-card">
                  <div className="flex items-center gap-3">
                     <Button variant="ghost" size="icon" className="h-9 w-9" asChild>
@@ -192,7 +194,7 @@ function ChatConversationPage() {
                     </Avatar>
                     <div className="flex-1">
                         <h1 className="font-bold">{session.userName}</h1>
-                        <p className="text-xs text-muted-foreground">{session.userPhone}</p>
+                        <p className="text-xs text-muted-foreground">{session.userPhone} &middot; {session.userEmail || 'Email no disponible'}</p>
                     </div>
                 </div>
                  <Collapsible className="mt-2">
