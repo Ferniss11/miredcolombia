@@ -20,10 +20,16 @@ function getDbInstance() {
 
 function serializeMessage(doc: FirebaseFirestore.DocumentSnapshot): ChatMessage {
     const data = doc.data() as any;
+    // This logic correctly interprets legacy and new messages
+    let role = data.role;
+    if (role === 'model' && data.authorName) {
+        role = 'admin';
+    }
+
     return {
         id: doc.id,
         text: data.text,
-        role: data.role,
+        role: role,
         timestamp: data.timestamp.toDate().toISOString(),
         usage: data.usage,
         cost: data.cost,
