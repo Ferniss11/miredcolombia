@@ -4,9 +4,9 @@
 import { useEffect, useState, useRef, FormEvent, KeyboardEvent } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { getChatSessionDetailsAction, postAdminMessageAction } from '@/lib/agent-actions';
-import type { ChatSessionWithTokens, ChatMessage } from '@/lib/types';
+import type { ChatSessionWithTokens, ChatMessage, AgentConfig } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Bot, User, Send, UserCog, DollarSign, BrainCircuit, ChevronDown } from 'lucide-react';
+import { ArrowLeft, Bot, User, Send, UserCog, BrainCircuit, ChevronDown, Copy } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -24,6 +24,7 @@ function ChatConversationPage() {
     const { toast } = useToast();
     const { userProfile } = useAuth();
     const [session, setSession] = useState<ChatSessionWithTokens | null>(null);
+    const [agentConfig, setAgentConfig] = useState<AgentConfig | null>(null);
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [newMessage, setNewMessage] = useState('');
@@ -41,6 +42,7 @@ function ChatConversationPage() {
                 } else if (result.session && result.messages) {
                     setSession(result.session);
                     setMessages(result.messages);
+                    setAgentConfig(result.agentConfig || null);
                 }
                 setIsLoading(false);
             };
@@ -58,6 +60,12 @@ function ChatConversationPage() {
         if (cost === 0) return '€0.00';
         return `~${new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', minimumFractionDigits: 4 }).format(cost)}`;
     }
+
+    const handleCopySessionId = () => {
+        if (!session) return;
+        navigator.clipboard.writeText(session.id);
+        toast({ title: 'Copiado', description: 'El ID de la sesión ha sido copiado.' });
+    };
 
     const handleSendMessage = async (e?: FormEvent) => {
         e?.preventDefault();
@@ -171,6 +179,18 @@ function ChatConversationPage() {
                                 </Badge>
                             </div>
                             <Separator />
+                            <div className="flex justify-between items-center">
+                                <span className="text-muted-foreground">Modelo IA:</span>
+                                <span className="font-mono text-xs">{agentConfig?.model || 'N/A'}</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                                <span className="text-muted-foreground">ID de Sesión:</span>
+                                <div className="flex items-center gap-1">
+                                    <span className="font-mono text-xs truncate max-w-[120px]">{session.id}</span>
+                                    <Button variant="ghost" size="icon" className="h-5 w-5" onClick={handleCopySessionId}><Copy className="h-3 w-3"/></Button>
+                                </div>
+                            </div>
+                            <Separator />
                              <div className="flex justify-between items-center">
                                 <span className="text-muted-foreground">Tokens Totales:</span>
                                 <span>{session.totalTokens.toLocaleString('es-ES')}</span>
@@ -216,5 +236,3 @@ function ChatConversationPage() {
 }
 
 export default ChatConversationPage;
-
-    

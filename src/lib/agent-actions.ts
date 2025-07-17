@@ -42,12 +42,18 @@ export async function getChatSessionsAction() {
 
 export async function getChatSessionDetailsAction(sessionId: string) {
     try {
-        const session = await getChatSessionById(sessionId);
+        const [session, messages, agentConfig] = await Promise.all([
+            getChatSessionById(sessionId),
+            getChatHistory(sessionId),
+            getAgentConfig() // Also fetch the current agent config
+        ]);
+        
         if (!session) {
             return { error: 'Sesión no encontrada.' };
         }
-        const messages = await getChatHistory(sessionId);
-        return { session, messages };
+        
+        return { session, messages, agentConfig };
+
     } catch (error) {
         console.error(`Error getting details for session ${sessionId}:`, error);
         return { error: 'No se pudo obtener el detalle de la conversación.' };
