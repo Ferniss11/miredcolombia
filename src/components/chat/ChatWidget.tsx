@@ -13,13 +13,14 @@ import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Checkbox } from '@/components/ui/checkbox';
-import { X, Send, User, Bot, Loader2, Sparkles, Phone, Building, MessageSquareQuote } from 'lucide-react';
+import { X, Send, User, Bot, Loader2, Sparkles, Phone, Building, MessageSquareQuote, UserCog, Clock } from 'lucide-react';
 import { LuBotMessageSquare } from "react-icons/lu";
 import Link from 'next/link';
 import { startChatSessionAction, postMessageAction } from '@/lib/chat-actions';
 import { startBusinessChatSessionAction, postBusinessMessageAction } from '@/lib/business-chat-actions';
 import { useToast } from '@/hooks/use-toast';
 import type { ChatMessage } from '@/lib/chat-types';
+import { Avatar, AvatarFallback } from '../ui/avatar';
 
 type ChatWidgetProps = {
   businessId?: string;
@@ -281,6 +282,11 @@ export default function ChatWidget({ businessId, businessName, embedded = false 
     }
     setIsAiResponding(false);
   };
+
+  const formatTimestamp = (isoString?: string) => {
+    if (!isoString) return '';
+    return new Date(isoString).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+  }
   
   const renderWelcomeContent = () => {
     return (
@@ -366,25 +372,45 @@ export default function ChatWidget({ businessId, businessName, embedded = false 
       <div className="flex flex-col h-full">
         <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
           <div className="space-y-4">
-            {messages.map((msg, index) => (
-              <div key={index} className={cn("flex items-start gap-3", msg.role === 'user' ? 'justify-end' : 'justify-start')}>
-                 {msg.role === 'model' && (
-                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground">
-                        <Bot size={20} />
+            {messages.map((msg, index) => {
+              const isUser = msg.role === 'user';
+              const isAdmin = msg.role === 'admin';
+              const isModel = msg.role === 'model';
+              
+              const alignment = isUser ? 'justify-end' : 'justify-start';
+              const bgColor = isUser ? 'bg-blue-100 dark:bg-blue-900/50' : isAdmin ? 'bg-yellow-100 dark:bg-yellow-900/50' : 'bg-gray-100 dark:bg-gray-800';
+              
+              const avatar = isUser ? (
+                  <Avatar className="w-8 h-8 flex-shrink-0">
+                    <AvatarFallback className="bg-muted"><User size={18} /></AvatarFallback>
+                  </Avatar>
+              ) : (
+                  <Avatar className="w-8 h-8 flex-shrink-0">
+                    <AvatarFallback className={cn(isAdmin ? 'bg-yellow-400 text-black' : 'bg-primary text-primary-foreground')}>
+                        {isAdmin ? <UserCog size={18} /> : <Bot size={18} />}
+                    </AvatarFallback>
+                 </Avatar>
+              );
+
+              const authorName = isAdmin ? (msg.authorName || 'Admin') : isModel ? (businessName || 'Asistente IA') : '';
+
+              return (
+                <div key={index} className={cn("flex items-end gap-2 w-full", alignment)}>
+                   {!isUser && avatar}
+                    <div className="flex flex-col gap-1 w-full max-w-lg">
+                        {authorName && <span className={cn("text-xs text-muted-foreground", isUser ? 'text-right' : 'text-left')}>{authorName}</span>}
+                        <div className={cn('p-3 rounded-lg shadow-sm w-fit', bgColor, isUser ? 'ml-auto rounded-br-none' : 'mr-auto rounded-bl-none')}>
+                            <p className="text-sm whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: msg.text.replace(/\n/g, '<br />') }} />
+                        </div>
+                        <div className={cn("flex items-center gap-1.5 text-xs text-muted-foreground pr-2", isUser && "justify-end")}>
+                            <Clock className="h-3 w-3" />
+                            <span>{formatTimestamp(msg.timestamp)}</span>
+                        </div>
                     </div>
-                )}
-                <div className="flex flex-col gap-1 w-full max-w-lg">
-                    <div className={cn('p-3 rounded-lg', msg.role === 'user' ? 'bg-blue-100 dark:bg-blue-900/50 ml-auto' : 'bg-gray-100 dark:bg-gray-800')}>
-                        <p className="text-sm" dangerouslySetInnerHTML={{ __html: msg.text.replace(/\n/g, '<br />') }} />
-                    </div>
+                    {isUser && avatar}
                 </div>
-                 {msg.role === 'user' && (
-                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-muted flex items-center justify-center">
-                        <User size={20} />
-                    </div>
-                )}
-              </div>
-            ))}
+              )
+            })}
             {isAiResponding && (
                 <div className="flex items-end gap-2 justify-start">
                     <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground">
