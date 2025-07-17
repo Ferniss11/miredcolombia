@@ -429,7 +429,7 @@ export default function ChatWidget({ businessId, businessName }: ChatWidgetProps
                     </div>
                     <div className="relative bg-background dark:bg-card shadow-lg rounded-lg p-3 text-sm group">
                         <p>{proactiveMessage}</p>
-                        <div className="absolute left-3 -bottom-1.5 w-3 h-3 bg-background dark:bg-card transform rotate-45"></div>
+                        <div className="absolute right-3 -bottom-1.5 w-3 h-3 bg-background dark:bg-card transform rotate-45"></div>
                          <Button
                             variant="ghost"
                             size="icon"

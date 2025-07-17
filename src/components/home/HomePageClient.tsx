@@ -14,7 +14,7 @@ import AboutSection from './AboutSection';
 import StepsSection from './StepsSection';
 import PackagesSection from './PackagesSection';
 import ServicesSection from './ServicesSection';
-import TimezoneSection from './TimezoneSection';
+import AiAssistantSection from './AiAssistantSection';
 import BlogSection from './BlogSection';
 import BusinessSection from './BusinessSection';
 import TestimonialsSection from './TestimonialsSection';
@@ -33,6 +33,8 @@ export default function HomePageClient({ initialPosts, eurToCopRate, initialBusi
   const [isVideoOpen, setVideoOpen] = useState(false);
   const [videoUrl, setVideoUrl] = useState('');
   const [videoTitle, setVideoTitle] = useState('');
+
+  const [isChatOpen, setChatOpen] = useState(false);
 
   const handlePurchaseClick = (item: MigrationPackage | MigrationService, type: 'package' | 'service') => {
     setSelectedItem({ ...item, type });
@@ -54,13 +56,13 @@ export default function HomePageClient({ initialPosts, eurToCopRate, initialBusi
         <PackagesSection handlePurchaseClick={handlePurchaseClick} eurToCopRate={eurToCopRate} />
         <ServicesSection handlePurchaseClick={handlePurchaseClick} eurToCopRate={eurToCopRate} />
         <DirectorySection businesses={initialBusinesses} />
-        <TimezoneSection />
+        <AiAssistantSection onCtaClick={() => setChatOpen(true)} />
         <BlogSection posts={initialPosts} />
         <BusinessSection />
         <TestimonialsSection />
       </main>
 
-      <ChatWidget />
+      <ChatWidget isOpen={isChatOpen} setIsOpen={setChatOpen} />
 
       <Dialog open={isCheckoutOpen} onOpenChange={setCheckoutOpen}>
         <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
