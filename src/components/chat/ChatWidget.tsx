@@ -109,6 +109,8 @@ export default function ChatWidget({ businessId, businessName }: ChatWidgetProps
   // Effect for proactive "speech bubble" messages
   useEffect(() => {
     let messageTimer: NodeJS.Timeout;
+    let intervalId: NodeJS.Timeout;
+
     const showRandomMessage = () => {
       if (isOpen) { // Don't show if chat is open
         setProactiveMessage('');
@@ -123,13 +125,13 @@ export default function ChatWidget({ businessId, businessName }: ChatWidgetProps
     // Show the first message after a delay, then periodically
     const initialTimeout = setTimeout(() => {
       showRandomMessage();
-      const interval = setInterval(showRandomMessage, 20000); // Show a new message every 20 seconds
-      return () => clearInterval(interval);
+      intervalId = setInterval(showRandomMessage, 20000); // Show a new message every 20 seconds
     }, 10000); // First message after 10 seconds
 
     return () => {
       clearTimeout(initialTimeout);
       clearTimeout(messageTimer);
+      clearInterval(intervalId);
     };
   }, [isOpen]);
 
@@ -265,24 +267,24 @@ export default function ChatWidget({ businessId, businessName }: ChatWidgetProps
                                 : 'Necesitamos unos datos para poder ayudarte mejor. Si ya has hablado con nosotros, usa el mismo teléfono para continuar la conversación.'
                             }
                         </CardDescription>
-                    </CardHeader>
-                    <div className="px-6 pb-4 border-b">
-                        <p className="text-sm font-medium mb-2 flex items-center gap-2 text-muted-foreground"><MessageSquareQuote className="h-4 w-4"/> O pregúntale directamente...</p>
-                        <div className="flex flex-col gap-2">
-                            {currentSuggestions.map((q, i) => (
-                                <Button 
-                                    key={i} 
-                                    variant="outline" 
-                                    size="sm" 
-                                    className="w-full text-left justify-start h-auto whitespace-normal animate-in fade-in duration-500" 
-                                    onClick={() => handleSuggestionClick(q)}
-                                >
-                                    {q}
-                                </Button>
-                            ))}
+                         <div className="pt-4">
+                            <p className="text-sm font-medium mb-2 flex items-center gap-2 text-muted-foreground"><MessageSquareQuote className="h-4 w-4"/> O pregúntale directamente...</p>
+                            <div className="flex flex-col gap-2">
+                                {currentSuggestions.map((q, i) => (
+                                    <Button 
+                                        key={i} 
+                                        variant="outline" 
+                                        size="sm" 
+                                        className="w-full text-left justify-start h-auto whitespace-normal animate-in fade-in duration-500" 
+                                        onClick={() => handleSuggestionClick(q)}
+                                    >
+                                        {q}
+                                    </Button>
+                                ))}
+                            </div>
                         </div>
-                    </div>
-                    <CardContent className="pt-6">
+                    </CardHeader>
+                    <CardContent className="pt-6 border-t">
                         <Form {...form}>
                             <form onSubmit={form.handleSubmit((values) => handleStartSession(values))} className="space-y-4">
                                 <FormField control={form.control} name="userName" render={({ field }) => (
@@ -387,10 +389,15 @@ export default function ChatWidget({ businessId, businessName }: ChatWidgetProps
     <>
       <div className="fixed bottom-6 right-6 z-20">
         {proactiveMessage && !isOpen && (
-            <div className="absolute bottom-full right-0 mb-2 w-max max-w-xs animate-in fade-in-50 slide-in-from-bottom-2">
-                <div className="bg-background shadow-lg rounded-lg p-3 text-sm relative">
-                    {proactiveMessage}
-                    <div className="absolute right-4 -bottom-1 w-2 h-2 bg-background transform rotate-45"></div>
+             <div className="absolute bottom-full right-0 mb-2 w-max max-w-[280px] animate-in fade-in-50 slide-in-from-bottom-2">
+                <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground shadow-lg">
+                        <Bot size={20} />
+                    </div>
+                    <div className="relative bg-background dark:bg-gray-800 shadow-lg rounded-lg p-3 text-sm">
+                        {proactiveMessage}
+                        <div className="absolute left-2 -bottom-1 w-3 h-3 bg-background dark:bg-gray-800 transform rotate-45"></div>
+                    </div>
                 </div>
             </div>
         )}
