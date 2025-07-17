@@ -28,7 +28,7 @@ const postMessageSchema = z.object({
   sessionId: z.string(),
   message: z.string(),
   history: z.array(z.object({
-    role: z.enum(['user', 'model', 'admin']), // FIX: Allow 'admin' role
+    role: z.enum(['user', 'model', 'admin']),
     text: z.string(),
   })),
 });
@@ -58,8 +58,13 @@ async function getBusinessChatHistory(businessId: string, sessionId: string) {
 
     return messagesSnapshot.docs.map(doc => {
         const data = doc.data();
+        let role = data.role;
+        // This is the key fix: correctly identify admin messages when reading history.
+        if (data.role === 'model' && data.authorName) {
+            role = 'admin';
+        }
         return {
-          role: data.authorName ? 'admin' : data.role, // If authorName exists, it's an admin message
+          role: role,
           text: data.text,
           timestamp: data.timestamp.toDate().toISOString(),
         }
