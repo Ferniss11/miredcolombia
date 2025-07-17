@@ -19,7 +19,7 @@ import { ChatOutputSchema, ChatRoleSchema } from '@/lib/chat-types';
 const BusinessChatFlowInputSchema = z.object({
   businessId: z.string().describe('The unique ID of the business.'),
   chatHistory: z.array(z.object({
-    role: ChatRoleSchema,
+    role: ChatRoleSchema, // Use the unified ChatRoleSchema
     text: z.string(),
   })).describe('The history of the conversation so far, including user, AI (model), and admin messages.'),
   currentMessage: z.string().describe("The user's latest message."),
