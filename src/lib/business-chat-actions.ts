@@ -27,7 +27,10 @@ const postMessageSchema = z.object({
   businessId: z.string(),
   sessionId: z.string(),
   message: z.string(),
-  history: z.array(z.any()), // Simplified for action context
+  history: z.array(z.object({
+    role: z.enum(['user', 'model', 'admin']),
+    text: z.string(),
+  })),
 });
 
 
@@ -55,7 +58,11 @@ async function getBusinessChatHistory(businessId: string, sessionId: string) {
 
     return messagesSnapshot.docs.map(doc => {
         const data = doc.data();
-        return { ...data, timestamp: data.timestamp.toDate().toISOString() } as ChatMessage;
+        return {
+          role: data.authorName ? 'admin' : data.role, // If authorName exists, it's an admin message
+          text: data.text,
+          timestamp: data.timestamp.toDate().toISOString(),
+        }
     });
 }
 
@@ -83,7 +90,7 @@ export async function startBusinessChatSessionAction(input: z.infer<typeof start
         });
         
         const welcomeText = `¡Hola! Soy el asistente virtual de ${businessName}. ¿Cómo puedo ayudarte hoy?`;
-        const initialHistory = [{ role: 'model', text: welcomeText, timestamp: new Date().toISOString() }];
+        const initialHistory = [{ role: 'model' as const, text: welcomeText, timestamp: new Date().toISOString() }];
 
         // Add the initial welcome message to the new session
         await newSessionRef.collection('messages').add({

@@ -18,7 +18,10 @@ import { ChatOutputSchema } from '@/lib/types';
 // Define the input schema for the business chat flow
 const BusinessChatFlowInputSchema = z.object({
   businessId: z.string().describe('The unique ID of the business.'),
-  chatHistory: z.array(z.any()).describe('The history of the conversation so far.'),
+  chatHistory: z.array(z.object({
+    role: z.enum(['user', 'model', 'admin']),
+    text: z.string(),
+  })).describe('The history of the conversation so far, including user, AI (model), and admin messages.'),
   currentMessage: z.string().describe("The user's latest message."),
   currentDate: z.string().optional().describe("La fecha y hora actual en formato ISO para dar contexto al modelo."),
 });
@@ -48,6 +51,7 @@ const prompt = ai.definePrompt({
         ### CONTEXTO
         Eres un asistente de inteligencia artificial amigable, profesional y extremadamente eficiente para un negocio específico. Tu misión es responder a las preguntas de los clientes y gestionar citas basándote ÚNICAMENTE en la información proporcionada por tus herramientas.
         La fecha y hora actual es: {{currentDate}}. Úsala como referencia para interpretar las peticiones del usuario (ej. "mañana", "próximo lunes").
+        En la conversación, pueden participar tres roles: 'user' (el cliente), 'model' (tú, el asistente IA) y 'admin' (un humano del negocio que puede intervenir). Trata los mensajes del 'admin' como una fuente de información verídica y autorizada.
 
         ### PROCESO DE RESPUESTA OBLIGATORIO Y SECUENCIAL
         1.  **IDENTIFICAR INTENCIÓN:** Analiza el mensaje del usuario.
