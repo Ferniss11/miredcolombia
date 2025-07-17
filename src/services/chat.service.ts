@@ -3,6 +3,8 @@
 
 import { adminDb, adminInstance } from "@/lib/firebase/admin-config";
 import type { ChatSession, ChatMessage, TokenUsage, ChatSessionWithTokens, UserProfile } from "@/lib/types";
+import { calculateCost } from "@/lib/ai-costs";
+import { getAgentConfig } from "./agent.service";
 
 const FieldValue = adminInstance?.firestore.FieldValue;
 
@@ -23,6 +25,7 @@ function serializeMessage(doc: FirebaseFirestore.DocumentSnapshot): ChatMessage 
         role: data.role,
         timestamp: data.timestamp.toDate().toISOString(),
         usage: data.usage,
+        cost: data.cost,
         authorName: data.authorName,
     };
 }
@@ -39,6 +42,7 @@ function serializeSession(doc: FirebaseFirestore.DocumentSnapshot): ChatSessionW
         totalInputTokens: data.totalInputTokens || 0,
         totalOutputTokens: data.totalOutputTokens || 0,
         totalTokens: data.totalTokens || 0,
+        totalCost: data.totalCost || 0,
     };
 }
 
@@ -124,6 +128,7 @@ export async function startChatSession(sessionData: Omit<ChatSession, 'id' | 'cr
       totalTokens: 0,
       totalInputTokens: 0,
       totalOutputTokens: 0,
+      totalCost: 0,
     });
     return docRef.id;
   } catch (error) {
@@ -150,15 +155,19 @@ export async function saveMessage(sessionId: string, messageData: Omit<ChatMessa
     
     await db.runTransaction(async (transaction) => {
         const newMessageRef = messagesCollection.doc();
-        
+        const agentConfig = await getAgentConfig();
+
         // Build the message object dynamically to avoid undefined fields
         const finalMessageObject: any = {
             ...messageData,
             timestamp: FieldValue.serverTimestamp(),
         };
 
+        let cost = 0;
         if (usage) {
             finalMessageObject.usage = usage;
+            cost = calculateCost(agentConfig.model, usage.inputTokens, usage.outputTokens);
+            finalMessageObject.cost = cost;
         }
 
         // 1. Add the new message
@@ -173,6 +182,7 @@ export async function saveMessage(sessionId: string, messageData: Omit<ChatMessa
             sessionUpdate.totalInputTokens = FieldValue.increment(usage.inputTokens);
             sessionUpdate.totalOutputTokens = FieldValue.increment(usage.outputTokens);
             sessionUpdate.totalTokens = FieldValue.increment(usage.totalTokens);
+            sessionUpdate.totalCost = FieldValue.increment(cost);
         }
         
         transaction.update(sessionRef, sessionUpdate);

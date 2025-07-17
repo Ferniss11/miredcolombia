@@ -6,7 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { getChatSessionDetailsAction, postAdminMessageAction } from '@/lib/agent-actions';
 import type { ChatSessionWithTokens, ChatMessage } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Bot, User, Send, UserCog } from 'lucide-react';
+import { ArrowLeft, Bot, User, Send, UserCog, DollarSign } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -14,7 +14,6 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 
 function ChatConversationPage() {
@@ -52,6 +51,11 @@ function ChatConversationPage() {
             scrollAreaRef.current.scrollTo({ top: scrollAreaRef.current.scrollHeight, behavior: 'auto' });
         }
     }, [messages]);
+    
+    const formatCost = (cost: number) => {
+        if (cost === 0) return '€0.00';
+        return `~€${cost.toFixed(4)}`;
+    }
 
     const handleSendMessage = async (e?: FormEvent) => {
         e?.preventDefault();
@@ -145,6 +149,10 @@ function ChatConversationPage() {
                           <Badge variant="outline" className="flex items-center gap-1.5">
                             <Bot className="h-3 w-3"/>
                             {session.totalTokens} tokens
+                        </Badge>
+                         <Badge variant="outline" className="flex items-center gap-1.5 bg-green-500/10 text-green-700 border-green-500/20">
+                            <DollarSign className="h-3 w-3"/>
+                            {formatCost(session.totalCost)}
                         </Badge>
                     </div>
                     <p className="text-xs text-muted-foreground">{session.userPhone}</p>

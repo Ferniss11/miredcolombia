@@ -244,6 +244,7 @@ export type ChatSession = {
   totalTokens?: number;
   totalInputTokens?: number;
   totalOutputTokens?: number;
+  totalCost?: number; // NEW: To store the total cost of the conversation
 };
 
 export type ChatSessionWithTokens = {
@@ -253,9 +254,10 @@ export type ChatSessionWithTokens = {
   userEmail?: string;
   createdAt: string;
   messageCount: number;
-  totalTokens: number;
   totalInputTokens: number;
   totalOutputTokens: number;
+  totalTokens: number;
+  totalCost: number; // NEW: To show total cost in UI
 }
 
 export type ChatMessage = {
@@ -264,6 +266,7 @@ export type ChatMessage = {
   role: 'user' | 'model' | 'admin';
   timestamp: any; // Firestore Timestamp or ISO string
   usage?: TokenUsage;
+  cost?: number; // NEW: Cost of this specific message
   authorName?: string; // Used for admin messages
 }
 
