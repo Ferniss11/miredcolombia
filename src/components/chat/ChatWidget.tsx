@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Checkbox } from '@/components/ui/checkbox';
-import { X, Send, User, Bot, Loader2, Sparkles, Phone, Building } from 'lucide-react';
+import { X, Send, User, Bot, Loader2, Sparkles, Phone, Building, MessageSquareQuote } from 'lucide-react';
 import { LuBotMessageSquare } from "react-icons/lu";
 import Link from 'next/link';
 import { startChatSessionAction, postMessageAction } from '@/lib/chat-actions';
@@ -45,6 +45,20 @@ const proactiveMessages = [
   "Pregúntame sobre trámites.",
   "¿Listo para empezar tu viaje a España?"
 ];
+
+// --- Question Suggestions ---
+const generalQuestions = [
+    "¿Qué tipos de visado existen para colombianos?",
+    "¿Cómo puedo homologar mi título universitario?",
+    "¿Qué necesito para empadronarme en España?"
+];
+
+const businessQuestions = [
+    "¿Cuál es vuestro horario de atención?",
+    "¿Cómo puedo reservar una cita?",
+    "¿Dónde estáis ubicados exactamente?"
+];
+
 
 export default function ChatWidget({ businessId, businessName }: ChatWidgetProps) {
   const [isOpen, setIsOpen] = useState(false);
@@ -117,7 +131,7 @@ export default function ChatWidget({ businessId, businessName }: ChatWidgetProps
     }
   }, [isOpen]);
 
-  const handleStartSession = async (values: z.infer<typeof formSchema>) => {
+  const handleStartSession = async (values: z.infer<typeof formSchema>, initialQuestion?: string) => {
     const action = isBusinessChat ? startBusinessChatSessionAction : startChatSessionAction;
     const params = isBusinessChat ? { ...values, businessId: businessId!, businessName: businessName! } : values;
     
@@ -133,10 +147,47 @@ export default function ChatWidget({ businessId, businessName }: ChatWidgetProps
     if (result.success && result.sessionId) {
       setSessionId(result.sessionId);
       setMessages(result.history || []);
+      if (initialQuestion) {
+        // We set the current message here, and then call send to actually post it
+        postInitialQuestion(result.sessionId, result.history || [], initialQuestion);
+      }
     } else {
       toast({ variant: 'destructive', title: 'Error', description: result.error || 'No se pudo iniciar el chat. Por favor, inténtalo de nuevo.' });
     }
   };
+
+  const postInitialQuestion = async (newSessionId: string, initialHistory: ClientMessage[], question: string) => {
+     const userMessage: ClientMessage = { role: 'user', text: question };
+     const newMessages = [...initialHistory, userMessage];
+     setMessages(newMessages);
+     setIsAiResponding(true);
+
+     const action = isBusinessChat ? postBusinessMessageAction : postMessageAction;
+     const params = { 
+         sessionId: newSessionId, 
+         message: userMessage.text, 
+         history: initialHistory,
+         ...(isBusinessChat && { businessId: businessId! })
+     };
+
+     // @ts-ignore
+     const result = await action(params);
+     
+     if (result.success && result.response) {
+       const aiMessage: ClientMessage = { role: 'model', text: result.response };
+       setMessages((prev) => [...prev, aiMessage]);
+     } else {
+       toast({ variant: 'destructive', title: 'Error', description: result.error });
+        const errorResponseMessage: ClientMessage = { role: 'model', text: 'Lo siento, he tenido un problema y no puedo responder ahora mismo.' };
+       setMessages((prev) => [...prev, errorResponseMessage]);
+     }
+     setIsAiResponding(false);
+  }
+  
+  const handleSuggestionClick = (question: string) => {
+    form.handleSubmit((values) => handleStartSession(values, question))();
+  };
+
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -169,61 +220,81 @@ export default function ChatWidget({ businessId, businessName }: ChatWidgetProps
     }
     setIsAiResponding(false);
   };
+  
+  const renderWelcomeContent = () => {
+    const questions = isBusinessChat ? businessQuestions : generalQuestions;
+    
+    return (
+        <div className="flex flex-col h-full">
+            <ScrollArea className="flex-1">
+                <Card className="border-none shadow-none">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                            {isBusinessChat ? <Building className="h-5 w-5 text-primary"/> : <Phone className="h-5 w-5 text-primary"/>}
+                            {isBusinessChat ? `Asistente de ${businessName}` : "Contacto Directo"}
+                        </CardTitle>
+                        <CardDescription>
+                            {isBusinessChat
+                                ? `Hola, ¿listo para chatear con ${businessName}? Solo necesitamos unos datos para empezar.`
+                                : 'Necesitamos unos datos para poder ayudarte mejor. Si ya has hablado con nosotros, usa el mismo teléfono para continuar la conversación.'
+                            }
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Form {...form}>
+                            <form onSubmit={form.handleSubmit((values) => handleStartSession(values))} className="space-y-4">
+                                <FormField control={form.control} name="userName" render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Nombre</FormLabel>
+                                    <FormControl><Input placeholder="Tu nombre completo" {...field} /></FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                                )} />
+                                <FormField control={form.control} name="userPhone" render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Teléfono</FormLabel>
+                                    <FormControl><Input placeholder="+34 600 000 000" {...field} /></FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                                )} />
+                                <FormField control={form.control} name="acceptTerms" render={({ field }) => (
+                                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 pt-2">
+                                        <FormControl>
+                                            <Checkbox checked={field.value} onCheckedChange={field.onChange} id="terms" />
+                                        </FormControl>
+                                        <div className="grid gap-1.5 leading-none">
+                                            <label htmlFor="terms" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                                                Acepto los <Link href="/legal/terms" target="_blank" className="underline text-primary">términos y condiciones</Link>.
+                                            </label>
+                                            <FormMessage />
+                                        </div>
+                                    </FormItem>
+                                )} />
+                                <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
+                                    {form.formState.isSubmitting ? <Loader2 className="animate-spin" /> : "Iniciar Chat"}
+                                </Button>
+                            </form>
+                        </Form>
+                    </CardContent>
+                </Card>
+            </ScrollArea>
+            <div className="p-4 border-t bg-muted/50">
+                <p className="text-sm font-medium mb-2 flex items-center gap-2 text-muted-foreground"><MessageSquareQuote className="h-4 w-4"/> O pregúntale directamente...</p>
+                 <div className="flex flex-col gap-2">
+                    {questions.map((q, i) => (
+                        <Button key={i} variant="outline" size="sm" className="w-full text-left justify-start h-auto whitespace-normal" onClick={() => handleSuggestionClick(q)}>
+                            {q}
+                        </Button>
+                    ))}
+                </div>
+            </div>
+        </div>
+    )
+  }
 
   const renderChatContent = () => {
     if (!sessionId) {
-      return (
-        <Card className="border-none shadow-none">
-          <CardHeader>
-             <CardTitle className="flex items-center gap-2">
-                {isBusinessChat ? <Building className="h-5 w-5 text-primary"/> : <Phone className="h-5 w-5 text-primary"/>}
-                {isBusinessChat ? `Asistente de ${businessName}` : "Contacto Directo"}
-            </CardTitle>
-            <CardDescription>
-                 {isBusinessChat
-                    ? `Hola, ¿listo para chatear con ${businessName}? Solo necesitamos unos datos para empezar.`
-                    : 'Necesitamos unos datos para poder ayudarte mejor. Si ya has hablado con nosotros, usa el mismo teléfono para continuar la conversación.'
-                }
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(handleStartSession)} className="space-y-4">
-                <FormField control={form.control} name="userName" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Nombre</FormLabel>
-                    <FormControl><Input placeholder="Tu nombre completo" {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-                <FormField control={form.control} name="userPhone" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Teléfono</FormLabel>
-                    <FormControl><Input placeholder="+34 600 000 000" {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-                 <FormField control={form.control} name="acceptTerms" render={({ field }) => (
-                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 pt-2">
-                        <FormControl>
-                            <Checkbox checked={field.value} onCheckedChange={field.onChange} id="terms" />
-                        </FormControl>
-                        <div className="grid gap-1.5 leading-none">
-                            <label htmlFor="terms" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                                Acepto los <Link href="/legal/terms" target="_blank" className="underline text-primary">términos y condiciones</Link>.
-                            </label>
-                            <FormMessage />
-                        </div>
-                    </FormItem>
-                 )} />
-                 <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
-                    {form.formState.isSubmitting ? <Loader2 className="animate-spin" /> : "Iniciar Chat"}
-                </Button>
-              </form>
-            </Form>
-          </CardContent>
-        </Card>
-      );
+      return renderWelcomeContent();
     }
 
     return (
@@ -285,7 +356,7 @@ export default function ChatWidget({ businessId, businessName }: ChatWidgetProps
       <div className="fixed bottom-6 right-6 z-20">
         {proactiveMessage && !isOpen && (
             <div className="absolute bottom-full right-0 mb-2 w-max max-w-xs animate-in fade-in-50 slide-in-from-bottom-2">
-                <div className="bg-background shadow-lg rounded-lg p-3 text-sm">
+                <div className="bg-background shadow-lg rounded-lg p-3 text-sm relative">
                     {proactiveMessage}
                     <div className="absolute right-4 -bottom-1 w-2 h-2 bg-background transform rotate-45"></div>
                 </div>
@@ -293,10 +364,10 @@ export default function ChatWidget({ businessId, businessName }: ChatWidgetProps
         )}
         <Button
           onClick={() => setIsOpen(!isOpen)}
-          className="w-16 h-16 rounded-full shadow-lg"
+          className="w-16 h-16 rounded-full shadow-lg flex items-center justify-center"
           size="icon"
         >
-          {isOpen ? <X size={28} /> : <LuBotMessageSquare size={28} />}
+          {isOpen ? <X size={28} /> : <LuBotMessageSquare size={32} />}
         </Button>
       </div>
 
