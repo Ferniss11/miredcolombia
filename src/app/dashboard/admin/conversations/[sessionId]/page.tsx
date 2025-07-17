@@ -11,7 +11,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
@@ -147,10 +146,10 @@ function ChatConversationPage() {
         return (
              <div key={msg.id} className={cn("group flex items-end gap-2", alignment)}>
                {!isUser && avatar}
-                <div className="flex flex-col gap-1 items-end w-full max-w-lg">
-                    <div className={cn('relative p-3 rounded-lg shadow-sm', bgColor, isUser ? 'ml-auto' : 'mr-auto')}>
+                <div className="flex flex-col gap-1 w-full max-w-lg">
+                    <div className={cn('relative p-3 rounded-lg shadow-sm w-fit', bgColor, isUser ? 'ml-auto' : 'mr-auto')}>
                         {msg.replyTo && (
-                            <div className="p-2 mb-2 border-l-2 border-primary/50 bg-black/10 dark:bg-white/10 rounded-md overflow-hidden">
+                            <div className="p-2 mb-2 border-l-2 border-primary/50 bg-black/10 dark:bg-white/10 rounded-md min-w-0">
                                 <p className="font-bold text-xs">{msg.replyTo.author}</p>
                                 <p className="text-xs opacity-80 truncate">{msg.replyTo.text}</p>
                             </div>
@@ -162,7 +161,7 @@ function ChatConversationPage() {
                             </Button>
                         </div>
                     </div>
-                     <div className="flex items-center gap-1.5 text-xs text-muted-foreground pr-2">
+                     <div className={cn("flex items-center gap-1.5 text-xs text-muted-foreground pr-2", isUser && "justify-end")}>
                         <Clock className="h-3 w-3" />
                         <span>{formatTimestamp(msg.timestamp)}</span>
                         {isAdmin && <CheckCheck className="h-4 w-4 text-blue-500" />}
@@ -282,5 +281,3 @@ function ChatConversationPage() {
 }
 
 export default ChatConversationPage;
-
-    
