@@ -2,20 +2,27 @@
 'use client';
 
 import { useAuth } from "@/context/AuthContext";
-import { useTransition, useEffect } from "react";
+import { useTransition, useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { updateBusinessAgentStatusAction } from "@/lib/user-actions";
+import { updateBusinessAgentStatusAction, updateBusinessAgentConfigAction } from "@/lib/user-actions";
 import { getGoogleAuthUrlAction } from "@/lib/gcal-actions";
 import { useRouter } from "next/navigation";
+import * as z from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, Bot, TestTube, Power, PowerOff, Sparkles, MessageSquareText } from "lucide-react";
+import { Loader2, Bot, TestTube, Power, PowerOff, Sparkles, MessageSquareText, Save } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import type { BusinessAgentConfig } from '@/lib/types';
+
 
 import { SiGooglecalendar, SiWhatsapp, SiStripe, SiGoogleanalytics, SiGoogleads, SiGooglephotos } from "react-icons/si";
-
 
 // ToolCard Component
 type ToolCardProps = {
@@ -62,17 +69,39 @@ const ToolCard = ({ icon, title, description, isConnected, onConnect, onDisconne
 );
 
 
+const agentConfigSchema = z.object({
+  model: z.string(),
+  systemPrompt: z.string().min(10, "El prompt del sistema es demasiado corto."),
+});
+type AgentConfigFormValues = z.infer<typeof agentConfigSchema>;
+
+
 export default function AdvertiserAgentPage() {
     const { user, userProfile, loading, refreshUserProfile } = useAuth();
-    const [isPending, startTransition] = useTransition();
-    const [isConnecting, startConnectingTransition] = useTransition();
+    const [isAgentTogglePending, startAgentToggleTransition] = useTransition();
+    const [isConfigSavePending, startConfigSaveTransition] = useTransition();
+    const [isGcalConnecting, startGcalConnectingTransition] = useTransition();
     const { toast } = useToast();
     const router = useRouter();
+
+    const form = useForm<AgentConfigFormValues>({
+        resolver: zodResolver(agentConfigSchema),
+        defaultValues: {
+            model: 'googleai/gemini-1.5-flash-latest',
+            systemPrompt: '',
+        }
+    });
+
+    useEffect(() => {
+        if (userProfile?.businessProfile?.agentConfig) {
+            form.reset(userProfile.businessProfile.agentConfig);
+        }
+    }, [userProfile, form]);
 
     const handleAgentToggle = async (isAgentEnabled: boolean) => {
         if (!user) return;
         
-        startTransition(async () => {
+        startAgentToggleTransition(async () => {
             const result = await updateBusinessAgentStatusAction(user.uid, isAgentEnabled);
             if (result.error) {
                 toast({ variant: 'destructive', title: 'Error', description: result.error });
@@ -83,14 +112,26 @@ export default function AdvertiserAgentPage() {
         });
     };
 
+    const handleSaveConfig = async (values: AgentConfigFormValues) => {
+        if (!user) return;
+        startConfigSaveTransition(async () => {
+            const result = await updateBusinessAgentConfigAction(user.uid, values);
+            if (result.error) {
+                toast({ variant: 'destructive', title: 'Error al guardar', description: result.error });
+            } else {
+                toast({ title: 'Éxito', description: 'La configuración de tu agente ha sido guardada.' });
+                await refreshUserProfile();
+            }
+        });
+    }
+
     const handleConnectGoogleCalendar = async () => {
         if (!user) return;
-        startConnectingTransition(async () => {
+        startGcalConnectingTransition(async () => {
             const result = await getGoogleAuthUrlAction(user.uid);
             if (result.error) {
                 toast({ variant: 'destructive', title: 'Error', description: result.error });
             } else if (result.authUrl) {
-                // Redirect to Google's consent screen
                 window.location.href = result.authUrl;
             }
         });
@@ -148,7 +189,7 @@ export default function AdvertiserAgentPage() {
                          <Switch
                             checked={isAgentEnabled}
                             onCheckedChange={handleAgentToggle}
-                            disabled={isPending || !canEnableAgent}
+                            disabled={isAgentTogglePending || !canEnableAgent}
                         />
                     </div>
                     {!canEnableAgent && (
@@ -161,6 +202,65 @@ export default function AdvertiserAgentPage() {
                     )}
                 </CardContent>
             </Card>
+
+            <Form {...form}>
+                <form onSubmit={form.handleSubmit(handleSaveConfig)}>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Personalidad del Agente</CardTitle>
+                            <CardDescription>Define cómo se comporta tu asistente. Estos cambios se aplicarán la próxima vez que un usuario inicie una nueva conversación.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                             <FormField
+                                control={form.control}
+                                name="systemPrompt"
+                                render={({ field }) => (
+                                    <FormItem>
+                                    <FormLabel>System Prompt</FormLabel>
+                                    <FormControl>
+                                        <Textarea
+                                            placeholder="Eres un asistente amigable para [Nombre de tu negocio]..."
+                                            rows={10}
+                                            className="font-mono text-sm"
+                                            {...field}
+                                        />
+                                    </FormControl>
+                                    <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="model"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Modelo de IA</FormLabel>
+                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                            <FormControl>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Selecciona un modelo" />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                <SelectItem value="googleai/gemini-1.5-flash-latest">Gemini 1.5 Flash (Rápido)</SelectItem>
+                                                <SelectItem value="googleai/gemini-1.5-pro-latest">Gemini 1.5 Pro (Potente)</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </CardContent>
+                        <CardContent>
+                             <Button type="submit" disabled={isConfigSavePending}>
+                                {isConfigSavePending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                                Guardar Configuración del Agente
+                            </Button>
+                        </CardContent>
+                    </Card>
+                </form>
+            </Form>
+
 
             <Card>
                 <CardHeader>
@@ -177,7 +277,7 @@ export default function AdvertiserAgentPage() {
                         isConnected={isGcalConnected}
                         onConnect={handleConnectGoogleCalendar}
                         onDisconnect={handleDisconnectGoogleCalendar}
-                        isConnectPending={isConnecting}
+                        isConnectPending={isGcalConnecting}
                         disabled={!isAgentEnabled}
                     />
                     <ToolCard

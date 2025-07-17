@@ -69,10 +69,13 @@ export async function postMessageAction(input: z.infer<typeof postMessageSchema>
 
     await saveMessage(sessionId, { text: message, role: 'user' });
     
+    // Fetch the latest global agent configuration
     const agentConfig = await getAgentConfig();
 
+    // Call the AI flow with the dynamic configuration
     const aiResponse = await migrationChat({
         model: agentConfig.model,
+        systemPrompt: agentConfig.systemPrompt,
         chatHistory: history,
         currentMessage: message,
     });

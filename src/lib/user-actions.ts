@@ -3,8 +3,10 @@
 
 import { z } from 'zod';
 import { adminDb, adminAuth } from '@/lib/firebase/admin-config';
-import type { BusinessProfile } from './types';
+import type { BusinessProfile, BusinessAgentConfig } from './types';
 import { revalidatePath } from 'next/cache';
+import { BusinessAgentConfigSchema } from './types';
+
 
 const businessProfileSchema = z.object({
     businessName: z.string().min(2, { message: "El nombre del negocio debe tener al menos 2 caracteres." }),
@@ -80,12 +82,34 @@ export async function updateBusinessAgentStatusAction(uid: string, isEnabled: bo
              revalidatePath(`/directory/${businessPlaceId}`);
         }
 
-        revalidatePath('/dashboard/advertiser/profile');
+        revalidatePath('/dashboard/advertiser/agent');
         
         return { success: true };
     } catch (error) {
         console.error('Error updating business agent status:', error);
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         return { error: `No se pudo actualizar el estado del agente: ${errorMessage}` };
+    }
+}
+
+
+export async function updateBusinessAgentConfigAction(uid: string, config: BusinessAgentConfig) {
+    try {
+        const db = await verifyUserAndGetDb(uid);
+        const validatedConfig = BusinessAgentConfigSchema.parse(config);
+
+        const userRef = db.collection('users').doc(uid);
+        await userRef.update({
+            'businessProfile.agentConfig': validatedConfig
+        });
+
+        revalidatePath('/dashboard/advertiser/agent');
+        return { success: true };
+    } catch (error) {
+        console.error('Error updating business agent config:', error);
+        const errorMessage = error instanceof z.ZodError 
+            ? error.errors.map(e => e.message).join(', ')
+            : error instanceof Error ? error.message : 'Unknown error';
+        return { error: `No se pudo guardar la configuración del agente: ${errorMessage}` };
     }
 }

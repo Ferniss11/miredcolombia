@@ -88,17 +88,25 @@ export type IntelligentArticle = z.infer<typeof IntelligentArticleOutputSchema>;
 
 export type UserRole = 'Guest' | 'Advertiser' | 'Admin' | 'User';
 
+export const BusinessAgentConfigSchema = z.object({
+  model: z.string().default('googleai/gemini-1.5-flash-latest'),
+  systemPrompt: z.string().default('Eres un asistente amigable para mi negocio.'),
+});
+export type BusinessAgentConfig = z.infer<typeof BusinessAgentConfigSchema>;
+
+
 export type BusinessProfile = {
   businessName: string;
   address: string;
   phone: string;
   website: string;
   description: string;
-  category?: string; // The category of the business
-  placeId?: string; // The linked Google Place ID
-  verificationStatus?: 'pending' | 'approved' | 'rejected' | 'unclaimed'; // Status of business ownership claim
+  category?: string;
+  placeId?: string;
+  verificationStatus?: 'pending' | 'approved' | 'rejected' | 'unclaimed';
   isAgentEnabled?: boolean;
   googleCalendarConnected?: boolean;
+  agentConfig?: BusinessAgentConfig;
 };
 
 export type UserProfile = {
