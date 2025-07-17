@@ -6,7 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { getChatSessionDetailsAction, postAdminMessageAction } from '@/lib/agent-actions';
 import type { ChatSessionWithTokens, ChatMessage } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Bot, User, Send, UserCog, DollarSign } from 'lucide-react';
+import { ArrowLeft, Bot, User, Send, UserCog, DollarSign, BrainCircuit, ChevronDown } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -15,6 +15,8 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
 import { Badge } from '@/components/ui/badge';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
+import { Separator } from '@/components/ui/separator';
 
 function ChatConversationPage() {
     const { sessionId } = useParams();
@@ -54,7 +56,7 @@ function ChatConversationPage() {
     
     const formatCost = (cost: number) => {
         if (cost === 0) return '€0.00';
-        return `~€${cost.toFixed(4)}`;
+        return `~${new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', minimumFractionDigits: 4 }).format(cost)}`;
     }
 
     const handleSendMessage = async (e?: FormEvent) => {
@@ -83,6 +85,11 @@ function ChatConversationPage() {
             toast({ variant: 'destructive', title: 'Error', description: result.error });
             setMessages(prev => prev.filter(m => m.id !== tempId));
         } else if (result.newMessage) {
+            // Refetch session to get updated token/cost counts
+            if (typeof sessionId === 'string') {
+                const updatedSession = await getChatSessionDetailsAction(sessionId);
+                if (updatedSession.session) setSession(updatedSession.session);
+            }
             setMessages(prev => prev.map(m => m.id === tempId ? { ...result.newMessage, id: result.newMessage.id || tempId } as ChatMessage : m));
         }
         setIsSending(false);
@@ -98,30 +105,28 @@ function ChatConversationPage() {
     const getMessageComponent = (msg: ChatMessage) => {
         const isUser = msg.role === 'user';
         const isAdmin = msg.role === 'admin';
-        const isModel = msg.role === 'model';
         
         const alignment = isUser ? 'justify-end' : 'justify-start';
         const bgColor = isUser ? 'bg-blue-600 text-white' : isAdmin ? 'bg-yellow-100 dark:bg-yellow-900/50' : 'bg-gray-100 dark:bg-gray-800';
-        
+        const avatar = isUser ? (
+             <Avatar className="w-8 h-8 flex-shrink-0">
+               <AvatarFallback className="bg-muted"><User size={18} /></AvatarFallback>
+             </Avatar>
+        ) : (
+             <Avatar className="w-8 h-8 flex-shrink-0">
+               <AvatarFallback className={cn(isAdmin ? 'bg-yellow-400 text-black' : 'bg-primary/10')}>
+                   {isAdmin ? <UserCog size={18} /> : <Bot size={18} />}
+               </AvatarFallback>
+            </Avatar>
+        );
+
         return (
              <div key={msg.id || Math.random()} className={cn("flex items-end gap-2", alignment)}>
-               {!isUser && (
-                   <Avatar className="w-8 h-8 flex-shrink-0">
-                       <AvatarFallback className={cn(isAdmin ? 'bg-yellow-400 text-black' : 'bg-primary/10')}>
-                           {isAdmin ? <UserCog size={18} /> : <Bot size={18} />}
-                       </AvatarFallback>
-                   </Avatar>
-               )}
+               {!isUser && avatar}
                 <div className={cn('p-3 rounded-lg max-w-md shadow-sm', bgColor)}>
                     <p className="text-sm whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: msg.text.replace(/\n/g, '<br />') }} />
                 </div>
-                {isUser && (
-                     <Avatar className="w-8 h-8 flex-shrink-0">
-                       <AvatarFallback className="bg-muted">
-                           <User size={18} />
-                       </AvatarFallback>
-                   </Avatar>
-                )}
+                {isUser && avatar}
             </div>
         )
     };
@@ -134,29 +139,53 @@ function ChatConversationPage() {
 
     return (
         <div className="flex flex-col h-[calc(100vh-theme(space.24))]">
-            <header className="flex items-center gap-3 p-3 border-b bg-card">
-                <Button variant="ghost" size="icon" className="h-9 w-9" asChild>
-                    <Link href="/dashboard/admin/conversations">
-                        <ArrowLeft className="h-5 w-5" />
-                    </Link>
-                </Button>
-                <Avatar className="h-10 w-10 border">
-                    <AvatarFallback className="bg-muted"><User /></AvatarFallback>
-                </Avatar>
-                <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                         <h1 className="font-bold">{session.userName}</h1>
-                          <Badge variant="outline" className="flex items-center gap-1.5">
-                            <Bot className="h-3 w-3"/>
-                            {session.totalTokens} tokens
-                        </Badge>
-                         <Badge variant="outline" className="flex items-center gap-1.5 bg-green-500/10 text-green-700 border-green-500/20">
-                            <DollarSign className="h-3 w-3"/>
-                            {formatCost(session.totalCost)}
-                        </Badge>
+            <header className="p-3 border-b bg-card">
+                 <div className="flex items-center gap-3">
+                    <Button variant="ghost" size="icon" className="h-9 w-9" asChild>
+                        <Link href="/dashboard/admin/conversations">
+                            <ArrowLeft className="h-5 w-5" />
+                        </Link>
+                    </Button>
+                    <Avatar className="h-10 w-10 border">
+                        <AvatarFallback className="bg-muted"><User /></AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1">
+                        <h1 className="font-bold">{session.userName}</h1>
+                        <p className="text-xs text-muted-foreground">{session.userPhone}</p>
                     </div>
-                    <p className="text-xs text-muted-foreground">{session.userPhone}</p>
                 </div>
+                 <Collapsible className="mt-2">
+                    <CollapsibleTrigger asChild>
+                        <Button variant="ghost" size="sm" className="w-full text-muted-foreground">
+                            <BrainCircuit className="h-4 w-4 mr-2"/>
+                            Metadatos de IA
+                            <ChevronDown className="h-4 w-4 ml-auto" />
+                        </Button>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                        <div className="p-3 mt-2 rounded-md bg-muted/50 border space-y-2 text-xs">
+                             <div className="flex justify-between items-center">
+                                <span className="text-muted-foreground">Coste Total:</span>
+                                <Badge variant="outline" className="bg-green-500/10 text-green-700 border-green-500/20">
+                                    {formatCost(session.totalCost)}
+                                </Badge>
+                            </div>
+                            <Separator />
+                             <div className="flex justify-between items-center">
+                                <span className="text-muted-foreground">Tokens Totales:</span>
+                                <span>{session.totalTokens.toLocaleString('es-ES')}</span>
+                            </div>
+                             <div className="flex justify-between items-center">
+                                <span className="text-muted-foreground">Tokens de Entrada (Input):</span>
+                                <span>{session.totalInputTokens.toLocaleString('es-ES')}</span>
+                            </div>
+                             <div className="flex justify-between items-center">
+                                <span className="text-muted-foreground">Tokens de Salida (Output):</span>
+                                <span>{session.totalOutputTokens.toLocaleString('es-ES')}</span>
+                            </div>
+                        </div>
+                    </CollapsibleContent>
+                </Collapsible>
             </header>
             
             <main ref={scrollAreaRef} className="flex-1 overflow-y-auto p-4 space-y-6 bg-muted/30">
@@ -187,3 +216,5 @@ function ChatConversationPage() {
 }
 
 export default ChatConversationPage;
+
+    
