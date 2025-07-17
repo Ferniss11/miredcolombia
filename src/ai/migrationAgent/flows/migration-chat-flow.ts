@@ -42,16 +42,19 @@ const prompt = ai.definePrompt({
     input: { schema: MigrationChatInputSchema },
     output: { schema: ChatOutputSchema },
     tools: [knowledgeBaseSearch],
-    system: `{{systemPrompt}}`,
-    prompt: `
-        Historial de la Conversación:
-        {{#each chatHistory}}
-            {{this.role}}: {{this.text}}
-        {{/each}}
-        
-        Nuevo Mensaje del Usuario:
-        {{currentMessage}}
-    `,
+    prompt: `{{{systemPrompt}}}
+
+---
+TASK: Based on the conversation history, generate the next response.
+
+CONVERSATION:
+{{#each chatHistory}}
+- {{this.role}}: {{{this.text}}}
+{{/each}}
+- user: {{{currentMessage}}}
+
+OUTPUT (must be valid JSON that conforms to the schema):
+`,
 });
 
 const migrationChatFlow = ai.defineFlow(
