@@ -77,9 +77,11 @@ export default function ChatWidget({ businessId, businessName }: ChatWidgetProps
   const [messages, setMessages] = useState<ClientMessage[]>([]);
   const [isAiResponding, setIsAiResponding] = useState(false);
   const [currentMessage, setCurrentMessage] = useState('');
-  const [proactiveMessage, setProactiveMessage] = useState('');
   
+  const [proactiveMessage, setProactiveMessage] = useState('');
   const [showProactive, setShowProactive] = useState(false);
+  const [proactiveCloseCount, setProactiveCloseCount] = useState(0);
+
   const [userHasInteracted, setUserHasInteracted] = useState(false);
 
   const { toast } = useToast();
@@ -88,7 +90,7 @@ export default function ChatWidget({ businessId, businessName }: ChatWidgetProps
   const [currentSuggestions, setCurrentSuggestions] = useState<string[]>([]);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isMounted, setIsMounted] = useState(false);
-
+  
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -108,45 +110,53 @@ export default function ChatWidget({ businessId, businessName }: ChatWidgetProps
         
         const handleFirstInteraction = () => {
             setUserHasInteracted(true);
-            window.removeEventListener('click', handleFirstInteraction);
-            window.removeEventListener('keydown', handleFirstInteraction);
+            window.removeEventListener('click', handleFirstInteraction, true);
+            window.removeEventListener('keydown', handleFirstInteraction, true);
         };
 
-        window.addEventListener('click', handleFirstInteraction);
-        window.addEventListener('keydown', handleFirstInteraction);
+        window.addEventListener('click', handleFirstInteraction, true);
+        window.addEventListener('keydown', handleFirstInteraction, true);
 
         return () => {
-            window.removeEventListener('click', handleFirstInteraction);
-            window.removeEventListener('keydown', handleFirstInteraction);
+            window.removeEventListener('click', handleFirstInteraction, true);
+            window.removeEventListener('keydown', handleFirstInteraction, true);
         };
     }
   }, []);
 
-  // Effect for proactive messages
+  // Effect for proactive messages with progressive delay
   useEffect(() => {
-    if (!isMounted || isOpen) {
-      return;
-    }
+      if (!isMounted || isOpen) {
+          return;
+      }
 
-    const proactiveTimer = setTimeout(() => {
-        setShowProactive(true);
-    }, 2000); // Show bubble after 2 seconds
+      let timeoutId: NodeJS.Timeout;
 
-    const messageInterval = setInterval(() => {
-        const randomIndex = Math.floor(Math.random() * proactiveMessages.length);
-        setProactiveMessage(proactiveMessages[randomIndex]);
-        
-        if (showProactive && audioRef.current && userHasInteracted) {
-            audioRef.current.play().catch(e => console.error("Error playing audio:", e));
-        }
-    }, 5000); // Change message every 5 seconds
+      const scheduleNextMessage = () => {
+          const delays = [2000, 7000, 15000]; // 2s, 7s, 15s
+          const delay = delays[Math.min(proactiveCloseCount, delays.length - 1)];
 
-    return () => {
-        clearTimeout(proactiveTimer);
-        clearInterval(messageInterval);
-    };
+          timeoutId = setTimeout(() => {
+              const randomIndex = Math.floor(Math.random() * proactiveMessages.length);
+              setProactiveMessage(proactiveMessages[randomIndex]);
+              setShowProactive(true);
+          }, delay);
+      };
 
-  }, [isMounted, isOpen, showProactive, userHasInteracted]);
+      scheduleNextMessage();
+      
+      return () => {
+          clearTimeout(timeoutId);
+      };
+
+  }, [isMounted, isOpen, proactiveCloseCount]);
+  
+  // Effect to play sound when a new proactive message appears
+  useEffect(() => {
+      if (showProactive && userHasInteracted && audioRef.current) {
+          audioRef.current.play().catch(e => console.error("Error playing audio:", e));
+      }
+  }, [showProactive, proactiveMessage, userHasInteracted]);
 
 
   // Effect for rotating suggestions
@@ -182,6 +192,7 @@ export default function ChatWidget({ businessId, businessName }: ChatWidgetProps
   const handleProactiveMessageClose = (e: React.MouseEvent) => {
     e.stopPropagation();
     setShowProactive(false);
+    setProactiveCloseCount(prev => prev + 1);
   };
 
   const handleStartSession = async (values: z.infer<typeof formSchema>, initialQuestion?: string) => {
@@ -199,9 +210,9 @@ export default function ChatWidget({ businessId, businessName }: ChatWidgetProps
 
     if (result.success && result.sessionId) {
       setSessionId(result.sessionId);
-      setMessages((result.history || []) as ClientMessage[]);
+      setMessages(result.history as ClientMessage[] || []);
       if (initialQuestion) {
-        postInitialQuestion(result.sessionId, (result.history || []) as ClientMessage[], initialQuestion);
+        postInitialQuestion(result.sessionId, result.history as ClientMessage[] || [], initialQuestion);
       }
     } else {
       toast({ variant: 'destructive', title: 'Error', description: result.error || 'No se pudo iniciar el chat. Por favor, inténtalo de nuevo.' });
@@ -413,9 +424,12 @@ export default function ChatWidget({ businessId, businessName }: ChatWidgetProps
          {showProactive && !isOpen && proactiveMessage && (
             <div className="absolute bottom-full right-0 mb-3 w-max max-w-[280px] animate-in fade-in-50 slide-in-from-bottom-2">
                 <div className="flex items-end gap-2">
+                    <div className="flex-shrink-0 w-12 h-12 rounded-full bg-primary flex items-center justify-center text-primary-foreground shadow-lg z-10 -mr-2">
+                        <Bot size={28} />
+                    </div>
                     <div className="relative bg-background dark:bg-card shadow-lg rounded-lg p-3 text-sm group">
                         <p>{proactiveMessage}</p>
-                        <div className="absolute right-3 -bottom-1.5 w-3 h-3 bg-background dark:bg-card transform rotate-45"></div>
+                        <div className="absolute left-3 -bottom-1.5 w-3 h-3 bg-background dark:bg-card transform rotate-45"></div>
                          <Button
                             variant="ghost"
                             size="icon"
@@ -424,9 +438,6 @@ export default function ChatWidget({ businessId, businessName }: ChatWidgetProps
                         >
                             <X className="h-4 w-4" />
                         </Button>
-                    </div>
-                    <div className="flex-shrink-0 w-12 h-12 rounded-full bg-primary flex items-center justify-center text-primary-foreground shadow-lg z-10 -mr-2">
-                        <Bot size={28} />
                     </div>
                 </div>
             </div>
