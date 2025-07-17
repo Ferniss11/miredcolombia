@@ -2,6 +2,8 @@
 'use client';
 
 import { Heart, Handshake, Users, PlayCircle } from "lucide-react";
+import Image from "next/image";
+import { cn } from "@/lib/utils";
 
 type AboutSectionProps = {
     handleVideoClick?: (url: string, title: string) => void;
@@ -47,16 +49,25 @@ export default function AboutSection({ handleVideoClick }: AboutSectionProps) {
                         </div>
                     </div>
                     <div className="flex items-center justify-center">
-                        <button 
+                         <button 
                             onClick={() => handleVideoClick?.(videoUrl, videoTitle)}
-                            className="bg-white rounded-xl shadow-lg p-6 sm:p-10 w-full max-w-sm text-center cursor-pointer transition-all duration-300 hover:shadow-2xl hover:scale-105 group"
+                            className="relative group w-full max-w-sm h-64 sm:h-80 rounded-xl shadow-lg overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-2xl hover:scale-105"
                             aria-label="Play Jennifer's Video"
                         >
-                            <div className="relative inline-block">
-                                <PlayCircle className="w-20 h-20 sm:w-24 sm:h-24 text-[#C70039] mx-auto transition-transform group-hover:scale-110" />
+                            <Image 
+                                src="https://firebasestorage.googleapis.com/v0/b/colombia-en-esp.firebasestorage.app/o/web%2FImagen%20de%20WhatsApp%202025-07-16%20a%20las%2019.21.54_4f867863.jpg?alt=media&token=13812b89-71ac-42e1-8854-0a80f50339d2"
+                                alt="Jennifer Mendoza - Mi Red Colombia"
+                                layout="fill"
+                                objectFit="cover"
+                                className="transition-transform duration-500 group-hover:scale-110"
+                            />
+                            <div className="absolute inset-0 bg-black/30 group-hover:bg-black/50 transition-colors"></div>
+                            <div className="absolute inset-0 flex flex-col items-center justify-center text-white p-4">
+                                <PlayCircle className="w-24 h-24 text-white/80 drop-shadow-lg transition-transform group-hover:scale-110 group-hover:text-white" />
+                                <h3 className="text-xl sm:text-2xl font-bold mt-4 font-headline text-shadow" style={{textShadow: '1px 1px 3px rgba(0,0,0,0.7)'}}>
+                                    {videoTitle}
+                                </h3>
                             </div>
-                            <h3 className="text-lg sm:text-xl font-bold mt-4 font-headline">{videoTitle}</h3>
-                            <p className="text-muted-foreground text-sm sm:text-base mt-1">Haz clic para ver el video</p>
                         </button>
                     </div>
                 </div>
