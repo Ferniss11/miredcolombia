@@ -3,7 +3,8 @@
 
 import { z } from 'zod';
 import { adminDb, adminInstance } from "@/lib/firebase/admin-config";
-import type { ChatMessage, ChatSession, TokenUsage } from '@/lib/types';
+import type { ChatMessage, ChatSession } from '@/lib/chat-types';
+import { ChatRoleSchema } from '@/lib/chat-types';
 import { businessChat } from '@/ai/businessAgent/flows/business-chat-flow';
 
 const FieldValue = adminInstance?.firestore.FieldValue;
@@ -28,7 +29,7 @@ const postMessageSchema = z.object({
   sessionId: z.string(),
   message: z.string(),
   history: z.array(z.object({
-    role: z.enum(['user', 'model', 'admin']),
+    role: ChatRoleSchema,
     text: z.string(),
   })),
 });

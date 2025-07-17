@@ -4,7 +4,7 @@
 import { useEffect, useState, useRef, FormEvent, KeyboardEvent } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { getChatSessionDetailsAction, postAdminMessageAction } from '@/lib/agent-actions';
-import type { ChatSessionWithTokens, ChatMessage, AgentConfig } from '@/lib/types';
+import type { ChatSessionWithTokens, ChatMessage, AgentConfig } from '@/lib/chat-types';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Bot, User, Send, UserCog, BrainCircuit, ChevronDown, Copy, CheckCheck, Clock, Reply, X } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -81,7 +81,7 @@ function ChatConversationPage() {
         const pendingMessage: ChatMessage = {
             id: tempId,
             text: newMessage,
-            role: 'model',
+            role: 'admin',
             authorName: userProfile.name || 'Admin',
             timestamp: new Date().toISOString(),
             replyTo: replyTo ? {
@@ -127,7 +127,7 @@ function ChatConversationPage() {
 
     const getMessageComponent = (msg: ChatMessage) => {
         const isUser = msg.role === 'user';
-        const isAdmin = msg.role === 'model' && !!msg.authorName;
+        const isAdmin = msg.role === 'admin';
         
         const alignment = isUser ? 'justify-end' : 'justify-start';
         const bgColor = isUser ? 'bg-blue-600 text-white' : isAdmin ? 'bg-yellow-100 dark:bg-yellow-900/50' : 'bg-gray-100 dark:bg-gray-800';

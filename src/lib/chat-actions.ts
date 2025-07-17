@@ -4,7 +4,7 @@
 import { z } from 'zod';
 import { startChatSession, saveMessage, findSessionByPhone, getChatHistory } from '@/services/chat.service';
 import { chat } from '@/ai/flows/chat-flow';
-import type { ChatMessage } from '@/lib/types';
+import type { ChatMessage } from '@/lib/chat-types';
 import { getAgentConfig } from '@/services/agent.service';
 
 const startSessionSchema = z.object({
@@ -46,7 +46,7 @@ const postMessageSchema = z.object({
   sessionId: z.string(),
   message: z.string(),
   history: z.array(z.object({
-      role: z.enum(['user', 'model']),
+      role: z.enum(['user', 'model', 'admin']),
       text: z.string(),
       // Allow timestamp to be a string, as it comes from JSON
       timestamp: z.string().optional(),
@@ -54,7 +54,7 @@ const postMessageSchema = z.object({
 });
 
 // Helper to format the history into a single string
-const formatHistoryAsPrompt = (history: Omit<ChatMessage, 'id' | 'usage'>[]): string => {
+const formatHistoryAsPrompt = (history: Omit<ChatMessage, 'id' | 'usage' | 'cost' | 'replyTo' | 'authorName'>[]): string => {
     return history.map(msg => `${msg.role === 'user' ? 'Usuario' : 'Asistente'}: ${msg.text}`).join('\n');
 }
 

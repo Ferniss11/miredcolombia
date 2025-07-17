@@ -1,7 +1,7 @@
 
 'use server';
 
-import { AgentConfigSchema, type AgentConfig, type ChatMessage } from "./types";
+import { AgentConfigSchema, type AgentConfig, type ChatMessage, type ChatSessionWithTokens } from "@/lib/chat-types";
 import { getAgentConfig, saveAgentConfig } from "@/services/agent.service";
 import { getAllChatSessions, getChatHistory, getChatSessionById, saveAdminMessage } from "@/services/chat.service";
 import { revalidatePath } from "next/cache";

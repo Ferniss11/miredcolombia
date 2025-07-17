@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useToast } from '@/hooks/use-toast';
 import { MessageSquare, User, Clock, Search, Bot } from 'lucide-react';
 import { getChatSessionsAction } from '@/lib/agent-actions';
-import type { ChatSessionWithTokens } from '@/lib/types';
+import type { ChatSessionWithTokens } from '@/lib/chat-types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import Link from 'next/link';

@@ -12,14 +12,14 @@ import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import { getBusinessInfoTool } from '../tools/get-business-info-tool';
 import { getAvailableSlots, createAppointment } from '../tools/google-calendar-tools';
-import { ChatOutputSchema } from '@/lib/types';
+import { ChatOutputSchema, ChatRoleSchema } from '@/lib/chat-types';
 
 
 // Define the input schema for the business chat flow
 const BusinessChatFlowInputSchema = z.object({
   businessId: z.string().describe('The unique ID of the business.'),
   chatHistory: z.array(z.object({
-    role: z.enum(['user', 'model', 'admin']),
+    role: ChatRoleSchema,
     text: z.string(),
   })).describe('The history of the conversation so far, including user, AI (model), and admin messages.'),
   currentMessage: z.string().describe("The user's latest message."),

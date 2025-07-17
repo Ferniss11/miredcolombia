@@ -19,11 +19,7 @@ import Link from 'next/link';
 import { startChatSessionAction, postMessageAction } from '@/lib/chat-actions';
 import { startBusinessChatSessionAction, postBusinessMessageAction } from '@/lib/business-chat-actions';
 import { useToast } from '@/hooks/use-toast';
-
-type ClientMessage = {
-    role: 'user' | 'model' | 'admin';
-    text: string;
-};
+import type { ChatMessage } from '@/lib/chat-types';
 
 type ChatWidgetProps = {
   businessId?: string;
@@ -75,7 +71,7 @@ const allBusinessQuestions = [
 export default function ChatWidget({ businessId, businessName, embedded = false }: ChatWidgetProps) {
   const [isOpen, setIsOpen] = useState(embedded); // Start open if embedded
   const [sessionId, setSessionId] = useState<string | null>(null);
-  const [messages, setMessages] = useState<ClientMessage[]>([]);
+  const [messages, setMessages] = useState<Omit<ChatMessage, 'id'>[]>([]);
   const [isAiResponding, setIsAiResponding] = useState(false);
   const [currentMessage, setCurrentMessage] = useState('');
   
@@ -212,17 +208,17 @@ export default function ChatWidget({ businessId, businessName, embedded = false 
 
     if (result.success && result.sessionId) {
       setSessionId(result.sessionId);
-      setMessages(result.history as ClientMessage[] || []);
+      setMessages(result.history as Omit<ChatMessage, 'id'>[] || []);
       if (initialQuestion) {
-        postInitialQuestion(result.sessionId, result.history as ClientMessage[] || [], initialQuestion);
+        postInitialQuestion(result.sessionId, result.history as Omit<ChatMessage, 'id'>[] || [], initialQuestion);
       }
     } else {
       toast({ variant: 'destructive', title: 'Error', description: result.error || 'No se pudo iniciar el chat. Por favor, inténtalo de nuevo.' });
     }
   };
 
-  const postInitialQuestion = async (newSessionId: string, initialHistory: ClientMessage[], question: string) => {
-     const userMessage: ClientMessage = { role: 'user', text: question };
+  const postInitialQuestion = async (newSessionId: string, initialHistory: Omit<ChatMessage, 'id'>[], question: string) => {
+     const userMessage: Omit<ChatMessage, 'id'> = { role: 'user', text: question, timestamp: new Date().toISOString(), replyTo: null };
      const newMessages = [...initialHistory, userMessage];
      setMessages(newMessages);
      setIsAiResponding(true);
@@ -239,11 +235,11 @@ export default function ChatWidget({ businessId, businessName, embedded = false 
      const result = await action(params);
      
      if (result.success && result.response) {
-       const aiMessage: ClientMessage = { role: 'model', text: result.response };
+       const aiMessage: Omit<ChatMessage, 'id'> = { role: 'model', text: result.response, timestamp: new Date().toISOString(), replyTo: null };
        setMessages((prev) => [...prev, aiMessage]);
      } else {
        toast({ variant: 'destructive', title: 'Error', description: result.error });
-        const errorResponseMessage: ClientMessage = { role: 'model', text: 'Lo siento, he tenido un problema y no puedo responder ahora mismo.' };
+        const errorResponseMessage: Omit<ChatMessage, 'id'> = { role: 'model', text: 'Lo siento, he tenido un problema y no puedo responder ahora mismo.', timestamp: new Date().toISOString(), replyTo: null };
        setMessages((prev) => [...prev, errorResponseMessage]);
      }
      setIsAiResponding(false);
@@ -258,7 +254,7 @@ export default function ChatWidget({ businessId, businessName, embedded = false 
     e.preventDefault();
     if (!currentMessage.trim() || !sessionId || isAiResponding) return;
 
-    const userMessage: ClientMessage = { role: 'user', text: currentMessage.trim() };
+    const userMessage: Omit<ChatMessage, 'id'> = { role: 'user', text: currentMessage.trim(), timestamp: new Date().toISOString(), replyTo: null };
     const newMessages = [...messages, userMessage];
     setMessages(newMessages);
     setCurrentMessage('');
@@ -276,11 +272,11 @@ export default function ChatWidget({ businessId, businessName, embedded = false 
     const result = await action(params);
     
     if (result.success && result.response) {
-      const aiMessage: ClientMessage = { role: 'model', text: result.response };
+      const aiMessage: Omit<ChatMessage, 'id'> = { role: 'model', text: result.response, timestamp: new Date().toISOString(), replyTo: null };
       setMessages((prev) => [...prev, aiMessage]);
     } else {
       toast({ variant: 'destructive', title: 'Error', description: result.error });
-       const errorResponseMessage: ClientMessage = { role: 'model', text: 'Lo siento, he tenido un problema y no puedo responder ahora mismo.' };
+       const errorResponseMessage: Omit<ChatMessage, 'id'> = { role: 'model', text: 'Lo siento, he tenido un problema y no puedo responder ahora mismo.', timestamp: new Date().toISOString(), replyTo: null };
       setMessages((prev) => [...prev, errorResponseMessage]);
     }
     setIsAiResponding(false);

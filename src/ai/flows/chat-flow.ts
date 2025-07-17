@@ -8,7 +8,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import { ChatOutputSchema } from '@/lib/types';
+import { ChatOutputSchema } from '@/lib/chat-types';
 
 // Define the input schema for this simplified chat function
 const ChatFlowInputSchema = z.object({

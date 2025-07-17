@@ -3,7 +3,7 @@
 'use server';
 
 import { adminDb, adminInstance } from "@/lib/firebase/admin-config";
-import type { ChatSession, ChatMessage, TokenUsage, ChatSessionWithTokens, UserProfile } from "@/lib/types";
+import type { ChatSession, ChatMessage, TokenUsage, ChatSessionWithTokens, UserProfile } from "@/lib/chat-types";
 import { calculateCost } from "@/lib/ai-costs";
 import { getAgentConfig } from "./agent.service";
 
@@ -210,7 +210,7 @@ export async function saveAdminMessage(
     try {
         const messageData: Partial<ChatMessage> = {
             text,
-            role: 'model' as const,
+            role: 'admin',
             authorName,
             timestamp: FieldValue.serverTimestamp() as any,
             replyTo: replyTo || null,
@@ -220,7 +220,7 @@ export async function saveAdminMessage(
         return {
             id: messageRef.id,
             text,
-            role: 'model',
+            role: 'admin',
             authorName,
             timestamp: new Date().toISOString(),
             replyTo: replyTo || null,
