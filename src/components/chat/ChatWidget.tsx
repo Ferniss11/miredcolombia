@@ -78,18 +78,16 @@ export default function ChatWidget({ businessId, businessName }: ChatWidgetProps
   const [isAiResponding, setIsAiResponding] = useState(false);
   const [currentMessage, setCurrentMessage] = useState('');
   const [proactiveMessage, setProactiveMessage] = useState('');
-  const [isProactiveMessageDismissed, setProactiveMessageDismissed] = useState(false);
+  
+  const [showProactive, setShowProactive] = useState(false);
+  const [userHasInteracted, setUserHasInteracted] = useState(false);
+
   const { toast } = useToast();
   const router = useRouter();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const [currentSuggestions, setCurrentSuggestions] = useState<string[]>([]);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isMounted, setIsMounted] = useState(false);
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -103,65 +101,70 @@ export default function ChatWidget({ businessId, businessName }: ChatWidgetProps
   const isBusinessChat = !!businessId;
   const suggestionPool = isBusinessChat ? allBusinessQuestions : allGeneralQuestions;
   
-  // SOLVED: Hydration and Audio errors
-  // All client-side logic is deferred to this useEffect to run only after hydration.
   useEffect(() => {
-    // Initialize audio safely on the client
-    if (typeof window !== 'undefined' && !audioRef.current) {
+    setIsMounted(true);
+    if (typeof window !== 'undefined') {
         audioRef.current = new Audio('https://firebasestorage.googleapis.com/v0/b/colombia-en-esp.firebasestorage.app/o/web%2FAshot%20Danielyan%20-%20Message%20Alert%20Logo%20(MP3).mp3?alt=media&token=0c1febf6-9e59-4e0b-97b7-4af687234aad');
+        
+        const handleFirstInteraction = () => {
+            setUserHasInteracted(true);
+            window.removeEventListener('click', handleFirstInteraction);
+            window.removeEventListener('keydown', handleFirstInteraction);
+        };
+
+        window.addEventListener('click', handleFirstInteraction);
+        window.addEventListener('keydown', handleFirstInteraction);
+
+        return () => {
+            window.removeEventListener('click', handleFirstInteraction);
+            window.removeEventListener('keydown', handleFirstInteraction);
+        };
+    }
+  }, []);
+
+  // Effect for proactive messages
+  useEffect(() => {
+    if (!isMounted || isOpen) {
+      return;
     }
 
-    // --- Logic for rotating question suggestions ---
+    const proactiveTimer = setTimeout(() => {
+        setShowProactive(true);
+    }, 2000); // Show bubble after 2 seconds
+
+    const messageInterval = setInterval(() => {
+        const randomIndex = Math.floor(Math.random() * proactiveMessages.length);
+        setProactiveMessage(proactiveMessages[randomIndex]);
+        
+        if (showProactive && audioRef.current && userHasInteracted) {
+            audioRef.current.play().catch(e => console.error("Error playing audio:", e));
+        }
+    }, 5000); // Change message every 5 seconds
+
+    return () => {
+        clearTimeout(proactiveTimer);
+        clearInterval(messageInterval);
+    };
+
+  }, [isMounted, isOpen, showProactive, userHasInteracted]);
+
+
+  // Effect for rotating suggestions
+  useEffect(() => {
+    if (!isMounted || !isOpen || sessionId) {
+      return;
+    }
+
     const getNextSuggestions = () => {
         const shuffled = [...suggestionPool].sort(() => 0.5 - Math.random());
         setCurrentSuggestions(shuffled.slice(0, 3));
     };
 
-    let suggestionInterval: NodeJS.Timeout;
-    if (!sessionId && isOpen) {
-        getNextSuggestions();
-        suggestionInterval = setInterval(getNextSuggestions, 5000);
-    }
-
-    // --- Logic for proactive "speech bubble" messages ---
-    let proactiveIntervalId: NodeJS.Timeout;
-    const showRandomMessage = () => {
-      if (isOpen || isProactiveMessageDismissed) {
-        setProactiveMessage('');
-        return;
-      }
-      const randomIndex = Math.floor(Math.random() * proactiveMessages.length);
-      setProactiveMessage(proactiveMessages[randomIndex]);
-      
-      // Safely play audio
-      if (audioRef.current) {
-          audioRef.current.play().catch(e => console.error("Error playing audio:", e));
-      }
-    };
-
-    const initialTimeout = setTimeout(() => {
-      showRandomMessage();
-      proactiveIntervalId = setInterval(showRandomMessage, 20000);
-    }, 10000);
-
-    // --- Logic for auto-opening the widget ---
-    const hasAutoOpened = sessionStorage.getItem('chatWidgetAutoOpened');
-    let openTimer: NodeJS.Timeout;
-    if (!hasAutoOpened) {
-      openTimer = setTimeout(() => {
-        setIsOpen(true);
-        sessionStorage.setItem('chatWidgetAutoOpened', 'true');
-      }, 15000);
-    }
-
-    // Cleanup function
-    return () => {
-      clearTimeout(initialTimeout);
-      clearTimeout(openTimer);
-      clearInterval(proactiveIntervalId);
-      clearInterval(suggestionInterval);
-    };
-  }, [isOpen, isProactiveMessageDismissed, sessionId, suggestionPool]);
+    getNextSuggestions();
+    const suggestionInterval = setInterval(getNextSuggestions, 5000);
+    
+    return () => clearInterval(suggestionInterval);
+  }, [isMounted, isOpen, sessionId, suggestionPool]);
 
 
   useEffect(() => {
@@ -172,9 +175,14 @@ export default function ChatWidget({ businessId, businessName }: ChatWidgetProps
 
   useEffect(() => {
     if(isOpen) {
-      setProactiveMessage('');
+      setShowProactive(false);
     }
   }, [isOpen]);
+
+  const handleProactiveMessageClose = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowProactive(false);
+  };
 
   const handleStartSession = async (values: z.infer<typeof formSchema>, initialQuestion?: string) => {
     const action = isBusinessChat ? startBusinessChatSessionAction : startChatSessionAction;
@@ -402,7 +410,7 @@ export default function ChatWidget({ businessId, businessName }: ChatWidgetProps
   return (
     <>
       <div className="fixed bottom-6 right-6 z-20">
-         {proactiveMessage && !isOpen && (
+         {showProactive && !isOpen && proactiveMessage && (
             <div className="absolute bottom-full right-0 mb-3 w-max max-w-[280px] animate-in fade-in-50 slide-in-from-bottom-2">
                 <div className="flex items-end gap-2">
                     <div className="relative bg-background dark:bg-card shadow-lg rounded-lg p-3 text-sm group">
@@ -412,16 +420,12 @@ export default function ChatWidget({ businessId, businessName }: ChatWidgetProps
                             variant="ghost"
                             size="icon"
                             className="absolute top-0 right-0 h-6 w-6 text-muted-foreground hover:text-foreground"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                setProactiveMessageDismissed(true);
-                                setProactiveMessage('');
-                            }}
+                            onClick={handleProactiveMessageClose}
                         >
                             <X className="h-4 w-4" />
                         </Button>
                     </div>
-                     <div className="flex-shrink-0 w-12 h-12 rounded-full bg-primary flex items-center justify-center text-primary-foreground shadow-lg z-10 -mr-2">
+                    <div className="flex-shrink-0 w-12 h-12 rounded-full bg-primary flex items-center justify-center text-primary-foreground shadow-lg z-10 -mr-2">
                         <Bot size={28} />
                     </div>
                 </div>
