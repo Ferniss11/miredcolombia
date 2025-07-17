@@ -8,9 +8,10 @@ import { cn } from '@/lib/utils';
 
 interface RealTimeClocksProps {
     variant?: 'default' | 'minimal';
+    country?: 'Colombia' | 'Spain';
 }
 
-const RealTimeClocks = ({ variant = 'default' }: RealTimeClocksProps) => {
+const RealTimeClocks = ({ variant = 'default', country }: RealTimeClocksProps) => {
   const [time, setTime] = useState({
     colombia: '',
     spain: '',
@@ -41,10 +42,10 @@ const RealTimeClocks = ({ variant = 'default' }: RealTimeClocksProps) => {
   }, []);
   
   if (variant === 'minimal') {
-    return (
-        <div className='space-y-4'>
-            <div className="border rounded-lg p-4 bg-background/50">
-                 <div className="flex items-center justify-between">
+    if (country === 'Colombia') {
+        return (
+            <div className="p-4">
+                <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <span className="text-2xl">🇨🇴</span>
                         <div>
@@ -57,7 +58,11 @@ const RealTimeClocks = ({ variant = 'default' }: RealTimeClocksProps) => {
                     </p>
                 </div>
             </div>
-             <div className="border rounded-lg p-4 bg-background/50">
+        );
+    }
+    if (country === 'Spain') {
+         return (
+            <div className="p-4">
                  <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <span className="text-2xl">🇪🇸</span>
@@ -71,8 +76,9 @@ const RealTimeClocks = ({ variant = 'default' }: RealTimeClocksProps) => {
                     </p>
                 </div>
             </div>
-        </div>
-    )
+        );
+    }
+    return null;
   }
 
   return (
