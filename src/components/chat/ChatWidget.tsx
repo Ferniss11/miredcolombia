@@ -174,7 +174,7 @@ export default function ChatWidget({ businessId, businessName }: ChatWidgetProps
     // @ts-ignore
     const result = await action(params);
     
-    if (result.isIndexError) {
+    if ('isIndexError' in result && result.isIndexError) {
         sessionStorage.setItem('fullError', result.error || 'Unknown index error.');
         router.push('/errors');
         return;
@@ -182,10 +182,10 @@ export default function ChatWidget({ businessId, businessName }: ChatWidgetProps
 
     if (result.success && result.sessionId) {
       setSessionId(result.sessionId);
-      setMessages(result.history || []);
+      setMessages((result.history || []) as ClientMessage[]);
       if (initialQuestion) {
         // We set the current message here, and then call send to actually post it
-        postInitialQuestion(result.sessionId, result.history || [], initialQuestion);
+        postInitialQuestion(result.sessionId, (result.history || []) as ClientMessage[], initialQuestion);
       }
     } else {
       toast({ variant: 'destructive', title: 'Error', description: result.error || 'No se pudo iniciar el chat. Por favor, inténtalo de nuevo.' });
@@ -396,7 +396,7 @@ export default function ChatWidget({ businessId, businessName }: ChatWidgetProps
       <div className="fixed bottom-6 right-6 z-20">
          {proactiveMessage && !isOpen && (
             <div className="absolute bottom-full right-0 mb-3 w-max max-w-[280px] animate-in fade-in-50 slide-in-from-bottom-2">
-                <div className="flex items-end justify-end gap-2">
+                <div className="flex items-end gap-2">
                     <div className="relative bg-background dark:bg-card shadow-lg rounded-lg p-3 text-sm group">
                         <p>{proactiveMessage}</p>
                         <div className="absolute right-3 -bottom-1.5 w-3 h-3 bg-background dark:bg-card transform rotate-45"></div>
@@ -424,7 +424,7 @@ export default function ChatWidget({ businessId, businessName }: ChatWidgetProps
           className="w-16 h-16 rounded-full shadow-lg flex items-center justify-center"
           size="icon"
         >
-          {isOpen ? <X size={32} /> : <LuBotMessageSquare size={36} />}
+          {isOpen ? <X size={32} /> : <LuBotMessageSquare size={1000} />}
         </Button>
       </div>
 
