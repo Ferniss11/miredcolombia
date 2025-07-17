@@ -34,8 +34,6 @@ export default function HomePageClient({ initialPosts, eurToCopRate, initialBusi
   const [videoUrl, setVideoUrl] = useState('');
   const [videoTitle, setVideoTitle] = useState('');
 
-  const [isChatOpen, setChatOpen] = useState(false);
-
   const handlePurchaseClick = (item: MigrationPackage | MigrationService, type: 'package' | 'service') => {
     setSelectedItem({ ...item, type });
     setCheckoutOpen(true);
@@ -56,13 +54,13 @@ export default function HomePageClient({ initialPosts, eurToCopRate, initialBusi
         <PackagesSection handlePurchaseClick={handlePurchaseClick} eurToCopRate={eurToCopRate} />
         <ServicesSection handlePurchaseClick={handlePurchaseClick} eurToCopRate={eurToCopRate} />
         <DirectorySection businesses={initialBusinesses} />
-        <AiAssistantSection onCtaClick={() => setChatOpen(true)} />
+        <AiAssistantSection />
         <BlogSection posts={initialPosts} />
         <BusinessSection />
         <TestimonialsSection />
       </main>
 
-      <ChatWidget isOpen={isChatOpen} setIsOpen={setChatOpen} />
+      <ChatWidget />
 
       <Dialog open={isCheckoutOpen} onOpenChange={setCheckoutOpen}>
         <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
