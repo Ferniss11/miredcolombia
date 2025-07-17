@@ -118,10 +118,6 @@ export default function ConversationsPage() {
                                                 <p className="text-sm text-muted-foreground truncate">
                                                     {session.userPhone}
                                                 </p>
-                                                <Badge variant="outline" className="flex items-center gap-1.5">
-                                                    <Bot className="h-3 w-3"/>
-                                                    {session.totalTokens} tokens
-                                                </Badge>
                                             </div>
                                         </div>
                                     </div>

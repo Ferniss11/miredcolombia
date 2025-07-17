@@ -15,6 +15,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 
 function ChatConversationPage() {
     const { sessionId } = useParams();
@@ -138,8 +139,14 @@ function ChatConversationPage() {
                 <Avatar className="h-10 w-10 border">
                     <AvatarFallback className="bg-muted"><User /></AvatarFallback>
                 </Avatar>
-                <div>
-                    <h1 className="font-bold">{session.userName}</h1>
+                <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                         <h1 className="font-bold">{session.userName}</h1>
+                          <Badge variant="outline" className="flex items-center gap-1.5">
+                            <Bot className="h-3 w-3"/>
+                            {session.totalTokens} tokens
+                        </Badge>
+                    </div>
                     <p className="text-xs text-muted-foreground">{session.userPhone}</p>
                 </div>
             </header>
