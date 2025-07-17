@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { adminDb, adminInstance } from "@/lib/firebase/admin-config";
@@ -203,8 +204,8 @@ export async function saveAdminMessage(sessionId: string, text: string, authorNa
     try {
         const messageData = {
             text,
-            role: 'admin' as const,
-            authorName,
+            role: 'model' as const, // Save admin messages as 'model' role
+            authorName, // Keep authorName to identify admin messages in the UI
             timestamp: FieldValue.serverTimestamp(),
         };
         const messageRef = await db.collection("chatSessions").doc(sessionId).collection("messages").add(messageData);
@@ -213,7 +214,7 @@ export async function saveAdminMessage(sessionId: string, text: string, authorNa
         return {
             id: messageRef.id,
             text: text,
-            role: 'admin',
+            role: 'model',
             authorName: authorName,
             timestamp: new Date().toISOString()
         };

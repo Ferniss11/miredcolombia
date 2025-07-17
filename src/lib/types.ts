@@ -1,4 +1,5 @@
 
+
 import { z } from 'zod';
 
 // Schema for Blog Content Generation
@@ -263,11 +264,11 @@ export type ChatSessionWithTokens = {
 export type ChatMessage = {
   id?: string;
   text: string;
-  role: 'user' | 'model' | 'admin';
+  role: 'user' | 'model'; // 'admin' role is removed from the type
   timestamp: any; // Firestore Timestamp or ISO string
   usage?: TokenUsage;
-  cost?: number; // NEW: Cost of this specific message
-  authorName?: string; // Used for admin messages
+  cost?: number;
+  authorName?: string; // Used for model messages sent by an admin
 }
 
 export const AgentConfigSchema = z.object({

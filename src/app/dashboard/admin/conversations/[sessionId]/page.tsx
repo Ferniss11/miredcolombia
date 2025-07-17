@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useEffect, useState, useRef, FormEvent, KeyboardEvent } from 'react';
@@ -76,7 +77,7 @@ function ChatConversationPage() {
         const pendingMessage: ChatMessage = {
             id: tempId,
             text: newMessage,
-            role: 'admin',
+            role: 'model', // Admin messages are sent as 'model' role
             authorName: userProfile.name || 'Admin',
             timestamp: new Date().toISOString()
         }
@@ -112,7 +113,8 @@ function ChatConversationPage() {
 
     const getMessageComponent = (msg: ChatMessage) => {
         const isUser = msg.role === 'user';
-        const isAdmin = msg.role === 'admin';
+        // An admin message is a 'model' role with an authorName
+        const isAdmin = msg.role === 'model' && !!msg.authorName;
         
         const alignment = isUser ? 'justify-end' : 'justify-start';
         const bgColor = isUser ? 'bg-blue-600 text-white' : isAdmin ? 'bg-yellow-100 dark:bg-yellow-900/50' : 'bg-gray-100 dark:bg-gray-800';
