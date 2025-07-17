@@ -1,15 +1,17 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { Eye, MessageSquare, TrendingUp } from 'lucide-react';
+import { MessageSquare, User, Clock } from 'lucide-react';
 import { getChatSessionsAction } from '@/lib/agent-actions';
 import type { ChatSessionWithTokens } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import Link from 'next/link';
 
 export default function ConversationsPage() {
     const [sessions, setSessions] = useState<ChatSessionWithTokens[]>([]);
@@ -34,83 +36,63 @@ export default function ConversationsPage() {
     
     const formatDate = (dateString: string) => {
         return new Date(dateString).toLocaleString('es-ES', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
+            day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
         });
-    };
-    
-    const handleRowClick = (sessionId: string) => {
-        router.push(`/dashboard/admin/conversations/${sessionId}`);
     };
 
     return (
         <div className="space-y-6">
             <div className="flex items-center gap-4">
                 <MessageSquare className="w-8 h-8 text-primary" />
-                <h1 className="text-3xl font-bold font-headline">Conversaciones de Usuarios</h1>
+                <h1 className="text-3xl font-bold font-headline">Conversaciones</h1>
             </div>
             
             <Card>
                 <CardHeader>
-                    <CardTitle>Historial de Conversaciones</CardTitle>
-                    <CardDescription>Supervisa las interacciones de los usuarios con el agente de IA.</CardDescription>
+                    <CardTitle>Bandeja de Entrada</CardTitle>
+                    <CardDescription>Supervisa y participa en las interacciones de los usuarios con los agentes de IA.</CardDescription>
                 </CardHeader>
-                <CardContent>
-                    <div className="overflow-x-auto">
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Usuario</TableHead>
-                                    <TableHead>Fecha Creación</TableHead>
-                                    <TableHead className="text-right">Mensajes</TableHead>
-                                    <TableHead className="text-right flex items-center justify-end gap-1">
-                                        <TrendingUp className="w-4 h-4" />
-                                        Tokens
-                                    </TableHead>
-                                    <TableHead className="text-right">Acciones</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {isLoadingSessions ? (
-                                    Array.from({ length: 5 }).map((_, i) => (
-                                        <TableRow key={i}>
-                                            <TableCell><Skeleton className="h-5 w-32" /></TableCell>
-                                            <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-                                            <TableCell className="text-right"><Skeleton className="h-5 w-12 ml-auto" /></TableCell>
-                                            <TableCell className="text-right"><Skeleton className="h-5 w-20 ml-auto" /></TableCell>
-                                            <TableCell className="text-right"><Skeleton className="h-8 w-16 ml-auto" /></TableCell>
-                                        </TableRow>
-                                    ))
-                                ) : sessions.length > 0 ? (
-                                    sessions.map(session => (
-                                        <TableRow key={session.id} onClick={() => handleRowClick(session.id)} className="cursor-pointer hover:bg-muted/50">
-                                            <TableCell>
-                                                <div className="font-medium">{session.userName}</div>
-                                                <div className="text-sm text-muted-foreground">{session.userPhone}</div>
-                                            </TableCell>
-                                            <TableCell>{formatDate(session.createdAt)}</TableCell>
-                                            <TableCell className="text-right">{session.messageCount}</TableCell>
-                                            <TableCell className="text-right font-bold font-mono">{session.totalTokens}</TableCell>
-                                            <TableCell className="text-right">
-                                                <Button variant="outline" size="sm">
-                                                    <Eye className="mr-2 h-3 w-3" />
-                                                    Ver
-                                                </Button>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))
-                                ) : (
-                                    <TableRow>
-                                        <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
-                                            No hay conversaciones todavía.
-                                        </TableCell>
-                                    </TableRow>
-                                )}
-                            </TableBody>
-                        </Table>
+                <CardContent className="p-0">
+                    <div className="space-y-2">
+                        {isLoadingSessions ? (
+                            Array.from({ length: 5 }).map((_, i) => (
+                                <div key={i} className="flex items-center gap-4 p-4">
+                                    <Skeleton className="h-12 w-12 rounded-full" />
+                                    <div className="space-y-2 flex-1">
+                                        <Skeleton className="h-4 w-1/2" />
+                                        <Skeleton className="h-3 w-1/3" />
+                                    </div>
+                                </div>
+                            ))
+                        ) : sessions.length > 0 ? (
+                            sessions.map(session => (
+                                <Link key={session.id} href={`/dashboard/admin/conversations/${session.id}`} className="block">
+                                    <div className="flex items-center gap-4 p-4 hover:bg-muted/50 transition-colors cursor-pointer border-b">
+                                        <Avatar className="h-12 w-12 border">
+                                            <AvatarFallback className="bg-primary/10 text-primary">
+                                                <User className="h-6 w-6" />
+                                            </AvatarFallback>
+                                        </Avatar>
+                                        <div className="flex-1">
+                                            <div className="flex justify-between items-start">
+                                                <div className="font-bold">{session.userName}</div>
+                                                <div className="text-xs text-muted-foreground flex items-center gap-1">
+                                                    <Clock className="h-3 w-3"/>
+                                                    {formatDate(session.createdAt)}
+                                                </div>
+                                            </div>
+                                            <p className="text-sm text-muted-foreground truncate">
+                                                {session.userPhone}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </Link>
+                            ))
+                        ) : (
+                            <div className="text-center text-muted-foreground py-16">
+                                <p>No hay conversaciones todavía.</p>
+                            </div>
+                        )}
                     </div>
                 </CardContent>
             </Card>
