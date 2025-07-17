@@ -13,7 +13,8 @@ import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Checkbox } from '@/components/ui/checkbox';
-import { MessageCircle, X, Send, User, Bot, Loader2, Sparkles, Phone, Building } from 'lucide-react';
+import { X, Send, User, Bot, Loader2, Sparkles, Phone, Building } from 'lucide-react';
+import { LuBotMessageSquare } from "react-icons/lu";
 import Link from 'next/link';
 import { startChatSessionAction, postMessageAction } from '@/lib/chat-actions';
 import { startBusinessChatSessionAction, postBusinessMessageAction } from '@/lib/business-chat-actions';
@@ -37,12 +38,21 @@ const formSchema = z.object({
   }),
 });
 
+const proactiveMessages = [
+  "¡Hola! ¿Dudas sobre migración?",
+  "Tu asistente virtual está aquí.",
+  "¿En qué puedo ayudarte hoy?",
+  "Pregúntame sobre trámites.",
+  "¿Listo para empezar tu viaje a España?"
+];
+
 export default function ChatWidget({ businessId, businessName }: ChatWidgetProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ClientMessage[]>([]);
   const [isAiResponding, setIsAiResponding] = useState(false);
   const [currentMessage, setCurrentMessage] = useState('');
+  const [proactiveMessage, setProactiveMessage] = useState('');
   const { toast } = useToast();
   const router = useRouter();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
@@ -54,11 +64,58 @@ export default function ChatWidget({ businessId, businessName }: ChatWidgetProps
     defaultValues: { userName: '', userPhone: '', acceptTerms: false },
   });
 
+  // Effect for proactive "speech bubble" messages
+  useEffect(() => {
+    let messageTimer: NodeJS.Timeout;
+    const showRandomMessage = () => {
+      if (isOpen) { // Don't show if chat is open
+        setProactiveMessage('');
+        return;
+      }
+      const randomIndex = Math.floor(Math.random() * proactiveMessages.length);
+      setProactiveMessage(proactiveMessages[randomIndex]);
+      // Hide message after a few seconds
+      messageTimer = setTimeout(() => setProactiveMessage(''), 7000);
+    };
+
+    // Show the first message after a delay, then periodically
+    const initialTimeout = setTimeout(() => {
+      showRandomMessage();
+      const interval = setInterval(showRandomMessage, 20000); // Show a new message every 20 seconds
+      return () => clearInterval(interval);
+    }, 10000); // First message after 10 seconds
+
+    return () => {
+      clearTimeout(initialTimeout);
+      clearTimeout(messageTimer);
+    };
+  }, [isOpen]);
+
+  // Effect to auto-open the widget once per session
+  useEffect(() => {
+    const hasAutoOpened = sessionStorage.getItem('chatWidgetAutoOpened');
+    if (!hasAutoOpened) {
+      const timer = setTimeout(() => {
+        setIsOpen(true);
+        sessionStorage.setItem('chatWidgetAutoOpened', 'true');
+      }, 15000); // Auto-open after 15 seconds
+
+      return () => clearTimeout(timer);
+    }
+  }, []);
+
   useEffect(() => {
     if (scrollAreaRef.current) {
       scrollAreaRef.current.scrollTo({ top: scrollAreaRef.current.scrollHeight, behavior: 'smooth' });
     }
   }, [messages]);
+
+  useEffect(() => {
+    // When chat opens, hide the proactive speech bubble
+    if(isOpen) {
+      setProactiveMessage('');
+    }
+  }, [isOpen]);
 
   const handleStartSession = async (values: z.infer<typeof formSchema>) => {
     const action = isBusinessChat ? startBusinessChatSessionAction : startChatSessionAction;
@@ -225,13 +282,24 @@ export default function ChatWidget({ businessId, businessName }: ChatWidgetProps
 
   return (
     <>
-      <Button
-        onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-6 right-6 w-16 h-16 rounded-full shadow-lg z-20"
-        size="icon"
-      >
-        {isOpen ? <X size={24} /> : <MessageCircle size={24} />}
-      </Button>
+      <div className="fixed bottom-6 right-6 z-20">
+        {proactiveMessage && !isOpen && (
+            <div className="absolute bottom-full right-0 mb-2 w-max max-w-xs animate-in fade-in-50 slide-in-from-bottom-2">
+                <div className="bg-background shadow-lg rounded-lg p-3 text-sm">
+                    {proactiveMessage}
+                    <div className="absolute right-4 -bottom-1 w-2 h-2 bg-background transform rotate-45"></div>
+                </div>
+            </div>
+        )}
+        <Button
+          onClick={() => setIsOpen(!isOpen)}
+          className="w-16 h-16 rounded-full shadow-lg"
+          size="icon"
+        >
+          {isOpen ? <X size={28} /> : <LuBotMessageSquare size={28} />}
+        </Button>
+      </div>
+
       <div
         className={cn(
           'fixed bottom-24 right-6 z-20 w-[calc(100%-3rem)] max-w-sm h-[70vh] max-h-[600px] origin-bottom-right transition-all duration-300 ease-in-out',
