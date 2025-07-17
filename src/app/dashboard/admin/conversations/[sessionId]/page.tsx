@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useEffect, useState, useRef, FormEvent, KeyboardEvent } from 'react';
@@ -7,12 +6,13 @@ import { useParams, useRouter } from 'next/navigation';
 import { getChatSessionDetailsAction, postAdminMessageAction } from '@/lib/agent-actions';
 import type { ChatSessionWithTokens, ChatMessage, AgentConfig } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Bot, User, Send, UserCog, BrainCircuit, ChevronDown, Copy } from 'lucide-react';
+import { ArrowLeft, Bot, User, Send, UserCog, BrainCircuit, ChevronDown, Copy, CheckCheck, Clock, Reply, X } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
 import { Badge } from '@/components/ui/badge';
@@ -30,6 +30,7 @@ function ChatConversationPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [newMessage, setNewMessage] = useState('');
     const [isSending, setIsSending] = useState(false);
+    const [replyTo, setReplyTo] = useState<ChatMessage | null>(null);
     const scrollAreaRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -62,6 +63,10 @@ function ChatConversationPage() {
         return `~${new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', minimumFractionDigits: 4 }).format(cost)}`;
     }
 
+    const formatTimestamp = (isoString: string) => {
+        return new Date(isoString).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+    }
+
     const handleCopySessionId = () => {
         if (!session) return;
         navigator.clipboard.writeText(session.id);
@@ -77,34 +82,44 @@ function ChatConversationPage() {
         const pendingMessage: ChatMessage = {
             id: tempId,
             text: newMessage,
-            role: 'model', // Admin messages are sent as 'model' role
+            role: 'model',
             authorName: userProfile.name || 'Admin',
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
+            replyTo: replyTo ? {
+                messageId: replyTo.id,
+                text: replyTo.text,
+                author: replyTo.role === 'user' ? 'Tú' : (replyTo.authorName || 'Agente')
+            } : null,
         }
         setMessages(prev => [...prev, pendingMessage]);
         setNewMessage('');
+        setReplyTo(null);
         
         const result = await postAdminMessageAction({
             sessionId: session.id,
             text: newMessage,
             authorName: userProfile.name || 'Admin',
+            replyTo: replyTo ? {
+                messageId: replyTo.id,
+                text: replyTo.text,
+                author: replyTo.role === 'user' ? session.userName : (replyTo.authorName || 'Agente')
+            } : undefined,
         });
         
         if (result.error) {
             toast({ variant: 'destructive', title: 'Error', description: result.error });
             setMessages(prev => prev.filter(m => m.id !== tempId));
         } else if (result.newMessage) {
-            // Refetch session to get updated token/cost counts
             if (typeof sessionId === 'string') {
                 const updatedSession = await getChatSessionDetailsAction(sessionId);
                 if (updatedSession.session) setSession(updatedSession.session);
             }
-            setMessages(prev => prev.map(m => m.id === tempId ? { ...result.newMessage, id: result.newMessage.id || tempId } as ChatMessage : m));
+            setMessages(prev => prev.map(m => m.id === tempId ? { ...result.newMessage } as ChatMessage : m));
         }
         setIsSending(false);
     };
 
-    const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             handleSendMessage();
@@ -113,7 +128,6 @@ function ChatConversationPage() {
 
     const getMessageComponent = (msg: ChatMessage) => {
         const isUser = msg.role === 'user';
-        // An admin message is a 'model' role with an authorName
         const isAdmin = msg.role === 'model' && !!msg.authorName;
         
         const alignment = isUser ? 'justify-end' : 'justify-start';
@@ -131,10 +145,28 @@ function ChatConversationPage() {
         );
 
         return (
-             <div key={msg.id || Math.random()} className={cn("flex items-end gap-2", alignment)}>
+             <div key={msg.id} className={cn("group flex items-end gap-2", alignment)}>
                {!isUser && avatar}
-                <div className={cn('p-3 rounded-lg max-w-md shadow-sm', bgColor)}>
-                    <p className="text-sm whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: msg.text.replace(/\n/g, '<br />') }} />
+                <div className="flex flex-col gap-1 items-end">
+                    <div className={cn('relative p-3 rounded-lg max-w-md shadow-sm', bgColor)}>
+                        {msg.replyTo && (
+                            <div className="p-2 mb-2 border-l-2 border-primary/50 bg-black/10 dark:bg-white/10 rounded-md">
+                                <p className="font-bold text-xs">{msg.replyTo.author}</p>
+                                <p className="text-xs opacity-80 truncate">{msg.replyTo.text}</p>
+                            </div>
+                        )}
+                        <p className="text-sm whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: msg.text.replace(/\n/g, '<br />') }} />
+                        <div className="absolute opacity-0 group-hover:opacity-100 transition-opacity top-0 -right-8">
+                             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setReplyTo(msg)}>
+                                <Reply className="h-4 w-4"/>
+                            </Button>
+                        </div>
+                    </div>
+                     <div className="flex items-center gap-1.5 text-xs text-muted-foreground pr-2">
+                        <Clock className="h-3 w-3" />
+                        <span>{formatTimestamp(msg.timestamp)}</span>
+                        {isAdmin && <CheckCheck className="h-4 w-4 text-blue-500" />}
+                    </div>
                 </div>
                 {isUser && avatar}
             </div>
@@ -218,15 +250,27 @@ function ChatConversationPage() {
             </main>
             
             <footer className="p-3 border-t bg-card">
-                <form onSubmit={handleSendMessage} className="flex items-center gap-2">
-                    <Input
+                {replyTo && (
+                    <div className="flex items-center justify-between p-2 mb-2 bg-muted rounded-md text-sm">
+                        <div>
+                            <p className="font-bold text-primary">Respondiendo a {replyTo.role === 'user' ? session.userName : 'Agente'}</p>
+                            <p className="text-muted-foreground truncate max-w-xs">{replyTo.text}</p>
+                        </div>
+                        <Button variant="ghost" size="icon" onClick={() => setReplyTo(null)}>
+                            <X className="h-4 w-4" />
+                        </Button>
+                    </div>
+                )}
+                <form onSubmit={handleSendMessage} className="flex items-start gap-2">
+                    <Textarea
                         value={newMessage}
                         onChange={(e) => setNewMessage(e.target.value)}
                         onKeyDown={handleKeyDown}
                         placeholder="Escribe tu mensaje como administrador..."
                         disabled={isSending}
                         autoComplete="off"
-                        className="h-10"
+                        rows={1}
+                        className="min-h-0 h-10 resize-none"
                     />
                     <Button type="submit" size="icon" disabled={isSending || !newMessage.trim()}>
                         <Send size={18} />

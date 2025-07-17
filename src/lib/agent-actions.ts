@@ -1,7 +1,7 @@
 
 'use server';
 
-import { AgentConfigSchema, type AgentConfig } from "./types";
+import { AgentConfigSchema, type AgentConfig, type ChatMessage } from "./types";
 import { getAgentConfig, saveAgentConfig } from "@/services/agent.service";
 import { getAllChatSessions, getChatHistory, getChatSessionById, saveAdminMessage } from "@/services/chat.service";
 import { revalidatePath } from "next/cache";
@@ -61,10 +61,15 @@ export async function getChatSessionDetailsAction(sessionId: string) {
 }
 
 
-export async function postAdminMessageAction(input: { sessionId: string; text: string; authorName: string }) {
+export async function postAdminMessageAction(input: {
+    sessionId: string;
+    text: string;
+    authorName: string;
+    replyTo?: ChatMessage['replyTo'];
+}) {
     try {
-        const { sessionId, text, authorName } = input;
-        const newMessage = await saveAdminMessage(sessionId, text, authorName);
+        const { sessionId, text, authorName, replyTo } = input;
+        const newMessage = await saveAdminMessage(sessionId, text, authorName, replyTo);
         revalidatePath(`/dashboard/admin/conversations/${sessionId}`);
         return { success: true, newMessage };
     } catch (error) {

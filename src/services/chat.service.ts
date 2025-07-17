@@ -28,6 +28,7 @@ function serializeMessage(doc: FirebaseFirestore.DocumentSnapshot): ChatMessage 
         usage: data.usage,
         cost: data.cost,
         authorName: data.authorName,
+        replyTo: data.replyTo || null,
     };
 }
 
@@ -198,25 +199,31 @@ export async function saveMessage(sessionId: string, messageData: Omit<ChatMessa
   }
 }
 
-export async function saveAdminMessage(sessionId: string, text: string, authorName: string): Promise<ChatMessage> {
+export async function saveAdminMessage(
+  sessionId: string,
+  text: string,
+  authorName: string,
+  replyTo: ChatMessage['replyTo']
+): Promise<ChatMessage> {
     const db = getDbInstance();
     if (!FieldValue) throw new Error("Firebase Admin SDK is not fully initialized.");
     try {
-        const messageData = {
+        const messageData: Partial<ChatMessage> = {
             text,
-            role: 'model' as const, // Save admin messages as 'model' role
-            authorName, // Keep authorName to identify admin messages in the UI
-            timestamp: FieldValue.serverTimestamp(),
+            role: 'model' as const,
+            authorName,
+            timestamp: FieldValue.serverTimestamp() as any,
+            replyTo: replyTo || null,
         };
         const messageRef = await db.collection("chatSessions").doc(sessionId).collection("messages").add(messageData);
         
-        // We return the object with a serialized timestamp to update the client immediately
         return {
             id: messageRef.id,
-            text: text,
+            text,
             role: 'model',
-            authorName: authorName,
-            timestamp: new Date().toISOString()
+            authorName,
+            timestamp: new Date().toISOString(),
+            replyTo: replyTo || null,
         };
     } catch (error) {
          console.error(`Error saving admin message for session ${sessionId}:`, error);

@@ -262,13 +262,18 @@ export type ChatSessionWithTokens = {
 }
 
 export type ChatMessage = {
-  id?: string;
+  id: string;
   text: string;
-  role: 'user' | 'model'; // 'admin' role is removed from the type
-  timestamp: any; // Firestore Timestamp or ISO string
+  role: 'user' | 'model';
+  timestamp: string; // ISO string on the client
   usage?: TokenUsage;
   cost?: number;
   authorName?: string; // Used for model messages sent by an admin
+  replyTo?: {
+    messageId: string;
+    text: string;
+    author: string;
+  } | null;
 }
 
 export const AgentConfigSchema = z.object({
