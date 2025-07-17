@@ -56,6 +56,10 @@ const allGeneralQuestions = [
     "¿Puedo trabajar mientras estudio?",
     "¿Qué es la tarjeta TIE y cómo la consigo?",
     "¿Es difícil encontrar vivienda en Madrid?",
+    "¿Cuánto cuesta vivir en España?",
+    "¿Cómo puedo traer a mi familia a España?",
+    "¿Qué impuestos debo pagar como residente?",
+    "¿Cómo funciona el transporte público en las grandes ciudades?",
 ];
 
 const allBusinessQuestions = [
@@ -99,12 +103,12 @@ export default function ChatWidget({ businessId, businessName }: ChatWidgetProps
         setCurrentSuggestions(shuffled.slice(0, 3));
     };
 
-    if (!sessionId) { // Only run this when in the welcome screen
+    if (!sessionId && isOpen) { // Only run this when in the welcome screen and widget is open
         getNextSuggestions();
         const interval = setInterval(getNextSuggestions, 5000); // Change suggestions every 5 seconds
         return () => clearInterval(interval);
     }
-  }, [sessionId, isBusinessChat, suggestionPool]);
+  }, [sessionId, isOpen, isBusinessChat, suggestionPool]);
 
   // Effect for proactive "speech bubble" messages
   useEffect(() => {
@@ -388,15 +392,15 @@ export default function ChatWidget({ businessId, businessName }: ChatWidgetProps
   return (
     <>
       <div className="fixed bottom-6 right-6 z-20">
-        {proactiveMessage && !isOpen && (
-             <div className="absolute bottom-full right-0 mb-2 w-max max-w-[280px] animate-in fade-in-50 slide-in-from-bottom-2">
-                <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground shadow-lg">
-                        <Bot size={20} />
+         {proactiveMessage && !isOpen && (
+            <div className="absolute bottom-full right-0 mb-2 w-max max-w-[280px] animate-in fade-in-50 slide-in-from-bottom-2">
+                <div className="flex items-end gap-3">
+                    <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground shadow-lg">
+                        <Bot size={24} />
                     </div>
                     <div className="relative bg-background dark:bg-gray-800 shadow-lg rounded-lg p-3 text-sm">
-                        {proactiveMessage}
-                        <div className="absolute left-2 -bottom-1 w-3 h-3 bg-background dark:bg-gray-800 transform rotate-45"></div>
+                        <p>{proactiveMessage}</p>
+                        <div className="absolute left-3 -bottom-1 w-3 h-3 bg-background dark:bg-gray-800 transform rotate-45"></div>
                     </div>
                 </div>
             </div>
