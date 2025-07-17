@@ -46,7 +46,6 @@ const proactiveMessages = [
   "¿Listo para empezar tu viaje a España?"
 ];
 
-// --- Question Suggestions ---
 const allGeneralQuestions = [
     "¿Qué tipos de visado existen para colombianos?",
     "¿Cómo puedo homologar mi título universitario?",
@@ -98,28 +97,28 @@ export default function ChatWidget({ businessId, businessName }: ChatWidgetProps
   const isBusinessChat = !!businessId;
   const suggestionPool = isBusinessChat ? allBusinessQuestions : allGeneralQuestions;
   
-  // Effect to rotate question suggestions
+  // SOLVED: Hydration and Audio errors
+  // All client-side logic is deferred to this useEffect to run only after hydration.
   useEffect(() => {
+    // Initialize audio safely on the client
+    if (typeof window !== 'undefined' && !audioRef.current) {
+        audioRef.current = new Audio('https://firebasestorage.googleapis.com/v0/b/colombia-en-esp.firebasestorage.app/o/sounds%2Fnotification.mp3?alt=media&token=461f3a2c-9b1a-4d4b-84a7-9e45d4d3801f');
+    }
+
+    // --- Logic for rotating question suggestions ---
     const getNextSuggestions = () => {
         const shuffled = [...suggestionPool].sort(() => 0.5 - Math.random());
         setCurrentSuggestions(shuffled.slice(0, 3));
     };
 
-    if (!sessionId && isOpen) { // Only run this when in the welcome screen and widget is open
+    let suggestionInterval: NodeJS.Timeout;
+    if (!sessionId && isOpen) {
         getNextSuggestions();
-        const interval = setInterval(getNextSuggestions, 5000); // Change suggestions every 5 seconds
-        return () => clearInterval(interval);
-    }
-  }, [sessionId, isOpen, isBusinessChat, suggestionPool]);
-
-   // Effect for proactive "speech bubble" messages
-  useEffect(() => {
-    if (typeof window !== 'undefined' && !audioRef.current) {
-        audioRef.current = new Audio('https://firebasestorage.googleapis.com/v0/b/colombia-en-esp.firebasestorage.app/o/sounds%2Fnotification.mp3?alt=media&token=461f3a2c-9b1a-4d4b-84a7-9e45d4d3801f');
+        suggestionInterval = setInterval(getNextSuggestions, 5000);
     }
 
-    let intervalId: NodeJS.Timeout;
-
+    // --- Logic for proactive "speech bubble" messages ---
+    let proactiveIntervalId: NodeJS.Timeout;
     const showRandomMessage = () => {
       if (isOpen || isProactiveMessageDismissed) {
         setProactiveMessage('');
@@ -127,32 +126,37 @@ export default function ChatWidget({ businessId, businessName }: ChatWidgetProps
       }
       const randomIndex = Math.floor(Math.random() * proactiveMessages.length);
       setProactiveMessage(proactiveMessages[randomIndex]);
-      audioRef.current?.play().catch(e => console.error("Error playing audio:", e));
+      
+      // Safely play audio
+      if (audioRef.current) {
+          audioRef.current.play().catch(e => console.error("Error playing audio:", e));
+      }
     };
 
     const initialTimeout = setTimeout(() => {
       showRandomMessage();
-      intervalId = setInterval(showRandomMessage, 20000);
+      proactiveIntervalId = setInterval(showRandomMessage, 20000);
     }, 10000);
 
-    return () => {
-      clearTimeout(initialTimeout);
-      clearInterval(intervalId);
-    };
-  }, [isOpen, isProactiveMessageDismissed]);
-
-  // Effect to auto-open the widget once per session
-  useEffect(() => {
+    // --- Logic for auto-opening the widget ---
     const hasAutoOpened = sessionStorage.getItem('chatWidgetAutoOpened');
+    let openTimer: NodeJS.Timeout;
     if (!hasAutoOpened) {
-      const timer = setTimeout(() => {
+      openTimer = setTimeout(() => {
         setIsOpen(true);
         sessionStorage.setItem('chatWidgetAutoOpened', 'true');
-      }, 15000); // Auto-open after 15 seconds
-
-      return () => clearTimeout(timer);
+      }, 15000);
     }
-  }, []);
+
+    // Cleanup function
+    return () => {
+      clearTimeout(initialTimeout);
+      clearTimeout(openTimer);
+      clearInterval(proactiveIntervalId);
+      clearInterval(suggestionInterval);
+    };
+  }, [isOpen, isProactiveMessageDismissed, sessionId, suggestionPool]);
+
 
   useEffect(() => {
     if (scrollAreaRef.current) {
@@ -161,7 +165,6 @@ export default function ChatWidget({ businessId, businessName }: ChatWidgetProps
   }, [messages]);
 
   useEffect(() => {
-    // When chat opens, hide the proactive speech bubble
     if(isOpen) {
       setProactiveMessage('');
     }
@@ -184,7 +187,6 @@ export default function ChatWidget({ businessId, businessName }: ChatWidgetProps
       setSessionId(result.sessionId);
       setMessages((result.history || []) as ClientMessage[]);
       if (initialQuestion) {
-        // We set the current message here, and then call send to actually post it
         postInitialQuestion(result.sessionId, (result.history || []) as ClientMessage[], initialQuestion);
       }
     } else {
