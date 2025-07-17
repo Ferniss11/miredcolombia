@@ -444,6 +444,9 @@ export default function ChatWidget({ businessId, businessName, embedded = false 
             {showProactive && !isOpen && proactiveMessage && (
                 <div className="absolute bottom-full right-0 mb-3 w-max max-w-[280px] animate-in fade-in-50 slide-in-from-bottom-2">
                     <div className="flex items-end gap-2">
+                        <div className="flex-shrink-0 w-12 h-12 rounded-full bg-primary flex items-center justify-center text-primary-foreground shadow-lg z-10 -mr-2">
+                          <Bot size={28} />
+                        </div>
                          <div className="relative bg-background dark:bg-card shadow-lg rounded-lg p-3 text-sm group">
                             <p>{proactiveMessage}</p>
                             <div className="absolute right-3 -bottom-1.5 w-3 h-3 bg-background dark:bg-card transform rotate-45"></div>
@@ -456,9 +459,7 @@ export default function ChatWidget({ businessId, businessName, embedded = false 
                                 <X className="h-4 w-4" />
                             </Button>
                         </div>
-                        <div className="flex-shrink-0 w-12 h-12 rounded-full bg-primary flex items-center justify-center text-primary-foreground shadow-lg z-10 -mr-2">
-                            <Bot size={28} />
-                        </div>
+                        
                     </div>
                 </div>
             )}
