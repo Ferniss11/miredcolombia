@@ -84,6 +84,12 @@ export default function ChatWidget({ businessId, businessName }: ChatWidgetProps
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const [currentSuggestions, setCurrentSuggestions] = useState<string[]>([]);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -102,7 +108,7 @@ export default function ChatWidget({ businessId, businessName }: ChatWidgetProps
   useEffect(() => {
     // Initialize audio safely on the client
     if (typeof window !== 'undefined' && !audioRef.current) {
-        audioRef.current = new Audio('https://firebasestorage.googleapis.com/v0/b/colombia-en-esp.firebasestorage.app/o/sounds%2Fnotification.mp3?alt=media&token=461f3a2c-9b1a-4d4b-84a7-9e45d4d3801f');
+        audioRef.current = new Audio('https://firebasestorage.googleapis.com/v0/b/colombia-en-esp.firebasestorage.app/o/web%2FAshot%20Danielyan%20-%20Message%20Alert%20Logo%20(MP3).mp3?alt=media&token=0c1febf6-9e59-4e0b-97b7-4af687234aad');
     }
 
     // --- Logic for rotating question suggestions ---
@@ -415,7 +421,7 @@ export default function ChatWidget({ businessId, businessName }: ChatWidgetProps
                             <X className="h-4 w-4" />
                         </Button>
                     </div>
-                    <div className="flex-shrink-0 w-12 h-12 rounded-full bg-primary flex items-center justify-center text-primary-foreground shadow-lg z-10 -ml-2">
+                     <div className="flex-shrink-0 w-12 h-12 rounded-full bg-primary flex items-center justify-center text-primary-foreground shadow-lg z-10 -mr-2">
                         <Bot size={28} />
                     </div>
                 </div>
@@ -426,7 +432,7 @@ export default function ChatWidget({ businessId, businessName }: ChatWidgetProps
           className="w-16 h-16 rounded-full shadow-lg flex items-center justify-center"
           size="icon"
         >
-          {isOpen ? <X size={32} /> : <LuBotMessageSquare size={1000} />}
+          {isOpen ? <X size={32} /> : <LuBotMessageSquare size={36} />}
         </Button>
       </div>
 
@@ -448,7 +454,7 @@ export default function ChatWidget({ businessId, businessName }: ChatWidgetProps
                   <X size={16}/>
               </Button>
             </CardHeader>
-          {renderChatContent()}
+           {isMounted && renderChatContent()}
         </Card>
       </div>
     </>
