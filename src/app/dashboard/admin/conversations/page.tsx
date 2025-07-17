@@ -6,16 +6,21 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { MessageSquare, User, Clock } from 'lucide-react';
+import { MessageSquare, User, Clock, Search, Bot } from 'lucide-react';
 import { getChatSessionsAction } from '@/lib/agent-actions';
 import type { ChatSessionWithTokens } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import Link from 'next/link';
+import { Input } from '@/components/ui/input';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { Badge } from '@/components/ui/badge';
 
 export default function ConversationsPage() {
     const [sessions, setSessions] = useState<ChatSessionWithTokens[]>([]);
     const [isLoadingSessions, setIsLoadingSessions] = useState(true);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [filter, setFilter] = useState('all');
     const { toast } = useToast();
     const router = useRouter();
 
@@ -40,6 +45,17 @@ export default function ConversationsPage() {
         });
     };
 
+    const filteredSessions = sessions.filter(session => {
+        const query = searchQuery.toLowerCase();
+        const matchesQuery = session.userName.toLowerCase().includes(query) ||
+                             session.userPhone.includes(query);
+
+        // Add filter logic here when available (e.g., unread, needs reply)
+        const matchesFilter = true; // Placeholder for now
+
+        return matchesQuery && matchesFilter;
+    });
+
     return (
         <div className="space-y-6">
             <div className="flex items-center gap-4">
@@ -52,11 +68,28 @@ export default function ConversationsPage() {
                     <CardTitle>Bandeja de Entrada</CardTitle>
                     <CardDescription>Supervisa y participa en las interacciones de los usuarios con los agentes de IA.</CardDescription>
                 </CardHeader>
-                <CardContent className="p-0">
-                    <div className="space-y-2">
+                <CardContent>
+                    <div className="flex flex-col sm:flex-row items-center gap-4 mb-4">
+                        <div className="relative flex-1 w-full">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input
+                                placeholder="Buscar por nombre o teléfono..."
+                                className="pl-9"
+                                value={searchQuery}
+                                onChange={e => setSearchQuery(e.target.value)}
+                            />
+                        </div>
+                         <ToggleGroup type="single" value={filter} onValueChange={(value) => value && setFilter(value)} defaultValue="all">
+                            <ToggleGroupItem value="all" aria-label="Todos los chats">Todos</ToggleGroupItem>
+                            <ToggleGroupItem value="unread" aria-label="Chats no leídos">No Leídos</ToggleGroupItem>
+                            <ToggleGroupItem value="reply" aria-label="Necesita respuesta">Necesita Respuesta</ToggleGroupItem>
+                        </ToggleGroup>
+                    </div>
+
+                    <div className="border rounded-lg overflow-hidden">
                         {isLoadingSessions ? (
                             Array.from({ length: 5 }).map((_, i) => (
-                                <div key={i} className="flex items-center gap-4 p-4">
+                                <div key={i} className="flex items-center gap-4 p-4 border-b">
                                     <Skeleton className="h-12 w-12 rounded-full" />
                                     <div className="space-y-2 flex-1">
                                         <Skeleton className="h-4 w-1/2" />
@@ -64,10 +97,10 @@ export default function ConversationsPage() {
                                     </div>
                                 </div>
                             ))
-                        ) : sessions.length > 0 ? (
-                            sessions.map(session => (
+                        ) : filteredSessions.length > 0 ? (
+                            filteredSessions.map(session => (
                                 <Link key={session.id} href={`/dashboard/admin/conversations/${session.id}`} className="block">
-                                    <div className="flex items-center gap-4 p-4 hover:bg-muted/50 transition-colors cursor-pointer border-b">
+                                    <div className="flex items-center gap-4 p-4 hover:bg-muted/50 transition-colors cursor-pointer border-b last:border-b-0">
                                         <Avatar className="h-12 w-12 border">
                                             <AvatarFallback className="bg-primary/10 text-primary">
                                                 <User className="h-6 w-6" />
@@ -81,16 +114,22 @@ export default function ConversationsPage() {
                                                     {formatDate(session.createdAt)}
                                                 </div>
                                             </div>
-                                            <p className="text-sm text-muted-foreground truncate">
-                                                {session.userPhone}
-                                            </p>
+                                            <div className="flex justify-between items-end mt-1">
+                                                <p className="text-sm text-muted-foreground truncate">
+                                                    {session.userPhone}
+                                                </p>
+                                                <Badge variant="outline" className="flex items-center gap-1.5">
+                                                    <Bot className="h-3 w-3"/>
+                                                    {session.totalTokens} tokens
+                                                </Badge>
+                                            </div>
                                         </div>
                                     </div>
                                 </Link>
                             ))
                         ) : (
                             <div className="text-center text-muted-foreground py-16">
-                                <p>No hay conversaciones todavía.</p>
+                                <p>No se encontraron conversaciones.</p>
                             </div>
                         )}
                     </div>

@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect, useState, useRef, FormEvent } from 'react';
+import { useEffect, useState, useRef, FormEvent, KeyboardEvent } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { getChatSessionDetailsAction, postAdminMessageAction } from '@/lib/agent-actions';
 import type { ChatSessionWithTokens, ChatMessage } from '@/lib/types';
@@ -14,6 +14,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 function ChatConversationPage() {
     const { sessionId } = useParams();
@@ -51,8 +52,8 @@ function ChatConversationPage() {
         }
     }, [messages]);
 
-    const handleSendMessage = async (e: FormEvent) => {
-        e.preventDefault();
+    const handleSendMessage = async (e?: FormEvent) => {
+        e?.preventDefault();
         if (!newMessage.trim() || !userProfile || !session) return;
 
         setIsSending(true);
@@ -82,9 +83,17 @@ function ChatConversationPage() {
         setIsSending(false);
     };
 
+    const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            handleSendMessage();
+        }
+    }
+
     const getMessageComponent = (msg: ChatMessage) => {
         const isUser = msg.role === 'user';
         const isAdmin = msg.role === 'admin';
+        const isModel = msg.role === 'model';
         
         const alignment = isUser ? 'justify-end' : 'justify-start';
         const bgColor = isUser ? 'bg-blue-600 text-white' : isAdmin ? 'bg-yellow-100 dark:bg-yellow-900/50' : 'bg-gray-100 dark:bg-gray-800';
@@ -98,9 +107,16 @@ function ChatConversationPage() {
                        </AvatarFallback>
                    </Avatar>
                )}
-                <div className={cn('p-3 rounded-lg max-w-md', bgColor)}>
+                <div className={cn('p-3 rounded-lg max-w-md shadow-sm', bgColor)}>
                     <p className="text-sm whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: msg.text.replace(/\n/g, '<br />') }} />
                 </div>
+                {isUser && (
+                     <Avatar className="w-8 h-8 flex-shrink-0">
+                       <AvatarFallback className="bg-muted">
+                           <User size={18} />
+                       </AvatarFallback>
+                   </Avatar>
+                )}
             </div>
         )
     };
@@ -112,8 +128,8 @@ function ChatConversationPage() {
     if (!session) return <div>No se encontró la sesión.</div>;
 
     return (
-        <div className="flex flex-col h-[calc(100vh-theme(space.24))] bg-card border rounded-lg">
-             <header className="flex items-center gap-3 p-3 border-b">
+        <div className="flex flex-col h-[calc(100vh-theme(space.24))]">
+            <header className="flex items-center gap-3 p-3 border-b bg-card">
                 <Button variant="ghost" size="icon" className="h-9 w-9" asChild>
                     <Link href="/dashboard/admin/conversations">
                         <ArrowLeft className="h-5 w-5" />
@@ -135,11 +151,12 @@ function ChatConversationPage() {
                 )}
             </main>
             
-            <footer className="p-3 border-t bg-background">
+            <footer className="p-3 border-t bg-card">
                 <form onSubmit={handleSendMessage} className="flex items-center gap-2">
                     <Input
                         value={newMessage}
                         onChange={(e) => setNewMessage(e.target.value)}
+                        onKeyDown={handleKeyDown}
                         placeholder="Escribe tu mensaje como administrador..."
                         disabled={isSending}
                         autoComplete="off"
