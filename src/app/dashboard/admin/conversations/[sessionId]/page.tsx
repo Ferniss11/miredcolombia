@@ -147,10 +147,10 @@ function ChatConversationPage() {
         return (
              <div key={msg.id} className={cn("group flex items-end gap-2", alignment)}>
                {!isUser && avatar}
-                <div className="flex flex-col gap-1 items-end">
-                    <div className={cn('relative p-3 rounded-lg max-w-md shadow-sm', bgColor)}>
+                <div className="flex flex-col gap-1 items-end w-full max-w-lg">
+                    <div className={cn('relative p-3 rounded-lg shadow-sm', bgColor, isUser ? 'ml-auto' : 'mr-auto')}>
                         {msg.replyTo && (
-                            <div className="p-2 mb-2 border-l-2 border-primary/50 bg-black/10 dark:bg-white/10 rounded-md">
+                            <div className="p-2 mb-2 border-l-2 border-primary/50 bg-black/10 dark:bg-white/10 rounded-md overflow-hidden">
                                 <p className="font-bold text-xs">{msg.replyTo.author}</p>
                                 <p className="text-xs opacity-80 truncate">{msg.replyTo.text}</p>
                             </div>
@@ -252,9 +252,9 @@ function ChatConversationPage() {
             <footer className="p-3 border-t bg-card">
                 {replyTo && (
                     <div className="flex items-center justify-between p-2 mb-2 bg-muted rounded-md text-sm">
-                        <div>
+                        <div className="overflow-hidden">
                             <p className="font-bold text-primary">Respondiendo a {replyTo.role === 'user' ? session.userName : 'Agente'}</p>
-                            <p className="text-muted-foreground truncate max-w-xs">{replyTo.text}</p>
+                            <p className="text-muted-foreground truncate">{replyTo.text}</p>
                         </div>
                         <Button variant="ghost" size="icon" onClick={() => setReplyTo(null)}>
                             <X className="h-4 w-4" />
@@ -282,3 +282,5 @@ function ChatConversationPage() {
 }
 
 export default ChatConversationPage;
+
+    
