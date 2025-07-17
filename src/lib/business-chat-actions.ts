@@ -28,7 +28,7 @@ const postMessageSchema = z.object({
   sessionId: z.string(),
   message: z.string(),
   history: z.array(z.object({
-    role: z.enum(['user', 'model', 'admin']),
+    role: z.enum(['user', 'model', 'admin']), // FIX: Allow 'admin' role
     text: z.string(),
   })),
 });
