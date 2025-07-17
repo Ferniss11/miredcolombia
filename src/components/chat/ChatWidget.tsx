@@ -47,16 +47,24 @@ const proactiveMessages = [
 ];
 
 // --- Question Suggestions ---
-const generalQuestions = [
+const allGeneralQuestions = [
     "¿Qué tipos de visado existen para colombianos?",
     "¿Cómo puedo homologar mi título universitario?",
-    "¿Qué necesito para empadronarme en España?"
+    "¿Qué necesito para empadronarme en España?",
+    "¿Cuáles son los primeros pasos al llegar a España?",
+    "¿Cómo funciona el sistema de salud para inmigrantes?",
+    "¿Puedo trabajar mientras estudio?",
+    "¿Qué es la tarjeta TIE y cómo la consigo?",
+    "¿Es difícil encontrar vivienda en Madrid?",
 ];
 
-const businessQuestions = [
+const allBusinessQuestions = [
     "¿Cuál es vuestro horario de atención?",
     "¿Cómo puedo reservar una cita?",
-    "¿Dónde estáis ubicados exactamente?"
+    "¿Dónde estáis ubicados exactamente?",
+    "¿Qué servicios ofrecéis?",
+    "¿Cuáles son los precios?",
+    "¿Tenéis disponibilidad para mañana?",
 ];
 
 
@@ -70,13 +78,33 @@ export default function ChatWidget({ businessId, businessName }: ChatWidgetProps
   const { toast } = useToast();
   const router = useRouter();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const [currentSuggestions, setCurrentSuggestions] = useState<string[]>([]);
 
   const isBusinessChat = !!businessId;
-
+  const suggestionPool = isBusinessChat ? allBusinessQuestions : allGeneralQuestions;
+  
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: { userName: '', userPhone: '', acceptTerms: false },
+    defaultValues: {
+      userName: '',
+      userPhone: '',
+      acceptTerms: false,
+    },
   });
+
+  // Effect to rotate question suggestions
+  useEffect(() => {
+    const getNextSuggestions = () => {
+        const shuffled = [...suggestionPool].sort(() => 0.5 - Math.random());
+        setCurrentSuggestions(shuffled.slice(0, 3));
+    };
+
+    if (!sessionId) { // Only run this when in the welcome screen
+        getNextSuggestions();
+        const interval = setInterval(getNextSuggestions, 5000); // Change suggestions every 5 seconds
+        return () => clearInterval(interval);
+    }
+  }, [sessionId, isBusinessChat, suggestionPool]);
 
   // Effect for proactive "speech bubble" messages
   useEffect(() => {
@@ -222,8 +250,6 @@ export default function ChatWidget({ businessId, businessName }: ChatWidgetProps
   };
   
   const renderWelcomeContent = () => {
-    const questions = isBusinessChat ? businessQuestions : generalQuestions;
-    
     return (
         <div className="flex flex-col h-full">
             <ScrollArea className="flex-1">
@@ -240,7 +266,23 @@ export default function ChatWidget({ businessId, businessName }: ChatWidgetProps
                             }
                         </CardDescription>
                     </CardHeader>
-                    <CardContent>
+                    <div className="px-6 pb-4 border-b">
+                        <p className="text-sm font-medium mb-2 flex items-center gap-2 text-muted-foreground"><MessageSquareQuote className="h-4 w-4"/> O pregúntale directamente...</p>
+                        <div className="flex flex-col gap-2">
+                            {currentSuggestions.map((q, i) => (
+                                <Button 
+                                    key={i} 
+                                    variant="outline" 
+                                    size="sm" 
+                                    className="w-full text-left justify-start h-auto whitespace-normal animate-in fade-in duration-500" 
+                                    onClick={() => handleSuggestionClick(q)}
+                                >
+                                    {q}
+                                </Button>
+                            ))}
+                        </div>
+                    </div>
+                    <CardContent className="pt-6">
                         <Form {...form}>
                             <form onSubmit={form.handleSubmit((values) => handleStartSession(values))} className="space-y-4">
                                 <FormField control={form.control} name="userName" render={({ field }) => (
@@ -278,16 +320,6 @@ export default function ChatWidget({ businessId, businessName }: ChatWidgetProps
                     </CardContent>
                 </Card>
             </ScrollArea>
-            <div className="p-4 border-t bg-muted/50">
-                <p className="text-sm font-medium mb-2 flex items-center gap-2 text-muted-foreground"><MessageSquareQuote className="h-4 w-4"/> O pregúntale directamente...</p>
-                 <div className="flex flex-col gap-2">
-                    {questions.map((q, i) => (
-                        <Button key={i} variant="outline" size="sm" className="w-full text-left justify-start h-auto whitespace-normal" onClick={() => handleSuggestionClick(q)}>
-                            {q}
-                        </Button>
-                    ))}
-                </div>
-            </div>
         </div>
     )
   }
