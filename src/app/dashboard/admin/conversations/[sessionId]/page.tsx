@@ -94,7 +94,7 @@ function ChatConversationPage() {
             bgColor = 'bg-blue-100 dark:bg-blue-900/50';
             avatarIcon = <User size={20} />;
         } else if (isFromAdmin) {
-            alignment = 'justify-end';
+            alignment = 'justify-start'; // Admin messages on the left
             bgColor = 'bg-yellow-100 dark:bg-yellow-900/50';
             avatarIcon = <UserCog size={20} />;
         }
@@ -113,7 +113,7 @@ function ChatConversationPage() {
 
         return (
              <div key={msg.id || Math.random()} className={cn("flex items-start gap-3", alignment)}>
-               {(isFromModel) && avatar}
+               {(isFromModel || isFromAdmin) && avatar}
                 <div className="flex flex-col gap-1 w-full max-w-lg">
                     <div className={cn('p-3 rounded-lg', bgColor)}>
                         <p className="text-sm" dangerouslySetInnerHTML={{ __html: msg.text.replace(/\n/g, '<br />') }} />
@@ -124,7 +124,7 @@ function ChatConversationPage() {
                         {isFromAdmin && <span className="font-medium">({msg.authorName || 'Admin'})</span>}
                     </div>
                 </div>
-                {(isFromUser || isFromAdmin) && avatar}
+                {isFromUser && avatar}
             </div>
         )
     };
