@@ -3,8 +3,8 @@
 
 import { useEffect, useState, useRef, FormEvent, KeyboardEvent } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { getChatSessionDetailsAction, postAdminMessageAction } from '@/lib/agent-actions';
-import type { ChatSessionWithTokens, ChatMessage, AgentConfig } from '@/lib/chat-types';
+import { getBusinessChatSessionDetailsAction, postBusinessAdminMessageAction } from '@/lib/business-chat-actions';
+import type { ChatSessionWithTokens, ChatMessage, BusinessAgentConfig } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Bot, User, Send, UserCog, BrainCircuit, ChevronDown, Copy, Clock, Reply, X } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -18,13 +18,12 @@ import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { Separator } from '@/components/ui/separator';
 
-function ChatConversationPage() {
+function BusinessChatConversationPage() {
     const { sessionId } = useParams();
     const router = useRouter();
     const { toast } = useToast();
     const { userProfile } = useAuth();
     const [session, setSession] = useState<ChatSessionWithTokens | null>(null);
-    const [agentConfig, setAgentConfig] = useState<AgentConfig | null>(null);
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [newMessage, setNewMessage] = useState('');
@@ -33,23 +32,22 @@ function ChatConversationPage() {
     const scrollAreaRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        if (typeof sessionId === 'string') {
+        if (typeof sessionId === 'string' && userProfile?.businessProfile?.placeId) {
             const fetchDetails = async () => {
                 setIsLoading(true);
-                const result = await getChatSessionDetailsAction(sessionId);
+                const result = await getBusinessChatSessionDetailsAction(sessionId);
                 if (result.error) {
                     toast({ variant: 'destructive', title: 'Error', description: result.error });
-                    router.push('/dashboard/admin/conversations');
+                    router.push('/dashboard/advertiser/conversations');
                 } else if (result.session && result.messages) {
                     setSession(result.session);
                     setMessages(result.messages);
-                    setAgentConfig(result.agentConfig || null);
                 }
                 setIsLoading(false);
             };
             fetchDetails();
         }
-    }, [sessionId, router, toast]);
+    }, [sessionId, router, toast, userProfile]);
 
     useEffect(() => {
         if (scrollAreaRef.current) {
@@ -82,7 +80,7 @@ function ChatConversationPage() {
             id: tempId,
             text: newMessage,
             role: 'admin',
-            authorName: userProfile.name || 'Admin',
+            authorName: userProfile.name || 'Propietario',
             timestamp: new Date().toISOString(),
             replyTo: replyTo ? {
                 messageId: replyTo.id,
@@ -94,10 +92,10 @@ function ChatConversationPage() {
         setNewMessage('');
         setReplyTo(null);
         
-        const result = await postAdminMessageAction({
+        const result = await postBusinessAdminMessageAction({
             sessionId: session.id,
             text: newMessage,
-            authorName: userProfile.name || 'Admin',
+            authorName: userProfile.name || 'Propietario',
             replyTo: replyTo ? {
                 messageId: replyTo.id,
                 text: replyTo.text,
@@ -110,7 +108,7 @@ function ChatConversationPage() {
             setMessages(prev => prev.filter(m => m.id !== tempId));
         } else if (result.newMessage) {
             if (typeof sessionId === 'string') {
-                const updatedSession = await getChatSessionDetailsAction(sessionId);
+                const updatedSession = await getBusinessChatSessionDetailsAction(sessionId);
                 if (updatedSession.session) setSession(updatedSession.session);
             }
             setMessages(prev => prev.map(m => m.id === tempId ? { ...result.newMessage } as ChatMessage : m));
@@ -185,7 +183,7 @@ function ChatConversationPage() {
             <header className="p-3 border-b bg-card">
                  <div className="flex items-center gap-3">
                     <Button variant="ghost" size="icon" className="h-9 w-9" asChild>
-                        <Link href="/dashboard/admin/conversations">
+                        <Link href="/dashboard/advertiser/conversations">
                             <ArrowLeft className="h-5 w-5" />
                         </Link>
                     </Button>
@@ -208,16 +206,12 @@ function ChatConversationPage() {
                     <CollapsibleContent>
                         <div className="p-3 mt-2 rounded-md bg-muted/50 border space-y-2 text-xs">
                              <div className="flex justify-between items-center">
-                                <span className="text-muted-foreground">Coste Total:</span>
+                                <span className="text-muted-foreground">Coste de la Conversación:</span>
                                 <Badge variant="outline" className="bg-green-500/10 text-green-700 border-green-500/20">
                                     {formatCost(session.totalCost)}
                                 </Badge>
                             </div>
                             <Separator />
-                            <div className="flex justify-between items-center">
-                                <span className="text-muted-foreground">Modelo IA:</span>
-                                <span className="font-mono text-xs">{agentConfig?.model || 'N/A'}</span>
-                            </div>
                             <div className="flex justify-between items-center">
                                 <span className="text-muted-foreground">ID de Sesión:</span>
                                 <div className="flex items-center gap-1">
@@ -229,14 +223,6 @@ function ChatConversationPage() {
                              <div className="flex justify-between items-center">
                                 <span className="text-muted-foreground">Tokens Totales:</span>
                                 <span>{session.totalTokens.toLocaleString('es-ES')}</span>
-                            </div>
-                             <div className="flex justify-between items-center">
-                                <span className="text-muted-foreground">Tokens de Entrada (Input):</span>
-                                <span>{session.totalInputTokens.toLocaleString('es-ES')}</span>
-                            </div>
-                             <div className="flex justify-between items-center">
-                                <span className="text-muted-foreground">Tokens de Salida (Output):</span>
-                                <span>{session.totalOutputTokens.toLocaleString('es-ES')}</span>
                             </div>
                         </div>
                     </CollapsibleContent>
@@ -267,7 +253,7 @@ function ChatConversationPage() {
                         value={newMessage}
                         onChange={(e) => setNewMessage(e.target.value)}
                         onKeyDown={handleKeyDown}
-                        placeholder="Escribe tu mensaje como administrador..."
+                        placeholder="Escribe tu mensaje como propietario..."
                         disabled={isSending}
                         autoComplete="off"
                         rows={1}
@@ -282,4 +268,4 @@ function ChatConversationPage() {
     );
 }
 
-export default ChatConversationPage;
+export default BusinessChatConversationPage;

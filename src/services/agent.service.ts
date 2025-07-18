@@ -2,7 +2,7 @@
 'use server';
 
 import { adminDb } from "@/lib/firebase/admin-config";
-import type { AgentConfig } from "@/lib/types";
+import type { AgentConfig } from "@/lib/chat-types";
 
 const MAIN_CONFIG_DOC_ID = 'main';
 

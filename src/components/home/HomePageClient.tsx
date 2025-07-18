@@ -14,7 +14,7 @@ import AboutSection from './AboutSection';
 import StepsSection from './StepsSection';
 import PackagesSection from './PackagesSection';
 import ServicesSection from './ServicesSection';
-import TimezoneSection from './TimezoneSection';
+import AiAssistantSection from './AiAssistantSection';
 import BlogSection from './BlogSection';
 import BusinessSection from './BusinessSection';
 import TestimonialsSection from './TestimonialsSection';
@@ -49,15 +49,16 @@ export default function HomePageClient({ initialPosts, eurToCopRate, initialBusi
     <div className="flex flex-col min-h-[100dvh]">
       <main className="flex-1">
         <HeroSection />
-        <AboutSection handleVideoClick={handleVideoClick} />
         <StepsSection />
-        <PackagesSection handlePurchaseClick={handlePurchaseClick} eurToCopRate={eurToCopRate} />
-        <ServicesSection handlePurchaseClick={handlePurchaseClick} eurToCopRate={eurToCopRate} />
+        <AboutSection handleVideoClick={handleVideoClick} />
+        <AiAssistantSection />
+        <PackagesSection eurToCopRate={eurToCopRate} />
+        <ServicesSection eurToCopRate={eurToCopRate} />
         <DirectorySection businesses={initialBusinesses} />
-        <TimezoneSection />
         <BlogSection posts={initialPosts} />
         <BusinessSection />
         <TestimonialsSection />
+        <AiAssistantSection />
       </main>
 
       <ChatWidget />

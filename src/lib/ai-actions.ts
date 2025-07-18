@@ -61,13 +61,19 @@ export async function generateIntelligentArticleAction(input: GenerateArticleInp
     try {
         const validatedInput = GenerateArticleInputSchema.parse(input);
         
-        // 1. Generate article text and image hints from the AI
-        const articleWithHints = await generateIntelligentArticle(validatedInput);
+        // 1. Generate article text, image hints, AND COST from the AI
+        const { article: articleWithHints, cost } = await generateIntelligentArticle(validatedInput);
         
         // 2. Enrich the article with actual image URLs using the hints
         const finalArticle = await enrichArticleWithImages(articleWithHints);
         
-        return { article: finalArticle };
+        // Add the cost to the final article object to be saved
+        const articleWithCost = {
+            ...finalArticle,
+            generationCost: cost,
+        };
+        
+        return { article: articleWithCost };
 
     } catch (error) {
         console.error('Error al generar el artículo:', error);

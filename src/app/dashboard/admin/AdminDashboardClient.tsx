@@ -53,7 +53,7 @@ export default function AdminDashboardClient({ stats }: { stats: AdminDashboardS
                         <CardTitle>Acciones Rápidas</CardTitle>
                          <CardDescription>Herramientas y accesos directos para la administración del sitio.</CardDescription>
                     </CardHeader>
-                    <CardContent className="flex flex-wrap gap-4">
+                    <CardContent className="flex flex-col sm:flex-row sm:flex-wrap gap-4">
                         <Button asChild>
                            <Link href="/dashboard/admin/content">
                              <Sparkles className="mr-2 h-4 w-4"/>

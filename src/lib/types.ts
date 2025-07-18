@@ -1,4 +1,5 @@
 
+
 import { z } from 'zod';
 
 // Schema for Blog Content Generation
@@ -87,17 +88,25 @@ export type IntelligentArticle = z.infer<typeof IntelligentArticleOutputSchema>;
 
 export type UserRole = 'Guest' | 'Advertiser' | 'Admin' | 'User';
 
+export const BusinessAgentConfigSchema = z.object({
+  model: z.string().default('googleai/gemini-1.5-flash-latest'),
+  systemPrompt: z.string().default('Eres un asistente amigable para mi negocio.'),
+});
+export type BusinessAgentConfig = z.infer<typeof BusinessAgentConfigSchema>;
+
+
 export type BusinessProfile = {
   businessName: string;
   address: string;
   phone: string;
   website: string;
   description: string;
-  category?: string; // The category of the business
-  placeId?: string; // The linked Google Place ID
-  verificationStatus?: 'pending' | 'approved' | 'rejected' | 'unclaimed'; // Status of business ownership claim
+  category?: string;
+  placeId?: string;
+  verificationStatus?: 'pending' | 'approved' | 'rejected' | 'unclaimed';
   isAgentEnabled?: boolean;
   googleCalendarConnected?: boolean;
+  agentConfig?: BusinessAgentConfig;
 };
 
 export type UserProfile = {
@@ -146,6 +155,7 @@ export interface BlogPost {
   featuredImageUrl?: string;
   featuredImageHint?: string;
   suggestedTags: string[];
+  generationCost?: number; // Cost in EUR for generating this post
 
   // Optional placeholder fields for simpler posts
   excerpt?: string;
@@ -213,64 +223,6 @@ export type Order = {
 
 export type PurchaseableItem = (MigrationPackage | MigrationService) & { type: 'package' | 'service' };
 
-// Agent & Chat types
-export const TokenUsageSchema = z.object({
-  inputTokens: z.number(),
-  outputTokens: z.number(),
-  totalTokens: z.number(),
-});
-export type TokenUsage = z.infer<typeof TokenUsageSchema>;
-
-export const ChatInputSchema = z.object({
-  history: z.array(z.any()).describe('The chat history.'),
-  message: z.string().describe('The user\'s message.'),
-});
-export type ChatInput = z.infer<typeof ChatInputSchema>;
-
-export const ChatOutputSchema = z.object({
-  response: z.string().describe('The AI\'s response.'),
-  usage: TokenUsageSchema.optional(),
-});
-export type ChatOutput = z.infer<typeof ChatOutputSchema>;
-
-
-export type ChatSession = {
-  id?: string;
-  userName: string;
-  userPhone: string;
-  createdAt: any; // Firestore Timestamp
-  updatedAt?: any;
-  totalTokens?: number;
-  totalInputTokens?: number;
-  totalOutputTokens?: number;
-};
-
-export type ChatSessionWithTokens = {
-  id: string;
-  userName: string;
-  userPhone: string;
-  createdAt: string;
-  messageCount: number;
-  totalTokens: number;
-  totalInputTokens: number;
-  totalOutputTokens: number;
-}
-
-export type ChatMessage = {
-  id?: string;
-  text: string;
-  role: 'user' | 'model';
-  timestamp: any; // Firestore Timestamp or ISO string
-  usage?: TokenUsage;
-}
-
-export const AgentConfigSchema = z.object({
-  model: z.string().default('googleai/gemini-1.5-flash-latest'),
-  systemPrompt: z.string().default('You are a helpful assistant.'),
-});
-export type AgentConfig = z.infer<typeof AgentConfigSchema>;
-
-
 // Directory / Places types
 export type Photo = {
     photo_reference: string;
@@ -323,4 +275,60 @@ export type GoogleTokens = {
     scope: string;
     token_type: string;
     expiry_date: number;
+};
+
+// Platform Economics
+export type PlatformConfig = {
+    profitMarginPercentage: number;
+};
+
+export type PlatformCosts = {
+    totalCost: number;
+    chatCost: number;
+    contentCost: number;
+};
+
+
+// Business Analytics
+export type BusinessAnalytics = {
+    totalFinalCost: number;
+    totalConversations: number;
+    totalTokens: number;
+    totalInputTokens: number;
+    totalOutputTokens: number;
+    profitMargin: number;
+};
+
+
+// Chat Types Re-centralization
+export const ChatRoleSchema = z.enum(['user', 'model', 'admin']);
+export type ChatRole = z.infer<typeof ChatRoleSchema>;
+
+export type ChatMessage = {
+  id: string;
+  text: string;
+  role: ChatRole;
+  timestamp: string; // ISO string
+  authorName?: string;
+  replyTo: {
+    messageId: string;
+    text: string;
+    author: string;
+  } | null;
+};
+
+export type ChatSession = {
+  id: string;
+  userName: string;
+  userPhone: string;
+  userEmail?: string;
+  createdAt: string; // ISO string
+};
+
+export type ChatSessionWithTokens = ChatSession & {
+    messageCount: number;
+    totalTokens: number;
+    totalCost: number;
+    totalInputTokens: number;
+    totalOutputTokens: number;
 };

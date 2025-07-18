@@ -22,6 +22,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es" suppressHydrationWarning>
+      <head>
+        <script async src="https://tpemd.com/content?trs=435952&shmarker=650276&lang=es&layout=S10391&powered_by=true&campaign_id=121&promo_id=4038" charSet="utf-8"></script>
+      </head>
       <body className={cn("min-h-screen bg-background font-body antialiased")}>
         <ThemeProvider
           attribute="class"

@@ -2,43 +2,70 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { MessageSquare, User, Clock, Search, Bot } from 'lucide-react';
-import { getChatSessionsAction } from '@/lib/agent-actions';
+import { MessageSquare, User, Clock, Search, Bot, Sparkles, ArrowRight } from 'lucide-react';
+import { getBusinessChatSessionsAction } from '@/lib/business-chat-actions';
 import type { ChatSessionWithTokens } from '@/lib/chat-types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import Link from 'next/link';
 import { Input } from '@/components/ui/input';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { Badge } from '@/components/ui/badge';
 
-export default function ConversationsPage() {
+function AgentNotActiveCta() {
+    return (
+        <div className="flex items-center justify-center p-4">
+            <Card className="relative max-w-2xl w-full overflow-hidden text-center bg-muted/30">
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 opacity-50 z-0"></div>
+                 <CardContent className="p-8 sm:p-12 relative z-10 flex flex-col items-center">
+                    <div className="p-4 bg-primary/10 rounded-full mb-4">
+                       <Bot className="w-16 h-16 text-primary" />
+                    </div>
+                    <h2 className="text-2xl font-bold font-headline">Activa tu Asistente IA</h2>
+                    <p className="mt-2 text-muted-foreground max-w-md mx-auto">
+                       Actualmente tu agente de IA está desactivado. Habilítalo para empezar a gestionar automáticamente las consultas de tus clientes y ver las conversaciones aquí.
+                    </p>
+                    <Button asChild className="mt-6">
+                        <Link href="/dashboard/advertiser/agent">
+                            <Sparkles className="mr-2 h-4 w-4" /> Activar Agente Ahora <ArrowRight className="ml-2 h-4 w-4" />
+                        </Link>
+                    </Button>
+                </CardContent>
+            </Card>
+        </div>
+    );
+}
+
+
+export default function AdvertiserConversationsPage() {
     const [sessions, setSessions] = useState<ChatSessionWithTokens[]>([]);
-    const [isLoadingSessions, setIsLoadingSessions] = useState(true);
+    const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
-    const [filter, setFilter] = useState('all');
     const { toast } = useToast();
-    const router = useRouter();
+    const { user, userProfile, loading: authLoading } = useAuth();
 
     useEffect(() => {
-        const fetchSessions = async () => {
-            setIsLoadingSessions(true);
-            const result = await getChatSessionsAction();
-            if (result.error) {
-                toast({ variant: 'destructive', title: 'Error', description: result.error });
-            } else if (result.sessions) {
-                setSessions(result.sessions);
-            }
-            setIsLoadingSessions(false);
-        };
+        if (!authLoading && user && userProfile?.businessProfile?.isAgentEnabled) {
+            const fetchSessions = async () => {
+                setIsLoading(true);
+                const idToken = await user.getIdToken();
+                const result = await getBusinessChatSessionsAction(idToken);
+                if (result.error) {
+                    toast({ variant: 'destructive', title: 'Error', description: result.error });
+                } else if (result.sessions) {
+                    setSessions(result.sessions);
+                }
+                setIsLoading(false);
+            };
+            fetchSessions();
+        } else if (!authLoading) {
+            setIsLoading(false);
+        }
+    }, [toast, authLoading, user, userProfile]);
 
-        fetchSessions();
-    }, [toast]);
-    
     const formatDate = (dateString: string) => {
         return new Date(dateString).toLocaleString('es-ES', {
             day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
@@ -47,26 +74,34 @@ export default function ConversationsPage() {
 
     const filteredSessions = sessions.filter(session => {
         const query = searchQuery.toLowerCase();
-        const matchesQuery = session.userName.toLowerCase().includes(query) ||
-                             session.userPhone.includes(query);
-
-        // Add filter logic here when available (e.g., unread, needs reply)
-        const matchesFilter = true; // Placeholder for now
-
-        return matchesQuery && matchesFilter;
+        return session.userName.toLowerCase().includes(query) ||
+               (session.userPhone && session.userPhone.includes(query));
     });
+
+    if (authLoading) {
+        return (
+             <div className="space-y-6">
+                 <Skeleton className="h-8 w-1/2" />
+                 <Skeleton className="h-64 w-full" />
+             </div>
+        );
+    }
+    
+    if (!userProfile?.businessProfile?.isAgentEnabled) {
+        return <AgentNotActiveCta />;
+    }
 
     return (
         <div className="space-y-6">
             <div className="flex items-center gap-4">
                 <MessageSquare className="w-8 h-8 text-primary" />
-                <h1 className="text-3xl font-bold font-headline">Conversaciones</h1>
+                <h1 className="text-3xl font-bold font-headline">Conversaciones del Negocio</h1>
             </div>
             
             <Card>
                 <CardHeader>
                     <CardTitle>Bandeja de Entrada</CardTitle>
-                    <CardDescription>Supervisa y participa en las interacciones de los usuarios con los agentes de IA.</CardDescription>
+                    <CardDescription>Supervisa y participa en las interacciones de los usuarios con tu agente de IA.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <div className="flex flex-col sm:flex-row items-center gap-4 mb-4">
@@ -79,16 +114,11 @@ export default function ConversationsPage() {
                                 onChange={e => setSearchQuery(e.target.value)}
                             />
                         </div>
-                         <ToggleGroup type="single" value={filter} onValueChange={(value) => value && setFilter(value)} defaultValue="all">
-                            <ToggleGroupItem value="all" aria-label="Todos los chats">Todos</ToggleGroupItem>
-                            <ToggleGroupItem value="unread" aria-label="Chats no leídos">No Leídos</ToggleGroupItem>
-                            <ToggleGroupItem value="reply" aria-label="Necesita respuesta">Necesita Respuesta</ToggleGroupItem>
-                        </ToggleGroup>
                     </div>
 
                     <div className="border rounded-lg overflow-hidden">
-                        {isLoadingSessions ? (
-                            Array.from({ length: 5 }).map((_, i) => (
+                        {isLoading ? (
+                            Array.from({ length: 3 }).map((_, i) => (
                                 <div key={i} className="flex items-center gap-4 p-4 border-b">
                                     <Skeleton className="h-12 w-12 rounded-full" />
                                     <div className="space-y-2 flex-1">
@@ -99,7 +129,7 @@ export default function ConversationsPage() {
                             ))
                         ) : filteredSessions.length > 0 ? (
                             filteredSessions.map(session => (
-                                <Link key={session.id} href={`/dashboard/admin/conversations/${session.id}`} className="block">
+                                <Link key={session.id} href={`/dashboard/advertiser/conversations/${session.id}`} className="block">
                                     <div className="flex items-center gap-4 p-4 hover:bg-muted/50 transition-colors cursor-pointer border-b last:border-b-0">
                                         <Avatar className="h-12 w-12 border">
                                             <AvatarFallback className="bg-primary/10 text-primary">
@@ -114,11 +144,9 @@ export default function ConversationsPage() {
                                                     {formatDate(session.createdAt)}
                                                 </div>
                                             </div>
-                                            <div className="flex justify-between items-end mt-1">
-                                                <p className="text-sm text-muted-foreground truncate">
-                                                    {session.userPhone}
-                                                </p>
-                                            </div>
+                                            <p className="text-sm text-muted-foreground truncate mt-1">
+                                                {session.userPhone}
+                                            </p>
                                         </div>
                                     </div>
                                 </Link>

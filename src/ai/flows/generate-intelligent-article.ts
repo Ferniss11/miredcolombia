@@ -14,9 +14,10 @@ import { webSearch } from '../tools/web-search';
 import { unsplashSearch } from '../tools/unsplash-search';
 import type { GenerateArticleInput, IntelligentArticle } from '@/lib/types';
 import { GenerateArticleInputSchema, IntelligentArticleOutputSchema } from '@/lib/types';
+import { calculateCost } from '@/lib/ai-costs';
 
 
-export async function generateIntelligentArticle(input: GenerateArticleInput): Promise<IntelligentArticle> {
+export async function generateIntelligentArticle(input: GenerateArticleInput) {
   return generateIntelligentArticleFlow(input);
 }
 
@@ -65,10 +66,25 @@ const generateIntelligentArticleFlow = ai.defineFlow(
   {
     name: 'generateIntelligentArticleFlow',
     inputSchema: GenerateArticleInputSchema,
-    outputSchema: IntelligentArticleOutputSchema,
+    // The flow now returns the article AND its generation cost
+    outputSchema: z.object({
+        article: IntelligentArticleOutputSchema,
+        cost: z.number(),
+    }),
   },
-  async input => {
-    const {output} = await prompt(input);
-    return output!;
+  async (input: GenerateArticleInput) => {
+    const {output, usage} = await prompt(input);
+    if (!output) {
+        throw new Error("AI did not return an article.");
+    }
+    
+    // Calculate cost based on token usage
+    const cost = calculateCost(
+        'googleai/gemini-1.5-pro-latest', // Assuming this is the model for content generation
+        usage.inputTokens || 0,
+        usage.outputTokens || 0
+    );
+
+    return { article: output, cost };
   }
 );

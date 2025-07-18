@@ -1,10 +1,17 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Clock } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
-const RealTimeClocks = () => {
+interface RealTimeClocksProps {
+    variant?: 'default' | 'minimal';
+    country?: 'Colombia' | 'Spain';
+}
+
+const RealTimeClocks = ({ variant = 'default', country }: RealTimeClocksProps) => {
   const [time, setTime] = useState({
     colombia: '',
     spain: '',
@@ -17,14 +24,12 @@ const RealTimeClocks = () => {
               timeZone: 'America/Bogota',
               hour: '2-digit',
               minute: '2-digit',
-              second: '2-digit',
               hour12: true,
             }),
             spain: new Date().toLocaleTimeString('es-ES', {
               timeZone: 'Europe/Madrid',
               hour: '2-digit',
               minute: '2-digit',
-              second: '2-digit',
               hour12: false,
             }),
         });
@@ -35,6 +40,46 @@ const RealTimeClocks = () => {
 
     return () => clearInterval(timer);
   }, []);
+  
+  if (variant === 'minimal') {
+    if (country === 'Colombia') {
+        return (
+            <div className="p-4">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <span className="text-2xl">🇨🇴</span>
+                        <div>
+                            <p className="font-semibold text-sm">Colombia</p>
+                            <p className="text-xs text-muted-foreground">(COT)</p>
+                        </div>
+                    </div>
+                    <p className="text-lg font-mono font-semibold tracking-wider">
+                        {time.colombia || '...'}
+                    </p>
+                </div>
+            </div>
+        );
+    }
+    if (country === 'Spain') {
+         return (
+            <div className="p-4">
+                 <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <span className="text-2xl">🇪🇸</span>
+                        <div>
+                            <p className="font-semibold text-sm">España</p>
+                            <p className="text-xs text-muted-foreground">(CET)</p>
+                        </div>
+                    </div>
+                    <p className="text-lg font-mono font-semibold tracking-wider">
+                        {time.spain || '...'}
+                    </p>
+                </div>
+            </div>
+        );
+    }
+    return null;
+  }
 
   return (
     <div>
@@ -82,19 +127,6 @@ const RealTimeClocks = () => {
                 </CardContent>
             </Card>
         </div>
-        <Card className="max-w-2xl mx-auto mt-8">
-             <CardContent className="pt-6">
-                <div className="flex items-start gap-4">
-                    <div className="text-2xl pt-1">💡</div>
-                    <div>
-                        <h4 className="font-bold font-headline text-lg">Tip de Horarios</h4>
-                        <p className="text-muted-foreground mt-1">
-                            Diferencia horaria: Madrid está 6-7 horas adelante de Bogotá dependiendo del horario de verano. El mejor momento para llamadas familiares es entre las 14:00-20:00 hora de Madrid (8:00-14:00 hora de Bogotá).
-                        </p>
-                    </div>
-                </div>
-             </CardContent>
-        </Card>
     </div>
   );
 };

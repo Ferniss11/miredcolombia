@@ -4,6 +4,10 @@ import Image from "next/image";
 import Link from "next/link";
 
 export default function HeroSection() {
+
+    const whatsappMessage = encodeURIComponent("Hola, me gustaría tener más información sobre los servicios de migración.");
+    const phoneNumber = "34653863675"; 
+
     return (
         <section className="relative w-full h-screen flex items-center justify-center text-white">
             <Image
@@ -33,14 +37,18 @@ export default function HeroSection() {
                     <Button asChild size="lg" className="bg-destructive hover:bg-destructive/90 text-destructive-foreground px-8 py-6 text-base">
                         <Link href="#packages">
                             <Package className="mr-2 h-5 w-5" />
-                            Elige tu paquete
+                            Descubre nuestros servicios
                         </Link>
                     </Button>
                     <Button asChild size="lg" variant="outline" className="border-white text-white bg-transparent hover:bg-white/10 px-8 py-6 text-base">
-                        <Link href="#">
+                        <a 
+                          href={`https://wa.me/${phoneNumber}?text=${whatsappMessage}`}
+                          target="_blank"
+                          rel="noopener noreferrer" 
+                        >
                             <MessageCircle className="mr-2 h-5 w-5" />
                             Chat WhatsApp
-                        </Link>
+                        </a>
                     </Button>
                 </div>
             </div>
