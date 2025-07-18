@@ -12,7 +12,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 
 const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', minimumFractionDigits: 2 }).format(value);
+    return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(value);
 };
 
 export default function AnalyticsClient() {
