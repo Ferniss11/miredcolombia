@@ -58,6 +58,7 @@ export default function HomePageClient({ initialPosts, eurToCopRate, initialBusi
         <BlogSection posts={initialPosts} />
         <BusinessSection />
         <TestimonialsSection />
+        <AiAssistantSection />
       </main>
 
       <ChatWidget />
