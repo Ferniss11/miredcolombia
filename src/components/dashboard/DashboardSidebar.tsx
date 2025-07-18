@@ -25,6 +25,7 @@ import {
   Building,
   Bug,
   MessageSquare,
+  Scale,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -55,6 +56,7 @@ export function DashboardSidebar() {
     { href: "/dashboard/admin/agent", label: "Agente Global", icon: Bot },
     { href: "/dashboard/admin/conversations", label: "Conversaciones", icon: MessageSquare },
     { href: "/dashboard/admin/directory", label: "Directorio", icon: Building },
+    { href: "/dashboard/admin/economics", label: "IA Económico", icon: Scale },
     { href: "/dashboard/admin/debug", label: "Depuración", icon: Bug },
   ];
 

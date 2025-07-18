@@ -1,6 +1,7 @@
 
 import { adminDb, adminInstance } from "@/lib/firebase/admin-config";
 import type { BlogPost } from "@/lib/types";
+import { calculateCost } from "@/lib/ai-costs"; // Import the cost calculator
 
 const FieldValue = adminInstance?.firestore.FieldValue;
 
@@ -20,6 +21,8 @@ export async function createBlogPost(postData: BlogPostData, authorId: string, a
       throw new Error("Firebase Admin SDK is not initialized. Cannot create blog post.");
   }
   try {
+    // Note: The cost calculation now happens within the content generation flow,
+    // and the cost is passed in the postData. We just save it here.
     const docRef = await adminDb.collection("posts").add({
       ...postData,
       authorId: authorId,

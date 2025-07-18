@@ -1,5 +1,6 @@
 
 
+
 import { z } from 'zod';
 
 // Schema for Blog Content Generation
@@ -155,6 +156,7 @@ export interface BlogPost {
   featuredImageUrl?: string;
   featuredImageHint?: string;
   suggestedTags: string[];
+  generationCost?: number; // Cost in EUR for generating this post
 
   // Optional placeholder fields for simpler posts
   excerpt?: string;
@@ -274,4 +276,15 @@ export type GoogleTokens = {
     scope: string;
     token_type: string;
     expiry_date: number;
+};
+
+// Platform Economics
+export type PlatformConfig = {
+    profitMarginPercentage: number;
+};
+
+export type PlatformCosts = {
+    totalCost: number;
+    chatCost: number;
+    contentCost: number;
 };
