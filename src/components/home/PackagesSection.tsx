@@ -10,7 +10,6 @@ import type { MigrationPackage } from "@/lib/types";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 type PackagesSectionProps = {
-    handlePurchaseClick?: (item: MigrationPackage, type: 'package') => void;
     eurToCopRate: number;
 };
 
@@ -30,7 +29,9 @@ const formatRate = (rate: number) => {
     }).format(rate);
 }
 
-export default function PackagesSection({ handlePurchaseClick, eurToCopRate }: PackagesSectionProps) {
+export default function PackagesSection({ eurToCopRate }: PackagesSectionProps) {
+    const phoneNumber = "34653863675"; 
+
     return (
         <TooltipProvider>
             <section id="packages" className="w-full py-12 md:py-24 lg:py-32 bg-background">
@@ -46,7 +47,10 @@ export default function PackagesSection({ handlePurchaseClick, eurToCopRate }: P
                     </div>
                     <div className="mx-auto grid grid-cols-1 md:grid-cols-3 gap-8 py-12 max-w-6xl">
                         {migrationPackages.map((pkg) => {
-                            const priceInCop = pkg.price * eurToCopRate;
+                            const whatsappMessage = encodeURIComponent(`Hola, me gustaría tener más información sobre el paquete ${pkg.name}.`);
+                            const whatsappUrl = `https://wa.me/${phoneNumber}?text=${whatsappMessage}`;
+                            
+                            // const priceInCop = pkg.price * eurToCopRate;
                             return (
                                 <Card key={pkg.id} className={cn("flex flex-col rounded-xl shadow-lg transition-transform hover:scale-105 overflow-hidden", { 'border-2 border-primary': pkg.popular })}>
                                     {pkg.popular && (
@@ -59,7 +63,7 @@ export default function PackagesSection({ handlePurchaseClick, eurToCopRate }: P
                                     </div>
                                     <CardHeader className="text-center">
                                         <h3 className={cn("text-2xl font-bold font-headline", pkg.textColor)}>{pkg.name}</h3>
-                                        <p className="text-4xl font-extrabold">{formatPrice(pkg.price, 'EUR')}</p>
+                                        {/* <p className="text-4xl font-extrabold">{formatPrice(pkg.price, 'EUR')}</p>
                                         <div className="flex items-center justify-center gap-1 text-sm text-muted-foreground">
                                             <span>Aprox. {formatPrice(priceInCop, 'COP')}</span>
                                             <Tooltip>
@@ -72,7 +76,7 @@ export default function PackagesSection({ handlePurchaseClick, eurToCopRate }: P
                                                     <p>Tasa de cambio: 1 EUR ≈ {formatRate(eurToCopRate)}</p>
                                                 </TooltipContent>
                                             </Tooltip>
-                                        </div>
+                                        </div> */}
                                         <p className="text-sm pt-2">{pkg.description}</p>
                                     </CardHeader>
                                     <CardContent className="flex-grow">
@@ -86,7 +90,9 @@ export default function PackagesSection({ handlePurchaseClick, eurToCopRate }: P
                                         </ul>
                                     </CardContent>
                                     <CardFooter>
-                                        <Button onClick={() => handlePurchaseClick?.(pkg, 'package')} className={cn("w-full text-white", pkg.color)}>Contratar {pkg.name}</Button>
+                                        <Button asChild className={cn("w-full text-white", pkg.color)}>
+                                            <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">Solicitar por WhatsApp</a>
+                                        </Button>
                                     </CardFooter>
                                 </Card>
                             )

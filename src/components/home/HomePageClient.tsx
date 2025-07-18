@@ -49,12 +49,12 @@ export default function HomePageClient({ initialPosts, eurToCopRate, initialBusi
     <div className="flex flex-col min-h-[100dvh]">
       <main className="flex-1">
         <HeroSection />
-        <AboutSection handleVideoClick={handleVideoClick} />
         <StepsSection />
-        <PackagesSection handlePurchaseClick={handlePurchaseClick} eurToCopRate={eurToCopRate} />
-        <ServicesSection handlePurchaseClick={handlePurchaseClick} eurToCopRate={eurToCopRate} />
-        <DirectorySection businesses={initialBusinesses} />
+        <AboutSection handleVideoClick={handleVideoClick} />
         <AiAssistantSection />
+        <PackagesSection eurToCopRate={eurToCopRate} />
+        <ServicesSection eurToCopRate={eurToCopRate} />
+        <DirectorySection businesses={initialBusinesses} />
         <BlogSection posts={initialPosts} />
         <BusinessSection />
         <TestimonialsSection />

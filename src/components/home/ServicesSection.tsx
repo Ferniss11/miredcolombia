@@ -32,7 +32,6 @@ const serviceIcons: { [key: string]: LucideIcon } = {
 };
 
 type ServicesSectionProps = {
-    handlePurchaseClick?: (item: MigrationService, type: 'service') => void;
     eurToCopRate: number;
 };
 
@@ -53,7 +52,9 @@ const formatRate = (rate: number) => {
 }
 
 
-export default function ServicesSection({ handlePurchaseClick, eurToCopRate }: ServicesSectionProps) {
+export default function ServicesSection({ eurToCopRate }: ServicesSectionProps) {
+    const phoneNumber = "34653863675"; 
+    
     return (
         <TooltipProvider>
             <section id="services" className="w-full py-12 md:py-24 lg:py-32 bg-gray-100 dark:bg-gray-800">
@@ -70,7 +71,10 @@ export default function ServicesSection({ handlePurchaseClick, eurToCopRate }: S
                     <div className="mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 py-12">
                         {migrationServices.map((service) => {
                             const Icon = serviceIcons[service.icon];
-                            const priceInCop = service.price * eurToCopRate;
+                            // const priceInCop = service.price * eurToCopRate;
+                            const whatsappMessage = encodeURIComponent(`Hola, me gustaría tener más información sobre el servicio de ${service.title}.`);
+                            const whatsappUrl = `https://wa.me/${phoneNumber}?text=${whatsappMessage}`;
+
                             return (
                                 <Card key={service.id} className={cn("overflow-hidden shadow-md hover:shadow-xl transition-shadow duration-300 flex flex-col")}>
                                     <div className="h-1.5 flex w-full">
@@ -84,7 +88,7 @@ export default function ServicesSection({ handlePurchaseClick, eurToCopRate }: S
                                         <CardTitle className="font-headline text-xl mt-4">{service.title}</CardTitle>
                                     </CardHeader>
                                     <CardContent className="text-center flex-grow">
-                                        <p className="text-2xl font-bold">{formatPrice(service.price, 'EUR')}</p>
+                                        {/* <p className="text-2xl font-bold">{formatPrice(service.price, 'EUR')}</p>
                                         <div className="flex items-center justify-center gap-1 text-xs text-muted-foreground">
                                             <span>Aprox. {formatPrice(priceInCop, 'COP')}</span>
                                              <Tooltip>
@@ -97,11 +101,13 @@ export default function ServicesSection({ handlePurchaseClick, eurToCopRate }: S
                                                     <p>Tasa de cambio: 1 EUR ≈ {formatRate(eurToCopRate)}</p>
                                                 </TooltipContent>
                                             </Tooltip>
-                                        </div>
+                                        </div> */}
                                         <p className="mt-2 text-sm">{service.description}</p>
                                     </CardContent>
                                     <CardFooter>
-                                        <Button onClick={() => handlePurchaseClick?.(service, 'service')} className={cn("w-full text-white", service.buttonColor)}>Solicitar</Button>
+                                        <Button asChild className={cn("w-full text-white", service.buttonColor)}>
+                                             <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">Solicitar por WhatsApp</a>
+                                        </Button>
                                     </CardFooter>
                                 </Card>
                             )
