@@ -299,3 +299,14 @@ export async function getChatSessionById(sessionId: string): Promise<ChatSession
 
   return session;
 }
+
+
+export async function getBusinessChatSessions(businessId: string): Promise<any[]> {
+    const db = getDbInstance();
+    const sessionsRef = db.collection('directory').doc(businessId).collection('businessChatSessions');
+    const snapshot = await sessionsRef.get();
+    if (snapshot.empty) {
+        return [];
+    }
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+}

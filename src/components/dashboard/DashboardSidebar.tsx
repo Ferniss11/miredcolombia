@@ -43,9 +43,10 @@ export function DashboardSidebar() {
   const { state } = useSidebar();
 
   const advertiserNav = [
-    { href: "/dashboard/advertiser", label: "Resumen", icon: BarChart2 },
-    { href: "/dashboard/advertiser/ads", label: "Anuncios", icon: Megaphone },
+    { href: "/dashboard/advertiser", label: "Resumen", icon: LayoutGrid },
     { href: "/dashboard/advertiser/agent", label: "Agente IA", icon: Bot },
+    { href: "/dashboard/advertiser/analytics", label: "Analíticas IA", icon: BarChart2 },
+    { href: "/dashboard/advertiser/ads", label: "Anuncios", icon: Megaphone },
     { href: "/dashboard/advertiser/profile", label: "Perfil", icon: User },
   ];
 
@@ -96,7 +97,7 @@ export function DashboardSidebar() {
             <SidebarMenuItem key={item.href}>
               <Link href={item.href}>
                 <SidebarMenuButton
-                  isActive={pathname === item.href || (item.href !== '/dashboard/admin' && pathname.startsWith(item.href))}
+                  isActive={pathname === item.href || (item.href !== '/dashboard/admin' && item.href !== '/dashboard/advertiser' && pathname.startsWith(item.href))}
                   icon={item.icon}
                   tooltip={item.label}
                   data-state={state}

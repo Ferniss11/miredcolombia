@@ -2,11 +2,13 @@
 'use server';
 
 import { z } from 'zod';
-import { adminDb, adminAuth } from '@/lib/firebase/admin-config';
-import type { BusinessProfile, BusinessAgentConfig } from './types';
+import { adminDb, adminAuth, adminInstance } from '@/lib/firebase/admin-config';
+import type { BusinessProfile, BusinessAgentConfig, BusinessAnalytics } from './types';
 import { revalidatePath } from 'next/cache';
 import { BusinessAgentConfigSchema } from './types';
+import { getPlatformConfig } from '@/services/platform.service';
 
+const FieldValue = adminInstance?.firestore.FieldValue;
 
 const businessProfileSchema = z.object({
     businessName: z.string().min(2, { message: "El nombre del negocio debe tener al menos 2 caracteres." }),
@@ -111,5 +113,63 @@ export async function updateBusinessAgentConfigAction(uid: string, config: Busin
             ? error.errors.map(e => e.message).join(', ')
             : error instanceof Error ? error.message : 'Unknown error';
         return { error: `No se pudo guardar la configuración del agente: ${errorMessage}` };
+    }
+}
+
+
+export async function getBusinessAnalyticsAction(uid: string): Promise<BusinessAnalytics> {
+    const defaultAnalytics = {
+        totalFinalCost: 0,
+        totalConversations: 0,
+        totalTokens: 0,
+        totalInputTokens: 0,
+        totalOutputTokens: 0,
+        profitMargin: 0,
+    };
+    
+    try {
+        const db = await verifyUserAndGetDb(uid);
+        const userDoc = await db.collection('users').doc(uid).get();
+        if (!userDoc.exists) throw new Error("User not found");
+
+        const placeId = userDoc.data()?.businessProfile?.placeId;
+        if (!placeId) return defaultAnalytics;
+
+        const chatSessionsSnapshot = await db.collection('directory').doc(placeId).collection('businessChatSessions').get();
+
+        let totalInputTokens = 0;
+        let totalOutputTokens = 0;
+        let totalRealCost = 0;
+
+        chatSessionsSnapshot.forEach(doc => {
+            const data = doc.data();
+            const messages = data.messages || []; // Assuming messages are stored in an array on the session now
+            messages.forEach((msg: any) => {
+                if (msg.usage) {
+                    totalInputTokens += msg.usage.inputTokens || 0;
+                    totalOutputTokens += msg.usage.outputTokens || 0;
+                }
+                totalRealCost += msg.cost || 0;
+            });
+        });
+        
+        // Fetch platform profit margin
+        const platformConfig = await getPlatformConfig();
+        const profitMargin = platformConfig.profitMarginPercentage;
+        
+        const totalFinalCost = totalRealCost + (totalRealCost * (profitMargin / 100));
+
+        return {
+            totalFinalCost,
+            totalConversations: chatSessionsSnapshot.size,
+            totalTokens: totalInputTokens + totalOutputTokens,
+            totalInputTokens,
+            totalOutputTokens,
+            profitMargin,
+        };
+
+    } catch (error) {
+        console.error("Error getting business analytics:", error);
+        return defaultAnalytics;
     }
 }

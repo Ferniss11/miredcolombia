@@ -1,6 +1,4 @@
 
-
-
 import { z } from 'zod';
 
 // Schema for Blog Content Generation
@@ -287,4 +285,15 @@ export type PlatformCosts = {
     totalCost: number;
     chatCost: number;
     contentCost: number;
+};
+
+
+// Business Analytics
+export type BusinessAnalytics = {
+    totalFinalCost: number;
+    totalConversations: number;
+    totalTokens: number;
+    totalInputTokens: number;
+    totalOutputTokens: number;
+    profitMargin: number;
 };

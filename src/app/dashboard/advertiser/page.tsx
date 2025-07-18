@@ -4,7 +4,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { LineChart, CartesianGrid, XAxis, Line } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
-import { DollarSign, Eye, Pointer } from "lucide-react";
+import { DollarSign, Eye, Pointer, LayoutGrid } from "lucide-react";
 
 const chartData = [
   { month: "Enero", desktop: 186, mobile: 80 },
@@ -30,7 +30,11 @@ const chartConfig = {
 export default function AdvertiserDashboardPage() {
     return (
         <div className="space-y-6">
-            <h1 className="text-3xl font-bold font-headline mb-6">Resumen del Anunciante</h1>
+            <div className="flex items-center gap-3">
+                <LayoutGrid className="h-8 w-8 text-primary"/>
+                <h1 className="text-3xl font-bold font-headline">Resumen del Anunciante</h1>
+            </div>
+            
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
