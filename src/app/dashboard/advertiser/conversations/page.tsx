@@ -48,10 +48,11 @@ export default function AdvertiserConversationsPage() {
     const { user, userProfile, loading: authLoading } = useAuth();
 
     useEffect(() => {
-        if (!authLoading && userProfile?.businessProfile?.isAgentEnabled) {
+        if (!authLoading && user && userProfile?.businessProfile?.isAgentEnabled) {
             const fetchSessions = async () => {
                 setIsLoading(true);
-                const result = await getBusinessChatSessionsAction();
+                const idToken = await user.getIdToken();
+                const result = await getBusinessChatSessionsAction(idToken);
                 if (result.error) {
                     toast({ variant: 'destructive', title: 'Error', description: result.error });
                 } else if (result.sessions) {
@@ -63,7 +64,7 @@ export default function AdvertiserConversationsPage() {
         } else if (!authLoading) {
             setIsLoading(false);
         }
-    }, [toast, authLoading, userProfile]);
+    }, [toast, authLoading, user, userProfile]);
 
     const formatDate = (dateString: string) => {
         return new Date(dateString).toLocaleString('es-ES', {

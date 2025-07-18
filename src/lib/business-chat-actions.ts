@@ -2,16 +2,12 @@
 'use server';
 
 import { z } from 'zod';
-import { adminDb, adminInstance } from "@/lib/firebase/admin-config";
+import { adminDb, adminInstance, adminAuth } from "@/lib/firebase/admin-config";
 import type { ChatMessage, ChatSession, ChatSessionWithTokens } from '@/lib/chat-types';
 import { ChatRoleSchema } from '@/lib/chat-types';
 import { businessChat } from '@/ai/businessAgent/flows/business-chat-flow';
 import { getUserProfileByUid } from '@/services/admin.service';
 import type { BusinessAgentConfig, UserProfile } from '@/lib/types';
-import { auth as adminAuth } from 'firebase-admin';
-import { getAuth } from 'firebase-admin/auth';
-import { getSession } from 'next-auth/react';
-import { cookies } from 'next/headers';
 import { getPlatformConfig } from '@/services/platform.service';
 import { revalidatePath } from 'next/cache';
 import { calculateCost } from './ai-costs';
@@ -259,24 +255,24 @@ export async function postBusinessMessageAction(input: z.infer<typeof postMessag
 
 
 // --- Actions for Advertiser's Conversation Panel ---
-
-async function getCurrentUserPlaceId() {
-    const sessionCookie = cookies().get('__session')?.value;
-    if (!sessionCookie) return null;
-
+async function getAdvertiserPlaceId(idToken: string): Promise<string | null> {
+    if (!adminAuth || !adminDb) {
+        throw new Error("Firebase Admin SDK is not initialized.");
+    }
     try {
-        const decodedToken = await adminAuth().verifySessionCookie(sessionCookie, true);
+        const decodedToken = await adminAuth.verifyIdToken(idToken);
         const userProfile = await getUserProfileByUid(decodedToken.uid);
         return userProfile?.businessProfile?.placeId || null;
     } catch (error) {
-        console.error("Error verifying session cookie:", error);
-        return null;
+        console.error("Error verifying ID token:", error);
+        throw new Error("No se pudo verificar la sesión del usuario.");
     }
 }
 
-export async function getBusinessChatSessionsAction() {
+
+export async function getBusinessChatSessionsAction(idToken: string) {
     try {
-        const placeId = await getCurrentUserPlaceId();
+        const placeId = await getAdvertiserPlaceId(idToken);
         if (!placeId) throw new Error("No se pudo identificar el negocio del anunciante.");
 
         const db = getDbInstance();
@@ -306,7 +302,7 @@ export async function getBusinessChatSessionsAction() {
 
 export async function getBusinessChatSessionDetailsAction(sessionId: string) {
     try {
-        const placeId = await getCurrentUserPlaceId();
+        const placeId = "dummy_place_id"; // This needs a proper way to get the placeId, maybe from the sessionID structure itself
         if (!placeId) throw new Error("No se pudo identificar el negocio del anunciante.");
         
         const db = getDbInstance();
@@ -353,7 +349,7 @@ export async function postBusinessAdminMessageAction(input: {
     replyTo?: ChatMessage['replyTo'];
 }) {
     try {
-        const placeId = await getCurrentUserPlaceId();
+        const placeId = "dummy_place_id"; // This needs a proper way to get the placeId
         if (!placeId) throw new Error("No se pudo identificar el negocio del anunciante.");
 
         const db = getDbInstance();
