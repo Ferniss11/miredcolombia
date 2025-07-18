@@ -1,4 +1,5 @@
 
+
 import { z } from 'zod';
 
 // Schema for Blog Content Generation
@@ -296,4 +297,38 @@ export type BusinessAnalytics = {
     totalInputTokens: number;
     totalOutputTokens: number;
     profitMargin: number;
+};
+
+
+// Chat Types Re-centralization
+export const ChatRoleSchema = z.enum(['user', 'model', 'admin']);
+export type ChatRole = z.infer<typeof ChatRoleSchema>;
+
+export type ChatMessage = {
+  id: string;
+  text: string;
+  role: ChatRole;
+  timestamp: string; // ISO string
+  authorName?: string;
+  replyTo: {
+    messageId: string;
+    text: string;
+    author: string;
+  } | null;
+};
+
+export type ChatSession = {
+  id: string;
+  userName: string;
+  userPhone: string;
+  userEmail?: string;
+  createdAt: string; // ISO string
+};
+
+export type ChatSessionWithTokens = ChatSession & {
+    messageCount: number;
+    totalTokens: number;
+    totalCost: number;
+    totalInputTokens: number;
+    totalOutputTokens: number;
 };

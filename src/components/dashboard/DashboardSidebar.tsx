@@ -45,6 +45,7 @@ export function DashboardSidebar() {
   const advertiserNav = [
     { href: "/dashboard/advertiser", label: "Resumen", icon: LayoutGrid },
     { href: "/dashboard/advertiser/agent", label: "Agente IA", icon: Bot },
+    { href: "/dashboard/advertiser/conversations", label: "Conversaciones", icon: MessageSquare },
     { href: "/dashboard/advertiser/analytics", label: "Analíticas IA", icon: BarChart2 },
     { href: "/dashboard/advertiser/ads", label: "Anuncios", icon: Megaphone },
     { href: "/dashboard/advertiser/profile", label: "Perfil", icon: User },
