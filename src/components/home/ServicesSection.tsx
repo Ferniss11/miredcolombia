@@ -17,8 +17,9 @@ import {
     MapPin,
     Clock,
     Info,
+    type LucideIcon,
 } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
+import Image from "next/image";
 
 const serviceIcons: { [key: string]: LucideIcon } = {
     User,
@@ -71,7 +72,6 @@ export default function ServicesSection({ eurToCopRate }: ServicesSectionProps) 
                     <div className="mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 py-12 max-w-6xl">
                         {migrationServices.map((service) => {
                             const Icon = serviceIcons[service.icon];
-                            // const priceInCop = service.price * eurToCopRate;
                             const whatsappMessage = encodeURIComponent(`Hola, me gustaría tener más información sobre el servicio de ${service.title}.`);
                             const whatsappUrl = `https://wa.me/${phoneNumber}?text=${whatsappMessage}`;
 
@@ -88,20 +88,6 @@ export default function ServicesSection({ eurToCopRate }: ServicesSectionProps) 
                                         <CardTitle className="font-headline text-xl mt-4">{service.title}</CardTitle>
                                     </CardHeader>
                                     <CardContent className="text-center flex-grow">
-                                        {/* <p className="text-2xl font-bold">{formatPrice(service.price, 'EUR')}</p>
-                                        <div className="flex items-center justify-center gap-1 text-xs text-muted-foreground">
-                                            <span>Aprox. {formatPrice(priceInCop, 'COP')}</span>
-                                             <Tooltip>
-                                                <TooltipTrigger asChild>
-                                                    <button className="p-0.5 rounded-full hover:bg-muted-foreground/10">
-                                                        <Info className="h-3 w-3" />
-                                                    </button>
-                                                </TooltipTrigger>
-                                                <TooltipContent>
-                                                    <p>Tasa de cambio: 1 EUR ≈ {formatRate(eurToCopRate)}</p>
-                                                </TooltipContent>
-                                            </Tooltip>
-                                        </div> */}
                                         <p className="mt-2 text-sm">{service.description}</p>
                                     </CardContent>
                                     <CardFooter>
@@ -112,6 +98,38 @@ export default function ServicesSection({ eurToCopRate }: ServicesSectionProps) 
                                 </Card>
                             )
                         })}
+                    </div>
+
+                    {/* Travel Agency Banner */}
+                    <div className="mx-auto max-w-6xl mt-8">
+                         <div className="bg-white dark:bg-card rounded-xl shadow-md overflow-hidden transition-shadow hover:shadow-lg">
+                            <div className="flex flex-col md:flex-row items-center p-6 space-y-4 md:space-y-0 md:space-x-6">
+                                <div className="flex-shrink-0">
+                                    <div className="w-24 h-24 rounded-full bg-white p-2 shadow-inner flex items-center justify-center">
+                                        <Image 
+                                            src="https://firebasestorage.googleapis.com/v0/b/colombia-en-esp.firebasestorage.app/o/web%2Fagencia%20de%20viajes.%20.jpg?alt=media&token=1053bc22-ea27-4dd4-8460-e3c2e2dcc4c2"
+                                            alt="Logo Agencia de Viajes"
+                                            width={80}
+                                            height={80}
+                                            className="rounded-full"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="flex-grow text-center md:text-left">
+                                    <h3 className="text-2xl font-bold font-headline">¿Listo para volar a España?</h3>
+                                    <p className="text-muted-foreground mt-1 max-w-xl">
+                                        Cotiza tu viaje con nosotros. Te garantizamos precios competitivos para que tu presupuesto llegue más lejos.
+                                    </p>
+                                </div>
+                                <div className="flex-shrink-0">
+                                     <Button asChild size="lg">
+                                        <a href={`https://wa.me/${phoneNumber}?text=${encodeURIComponent('Hola, me gustaría recibir una cotización para mi viaje a España.')}`} target="_blank" rel="noopener noreferrer">
+                                            Cotizar Viaje Ahora
+                                        </a>
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </section>

@@ -76,31 +76,31 @@ export default function AboutSection({ handleVideoClick }: AboutSectionProps) {
                 <div className="my-16 border-t-2 border-dashed border-gray-300 dark:border-gray-700 max-w-4xl mx-auto"></div>
 
                 {/* New Section for the Lawyer */}
-                <div className="mx-auto grid max-w-6xl items-center gap-8 lg:grid-cols-2 lg:gap-12">
-                    <div className="flex items-center justify-center order-last lg:order-first">
-                        <div className="w-full max-w-xs rounded-xl shadow-lg overflow-hidden">
-                            <Image 
-                                src="https://firebasestorage.googleapis.com/v0/b/colombia-en-esp.firebasestorage.app/o/web%2Fabogada.jpg?alt=media&token=170314a2-c250-4e24-b2f9-a505bf011d2a"
-                                alt="Karla Santofimio Salas - Abogada Experta en Extranjería"
-                                width={400}
-                                height={600}
-                                objectFit="cover"
-                                className="transition-transform duration-500 hover:scale-110"
-                            />
-                        </div>
-                    </div>
-                    <div className="flex flex-col justify-center space-y-6 text-center lg:text-left">
-                        <div className="space-y-4">
-                            <div className="inline-block rounded-lg bg-gray-200 px-4 py-2 text-md font-semibold text-gray-800">Colaboración Experta</div>
-                            <h3 className="text-3xl font-bold font-headline">Karla Santofimio Salas</h3>
-                            <p className="max-w-lg mx-auto lg:mx-0 text-gray-600 md:text-xl/relaxed dark:text-gray-300 font-body">
-                                Contamos con el respaldo y la experiencia de Karla, abogada especializada en extranjería, para ofrecerte la asesoría legal más completa y actualizada en todos tus trámites.
-                            </p>
-                        </div>
-                        <div className="flex justify-center lg:justify-start">
-                            <div className="flex items-center text-center space-x-3 bg-primary/10 text-primary p-3 rounded-lg">
-                                <Scale className="w-8 h-8" />
-                                <span className="font-semibold text-md">Asesoría Legal Especializada</span>
+                <div className="mx-auto max-w-4xl">
+                    <div className="bg-white dark:bg-card rounded-xl shadow-md overflow-hidden transition-shadow hover:shadow-lg">
+                        <div className="flex flex-col md:flex-row items-center p-6 space-y-4 md:space-y-0 md:space-x-6">
+                            <div className="flex-shrink-0">
+                                <Image 
+                                    src="https://firebasestorage.googleapis.com/v0/b/colombia-en-esp.firebasestorage.app/o/web%2Fabogada.jpg?alt=media&token=170314a2-c250-4e24-b2f9-a505bf011d2a"
+                                    alt="Karla Santofimio Salas - Abogada Experta en Extranjería"
+                                    width={100} // Medium size circle
+                                    height={100}
+                                    objectFit="cover"
+                                    className="rounded-full border-4 border-primary/20"
+                                />
+                            </div>
+                            <div className="flex-grow text-center md:text-left">
+                                <p className="text-sm font-semibold text-primary">Colaboración Experta</p>
+                                <h3 className="text-2xl font-bold font-headline">Karla Santofimio Salas</h3>
+                                <p className="text-muted-foreground mt-1 max-w-lg">
+                                    Contamos con el respaldo y la experiencia de Karla, abogada especializada en extranjería, para ofrecerte la asesoría legal más completa y actualizada.
+                                </p>
+                            </div>
+                            <div className="flex-shrink-0">
+                                <div className="flex items-center text-center space-x-3 bg-primary/10 text-primary p-3 rounded-lg">
+                                    <Scale className="w-7 h-7" />
+                                    <span className="font-semibold text-sm">Asesoría Legal</span>
+                                </div>
                             </div>
                         </div>
                     </div>
