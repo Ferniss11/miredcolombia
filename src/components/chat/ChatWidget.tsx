@@ -105,7 +105,7 @@ export default function ChatWidget({ businessId, businessName, embedded = false 
   useEffect(() => {
     setIsMounted(true);
     if (typeof window !== 'undefined') {
-        audioRef.current = new Audio('https://firebasestorage.googleapis.com/v0/b/colombia-en-esp.firebasestorage.app/o/web%2FAshot%20Danielyan%20-%20Message%20Alert%20Logo%20(MP3).mp3?alt=media&token=0c1febf6-9e59-4e0b-97b7-4af687234aad');
+        audioRef.current = new Audio('https://firebasestorage.googleapis.com/v0/b/colombia-en-esp.firebasestorage.app/o/web%2FMessage%20Notification.mp3?alt=media&token=acb27764-c909-4265-9dfb-ea3f20463c68');
         
         const handleFirstInteraction = () => {
             setUserHasInteracted(true);

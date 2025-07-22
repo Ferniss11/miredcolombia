@@ -30,9 +30,11 @@ const steps = [
 ];
 
 const stepColors = [
-    { bg: "bg-[#FFCD00]", text: "text-black" }, // Yellow
-    { bg: "bg-[#003893]", text: "text-white" }, // Blue
-    { bg: "bg-[#C70039]", text: "text-white" }, // Red
+    { bg: "bg-[#FFCD00]", text: "text-black" },   // Colombia Yellow
+    { bg: "bg-[#003893]", text: "text-white" },   // Colombia Blue
+    { bg: "bg-[#C70039]", text: "text-white" },   // Colombia Red
+    { bg: "bg-[#AA151B]", text: "text-white" },   // Spain Red
+    { bg: "bg-[#F1BF00]", text: "text-black" },   // Spain Yellow
 ];
 
 export default function StepsSection() {
@@ -56,17 +58,11 @@ export default function StepsSection() {
                         const isLeft = index % 2 === 0;
 
                         return (
-                            <div key={index} className={cn("relative flex items-start mb-12", !isLeft && "md:flex-row-reverse")}>
+                            <div key={index} className={cn("relative flex items-start mb-16", !isLeft && "md:flex-row-reverse")}>
                                 {/* Content for left/right side */}
                                 <div className="md:w-1/2">
                                     <div className={cn("pl-24 md:pl-0", isLeft ? "md:pr-16 md:text-right" : "md:pl-16 md:text-left")}>
-                                        <div className={cn(
-                                            "flex items-center gap-3 mb-1",
-                                            isLeft ? "md:justify-end md:flex-row-reverse" : "md:justify-start"
-                                        )}>
-                                            <h3 className="text-xl font-bold font-headline">{title}</h3>
-                                            <Icon className="w-8 h-8 text-accent shrink-0" />
-                                        </div>
+                                        <h3 className="text-xl font-bold font-headline">{title}</h3>
                                         <p className="text-muted-foreground mt-1">{description}</p>
                                     </div>
                                 </div>
@@ -76,11 +72,14 @@ export default function StepsSection() {
 
                                 {/* The circle on the timeline */}
                                 <div className={cn(
-                                    "absolute left-8 top-0 flex items-center justify-center w-16 h-16 rounded-full font-bold text-2xl shadow-lg border-4 border-background md:left-1/2 md:-translate-x-1/2 -translate-x-1/2",
+                                    "absolute left-8 top-0 flex items-center justify-center w-20 h-20 rounded-full shadow-lg border-4 border-background md:left-1/2 md:-translate-x-1/2 -translate-x-1/2",
                                     color.bg,
                                     color.text
                                 )}>
-                                    {index + 1}
+                                    <Icon className="w-10 h-10" />
+                                    <div className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold border-2 border-background">
+                                        {index + 1}
+                                    </div>
                                 </div>
                             </div>
                         )

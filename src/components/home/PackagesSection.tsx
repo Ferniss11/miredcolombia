@@ -3,7 +3,7 @@
 
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Check, Info } from "lucide-react";
+import { Check, Info, HelpCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { migrationPackages } from "@/lib/placeholder-data";
 import type { MigrationPackage } from "@/lib/types";
@@ -45,58 +45,85 @@ export default function PackagesSection({ eurToCopRate }: PackagesSectionProps) 
                             </p>
                         </div>
                     </div>
-                    <div className="mx-auto grid grid-cols-1 md:grid-cols-3 gap-8 py-12 max-w-6xl">
-                        {migrationPackages.map((pkg) => {
-                            const whatsappMessage = encodeURIComponent(`Hola, me gustaría tener más información sobre el paquete ${pkg.name}.`);
-                            const whatsappUrl = `https://wa.me/${phoneNumber}?text=${whatsappMessage}`;
-                            
-                            // const priceInCop = pkg.price * eurToCopRate;
-                            return (
-                                <Card key={pkg.id} className={cn("flex flex-col rounded-xl shadow-lg transition-transform hover:scale-105 overflow-hidden", { 'border-2 border-primary': pkg.popular })}>
-                                    {pkg.popular && (
-                                        <div className="bg-primary text-primary-foreground text-center py-1.5 text-sm font-semibold">Más Popular</div>
-                                    )}
-                                    <div className="h-1.5 flex w-full">
-                                        <div className="w-1/2 bg-[#FFCD00]"></div>
-                                        <div className="w-1/4 bg-[#003893]"></div>
-                                        <div className="w-1/4 bg-[#C70039]"></div>
+                    <div className="mx-auto max-w-6xl py-12">
+                        {/* Featured Horizontal Card */}
+                        <Card className="mb-12 w-full overflow-hidden rounded-xl shadow-lg transition-shadow hover:shadow-xl">
+                            <div className="h-1.5 flex w-full">
+                                <div className="w-1/4 bg-[#AA151B]"></div>
+                                <div className="w-1/2 bg-[#F1BF00]"></div>
+                                <div className="w-1/4 bg-[#AA151B]"></div>
+                            </div>
+                            <div className="flex flex-col md:flex-row items-center">
+                                <div className="flex-shrink-0 p-6 bg-gray-100 dark:bg-gray-800 self-stretch flex items-center justify-center">
+                                    <HelpCircle className="w-12 h-12 text-primary" />
+                                </div>
+                                <div className="flex-grow p-6">
+                                    <h3 className="text-xl font-bold font-headline">Asesoría Inicial</h3>
+                                    <p className="text-muted-foreground mt-1">Resolución de dudas iniciales y orientación sobre el proceso. Ideal para quienes no saben por dónde empezar.</p>
+                                </div>
+                                <div className="p-6 flex-shrink-0 text-center md:text-right">
+                                    <div className="text-3xl font-bold">{formatPrice(10, 'EUR')}</div>
+                                    <div className="text-sm text-muted-foreground">
+                                        Aprox. {formatPrice(10 * eurToCopRate, 'COP')}
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <button className="p-0.5 rounded-full hover:bg-muted ml-1 align-middle">
+                                                    <Info className="h-3.5 w-3.5" />
+                                                </button>
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                                <p>Tasa de cambio: 1 EUR ≈ {formatRate(eurToCopRate)}</p>
+                                            </TooltipContent>
+                                        </Tooltip>
                                     </div>
-                                    <CardHeader className="text-center">
-                                        <h3 className={cn("text-2xl font-bold font-headline", pkg.textColor)}>{pkg.name}</h3>
-                                        {/* <p className="text-4xl font-extrabold">{formatPrice(pkg.price, 'EUR')}</p>
-                                        <div className="flex items-center justify-center gap-1 text-sm text-muted-foreground">
-                                            <span>Aprox. {formatPrice(priceInCop, 'COP')}</span>
-                                            <Tooltip>
-                                                <TooltipTrigger asChild>
-                                                    <button className="p-0.5 rounded-full hover:bg-muted">
-                                                        <Info className="h-3.5 w-3.5" />
-                                                    </button>
-                                                </TooltipTrigger>
-                                                <TooltipContent>
-                                                    <p>Tasa de cambio: 1 EUR ≈ {formatRate(eurToCopRate)}</p>
-                                                </TooltipContent>
-                                            </Tooltip>
-                                        </div> */}
-                                        <p className="text-sm pt-2">{pkg.description}</p>
-                                    </CardHeader>
-                                    <CardContent className="flex-grow">
-                                        <ul className="space-y-3">
-                                            {pkg.features.map((feature, i) => (
-                                                <li key={i} className="flex items-start">
-                                                    <Check className="w-5 h-5 mr-2 text-green-500 flex-shrink-0 mt-1" />
-                                                    <span>{feature}</span>
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </CardContent>
-                                    <CardFooter>
-                                        <Button asChild className={cn("w-full text-white", pkg.color)}>
-                                            <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">Solicitar por WhatsApp</a>
-                                        </Button>
-                                    </CardFooter>
-                                </Card>
-                            )
-                        })}
+                                    <Button asChild size="lg" className="mt-4">
+                                        <a href={`https://wa.me/34653863675?text=${encodeURIComponent('Hola, me gustaría tener más información sobre la Asesoría Inicial.')}`} target="_blank" rel="noopener noreferrer">
+                                            Solicitar Información
+                                        </a>
+                                    </Button>
+                                </div>
+                            </div>
+                        </Card>
+
+                        {/* Existing 3 Packages */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                            {migrationPackages.map((pkg) => {
+                                const whatsappMessage = encodeURIComponent(`Hola, me gustaría tener más información sobre el paquete ${pkg.name}.`);
+                                const whatsappUrl = `https://wa.me/${phoneNumber}?text=${whatsappMessage}`;
+                                
+                                return (
+                                    <Card key={pkg.id} className={cn("flex flex-col rounded-xl shadow-lg transition-transform hover:scale-105 overflow-hidden", { 'border-2 border-primary': pkg.popular })}>
+                                        {pkg.popular && (
+                                            <div className="bg-primary text-primary-foreground text-center py-1.5 text-sm font-semibold">Más Popular</div>
+                                        )}
+                                        <div className="h-1.5 flex w-full">
+                                            <div className="w-1/2 bg-[#FFCD00]"></div>
+                                            <div className="w-1/4 bg-[#003893]"></div>
+                                            <div className="w-1/4 bg-[#C70039]"></div>
+                                        </div>
+                                        <CardHeader className="text-center">
+                                            <h3 className={cn("text-2xl font-bold font-headline", pkg.textColor)}>{pkg.name}</h3>
+                                            <p className="text-sm pt-2">{pkg.description}</p>
+                                        </CardHeader>
+                                        <CardContent className="flex-grow">
+                                            <ul className="space-y-3">
+                                                {pkg.features.map((feature, i) => (
+                                                    <li key={i} className="flex items-start">
+                                                        <Check className="w-5 h-5 mr-2 text-green-500 flex-shrink-0 mt-1" />
+                                                        <span>{feature}</span>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </CardContent>
+                                        <CardFooter>
+                                            <Button asChild className={cn("w-full text-white", pkg.color)}>
+                                                <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">Solicitar por WhatsApp</a>
+                                            </Button>
+                                        </CardFooter>
+                                    </Card>
+                                )
+                            })}
+                        </div>
                     </div>
                 </div>
             </section>
