@@ -68,7 +68,7 @@ export default function ServicesSection({ eurToCopRate }: ServicesSectionProps) 
                             </p>
                         </div>
                     </div>
-                    <div className="mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 py-12">
+                    <div className="mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 py-12 max-w-6xl">
                         {migrationServices.map((service) => {
                             const Icon = serviceIcons[service.icon];
                             // const priceInCop = service.price * eurToCopRate;

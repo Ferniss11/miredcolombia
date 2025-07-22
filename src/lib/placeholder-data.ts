@@ -296,92 +296,52 @@ export const migrationPackages: MigrationPackage[] = [
 ];
 
 export const migrationServices: MigrationService[] = [
-  {
-    id: "asesoria_inicial",
-    icon: "User",
-    title: "Asesoría Inicial",
-    name: "Asesoría Inicial",
-    price: 125,
-    priceCol: "",
-    description: "Consulta personalizada de 2 horas para evaluar tu caso y crear plan de migración",
-    borderColor: "border-blue-500",
-    buttonColor: "bg-blue-600 hover:bg-blue-700"
-  },
-  {
-    id: "nie",
-    icon: "FileText",
-    title: "Gestión NIE/TIE",
-    name: "Gestión NIE/TIE",
-    price: 350,
-    priceCol: "",
-    description: "Tramitación completa de documentos de identificación para extranjeros",
-    borderColor: "border-green-500",
-    buttonColor: "bg-green-600 hover:bg-green-700"
-  },
-  {
-    id: "busqueda_vivienda",
-    icon: "Home",
-    title: "Búsqueda Vivienda",
-    name: "Búsqueda Vivienda",
-    price: 125,
-    priceCol: "",
-    description: "Búsqueda personalizada de apartamentos y apoyo en contratos de alquiler",
-    borderColor: "border-yellow-500",
-    buttonColor: "bg-yellow-600 hover:bg-yellow-700"
-  },
-  {
-    id: "cuenta_bancaria",
-    icon: "CreditCard",
-    title: "Asesoramiento para apertura Cuenta Bancaria",
-    name: "Asesoramiento para apertura Cuenta Bancaria",
-    price: 50,
-    priceCol: "",
-    description: "Acompañamiento para apertura de cuenta bancaria y gestión inicial",
-    borderColor: "border-red-500",
-    buttonColor: "bg-red-600 hover:bg-red-700"
-  },
-  {
-    id: "seguro_salud",
-    icon: "Shield",
-    title: "Seguro de Salud",
-    name: "Seguro de Salud",
-    price: 100,
-    priceCol: "",
-    description: "Asesoramiento y contratación de seguro médico privado",
-    borderColor: "border-indigo-500",
-    buttonColor: "bg-indigo-600 hover:bg-indigo-700"
-  },
-  {
-    id: "recogida_aeropuerto",
-    icon: "Plane",
-    title: "Recogida Aeropuerto",
-    name: "Recogida Aeropuerto",
-    price: 50,
-    priceCol: "",
-    description: "Servicio de bienvenida y traslado desde el aeropuerto a tu alojamiento. Sólo Madrid",
-    borderColor: "border-purple-500",
-    buttonColor: "bg-purple-600 hover:bg-purple-700"
-  },
-  {
-    id: "alojamiento_temporal",
-    icon: "MapPin",
-    title: "Alojamiento Temporal",
-    name: "Alojamiento Temporal",
-    price: 50,
-    priceCol: "",
-    description: "Hospedaje en apartamentos seguros mientras encuentras tu vivienda definitiva.",
-    borderColor: "border-orange-500",
-    buttonColor: "bg-orange-600 hover:bg-orange-700"
-  },
-  {
-    id: "soporte_24_7",
-    icon: "Clock",
-    title: "Soporte 24/7",
-    name: "Soporte 24/7",
-    price: 90,
-    priceCol: "",
-    description: "Asistencia telefónica y WhatsApp las 24 horas durante tu primer mes",
-    borderColor: "border-teal-500",
-    buttonColor: "bg-teal-600 hover:bg-teal-700"
-  }
+    {
+        id: 'homologacion-titulo',
+        title: 'Homologación de Título',
+        description: 'Gestión completa para la validación de tu título profesional en España.',
+        price: 350,
+        icon: 'FileText',
+        buttonColor: 'bg-blue-600 hover:bg-blue-700',
+    },
+    {
+        id: 'busqueda-vivienda',
+        title: 'Búsqueda de Vivienda',
+        description: 'Te ayudamos a encontrar el piso o habitación ideal según tus necesidades.',
+        price: 400,
+        icon: 'Home',
+        buttonColor: 'bg-green-600 hover:bg-green-700',
+    },
+    {
+        id: 'apertura-cuenta',
+        title: 'Apertura de Cuenta Bancaria',
+        description: 'Asesoría para abrir tu primera cuenta bancaria en España sin complicaciones.',
+        price: 100,
+        icon: 'CreditCard',
+        buttonColor: 'bg-yellow-500 hover:bg-yellow-600',
+    },
+    {
+        id: 'seguro-medico',
+        title: 'Contratación de Seguro Médico',
+        description: 'Encontramos el seguro de salud con la cobertura que necesitas al mejor precio.',
+        price: 80,
+        icon: 'Shield',
+        buttonColor: 'bg-red-600 hover:bg-red-700',
+    },
+    {
+        id: 'recogida-aeropuerto',
+        title: 'Recogida en Aeropuerto',
+        description: 'Te esperamos en el aeropuerto y te llevamos a tu nuevo hogar.',
+        price: 120,
+        icon: 'Plane',
+        buttonColor: 'bg-indigo-600 hover:bg-indigo-700',
+    },
+    {
+        id: 'empadronamiento',
+        title: 'Cita de Empadronamiento',
+        description: 'Agendamos tu cita y te preparamos para el trámite de empadronamiento.',
+        price: 90,
+        icon: 'MapPin',
+        buttonColor: 'bg-purple-600 hover:bg-purple-700',
+    },
 ];
