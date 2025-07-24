@@ -8,12 +8,9 @@
  */
 
 import {ai} from '@/ai/genkit';
-import { GenerateArticleInputSchema, SimpleArticleOutputSchema, type GenerateArticleInput, type SimpleArticleOutput } from '@/lib/types';
-
-
-export async function generateCreativeArticle(input: GenerateArticleInput): Promise<SimpleArticleOutput> {
-  return generateCreativeArticleFlow(input);
-}
+import { GenerateArticleInputSchema, SimpleArticleOutputSchema, type GenerateArticleInput } from '@/lib/types';
+import { calculateCost } from '@/lib/ai-costs';
+import { z } from 'zod';
 
 const prompt = ai.definePrompt({
   name: 'generateCreativeArticlePrompt',
@@ -36,14 +33,27 @@ Comienza a escribir el artículo ahora.
 `,
 });
 
-const generateCreativeArticleFlow = ai.defineFlow(
+export const generateCreativeArticleFlow = ai.defineFlow(
   {
     name: 'generateCreativeArticleFlow',
     inputSchema: GenerateArticleInputSchema,
-    outputSchema: SimpleArticleOutputSchema,
+    outputSchema: z.object({
+        article: SimpleArticleOutputSchema,
+        cost: z.number(),
+    }),
   },
-  async input => {
-    const {output} = await prompt(input);
-    return output!;
+  async (input: GenerateArticleInput) => {
+    const {output, usage} = await prompt(input, { model: input.model as any });
+    if (!output) {
+        throw new Error("AI did not return an article.");
+    }
+    
+    const cost = calculateCost(
+        input.model,
+        usage.inputTokens || 0,
+        usage.outputTokens || 0
+    );
+
+    return { article: output, cost };
   }
 );

@@ -4,7 +4,9 @@
 import { z } from 'zod';
 import { generateBlogIdeas } from '@/ai/flows/generate-blog-ideas';
 import { generateBlogTitle } from '@/ai/flows/generate-blog-title';
-import { generateIntelligentArticle } from '@/ai/flows/generate-intelligent-article';
+import { generateIntelligentArticleFlow } from '@/ai/flows/generate-intelligent-article';
+import { generateCreativeArticleFlow } from '@/ai/flows/generate-creative-article';
+import { generateFactualArticleFlow } from '@/ai/flows/generate-factual-article';
 import { unsplashSearch } from '@/ai/tools/unsplash-search';
 import { GenerateArticleInputSchema, GenerateBlogIdeasInputSchema, GenerateBlogTitleInputSchema, type GenerateArticleInput, type GenerateBlogIdeasInput, type GenerateBlogTitleInput, type IntelligentArticle } from '@/lib/types';
 import { initializedProjectId } from '@/lib/firebase/admin-config';
@@ -62,7 +64,7 @@ export async function generateIntelligentArticleAction(input: GenerateArticleInp
         const validatedInput = GenerateArticleInputSchema.parse(input);
         
         // 1. Generate article text, image hints, AND COST from the AI
-        const { article: articleWithHints, cost } = await generateIntelligentArticle(validatedInput);
+        const { article: articleWithHints, cost } = await generateIntelligentArticleFlow(validatedInput);
         
         // 2. Enrich the article with actual image URLs using the hints
         const finalArticle = await enrichArticleWithImages(articleWithHints);
@@ -77,6 +79,30 @@ export async function generateIntelligentArticleAction(input: GenerateArticleInp
 
     } catch (error) {
         console.error('Error al generar el artículo:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Un error desconocido ocurrió.';
+        return { error: `Error al generar el contenido del blog: ${errorMessage}` };
+    }
+}
+
+export async function generateCreativeArticleAction(input: GenerateArticleInput) {
+    try {
+        const validatedInput = GenerateArticleInputSchema.parse(input);
+        const result = await generateCreativeArticleFlow(validatedInput);
+        return { article: { ...result.article, generationCost: result.cost } };
+    } catch (error) {
+        console.error('Error al generar el artículo creativo:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Un error desconocido ocurrió.';
+        return { error: `Error al generar el contenido del blog: ${errorMessage}` };
+    }
+}
+
+export async function generateFactualArticleAction(input: GenerateArticleInput) {
+    try {
+        const validatedInput = GenerateArticleInputSchema.parse(input);
+        const result = await generateFactualArticleFlow(validatedInput);
+        return { article: { ...result.article, generationCost: result.cost } };
+    } catch (error) {
+        console.error('Error al generar el artículo factual:', error);
         const errorMessage = error instanceof Error ? error.message : 'Un error desconocido ocurrió.';
         return { error: `Error al generar el contenido del blog: ${errorMessage}` };
     }

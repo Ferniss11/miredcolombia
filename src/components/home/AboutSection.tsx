@@ -48,7 +48,7 @@ export default function AboutSection({ handleVideoClick }: AboutSectionProps) {
                             </div>
                         </div>
                     </div>
-                    <div className="flex items-center justify-center">
+                    <div className="flex items-center justify-end sm:justify-center">
                          <button 
                             onClick={() => handleVideoClick?.(videoUrl, videoTitle)}
                             className="relative group w-full max-w-sm h-64 sm:h-80 rounded-xl shadow-lg overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-2xl hover:scale-105"
@@ -76,12 +76,12 @@ export default function AboutSection({ handleVideoClick }: AboutSectionProps) {
                 <div className="my-16 border-t-2 border-dashed border-gray-300 dark:border-gray-700 max-w-4xl mx-auto"></div>
 
                 {/* New Section for the Lawyer */}
-                <div className="mx-auto max-w-4xl">
+                <div className="mx-auto max-w-6xl">
                     <div className="bg-white dark:bg-card rounded-xl shadow-md overflow-hidden transition-shadow hover:shadow-lg">
                         <div className="flex flex-col md:flex-row items-center p-6 space-y-4 md:space-y-0 md:space-x-6">
                             <div className="flex-shrink-0">
                                 <Image 
-                                    src="https://firebasestorage.googleapis.com/v0/b/colombia-en-esp.firebasestorage.app/o/web%2Fabogada.jpg?alt=media&token=170314a2-c250-4e24-b2f9-a505bf011d2a"
+                                    src="https://firebasestorage.googleapis.com/v0/b/colombia-en-esp.firebasestorage.app/o/web%2Fabogada.jpg?alt=media&token=892b18ef-649e-4ae2-b39d-b70bd1630552"
                                     alt="Karla Santofimio Salas - Abogada Experta en Extranjería"
                                     width={100} // Medium size circle
                                     height={100}
@@ -91,8 +91,8 @@ export default function AboutSection({ handleVideoClick }: AboutSectionProps) {
                             </div>
                             <div className="flex-grow text-center md:text-left">
                                 <p className="text-sm font-semibold text-primary">Colaboración Experta</p>
-                                <h3 className="text-2xl font-bold font-headline">Karla Santofimio Salas</h3>
-                                <p className="text-muted-foreground mt-1 max-w-lg">
+                                <h3 className="inline-block rounded-lg bg-gray-200 px-4 py-2 text-md font-semibold text-gray-800">Karla Santofimio Salas</h3>
+                                <p className="max-w-lg mx-auto lg:mx-0 text-gray-600 md:text-xl/relaxed dark:text-gray-300 font-body max-w-lg">
                                     Contamos con el respaldo y la experiencia de Karla, abogada especializada en extranjería, para ofrecerte la asesoría legal más completa y actualizada.
                                 </p>
                             </div>

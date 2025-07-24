@@ -25,12 +25,15 @@ import { Avatar, AvatarFallback } from '../ui/avatar';
 type ChatWidgetProps = {
   businessId?: string;
   businessName?: string;
+  isOpen: boolean; // Controlled by parent
+  setIsOpen: (isOpen: boolean) => void; // Controlled by parent
   embedded?: boolean; // New prop to control embedded mode
 };
 
 const formSchema = z.object({
   userName: z.string().min(2, { message: 'El nombre es obligatorio.' }),
   userPhone: z.string().min(7, { message: 'El teléfono es obligatorio.' }),
+  userEmail: z.string().email({ message: 'Debe ser un email válido.' }).optional(),
   acceptTerms: z.boolean().refine((data) => data === true, {
     message: 'Debes aceptar los términos y condiciones.',
   }),
@@ -69,8 +72,7 @@ const allBusinessQuestions = [
 ];
 
 
-export default function ChatWidget({ businessId, businessName, embedded = false }: ChatWidgetProps) {
-  const [isOpen, setIsOpen] = useState(embedded); // Start open if embedded
+export default function ChatWidget({ businessId, businessName, isOpen, setIsOpen, embedded = false }: ChatWidgetProps) {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Omit<ChatMessage, 'id'>[]>([]);
   const [isAiResponding, setIsAiResponding] = useState(false);
@@ -95,6 +97,7 @@ export default function ChatWidget({ businessId, businessName, embedded = false 
     defaultValues: {
       userName: '',
       userPhone: '',
+      userEmail: '',
       acceptTerms: false,
     },
   });
@@ -196,7 +199,7 @@ export default function ChatWidget({ businessId, businessName, embedded = false 
 
   const handleStartSession = async (values: z.infer<typeof formSchema>, initialQuestion?: string) => {
     const action = isBusinessChat ? startBusinessChatSessionAction : startChatSessionAction;
-    const params = isBusinessChat ? { ...values, businessId: businessId!, businessName: businessName! } : values;
+    const params = isBusinessChat ? { ...values, businessId: businessId!, businessName: businessName! } : { ...values, userEmail: values.userEmail };
     
     // @ts-ignore
     const result = await action(params);
@@ -296,7 +299,7 @@ export default function ChatWidget({ businessId, businessName, embedded = false 
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                             {isBusinessChat ? <Building className="h-5 w-5 text-primary"/> : <Phone className="h-5 w-5 text-primary"/>}
-                            {isBusinessChat ? `Asistente de ${businessName}` : "Contacto Directo"}
+                            {isBusinessChat ? `Asistente de ${businessName}` : "Asistente de Inmigración"}
                         </CardTitle>
                         <CardDescription>
                             {isBusinessChat
@@ -335,6 +338,13 @@ export default function ChatWidget({ businessId, businessName, embedded = false 
                                 <FormItem>
                                     <FormLabel>Teléfono</FormLabel>
                                     <FormControl><Input placeholder="+34 600 000 000" {...field} /></FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                                )} />
+                                <FormField control={form.control} name="userEmail" render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Email (Opcional)</FormLabel>
+                                    <FormControl><Input placeholder="tu.email@ejemplo.com" {...field} /></FormControl>
                                     <FormMessage />
                                 </FormItem>
                                 )} />
@@ -467,7 +477,7 @@ export default function ChatWidget({ businessId, businessName, embedded = false 
                 <div className="absolute bottom-full right-0 mb-3 w-max max-w-[280px] animate-in fade-in-50 slide-in-from-bottom-2">
                     <div className="flex items-end gap-2">
                         <div className="flex-shrink-0 w-12 h-12 rounded-full bg-primary flex items-center justify-center text-primary-foreground shadow-lg z-10 -mr-2">
-                          <Bot size={28} />
+                          <LuBotMessageSquare size={20} />
                         </div>
                          <div className="relative bg-background dark:bg-card shadow-lg rounded-lg p-3 text-sm group">
                             <p>{proactiveMessage}</p>
@@ -490,14 +500,23 @@ export default function ChatWidget({ businessId, businessName, embedded = false 
             className="w-16 h-16 rounded-full shadow-lg flex items-center justify-center"
             size="icon"
             >
-            {isOpen ? <X size={32} /> : <LuBotMessageSquare size={36} />}
+            {isOpen ? <X size={32} /> : <Bot size={40} />}
             </Button>
         </div>
       )}
 
+      {isMounted && !embedded && isOpen && (
+        <div
+          className="fixed inset-0 z-[998] bg-black/50 backdrop-blur-sm transition-opacity duration-300"
+          onClick={() => setIsOpen(false)} // Close chat when clicking outside
+        ></div>
+      )}
+
       <div
         className={cn(
-          'fixed bottom-24 right-6 z-20 w-[calc(100%-3rem)] max-w-sm h-[70vh] max-h-[600px] origin-bottom-right transition-all duration-300 ease-in-out',
+          'fixed inset-0 z-[999] transition-all duration-300 ease-in-out', // Full screen on mobile
+          'md:w-[80vw] md:h-[80vh] md:max-w-3xl md:max-h-[900px] md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2', // Tablet sizing and centering
+          'lg:w-full lg:h-full', // Desktop full screen
           isOpen ? 'scale-100 opacity-100' : 'scale-95 opacity-0 pointer-events-none'
         )}
       >
