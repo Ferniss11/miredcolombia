@@ -5,8 +5,7 @@ import { Card, CardHeader, CardContent, CardFooter, CardTitle } from "@/componen
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { migrationServices } from "@/lib/placeholder-data";
-import type { MigrationService } from "@/lib/types";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import {
     User,
     FileText,
@@ -16,7 +15,6 @@ import {
     Plane,
     MapPin,
     Clock,
-    Info,
     type LucideIcon,
 } from "lucide-react";
 import Image from "next/image";
@@ -69,6 +67,41 @@ export default function ServicesSection({ eurToCopRate }: ServicesSectionProps) 
                             </p>
                         </div>
                     </div>
+                     <div className="mx-auto max-w-6xl mt-8">
+                         <div className="bg-white dark:bg-card rounded-xl shadow-md overflow-hidden transition-shadow hover:shadow-lg">
+                            <div className="flex flex-col md:flex-row items-center p-6 space-y-4 md:space-y-0 md:space-x-6">
+                                <div className="flex-shrink-0">
+                                    <div className="w-28 h-28 rounded-full flex items-center justify-center"
+                                         style={{
+                                             background: 'linear-gradient(to bottom, #AA151B 25%, #F1BF00 25%, #F1BF00 75%, #AA151B 75%)'
+                                         }}>
+                                        <div className="w-24 h-24 rounded-full bg-white shadow-inner flex items-center justify-center">
+                                            <Image
+                                                src="https://firebasestorage.googleapis.com/v0/b/colombia-en-esp.firebasestorage.app/o/web%2Fagencia%20de%20viajes.%20.jpg?alt=media&token=1053bc22-ea27-4dd4-8460-e3c2e2dcc4c2"
+                                                alt="Logo Agencia de Viajes"
+                                                width={80}
+                                                height={80}
+                                                className="rounded-full"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="flex-grow text-center md:text-left">
+                                    <h3 className="text-2xl font-bold font-headline">¿Listo para volar a España?</h3>
+                                    <p className="text-muted-foreground mt-1 max-w-xl">
+                                        Cotiza tu viaje con nosotros. Te garantizamos precios competitivos para que tu presupuesto llegue más lejos.
+                                    </p>
+                                </div>
+                                <div className="flex-shrink-0">
+                                     <Button asChild size="lg">
+                                        <a href={`https://wa.me/${phoneNumber}?text=${encodeURIComponent('Hola, me gustaría recibir una cotización para mi viaje a España.')}`} target="_blank" rel="noopener noreferrer">
+                                            Cotizar Viaje Ahora
+                                        </a>
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     <div className="mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 py-12 max-w-6xl">
                         {migrationServices.map((service) => {
                             const Icon = serviceIcons[service.icon];
@@ -101,36 +134,7 @@ export default function ServicesSection({ eurToCopRate }: ServicesSectionProps) 
                     </div>
 
                     {/* Travel Agency Banner */}
-                    <div className="mx-auto max-w-6xl mt-8">
-                         <div className="bg-white dark:bg-card rounded-xl shadow-md overflow-hidden transition-shadow hover:shadow-lg">
-                            <div className="flex flex-col md:flex-row items-center p-6 space-y-4 md:space-y-0 md:space-x-6">
-                                <div className="flex-shrink-0">
-                                    <div className="w-24 h-24 rounded-full bg-white p-2 shadow-inner flex items-center justify-center">
-                                        <Image 
-                                            src="https://firebasestorage.googleapis.com/v0/b/colombia-en-esp.firebasestorage.app/o/web%2Fagencia%20de%20viajes.%20.jpg?alt=media&token=1053bc22-ea27-4dd4-8460-e3c2e2dcc4c2"
-                                            alt="Logo Agencia de Viajes"
-                                            width={80}
-                                            height={80}
-                                            className="rounded-full"
-                                        />
-                                    </div>
-                                </div>
-                                <div className="flex-grow text-center md:text-left">
-                                    <h3 className="text-2xl font-bold font-headline">¿Listo para volar a España?</h3>
-                                    <p className="text-muted-foreground mt-1 max-w-xl">
-                                        Cotiza tu viaje con nosotros. Te garantizamos precios competitivos para que tu presupuesto llegue más lejos.
-                                    </p>
-                                </div>
-                                <div className="flex-shrink-0">
-                                     <Button asChild size="lg">
-                                        <a href={`https://wa.me/${phoneNumber}?text=${encodeURIComponent('Hola, me gustaría recibir una cotización para mi viaje a España.')}`} target="_blank" rel="noopener noreferrer">
-                                            Cotizar Viaje Ahora
-                                        </a>
-                                    </Button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                   
                 </div>
             </section>
         </TooltipProvider>

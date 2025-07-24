@@ -1,25 +1,11 @@
 
-'use server';
-
-/**
- * @fileOverview An intelligent AI agent for generating comprehensive, well-researched, and visually appealing blog articles.
- * This flow generates the text content and suggests image search queries (hints).
- * A separate server function will enrich this output with actual image URLs.
- *
- * - generateIntelligentArticle - A function that generates a blog post using web search and suggests images.
- */
-
 import {ai} from '@/ai/genkit';
 import { webSearch } from '../tools/web-search';
 import { unsplashSearch } from '../tools/unsplash-search';
-import type { GenerateArticleInput, IntelligentArticle } from '@/lib/types';
+import { GenerateArticleInput, IntelligentArticle } from '@/lib/types';
+import { z } from 'zod';
 import { GenerateArticleInputSchema, IntelligentArticleOutputSchema } from '@/lib/types';
 import { calculateCost } from '@/lib/ai-costs';
-
-
-export async function generateIntelligentArticle(input: GenerateArticleInput) {
-  return generateIntelligentArticleFlow(input);
-}
 
 // NOTE: The output schema still defines imageUrls, but the prompt instructs the AI
 // to only fill the *Hint fields. The image URLs will be added by a separate process.
@@ -62,7 +48,7 @@ Comienza el proceso ahora. Recuerda seguir todos los pasos. NO busques imágenes
 `,
 });
 
-const generateIntelligentArticleFlow = ai.defineFlow(
+export const generateIntelligentArticleFlow = ai.defineFlow(
   {
     name: 'generateIntelligentArticleFlow',
     inputSchema: GenerateArticleInputSchema,
@@ -73,14 +59,14 @@ const generateIntelligentArticleFlow = ai.defineFlow(
     }),
   },
   async (input: GenerateArticleInput) => {
-    const {output, usage} = await prompt(input);
+    const {output, usage} = await prompt(input, { model: input.model as any });
     if (!output) {
         throw new Error("AI did not return an article.");
     }
     
     // Calculate cost based on token usage
     const cost = calculateCost(
-        'googleai/gemini-1.5-pro-latest', // Assuming this is the model for content generation
+        input.model, // Use the passed model for cost calculation
         usage.inputTokens || 0,
         usage.outputTokens || 0
     );

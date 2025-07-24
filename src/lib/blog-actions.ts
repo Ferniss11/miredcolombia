@@ -25,6 +25,7 @@ const BlogPostActionSchema = z.object({
   category: z.string(),
   status: z.enum(['Published', 'Draft', 'In Review', 'Archived']),
   slug: z.string(),
+  generationCost: z.number().optional(),
 });
 
 type BlogPostInput = z.infer<typeof BlogPostActionSchema>;

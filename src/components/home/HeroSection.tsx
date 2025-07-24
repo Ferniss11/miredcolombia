@@ -33,14 +33,14 @@ export default function HeroSection() {
                 <p className="mt-4 max-w-3xl text-lg md:text-xl text-gray-200 font-body">
                     El sitio de reunión para colombianos en España. Conecta, comparte y crece en tu nuevo hogar.
                 </p>
-                <div className="mt-8 flex flex-col gap-4 min-[400px]:flex-row">
-                    <Button asChild size="lg" className="bg-destructive hover:bg-destructive/90 text-destructive-foreground px-8 py-6 text-base">
+                <div className="mt-8 flex flex-col gap-4 sm:flex-row w-full max-w-md">
+                    <Button asChild size="lg" className="w-full sm:w-auto bg-destructive hover:bg-destructive/90 text-destructive-foreground px-8 py-6 text-base">
                         <Link href="#packages">
                             <Package className="mr-2 h-5 w-5" />
                             Descubre nuestros servicios
                         </Link>
                     </Button>
-                    <Button asChild size="lg" variant="outline" className="border-white text-white bg-transparent hover:bg-white/10 px-8 py-6 text-base">
+                    <Button asChild size="lg" variant="outline" className="w-full sm:w-auto border-white text-white bg-transparent hover:bg-white/10 px-8 py-6 text-base">
                         <a 
                           href={`https://wa.me/${phoneNumber}?text=${whatsappMessage}`}
                           target="_blank"

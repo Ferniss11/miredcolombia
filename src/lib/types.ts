@@ -55,6 +55,7 @@ export const GenerateArticleInputSchema = z.object({
   category: z.string().describe('The category of the blog post (e.g., Legal, Culture).'),
   tone: z.string().describe('The desired tone of voice (e.g., Professional, Friendly).'),
   length: z.string().describe('The desired length of the article (e.g., Short, Medium, Long).'),
+  model: z.string().describe('The AI model to use for generation (e.g., googleai/gemini-1.5-pro-latest).'),
 });
 export type GenerateArticleInput = z.infer<typeof GenerateArticleInputSchema>;
 

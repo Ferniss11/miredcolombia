@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
-import { generateBlogIdeasAction, generateIntelligentArticleAction } from '@/lib/ai-actions';
+import { generateBlogIdeasAction, generateIntelligentArticleAction, generateCreativeArticleAction, generateFactualArticleAction } from '@/lib/ai-actions';
 import { createBlogPostAction } from '@/lib/blog-actions';
 import { Loader2, Sparkles, Wand2, Image as ImageIcon, Tags, Code, Save, Send, TestTube2 } from 'lucide-react';
 import type { IntelligentArticle } from '@/lib/types';
@@ -38,6 +38,8 @@ export default function AdminContentSuitePage() {
     const [articleCategory, setArticleCategory] = useState('');
     const [articleTone, setArticleTone] = useState('');
     const [articleLength, setArticleLength] = useState('');
+    const [articleType, setArticleType] = useState('intelligent'); // New state for article type
+    const [articleModel, setArticleModel] = useState('googleai/gemini-1.5-pro-latest'); // Default model
     const [articleResult, setArticleResult] = useState<IntelligentArticle | null>(null);
 
     const handleGenerateIdeas = () => {
@@ -59,18 +61,40 @@ export default function AdminContentSuitePage() {
         }
         startTransition(async () => {
             setArticleResult(null);
-            const result = await generateIntelligentArticleAction({
+            const input = {
                 topic: articleTopic,
                 category: articleCategory,
                 tone: articleTone,
                 length: articleLength,
-            });
+                model: articleModel,
+            };
+
+            let result;
+            if (articleType === 'intelligent') {
+                result = await generateIntelligentArticleAction(input);
+            } else if (articleType === 'creative') {
+                result = await generateCreativeArticleAction(input);
+            } else {
+                result = await generateFactualArticleAction(input);
+            }
 
             if (result.error) {
                 toast({ variant: 'destructive', title: 'Error de IA', description: result.error });
             } else if (result.article) {
-                setArticleResult(result.article);
-                toast({ title: 'Éxito', description: '¡Nuevo artículo inteligente generado!' });
+                // Adapt the result to the IntelligentArticle format for rendering
+                const adaptedArticle: IntelligentArticle = result.article.sections
+                    ? result.article as IntelligentArticle
+                    : {
+                        title: result.article.title,
+                        introduction: result.article.content.substring(0, 200) + '...', // Simple adaptation
+                        featuredImageUrl: 'https://placehold.co/1200x600.png',
+                        featuredImageHint: 'generated image',
+                        sections: [{ heading: 'Contenido Principal', content: result.article.content, imageUrl: '', imageHint: '' }],
+                        conclusion: 'Este artículo fue generado de forma simple.',
+                        suggestedTags: [articleCategory]
+                    };
+                setArticleResult(adaptedArticle);
+                toast({ title: 'Éxito', description: `¡Nuevo artículo ${articleType} generado!` });
             }
         });
     };
@@ -214,6 +238,19 @@ export default function AdminContentSuitePage() {
                                     </Select>
                                 </div>
                                 <div className="space-y-2">
+                                    <Label htmlFor="article-type">Tipo de Artículo</Label>
+                                    <Select value={articleType} onValueChange={setArticleType}>
+                                        <SelectTrigger id="article-type">
+                                            <SelectValue placeholder="Elige un tipo" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="intelligent">Inteligente (con Búsqueda Web)</SelectItem>
+                                            <SelectItem value="creative">Creativo</SelectItem>
+                                            <SelectItem value="factual">Factual</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-2">
                                     <Label htmlFor="article-tone">Tono</Label>
                                      <Select value={articleTone} onValueChange={setArticleTone}>
                                         <SelectTrigger id="article-tone">
@@ -241,6 +278,25 @@ export default function AdminContentSuitePage() {
                                         </SelectContent>
                                     </Select>
                                 </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="article-model">Modelo de IA</Label>
+                                <Select
+                                    value={articleModel}
+                                    onValueChange={setArticleModel}
+                                >
+                                    <SelectTrigger id="article-model" className="w-full md:w-1/2">
+                                        <SelectValue placeholder="Selecciona un modelo" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="googleai/gemini-1.5-flash-latest">Gemini 1.5 Flash (Rápido)</SelectItem>
+                                        <SelectItem value="googleai/gemini-1.5-pro-latest">Gemini 1.5 Pro (Potente)</SelectItem>
+                                        <SelectItem value="googleai/gemini-2.5-flash-lite">Gemini 2.5 Flash Lite</SelectItem>
+                                        <SelectItem value="googleai/gemini-2.5-pro">Gemini 2.5 Pro</SelectItem>
+                                        <SelectItem value="googleai/gemini-2.5-flash">Gemini 2.5 Flash</SelectItem>
+                                    </SelectContent>
+                                </Select>
                             </div>
 
                             <div className="flex flex-wrap gap-2">

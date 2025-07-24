@@ -34,6 +34,8 @@ export default function HomePageClient({ initialPosts, eurToCopRate, initialBusi
   const [videoUrl, setVideoUrl] = useState('');
   const [videoTitle, setVideoTitle] = useState('');
 
+  const [isChatModalOpen, setIsChatModalOpen] = useState(false); // New state for chat modal
+
   const handlePurchaseClick = (item: MigrationPackage | MigrationService, type: 'package' | 'service') => {
     setSelectedItem({ ...item, type });
     setCheckoutOpen(true);
@@ -51,17 +53,17 @@ export default function HomePageClient({ initialPosts, eurToCopRate, initialBusi
         <HeroSection />
         <StepsSection />
         <AboutSection handleVideoClick={handleVideoClick} />
-        <AiAssistantSection />
+        <AiAssistantSection onOpenChatModal={() => setIsChatModalOpen(true)} /> {/* Pass setter to AiAssistantSection */}
         <PackagesSection eurToCopRate={eurToCopRate} />
         <ServicesSection eurToCopRate={eurToCopRate} />
         <DirectorySection businesses={initialBusinesses} />
         <BlogSection posts={initialPosts} />
         <BusinessSection />
         <TestimonialsSection />
-        <AiAssistantSection />
+        <AiAssistantSection onOpenChatModal={() => setIsChatModalOpen(true)} /> {/* Pass setter to AiAssistantSection */}
       </main>
 
-      <ChatWidget />
+      <ChatWidget isOpen={isChatModalOpen} setIsOpen={setIsChatModalOpen} /> {/* Pass state to ChatWidget */}
 
       <Dialog open={isCheckoutOpen} onOpenChange={setCheckoutOpen}>
         <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
