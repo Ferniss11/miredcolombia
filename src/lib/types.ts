@@ -1,5 +1,3 @@
-
-
 import { z } from 'zod';
 
 // Schema for Blog Content Generation
@@ -333,3 +331,67 @@ export type ChatSessionWithTokens = ChatSession & {
     totalInputTokens: number;
     totalOutputTokens: number;
 };
+
+export interface JobPosting {
+  id: string;
+  title: string;
+  description: string; // Descripción detallada en Markdown
+  companyName: string;
+  companyLogoUrl?: string; // URL del logo de la empresa
+  imageUrl?: string; // URL de una imagen atractiva para la oferta
+
+  // Detalles de la ubicación
+  location: string; // E.g., "Madrid, España"
+  locationType: 'ON_SITE' | 'REMOTE' | 'HYBRID';
+
+  // Detalles del salario
+  salaryRange?: {
+    min: number;
+    max: number;
+    currency: 'EUR';
+  };
+
+  // Detalles del contrato y aplicación
+  jobType: 'FULL_TIME' | 'PART_TIME' | 'CONTRACT' | 'INTERNSHIP';
+  applicationUrl?: string; // Enlace para aplicar
+  applicationEmail?: string; // Email para aplicar
+  applicationDeadline?: string;
+  requiredSkills?: string[]; // E.g., ['React', 'Node.js', 'TypeScript']
+
+  // Metadatos de la publicación
+  creatorId: string;
+  creatorRole: 'admin' | 'advertiser';
+  status: 'ACTIVE' | 'INACTIVE' | 'FILLED'; // Estado de la oferta
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const JobPostingFormSchema = z.object({
+  title: z.string().min(1, "El título es requerido."),
+  description: z.string().min(1, "La descripción es requerida."),
+  companyName: z.string().min(1, "El nombre de la empresa es requerido."),
+  location: z.string().min(1, "La ubicación es requerida."),
+  locationType: z.enum(['ON_SITE', 'REMOTE', 'HYBRID'], {
+    errorMap: () => ({ message: "Tipo de ubicación inválido." }),
+  }),
+  salaryRangeMin: z.preprocess(
+    (val) => (val === "" ? undefined : Number(val)),
+    z.number().min(0, "El salario mínimo no puede ser negativo.").optional()
+  ),
+  salaryRangeMax: z.preprocess(
+    (val) => (val === "" ? undefined : Number(val)),
+    z.number().min(0, "El salario máximo no puede ser negativo.").optional()
+  ),
+  jobType: z.enum(['FULL_TIME', 'PART_TIME', 'CONTRACT', 'INTERNSHIP'], {
+    errorMap: () => ({ message: "Tipo de empleo inválido." }),
+  }),
+  applicationUrl: z.string().url("URL de aplicación inválida.").optional().or(z.literal('')),
+  applicationEmail: z.string().email("Email de aplicación inválido.").optional().or(z.literal('')),
+  applicationDeadline: z.string().optional().or(z.literal('')), // Will be a string from date picker
+  requiredSkills: z.array(z.string()).optional(), // Comma separated string to array
+  status: z.enum(['ACTIVE', 'INACTIVE', 'FILLED'], {
+    errorMap: () => ({ message: "Estado inválido." }),
+  }).default('ACTIVE'),
+});
+
+export type JobPostingFormValues = z.infer<typeof JobPostingFormSchema>;

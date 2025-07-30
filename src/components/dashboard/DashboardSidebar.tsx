@@ -44,6 +44,7 @@ export function DashboardSidebar() {
 
   const advertiserNav = [
     { href: "/dashboard/advertiser", label: "Resumen", icon: LayoutGrid },
+    { href: "/dashboard/jobs", label: "Empleos", icon: FileText }, // Added for Advertiser
     { href: "/dashboard/advertiser/agent", label: "Agente IA", icon: Bot },
     { href: "/dashboard/advertiser/conversations", label: "Conversaciones", icon: MessageSquare },
     { href: "/dashboard/advertiser/analytics", label: "Analíticas IA", icon: BarChart2 },
@@ -53,6 +54,7 @@ export function DashboardSidebar() {
 
   const adminNav = [
     { href: "/dashboard/admin", label: "Resumen", icon: LayoutGrid },
+    { href: "/dashboard/jobs", label: "Empleos", icon: FileText }, // Added for Admin
     { href: "/dashboard/admin/blog", label: "Blog", icon: FileText },
     { href: "/dashboard/admin/content", label: "Contenido IA", icon: Sparkles },
     { href: "/dashboard/admin/agent", label: "Agente Global", icon: Bot },

@@ -1,27 +1,29 @@
 
+
 import { config } from 'dotenv';
-config(); // Carga las variables de entorno desde .env
+config(); // Load environment variables from .env
 
 import admin from 'firebase-admin';
 
-// This needs to be a unique name for the admin app instance
-const ADMIN_APP_NAME = 'ColomboEspanolaAdmin';
 let initializedProjectId = 'Not initialized';
 
 function initializeFirebaseAdmin() {
-  try {
-    // Check if our specific named app is already initialized.
-    const existingApp = admin.apps.find(app => app?.name === ADMIN_APP_NAME);
-    if (existingApp) {
-      initializedProjectId = `Re-accessed named app '${ADMIN_APP_NAME}'. Project ID: ${existingApp.options.projectId || 'N/A'}`;
-      return {
-        db: existingApp.firestore(),
-        auth: existingApp.auth(),
-        admin: admin,
-      };
+  // Check if the default app is already initialized to prevent duplicates.
+  if (admin.apps.length > 0) {
+    const defaultApp = admin.apps[0];
+    if (defaultApp) {
+        initializedProjectId = `Re-accessed default app. Project ID: ${defaultApp.options.projectId || 'N/A'}`;
+        return {
+            db: admin.firestore(),
+            auth: admin.auth(),
+            storage: admin.storage(),
+            admin: admin,
+        };
     }
+  }
 
-    // --- NEW: Prioritize Base64 encoded service account for Vercel/production ---
+  try {
+    // --- Prioritize Base64 encoded service account for Vercel/production ---
     const base64ServiceAccount = process.env.FIREBASE_SERVICE_ACCOUNT_BASE64;
     if (base64ServiceAccount) {
       let serviceAccount;
@@ -29,21 +31,19 @@ function initializeFirebaseAdmin() {
         const serviceAccountJson = Buffer.from(base64ServiceAccount, 'base64').toString('utf8');
         serviceAccount = JSON.parse(serviceAccountJson);
       } catch (e) {
-        throw new Error("Failed to decode or parse FIREBASE_SERVICE_ACCOUNT_BASE64. Make sure it's a valid Base64 encoded JSON string.");
-      }
-      
-      if (typeof serviceAccount.private_key !== 'string') {
-           throw new Error('The private_key in the decoded service account is not a string.');
+        throw new Error("Failed to decode or parse FIREBASE_SERVICE_ACCOUNT_BASE64.");
       }
 
-      const app = admin.initializeApp({
+      admin.initializeApp({
           credential: admin.credential.cert(serviceAccount),
-      }, ADMIN_APP_NAME);
+          storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+      });
 
-      initializedProjectId = `Initialized from Base64. Project ID: ${app.options.projectId}`;
+      initializedProjectId = `Initialized from Base64. Project ID: ${serviceAccount.project_id}`;
       return {
-          db: app.firestore(),
-          auth: app.auth(),
+          db: admin.firestore(),
+          auth: admin.auth(),
+          storage: admin.storage(),
           admin: admin,
       };
     }
@@ -52,52 +52,48 @@ function initializeFirebaseAdmin() {
     console.warn("Using fallback local .env variables for Firebase Admin. For production, set FIREBASE_SERVICE_ACCOUNT_BASE64.");
     const projectId = process.env.FIREBASE_PROJECT_ID;
     const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-    const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
+    const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\n/g, '\n');
 
-    const hasAllKeys = projectId && clientEmail && privateKey;
-
-    if (!hasAllKeys) {
-        const missingKeys = [];
-        if (!projectId) missingKeys.push('FIREBASE_PROJECT_ID');
-        if (!clientEmail) missingKeys.push('FIREBASE_CLIENT_EMAIL');
-        if (!privateKey) missingKeys.push('FIREBASE_PRIVATE_KEY');
-        initializedProjectId = `CRITICAL: Missing Firebase Admin environment variables: ${missingKeys.join(', ')}`;
-        throw new Error(initializedProjectId);
+    if (!projectId || !clientEmail || !privateKey) {
+        const missingKeys = [!projectId && 'FIREBASE_PROJECT_ID', !clientEmail && 'FIREBASE_CLIENT_EMAIL', !privateKey && 'FIREBASE_PRIVATE_KEY'].filter(Boolean).join(', ');
+        throw new Error(`CRITICAL: Missing Firebase Admin environment variables: ${missingKeys}`);
     }
 
-    const app = admin.initializeApp({
+    admin.initializeApp({
         credential: admin.credential.cert({
-            projectId,
-            clientEmail,
-            privateKey,
+          projectId,
+          clientEmail,
+          privateKey,
         }),
-    }, ADMIN_APP_NAME);
+        storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+    });
     
     initializedProjectId = `Initialized from local vars. Project ID: ${projectId}`;
     return {
-      db: app.firestore(),
-      auth: app.auth(),
+      db: admin.firestore(),
+      auth: admin.auth(),
+      storage: admin.storage(),
       admin: admin,
     };
 
   } catch (error: any) {
     let errorMessage = `Initialization failed: ${error.message}`;
-    if (error.code === 'app/duplicate-app') {
-        errorMessage = `Duplicate Firebase app initialization detected. App name: ${ADMIN_APP_NAME}.`;
-    } else if (error.code === 'auth/invalid-credential' || error.message.includes('DECODER')) {
-        errorMessage = `Initialization failed: Invalid credential. Check the content and format of your Firebase Admin environment variables. Error: ${error.message}`;
+    if (error.code === 'auth/invalid-credential' || error.message.includes('DECODER')) {
+        errorMessage = `Initialization failed: Invalid credential. Check your Firebase Admin env vars. Error: ${error.message}`;
     }
     console.error("CRITICAL FIREBASE ADMIN INITIALIZATION ERROR:", errorMessage);
     initializedProjectId = errorMessage;
+    // Return nulls so the app can potentially run in a degraded state
     return {
       db: null,
       auth: null,
+      storage: null,
       admin: null,
     };
   }
 }
 
 // Run the initialization and export the results.
-const { db: adminDb, auth: adminAuth, admin: adminInstance } = initializeFirebaseAdmin();
+const { db: adminDb, auth: adminAuth, storage: adminStorage, admin: adminInstance } = initializeFirebaseAdmin();
 
-export { adminDb, adminAuth, adminInstance, initializedProjectId };
+export { adminDb, adminAuth, adminStorage, adminInstance, initializedProjectId };

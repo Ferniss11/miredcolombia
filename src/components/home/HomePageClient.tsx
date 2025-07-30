@@ -19,6 +19,7 @@ import BlogSection from './BlogSection';
 import BusinessSection from './BusinessSection';
 import TestimonialsSection from './TestimonialsSection';
 import DirectorySection from './DirectorySection';
+import JobsSection from './JobsSection'; // Import the new JobsSection
 
 type HomePageClientProps = {
   initialPosts: BlogPost[];
@@ -56,6 +57,7 @@ export default function HomePageClient({ initialPosts, eurToCopRate, initialBusi
         <AiAssistantSection onOpenChatModal={() => setIsChatModalOpen(true)} /> {/* Pass setter to AiAssistantSection */}
         <PackagesSection eurToCopRate={eurToCopRate} />
         <ServicesSection eurToCopRate={eurToCopRate} />
+        <JobsSection /> {/* Integrate the JobsSection here */}
         <DirectorySection businesses={initialBusinesses} />
         <BlogSection posts={initialPosts} />
         <BusinessSection />
