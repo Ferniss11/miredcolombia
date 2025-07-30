@@ -19,10 +19,9 @@ import { Loader2, Briefcase, FileText, Upload, Trash2, Eye } from 'lucide-react'
 import Link from 'next/link';
 
 export default function CandidateProfilePage() {
-    const { userProfile, loading, refreshUserProfile } = useAuth();
+    const { user, userProfile, loading, refreshUserProfile } = useAuth();
     const [isPending, startTransition] = useTransition();
     const { toast } = useToast();
-    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const form = useForm<CandidateProfileFormValues>({
         resolver: zodResolver(CandidateProfileSchema),
@@ -30,6 +29,7 @@ export default function CandidateProfilePage() {
             professionalTitle: '',
             summary: '',
             skills: [],
+            resumeFile: undefined,
         },
     });
 
@@ -38,29 +38,50 @@ export default function CandidateProfilePage() {
             form.reset({
                 professionalTitle: userProfile.candidateProfile.professionalTitle || '',
                 summary: userProfile.candidateProfile.summary || '',
-                // Ensure skills are always an array for the form
-                skills: Array.isArray(userProfile.candidateProfile.skills) ? userProfile.candidateProfile.skills : (userProfile.candidateProfile.skills || '').split(',').filter(Boolean),
+                skills: Array.isArray(userProfile.candidateProfile.skills) ? userProfile.candidateProfile.skills : [],
+                resumeFile: undefined,
             });
         }
     }, [userProfile, form]);
 
     async function onSubmit(data: CandidateProfileFormValues) {
-        if (!userProfile) return;
+        if (!user) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Debes iniciar sesión para actualizar.' });
+            return;
+        }
+
+        const formData = new FormData();
+        Object.entries(data).forEach(([key, value]) => {
+            if (key === 'resumeFile' && value instanceof FileList && value.length > 0) {
+                formData.append(key, value[0]);
+            } else if (key === 'skills' && Array.isArray(value)) {
+                formData.append(key, value.join(','));
+            }
+            else if (value) {
+                formData.append(key, value as string);
+            }
+        });
+        
+        // If there's no existing resume, a new one is required.
+        if (!userProfile?.candidateProfile?.resumeUrl && (!data.resumeFile || data.resumeFile.length === 0)) {
+            toast({ variant: 'destructive', title: 'Archivo Requerido', description: 'Por favor, sube tu currículum en formato PDF.' });
+            return;
+        }
 
         startTransition(async () => {
-            const file = fileInputRef.current?.files?.[0];
-            const formData = new FormData();
-            if (file) {
-                formData.append('resumeFile', file);
-            }
+            try {
+                const result = await updateCandidateProfileAction(user.uid, formData);
 
-            const result = await updateCandidateProfileAction(userProfile.uid, data, formData);
-
-            if (result.error) {
-                toast({ variant: 'destructive', title: 'Error al Guardar', description: result.error });
-            } else {
-                toast({ title: 'Éxito', description: 'Tu perfil ha sido actualizado.' });
-                await refreshUserProfile();
+                if (result.error) {
+                    toast({ variant: 'destructive', title: 'Error al Guardar', description: result.error });
+                } else {
+                    toast({ title: 'Éxito', description: 'Tu perfil ha sido actualizado.' });
+                    await refreshUserProfile();
+                    form.reset({ ...form.getValues(), resumeFile: undefined }); // Clear file input
+                }
+            } catch (error) {
+                 const errorMessage = error instanceof Error ? error.message : "Un error desconocido ocurrió durante la subida.";
+                 toast({ variant: 'destructive', title: 'Error de Red', description: errorMessage });
             }
         });
     }
@@ -137,37 +158,40 @@ export default function CandidateProfilePage() {
                                     </FormItem>
                                 )}
                             />
-                             <FormItem>
-                                <FormLabel>Currículum (PDF)</FormLabel>
-                                {userProfile?.candidateProfile?.resumeUrl ? (
-                                    <div className="flex items-center gap-4 p-2 border rounded-md">
-                                        <FileText className="h-6 w-6 text-primary"/>
-                                        <p className="text-sm font-medium flex-grow">CV Actual Cargado</p>
-                                        <Button variant="outline" size="sm" asChild>
-                                            <Link href={userProfile.candidateProfile.resumeUrl} target="_blank" rel="noopener noreferrer">
-                                                <Eye className="mr-2 h-4 w-4"/> Ver
-                                            </Link>
-                                        </Button>
-                                        <Button variant="ghost" size="icon" className="text-destructive h-8 w-8" onClick={() => {/* TODO: Implement delete */}}>
-                                            <Trash2 className="h-4 w-4"/>
-                                        </Button>
-                                    </div>
-                                ) : (
-                                    <p className="text-sm text-muted-foreground italic">No has subido ningún currículum todavía.</p>
+                             <FormField
+                                control={form.control}
+                                name="resumeFile"
+                                render={({ field: { value, onChange, ...fieldProps } }) => (
+                                <FormItem>
+                                    <FormLabel>Currículum (PDF)</FormLabel>
+                                    {userProfile?.candidateProfile?.resumeUrl && !value?.length && (
+                                        <div className="flex items-center gap-4 p-2 border rounded-md">
+                                            <FileText className="h-6 w-6 text-primary"/>
+                                            <p className="text-sm font-medium flex-grow">CV Actual Cargado</p>
+                                            <Button variant="outline" size="sm" asChild>
+                                                <Link href={userProfile.candidateProfile.resumeUrl} target="_blank" rel="noopener noreferrer">
+                                                    <Eye className="mr-2 h-4 w-4"/> Ver
+                                                </Link>
+                                            </Button>
+                                        </div>
+                                    )}
+                                    <FormControl>
+                                        <Input
+                                            {...fieldProps}
+                                            type="file"
+                                            accept="application/pdf"
+                                            onChange={(event) => onChange(event.target.files)}
+                                            className="mt-2"
+                                            required={!userProfile?.candidateProfile?.resumeUrl}
+                                        />
+                                    </FormControl>
+                                    <FormDescription>
+                                        {userProfile?.candidateProfile?.resumeUrl ? "Sube un nuevo archivo para reemplazar el actual." : "Sube tu CV en formato PDF. Es obligatorio."}
+                                    </FormDescription>
+                                    <FormMessage />
+                                </FormItem>
                                 )}
-                                <FormControl>
-                                    <Input
-                                        type="file"
-                                        accept="application/pdf"
-                                        ref={fileInputRef}
-                                        className="mt-2"
-                                    />
-                                </FormControl>
-                                <FormDescription>
-                                    {userProfile?.candidateProfile?.resumeUrl ? "Sube un nuevo archivo para reemplazar el actual." : "Sube tu CV en formato PDF."}
-                                </FormDescription>
-                                <FormMessage />
-                            </FormItem>
+                            />
                         </CardContent>
                     </Card>
 

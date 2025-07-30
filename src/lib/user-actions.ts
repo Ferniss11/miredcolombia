@@ -8,6 +8,7 @@ import { revalidatePath } from 'next/cache';
 import { BusinessAgentConfigSchema, CandidateProfileSchema } from './types';
 import { getPlatformConfig } from '@/services/platform.service';
 import { getUserProfileByUid } from '@/services/admin.service';
+import { uploadImageToStorage } from './job-posting/infrastructure/storage/firebase-storage.adapter';
 
 const FieldValue = adminInstance?.firestore.FieldValue;
 
@@ -175,68 +176,47 @@ export async function getBusinessAnalyticsAction(uid: string): Promise<BusinessA
     }
 }
 
-async function uploadPdfToStorage(fileBuffer: Buffer, filePath: string): Promise<string> {
-  if (!adminStorage) {
-    throw new Error("Firebase Admin Storage is not initialized. Check admin-config.ts");
-  }
-  const bucketName = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET;
-  if (!bucketName) {
-    throw new Error("NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET environment variable is not set.");
-  }
-
-  const bucket = adminStorage.bucket(bucketName);
-  const file = bucket.file(filePath);
-
-  await file.save(fileBuffer, {
-    metadata: {
-      contentType: 'application/pdf',
-      cacheControl: 'public, max-age=31536000',
-    },
-  });
-
-  const [url] = await file.getSignedUrl({
-    action: 'read',
-    expires: '01-01-2100',
-  });
-
-  return url;
-}
 
 export async function updateCandidateProfileAction(
   uid: string,
-  values: CandidateProfileFormValues,
-  formData: FormData
+  formData: FormData,
 ) {
   try {
     const db = await verifyUserAndGetDb(uid);
     const userRef = db.collection("users").doc(uid);
 
+    const professionalTitle = formData.get('professionalTitle') as string || '';
+    const summary = formData.get('summary') as string || '';
+    const skills = (formData.get('skills') as string || '').split(',').map(s => s.trim()).filter(Boolean);
+    const resumeFile = formData.get('resumeFile') as File | null;
+
     // 1. Get existing profile data to merge with
     const userDoc = await userRef.get();
     const existingProfile = (userDoc.data() as UserProfile)?.candidateProfile || {};
 
-    // 2. Validate incoming form data
-    const validatedData = CandidateProfileSchema.parse(values);
+    let resumeUrl = existingProfile.resumeUrl; // Start with existing URL
 
-    // 3. Handle file upload if present
-    let resumeUrl = existingProfile.resumeUrl; // Keep old URL by default
-    const resumeFile = formData.get('resumeFile') as File | null;
-    if (resumeFile && resumeFile.size > 0) {
-      const buffer = Buffer.from(await resumeFile.arrayBuffer());
-      const filePath = `resumes/${uid}/${Date.now()}-${resumeFile.name}`;
-      resumeUrl = await uploadPdfToStorage(buffer, filePath);
+    // 2. Upload file if a new one is provided
+    if (resumeFile) {
+        const buffer = Buffer.from(await resumeFile.arrayBuffer());
+        const filePath = `resumes/${uid}/${Date.now()}-${resumeFile.name}`;
+        resumeUrl = await uploadImageToStorage(buffer, filePath, resumeFile.type);
     }
     
-    // 4. Construct the complete new profile object
+    if (!resumeUrl) {
+      throw new Error("El currículum es obligatorio y no se pudo procesar.");
+    }
+
+    // 3. Construct the complete new profile object
     const newProfile: CandidateProfile = {
       ...existingProfile,
-      professionalTitle: validatedData.professionalTitle,
-      summary: validatedData.summary,
-      skills: validatedData.skills, // Use the parsed array
-      resumeUrl: resumeUrl,
+      professionalTitle,
+      summary,
+      skills,
+      resumeUrl,
     };
-    
-    // 5. Perform a single update operation with the complete object
+
+    // 4. Perform a single update operation with the complete object
     await userRef.update({
       candidateProfile: newProfile
     });

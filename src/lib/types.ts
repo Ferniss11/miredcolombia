@@ -110,21 +110,23 @@ export type BusinessProfile = {
 };
 
 // --- Candidate Profile Schemas ---
+const zStringOrFileList = z.custom<string | FileList>((data) => {
+    return typeof data === 'string' || data instanceof FileList;
+});
+
 export const CandidateProfileSchema = z.object({
     professionalTitle: z.string().optional(),
     summary: z.string().optional(),
     skills: z.preprocess(
       (val) => {
-        if (typeof val === 'string' && val.trim() !== '') {
+        if (typeof val === 'string') {
           return val.split(',').map(s => s.trim()).filter(Boolean);
         }
-        if (Array.isArray(val)) {
-            return val;
-        }
-        return [];
+        return val;
       },
       z.array(z.string()).optional()
     ),
+    resumeFile: z.custom<FileList>().optional(),
 });
 export type CandidateProfileFormValues = z.infer<typeof CandidateProfileSchema>;
 
@@ -132,7 +134,7 @@ export type CandidateProfileFormValues = z.infer<typeof CandidateProfileSchema>;
 export type CandidateProfile = {
   professionalTitle?: string;
   summary?: string;
-  skills?: string[] | string;
+  skills?: string[];
   resumeUrl?: string;
   experience?: Array<{
     jobTitle: string;
