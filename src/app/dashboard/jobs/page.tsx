@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useEffect, useTransition } from 'react';
+import React, { useState, useEffect, useTransition, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -46,7 +46,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 
 import { JobPostingFormSchema, JobPostingFormValues } from '@/lib/types';
 import { JobPosting } from '@/lib/job-posting/domain/job-posting.entity';
-import { createJobPostingAction, getJobPostingsAction, deleteJobPostingAction } from '@/lib/job-posting/infrastructure/nextjs/job-posting.server-actions';
+import { createJobPostingAction, getJobPostingsAction, deleteJobPostingAction, updateJobPostingAction } from '@/lib/job-posting/infrastructure/nextjs/job-posting.server-actions';
 import { useAuth } from '@/context/AuthContext';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -60,6 +60,7 @@ const JobsPage = () => {
   const [jobPostings, setJobPostings] = useState<JobPosting[]>([]);
   const [isLoadingJobs, setIsLoadingJobs] = useState(true);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [editingJob, setEditingJob] = useState<JobPosting | null>(null);
 
   const form = useForm<JobPostingFormValues>({
     resolver: zodResolver(JobPostingFormSchema),
@@ -69,8 +70,8 @@ const JobsPage = () => {
       companyName: '',
       location: '',
       locationType: 'ON_SITE',
-      salaryRangeMin: 0,
-      salaryRangeMax: 0,
+      salaryRangeMin: undefined,
+      salaryRangeMax: undefined,
       jobType: 'FULL_TIME',
       applicationUrl: '',
       applicationEmail: '',
@@ -80,7 +81,7 @@ const JobsPage = () => {
     },
   });
 
-  const fetchJobPostings = async () => {
+  const fetchJobPostings = useCallback(async () => {
       setIsLoadingJobs(true);
       try {
         const result = await getJobPostingsAction();
@@ -97,33 +98,44 @@ const JobsPage = () => {
       } finally {
         setIsLoadingJobs(false);
       }
-    };
+    }, [toast]);
 
   useEffect(() => {
     fetchJobPostings();
-  }, [toast]);
+  }, [fetchJobPostings]);
+
+  useEffect(() => {
+    if (editingJob) {
+      form.reset({
+        ...editingJob,
+        salaryRangeMin: editingJob.salaryRange?.min,
+        salaryRangeMax: editingJob.salaryRange?.max,
+        applicationDeadline: editingJob.applicationDeadline ? new Date(editingJob.applicationDeadline).toISOString().split('T')[0] : '',
+      });
+    } else {
+      form.reset();
+    }
+  }, [editingJob, form]);
+
+  const handleOpenSheetForEdit = (job: JobPosting) => {
+    setEditingJob(job);
+    setIsSheetOpen(true);
+  };
+  
+  const handleOpenSheetForCreate = () => {
+    setEditingJob(null);
+    form.reset();
+    setIsSheetOpen(true);
+  };
+
+  const handleSheetOpenChange = (open: boolean) => {
+    setIsSheetOpen(open);
+    if (!open) {
+      setEditingJob(null);
+    }
+  };
 
   const onSubmit = async (values: JobPostingFormValues) => {
-    if (!user || !userProfile) {
-      toast({
-        variant: 'destructive',
-        title: 'Error de Autenticación',
-        description: 'Usuario no autenticado o perfil no cargado. Por favor, inicia sesión de nuevo.',
-      });
-      return;
-    }
-
-    if (userProfile.role !== 'Admin' && userProfile.role !== 'Advertiser') {
-      toast({
-        variant: 'destructive',
-        title: 'Permiso Denegado',
-        description: 'No tienes permiso para crear ofertas de empleo.',
-      });
-      return;
-    }
-
-    const creatorRole = userProfile.role.toLowerCase() as 'admin' | 'advertiser';
-
     startTransition(async () => {
       try {
         const imageInput = document.querySelector<HTMLInputElement>('input[name="imageFile"]');
@@ -132,20 +144,25 @@ const JobsPage = () => {
         const companyLogoInput = document.querySelector<HTMLInputElement>('input[name="companyLogoFile"]');
         const companyLogoFile = companyLogoInput?.files?.[0];
 
-        const result = await createJobPostingAction(
-          {
-            ...values,
-            creatorId: user.uid,
-            creatorRole: creatorRole,
-          },
-          imageFile,
-          companyLogoFile
-        );
+        let result;
+        if (editingJob) {
+          // Update existing job
+          result = await updateJobPostingAction(editingJob.id, values, imageFile, companyLogoFile);
+        } else {
+          // Create new job
+          if (!user || !userProfile) {
+            toast({ variant: 'destructive', title: 'Error de Autenticación', description: 'Debes iniciar sesión.' });
+            return;
+          }
+          const creatorRole = userProfile.role.toLowerCase() as 'admin' | 'advertiser';
+          const createData = { ...values, creatorId: user.uid, creatorRole };
+          result = await createJobPostingAction(createData, imageFile, companyLogoFile);
+        }
 
         if (result.success) {
           toast({
-            title: 'Oferta de Empleo Creada',
-            description: 'La oferta de empleo ha sido publicada exitosamente.',
+            title: `Oferta ${editingJob ? 'Actualizada' : 'Creada'}`,
+            description: `La oferta de empleo ha sido ${editingJob ? 'actualizada' : 'creada'} exitosamente.`,
           });
           form.reset();
           setIsSheetOpen(false);
@@ -153,17 +170,13 @@ const JobsPage = () => {
         } else {
           toast({
             variant: 'destructive',
-            title: 'Error al Crear Oferta',
-            description: result.error || 'Hubo un problema al crear la oferta de empleo.',
+            title: `Error al ${editingJob ? 'Actualizar' : 'Crear'} Oferta`,
+            description: result.error || 'Hubo un problema.',
           });
         }
       } catch (error: any) {
-        console.error('Error creating job posting:', error);
-        toast({
-          variant: 'destructive',
-          title: 'Error al Crear Oferta',
-          description: error.message || 'Hubo un problema al crear la oferta de empleo.',
-        });
+        console.error('Error handling job submission:', error);
+        toast({ variant: 'destructive', title: 'Error Inesperado', description: error.message });
       }
     });
   };
@@ -173,205 +186,132 @@ const JobsPage = () => {
       return;
     }
     startTransition(async () => {
-      try {
-        const result = await deleteJobPostingAction(jobId);
-        if (result.success) {
-          toast({
-            title: 'Oferta Eliminada',
-            description: 'La oferta de empleo ha sido eliminada exitosamente.',
-          });
-          await fetchJobPostings();
-        } else {
-          toast({
-            variant: 'destructive',
-            title: 'Error al Eliminar Oferta',
-            description: result.error || 'Hubo un problema al eliminar la oferta de empleo.',
-          });
-        }
-      } catch (error: any) {
-        console.error('Error deleting job posting:', error);
-        toast({
-          variant: 'destructive',
-          title: 'Error al Eliminar Oferta',
-          description: error.message || 'Hubo un problema al eliminar la oferta de empleo.',
-        });
+      const result = await deleteJobPostingAction(jobId);
+      if (result.success) {
+        toast({ title: 'Oferta Eliminada', description: 'La oferta ha sido eliminada.' });
+        await fetchJobPostings();
+      } else {
+        toast({ variant: 'destructive', title: 'Error al Eliminar', description: result.error });
       }
     });
   };
-
+  
   const getStatusBadgeClass = (status: JobPosting['status']) => {
     switch (status) {
-      case 'ACTIVE':
-        return 'bg-green-100 text-green-800 border-green-300';
-      case 'INACTIVE':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-300';
-      case 'FILLED':
-        return 'bg-gray-100 text-gray-800 border-gray-300';
-      default:
-        return 'bg-gray-100 text-gray-800';
+      case 'ACTIVE': return 'bg-green-100 text-green-800 border-green-300';
+      case 'INACTIVE': return 'bg-yellow-100 text-yellow-800 border-yellow-300';
+      case 'FILLED': return 'bg-gray-100 text-gray-800 border-gray-300';
+      default: return 'bg-gray-100 text-gray-800';
     }
   };
-  
+
   const JobForm = (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-         <FormField control={form.control} name="title" render={({ field }) => (
-            <FormItem><FormLabel>Título del Puesto</FormLabel><FormControl><Input placeholder="Ej: Desarrollador Frontend Senior" {...field} disabled={isPending} /></FormControl><FormMessage /></FormItem>
-         )} />
-         <FormField control={form.control} name="description" render={({ field }) => (
-            <FormItem><FormLabel>Descripción del Puesto</FormLabel><FormControl><Textarea placeholder="Describe las responsabilidades, requisitos y beneficios..." className="min-h-[150px]" {...field} disabled={isPending} /></FormControl><FormMessage /></FormItem>
-         )} />
-         <FormField control={form.control} name="companyName" render={({ field }) => (
-            <FormItem><FormLabel>Nombre de la Empresa</FormLabel><FormControl><Input placeholder="Ej: Mi Empresa S.L." {...field} disabled={isPending} /></FormControl><FormMessage /></FormItem>
-         )} />
-        <FormItem><FormLabel>Logo de la Empresa</FormLabel><FormControl><Input type="file" accept="image/*" name="companyLogoFile" disabled={isPending} /></FormControl><FormMessage /></FormItem>
-        <FormItem><FormLabel>Imagen de la Oferta</FormLabel><FormControl><Input type="file" accept="image/*" name="imageFile" disabled={isPending} /></FormControl><FormMessage /></FormItem>
-         <FormField control={form.control} name="location" render={({ field }) => (
-            <FormItem><FormLabel>Ubicación</FormLabel><FormControl><Input placeholder="Ej: Madrid, España" {...field} disabled={isPending} /></FormControl><FormMessage /></FormItem>
-         )} />
-         <FormField control={form.control} name="locationType" render={({ field }) => (
-            <FormItem><FormLabel>Tipo de Ubicación</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value} disabled={isPending}><FormControl><SelectTrigger><SelectValue placeholder="Selecciona el tipo de ubicación" /></SelectTrigger></FormControl><SelectContent><SelectItem value="ON_SITE">Presencial</SelectItem><SelectItem value="REMOTE">Remoto</SelectItem><SelectItem value="HYBRID">Híbrido</SelectItem></SelectContent></Select><FormMessage /></FormItem>
-         )} />
+         <FormField control={form.control} name="title" render={({ field }) => (<FormItem><FormLabel>Título del Puesto</FormLabel><FormControl><Input placeholder="Ej: Desarrollador Frontend Senior" {...field} disabled={isPending} /></FormControl><FormMessage /></FormItem>)} />
+         <FormField control={form.control} name="description" render={({ field }) => (<FormItem><FormLabel>Descripción del Puesto</FormLabel><FormControl><Textarea placeholder="Describe las responsabilidades, requisitos y beneficios..." className="min-h-[150px]" {...field} disabled={isPending} /></FormControl><FormMessage /></FormItem>)} />
+         <FormField control={form.control} name="companyName" render={({ field }) => (<FormItem><FormLabel>Nombre de la Empresa</FormLabel><FormControl><Input placeholder="Ej: Mi Empresa S.L." {...field} disabled={isPending} /></FormControl><FormMessage /></FormItem>)} />
+        <FormItem><FormLabel>Logo de la Empresa (Opcional)</FormLabel><FormControl><Input type="file" accept="image/*" name="companyLogoFile" disabled={isPending} /></FormControl><FormDescription>Sube un nuevo logo para reemplazar el actual si es necesario.</FormDescription></FormItem>
+        <FormItem><FormLabel>Imagen de la Oferta (Opcional)</FormLabel><FormControl><Input type="file" accept="image/*" name="imageFile" disabled={isPending} /></FormControl><FormDescription>Sube una nueva imagen para reemplazar la actual si es necesario.</FormDescription></FormItem>
+         <FormField control={form.control} name="location" render={({ field }) => (<FormItem><FormLabel>Ubicación</FormLabel><FormControl><Input placeholder="Ej: Madrid, España" {...field} disabled={isPending} /></FormControl><FormMessage /></FormItem>)} />
+         <FormField control={form.control} name="locationType" render={({ field }) => (<FormItem><FormLabel>Tipo de Ubicación</FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={isPending}><FormControl><SelectTrigger><SelectValue placeholder="Selecciona el tipo de ubicación" /></SelectTrigger></FormControl><SelectContent><SelectItem value="ON_SITE">Presencial</SelectItem><SelectItem value="REMOTE">Remoto</SelectItem><SelectItem value="HYBRID">Híbrido</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField control={form.control} name="salaryRangeMin" render={({ field }) => (
-                <FormItem><FormLabel>Salario Mínimo (€)</FormLabel><FormControl><Input type="number" placeholder="Ej: 30000" {...field} value={field.value} onChange={(e) => field.onChange(e.target.value === '' ? '' : Number(e.target.value))} disabled={isPending}/></FormControl><FormMessage /></FormItem>
-            )} />
-            <FormField control={form.control} name="salaryRangeMax" render={({ field }) => (
-                <FormItem><FormLabel>Salario Máximo (€)</FormLabel><FormControl><Input type="number" placeholder="Ej: 45000" {...field} value={field.value} onChange={(e) => field.onChange(e.target.value === '' ? '' : Number(e.target.value))} disabled={isPending} /></FormControl><FormMessage /></FormItem>
-            )} />
+            <FormField control={form.control} name="salaryRangeMin" render={({ field }) => (<FormItem><FormLabel>Salario Mínimo (€)</FormLabel><FormControl><Input type="number" placeholder="Ej: 30000" {...field} value={field.value ?? ''} onChange={(e) => field.onChange(e.target.value === '' ? undefined : Number(e.target.value))} disabled={isPending}/></FormControl><FormMessage /></FormItem>)} />
+            <FormField control={form.control} name="salaryRangeMax" render={({ field }) => (<FormItem><FormLabel>Salario Máximo (€)</FormLabel><FormControl><Input type="number" placeholder="Ej: 45000" {...field} value={field.value ?? ''} onChange={(e) => field.onChange(e.target.value === '' ? undefined : Number(e.target.value))} disabled={isPending} /></FormControl><FormMessage /></FormItem>)} />
         </div>
-         <FormField control={form.control} name="jobType" render={({ field }) => (
-            <FormItem><FormLabel>Tipo de Empleo</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value} disabled={isPending}><FormControl><SelectTrigger><SelectValue placeholder="Selecciona el tipo de empleo" /></SelectTrigger></FormControl><SelectContent><SelectItem value="FULL_TIME">Tiempo Completo</SelectItem><SelectItem value="PART_TIME">Tiempo Parcial</SelectItem><SelectItem value="CONTRACT">Contrato</SelectItem><SelectItem value="INTERNSHIP">Prácticas</SelectItem></SelectContent></Select><FormMessage /></FormItem>
-         )} />
-         <FormField control={form.control} name="applicationUrl" render={({ field }) => (
-            <FormItem><FormLabel>URL de Aplicación (Opcional)</FormLabel><FormControl><Input type="url" placeholder="https://careers.ejemplo.com/apply" {...field} disabled={isPending} /></FormControl><FormMessage /></FormItem>
-         )} />
-         <FormField control={form.control} name="applicationEmail" render={({ field }) => (
-            <FormItem><FormLabel>Email de Aplicación (Opcional)</FormLabel><FormControl><Input type="email" placeholder="rrhh@ejemplo.com" {...field} disabled={isPending} /></FormControl><FormMessage /></FormItem>
-         )} />
-         <FormField control={form.control} name="applicationDeadline" render={({ field }) => (
-            <FormItem><FormLabel>Fecha Límite (Opcional)</FormLabel><FormControl><Input type="date" {...field} disabled={isPending} /></FormControl><FormMessage /></FormItem>
-         )} />
-         <FormField control={form.control} name="requiredSkills" render={({ field }) => (
-            <FormItem><FormLabel>Habilidades Requeridas</FormLabel><FormControl><Input placeholder="Ej: React, TypeScript, Node.js" {...field} value={Array.isArray(field.value) ? field.value.join(', ') : ''} onChange={(e) => field.onChange(e.target.value.split(',').map(s => s.trim()))} disabled={isPending}/></FormControl><FormDescription>Separadas por comas.</FormDescription><FormMessage /></FormItem>
-         )} />
-         <FormField control={form.control} name="status" render={({ field }) => (
-            <FormItem><FormLabel>Estado de la Oferta</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value} disabled={isPending}><FormControl><SelectTrigger><SelectValue placeholder="Selecciona el estado" /></SelectTrigger></FormControl><SelectContent><SelectItem value="ACTIVE">Activa</SelectItem><SelectItem value="INACTIVE">Inactiva</SelectItem><SelectItem value="FILLED">Cubierta</SelectItem></SelectContent></Select><FormMessage /></FormItem>
-         )} />
+         <FormField control={form.control} name="jobType" render={({ field }) => (<FormItem><FormLabel>Tipo de Empleo</FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={isPending}><FormControl><SelectTrigger><SelectValue placeholder="Selecciona el tipo de empleo" /></SelectTrigger></FormControl><SelectContent><SelectItem value="FULL_TIME">Tiempo Completo</SelectItem><SelectItem value="PART_TIME">Tiempo Parcial</SelectItem><SelectItem value="CONTRACT">Contrato</SelectItem><SelectItem value="INTERNSHIP">Prácticas</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
+         <FormField control={form.control} name="applicationUrl" render={({ field }) => (<FormItem><FormLabel>URL de Aplicación (Opcional)</FormLabel><FormControl><Input type="url" placeholder="https://careers.ejemplo.com/apply" {...field} disabled={isPending} /></FormControl><FormMessage /></FormItem>)} />
+         <FormField control={form.control} name="applicationEmail" render={({ field }) => (<FormItem><FormLabel>Email de Aplicación (Opcional)</FormLabel><FormControl><Input type="email" placeholder="rrhh@ejemplo.com" {...field} disabled={isPending} /></FormControl><FormMessage /></FormItem>)} />
+         <FormField control={form.control} name="applicationDeadline" render={({ field }) => (<FormItem><FormLabel>Fecha Límite (Opcional)</FormLabel><FormControl><Input type="date" {...field} disabled={isPending} /></FormControl><FormMessage /></FormItem>)} />
+         <FormField control={form.control} name="requiredSkills" render={({ field }) => (<FormItem><FormLabel>Habilidades Requeridas</FormLabel><FormControl><Input placeholder="Ej: React, TypeScript, Node.js" {...field} value={Array.isArray(field.value) ? field.value.join(', ') : ''} onChange={(e) => field.onChange(e.target.value.split(',').map(s => s.trim()))} disabled={isPending}/></FormControl><FormDescription>Separadas por comas.</FormDescription><FormMessage /></FormItem>)} />
+         <FormField control={form.control} name="status" render={({ field }) => (<FormItem><FormLabel>Estado de la Oferta</FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={isPending}><FormControl><SelectTrigger><SelectValue placeholder="Selecciona el estado" /></SelectTrigger></FormControl><SelectContent><SelectItem value="ACTIVE">Activa</SelectItem><SelectItem value="INACTIVE">Inactiva</SelectItem><SelectItem value="FILLED">Cubierta</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
       </form>
     </Form>
   );
 
   return (
     <div className="space-y-6 relative">
-      <div className="flex items-center justify-between">
+      <Sheet open={isSheetOpen} onOpenChange={handleSheetOpenChange}>
+        <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold font-headline">Gestión de Ofertas de Empleo</h1>
-           <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-                <SheetTrigger asChild>
-                    <Button className="hidden md:flex">
-                        <Plus className="mr-2 h-4 w-4" /> Crear Nueva Oferta
-                    </Button>
-                </SheetTrigger>
-                <SheetContent className="sm:max-w-2xl w-full">
-                    <SheetHeader>
-                        <SheetTitle>Crear Nueva Oferta de Empleo</SheetTitle>
-                        <SheetDescription>
-                            Completa los detalles de la vacante para publicarla en el portal.
-                        </SheetDescription>
-                    </SheetHeader>
-                    <ScrollArea className="h-[calc(100vh-150px)] pr-6">
-                        <div className="py-4">
-                         {JobForm}
-                        </div>
-                    </ScrollArea>
-                    <SheetFooter>
-                        <SheetClose asChild>
-                            <Button variant="outline">Cancelar</Button>
-                        </SheetClose>
-                        <Button onClick={form.handleSubmit(onSubmit)} disabled={isPending}>
-                            {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Crear Oferta'}
-                        </Button>
-                    </SheetFooter>
-                </SheetContent>
-            </Sheet>
-      </div>
-      
-      {isLoadingJobs ? (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-48 w-full" />)}
-          </div>
-      ) : jobPostings.length === 0 ? (
-          <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-lg">
-             <Briefcase className="mx-auto h-12 w-12" />
-            <h3 className="mt-4 text-lg font-semibold">No hay ofertas de empleo</h3>
-            <p className="mt-1 text-sm">Crea la primera oferta para que aparezca aquí.</p>
-             <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-                <SheetTrigger asChild>
-                     <Button className="mt-4">
-                        <Plus className="mr-2 h-4 w-4" /> Crear Oferta
-                    </Button>
-                </SheetTrigger>
-                 <SheetContent className="sm:max-w-2xl w-full">
-                    <SheetHeader>
-                        <SheetTitle>Crear Nueva Oferta de Empleo</SheetTitle>
-                        <SheetDescription>Completa los detalles de la vacante para publicarla en el portal.</SheetDescription>
-                    </SheetHeader>
-                    <ScrollArea className="h-[calc(100vh-150px)] pr-6"><div className="py-4">{JobForm}</div></ScrollArea>
-                    <SheetFooter><SheetClose asChild><Button variant="outline">Cancelar</Button></SheetClose><Button onClick={form.handleSubmit(onSubmit)} disabled={isPending}>{isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}Crear Oferta</Button></SheetFooter>
-                </SheetContent>
-             </Sheet>
-          </div>
-      ) : (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {jobPostings.map((job) => (
-              <Card key={job.id} className="flex flex-col overflow-hidden">
-                 {job.imageUrl && (
-                    <div className="relative h-32 w-full">
-                         <Image src={job.imageUrl} alt={job.title} layout="fill" objectFit="cover" />
-                    </div>
-                )}
-                <CardHeader className="p-4 flex flex-row items-start gap-4">
-                    {job.companyLogoUrl && <Image src={job.companyLogoUrl} alt={job.companyName} width={48} height={48} className="rounded-md object-contain border bg-white" />}
-                    <div className="flex-grow">
-                        <h3 className="font-bold font-headline text-lg leading-snug line-clamp-2">{job.title}</h3>
-                        <p className="text-sm text-muted-foreground">{job.companyName}</p>
-                    </div>
-                     <DropdownMenu>
-                        <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => router.push(`/dashboard/jobs/${job.id}/edit`)}><Edit className="mr-2 h-4 w-4" /> Editar</DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleDelete(job.id)} disabled={isPending} className="text-red-600"><Trash2 className="mr-2 h-4 w-4" /> Eliminar</DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                </CardHeader>
-                <CardContent className="p-4 pt-0 text-xs text-muted-foreground flex-grow">
-                   {job.location} ({job.locationType})
-                </CardContent>
-                <CardFooter className="p-4 pt-0 border-t mt-auto">
-                    <Badge className={cn('mt-4', getStatusBadgeClass(job.status))}>{job.status}</Badge>
-                </CardFooter>
-              </Card>
-            ))}
-          </div>
-      )}
-
-      {/* Floating Action Button for Mobile */}
-       <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-        <SheetTrigger asChild>
-          <Button className="md:hidden fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg" size="icon">
-              <Plus className="h-6 w-6" />
+          <Button className="hidden md:flex" onClick={handleOpenSheetForCreate}>
+            <Plus className="mr-2 h-4 w-4" /> Crear Nueva Oferta
           </Button>
-        </SheetTrigger>
-         <SheetContent className="sm:max-w-2xl w-full">
+        </div>
+        
+        {isLoadingJobs ? (
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-48 w-full" />)}
+            </div>
+        ) : jobPostings.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-lg">
+              <Briefcase className="mx-auto h-12 w-12" />
+              <h3 className="mt-4 text-lg font-semibold">No hay ofertas de empleo</h3>
+              <p className="mt-1 text-sm">Crea la primera oferta para que aparezca aquí.</p>
+              <Button className="mt-4" onClick={handleOpenSheetForCreate}>
+                  <Plus className="mr-2 h-4 w-4" /> Crear Oferta
+              </Button>
+            </div>
+        ) : (
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {jobPostings.map((job) => (
+                <Card key={job.id} className="flex flex-col overflow-hidden">
+                  {job.imageUrl && (
+                      <div className="relative h-32 w-full">
+                          <Image src={job.imageUrl} alt={job.title} layout="fill" objectFit="cover" />
+                      </div>
+                  )}
+                  <CardHeader className="p-4 flex flex-row items-start gap-4">
+                      {job.companyLogoUrl && <Image src={job.companyLogoUrl} alt={job.companyName} width={48} height={48} className="rounded-md object-contain border bg-white" />}
+                      <div className="flex-grow">
+                          <h3 className="font-bold font-headline text-lg leading-snug line-clamp-2">{job.title}</h3>
+                          <p className="text-sm text-muted-foreground">{job.companyName}</p>
+                      </div>
+                      <DropdownMenu>
+                          <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleOpenSheetForEdit(job)}><Edit className="mr-2 h-4 w-4" /> Editar</DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleDelete(job.id)} disabled={isPending} className="text-red-600"><Trash2 className="mr-2 h-4 w-4" /> Eliminar</DropdownMenuItem>
+                          </DropdownMenuContent>
+                      </DropdownMenu>
+                  </CardHeader>
+                  <CardContent className="p-4 pt-0 text-xs text-muted-foreground flex-grow">
+                    {job.location} ({job.locationType})
+                  </CardContent>
+                  <CardFooter className="p-4 pt-0 border-t mt-auto">
+                      <Badge className={cn('mt-4', getStatusBadgeClass(job.status))}>{job.status}</Badge>
+                  </CardFooter>
+                </Card>
+              ))}
+            </div>
+        )}
+
+        <Button className="md:hidden fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg" size="icon" onClick={handleOpenSheetForCreate}>
+          <Plus className="h-6 w-6" />
+        </Button>
+      
+        <SheetContent className="sm:max-w-2xl w-full">
             <SheetHeader>
-                <SheetTitle>Crear Nueva Oferta de Empleo</SheetTitle>
-                <SheetDescription>Completa los detalles de la vacante para publicarla en el portal.</SheetDescription>
+                <SheetTitle>{editingJob ? 'Editar Oferta de Empleo' : 'Crear Nueva Oferta de Empleo'}</SheetTitle>
+                <SheetDescription>
+                    {editingJob ? 'Modifica los detalles de la vacante.' : 'Completa los detalles para publicar una nueva vacante.'}
+                </SheetDescription>
             </SheetHeader>
-            <ScrollArea className="h-[calc(100vh-150px)] pr-6"><div className="py-4">{JobForm}</div></ScrollArea>
-            <SheetFooter><SheetClose asChild><Button variant="outline">Cancelar</Button></SheetClose><Button onClick={form.handleSubmit(onSubmit)} disabled={isPending}>{isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}Crear Oferta</Button></SheetFooter>
+            <ScrollArea className="h-[calc(100vh-150px)] pr-6">
+                <div className="py-4">
+                  {JobForm}
+                </div>
+            </ScrollArea>
+            <SheetFooter>
+                <SheetClose asChild>
+                    <Button variant="outline">Cancelar</Button>
+                </SheetClose>
+                <Button onClick={form.handleSubmit(onSubmit)} disabled={isPending}>
+                    {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (editingJob ? 'Guardar Cambios' : 'Crear Oferta')}
+                </Button>
+            </SheetFooter>
         </SheetContent>
       </Sheet>
-
     </div>
   );
 };
