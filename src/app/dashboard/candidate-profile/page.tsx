@@ -12,7 +12,6 @@ import { CandidateProfileSchema, type CandidateProfileFormValues } from '@/lib/t
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Loader2, Briefcase, FileText, Upload, Eye } from 'lucide-react';
@@ -33,6 +32,8 @@ export default function CandidateProfilePage() {
         },
     });
 
+    const isResumeRequired = !userProfile?.candidateProfile?.resumeUrl;
+    
     useEffect(() => {
         if (userProfile?.candidateProfile) {
             form.reset({
@@ -44,13 +45,16 @@ export default function CandidateProfilePage() {
         }
     }, [userProfile, form]);
     
-    // Make resume file required only if there isn't one already uploaded
-    const isResumeRequired = !userProfile?.candidateProfile?.resumeUrl;
-    
     async function onSubmit(data: CandidateProfileFormValues) {
         if (!user) {
             toast({ variant: 'destructive', title: 'Error', description: 'Debes iniciar sesión para actualizar.' });
             return;
+        }
+
+        const resumeFile = data.resumeFile?.[0];
+        if (isResumeRequired && !resumeFile) {
+             toast({ variant: 'destructive', title: 'Archivo Requerido', description: 'Por favor, sube tu currículum en formato PDF.' });
+             return;
         }
 
         startTransition(async () => {
@@ -58,13 +62,10 @@ export default function CandidateProfilePage() {
                 const formData = new FormData();
                 formData.append('professionalTitle', data.professionalTitle || '');
                 formData.append('summary', data.summary || '');
-                formData.append('skills', (data.skills || []).join(','));
+                formData.append('skills', Array.isArray(data.skills) ? data.skills.join(',') : '');
 
-                if (data.resumeFile && data.resumeFile.length > 0) {
-                    formData.append('resumeFile', data.resumeFile[0]);
-                } else if (isResumeRequired) {
-                    toast({ variant: 'destructive', title: 'Archivo Requerido', description: 'Por favor, sube tu currículum en formato PDF.' });
-                    return;
+                if (resumeFile) {
+                    formData.append('resumeFile', resumeFile);
                 }
 
                 const result = await updateCandidateProfileAction(user.uid, formData);
@@ -74,7 +75,6 @@ export default function CandidateProfilePage() {
                     await refreshUserProfile();
                     form.reset({ ...form.getValues(), resumeFile: undefined });
                 } else {
-                    // Display the specific server error
                     toast({ variant: 'destructive', title: 'Error al Guardar', description: result.error });
                 }
 
