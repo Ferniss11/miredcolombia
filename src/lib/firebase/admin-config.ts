@@ -1,7 +1,7 @@
 
 
 import { config } from 'dotenv';
-config(); // Load environment variables from .env
+config(); 
 
 import admin from 'firebase-admin';
 
