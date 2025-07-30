@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useAuth } from '@/context/AuthContext';
 import { useTransition, useEffect, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { updateCandidateProfileAction } from '@/lib/user-actions';
+import { uploadResumeAndGetUrl, updateCandidateProfileDataAction } from '@/lib/user-actions';
 import { CandidateProfileSchema, type CandidateProfileFormValues } from '@/lib/types';
 
 import { Button } from '@/components/ui/button';
@@ -50,38 +50,49 @@ export default function CandidateProfilePage() {
             return;
         }
 
-        const formData = new FormData();
-        Object.entries(data).forEach(([key, value]) => {
-            if (key === 'resumeFile' && value instanceof FileList && value.length > 0) {
-                formData.append(key, value[0]);
-            } else if (key === 'skills' && Array.isArray(value)) {
-                formData.append(key, value.join(','));
-            }
-            else if (value) {
-                formData.append(key, value as string);
-            }
-        });
-        
-        // If there's no existing resume, a new one is required.
-        if (!userProfile?.candidateProfile?.resumeUrl && (!data.resumeFile || data.resumeFile.length === 0)) {
-            toast({ variant: 'destructive', title: 'Archivo Requerido', description: 'Por favor, sube tu currículum en formato PDF.' });
-            return;
-        }
-
         startTransition(async () => {
             try {
-                const result = await updateCandidateProfileAction(user.uid, formData);
+                let resumeUrl = userProfile?.candidateProfile?.resumeUrl;
+                
+                // Step 1: Upload file if a new one is provided.
+                if (data.resumeFile && data.resumeFile.length > 0) {
+                    const fileFormData = new FormData();
+                    fileFormData.append('resumeFile', data.resumeFile[0]);
 
-                if (result.error) {
-                    toast({ variant: 'destructive', title: 'Error al Guardar', description: result.error });
-                } else {
-                    toast({ title: 'Éxito', description: 'Tu perfil ha sido actualizado.' });
-                    await refreshUserProfile();
-                    form.reset({ ...form.getValues(), resumeFile: undefined }); // Clear file input
+                    const uploadResult = await uploadResumeAndGetUrl(user.uid, fileFormData);
+
+                    if (!uploadResult.success || !uploadResult.url) {
+                        throw new Error(uploadResult.error || "No se pudo subir el archivo.");
+                    }
+                    resumeUrl = uploadResult.url;
                 }
+
+                // If there's no existing resume, a new one is required.
+                if (!resumeUrl) {
+                    toast({ variant: 'destructive', title: 'Archivo Requerido', description: 'Por favor, sube tu currículum en formato PDF.' });
+                    return;
+                }
+
+                // Step 2: Save the profile data with the new (or existing) URL.
+                const profileDataToSave = {
+                    professionalTitle: data.professionalTitle,
+                    summary: data.summary,
+                    skills: data.skills,
+                };
+                
+                const saveResult = await updateCandidateProfileDataAction(user.uid, profileDataToSave, resumeUrl);
+
+                if (saveResult.error) {
+                    throw new Error(saveResult.error);
+                }
+
+                toast({ title: 'Éxito', description: 'Tu perfil ha sido actualizado.' });
+                await refreshUserProfile();
+                form.reset({ ...form.getValues(), resumeFile: undefined }); // Clear file input
+                
             } catch (error) {
-                 const errorMessage = error instanceof Error ? error.message : "Un error desconocido ocurrió durante la subida.";
-                 toast({ variant: 'destructive', title: 'Error de Red', description: errorMessage });
+                 const errorMessage = error instanceof Error ? error.message : "Un error desconocido ocurrió durante la operación.";
+                 toast({ variant: 'destructive', title: 'Error al Guardar', description: errorMessage });
             }
         });
     }

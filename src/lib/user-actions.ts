@@ -176,78 +176,64 @@ export async function getBusinessAnalyticsAction(uid: string): Promise<BusinessA
 }
 
 
-export async function updateCandidateProfileAction(
-  uid: string,
-  formData: FormData,
-) {
+export async function uploadResumeAndGetUrl(uid: string, formData: FormData) {
   try {
-    const db = await verifyUserAndGetDb(uid);
-    if (!adminStorage) {
-      throw new Error("Firebase Admin Storage is not initialized.");
-    }
-
-    const userRef = db.collection("users").doc(uid);
+    if (!adminStorage) throw new Error("Firebase Admin Storage no está configurado.");
     
-    const professionalTitle = formData.get('professionalTitle') as string || '';
-    const summary = formData.get('summary') as string || '';
-    const skills = (formData.get('skills') as string || '').split(',').map(s => s.trim()).filter(Boolean);
     const resumeFile = formData.get('resumeFile') as File | null;
+    if (!resumeFile) throw new Error("No se ha proporcionado ningún archivo de currículum.");
 
-    // Get existing profile data to merge with
-    const userDoc = await userRef.get();
-    const existingProfile = (userDoc.data() as UserProfile)?.candidateProfile || {};
+    const BUCKET_NAME = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET;
+    if (!BUCKET_NAME) throw new Error("El nombre del bucket de Firebase Storage no está configurado.");
 
-    let resumeUrl = existingProfile.resumeUrl; // Start with existing URL
-
-    // Upload file if a new one is provided
-    if (resumeFile && resumeFile.size > 0) {
-      const BUCKET_NAME = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET;
-      if (!BUCKET_NAME) {
-          throw new Error("Firebase Storage bucket name is not configured.");
-      }
-      const buffer = Buffer.from(await resumeFile.arrayBuffer());
-      const filePath = `resumes/${uid}/${Date.now()}-${resumeFile.name}`;
-      
-      const bucket = adminStorage.bucket(BUCKET_NAME);
-      const file = bucket.file(filePath);
-      
-      await file.save(buffer, {
-        metadata: {
-          contentType: resumeFile.type,
-          cacheControl: 'public, max-age=31536000',
-        },
-      });
-      
-      const [url] = await file.getSignedUrl({
-          action: 'read',
-          expires: '01-01-2100',
-      });
-      resumeUrl = url;
-    }
+    const buffer = Buffer.from(await resumeFile.arrayBuffer());
+    const filePath = `resumes/${uid}/${Date.now()}-${resumeFile.name}`;
     
-    if (!resumeUrl) {
-      throw new Error("El currículum es obligatorio y no se pudo procesar.");
-    }
-
-    // Construct the complete new profile object
-    const newProfile: CandidateProfile = {
-      ...existingProfile,
-      professionalTitle,
-      summary,
-      skills,
-      resumeUrl,
-    };
-
-    // Perform a single update operation with the complete object
-    await userRef.update({
-      candidateProfile: newProfile
+    const bucket = adminStorage.bucket(BUCKET_NAME);
+    const file = bucket.file(filePath);
+    
+    await file.save(buffer, {
+      metadata: {
+        contentType: resumeFile.type,
+        cacheControl: 'public, max-age=31536000',
+      },
     });
     
-    revalidatePath('/dashboard/candidate-profile');
-    return { success: true };
+    const [url] = await file.getSignedUrl({
+        action: 'read',
+        expires: '01-01-2100',
+    });
+
+    return { success: true, url };
   } catch (error) {
-    console.error('Error al actualizar el perfil del candidato:', error);
+    console.error('Error al subir el currículum:', error);
     const errorMessage = error instanceof Error ? error.message : "Un error desconocido ocurrió.";
     return { success: false, error: errorMessage };
   }
+}
+
+export async function updateCandidateProfileDataAction(uid: string, data: Omit<CandidateProfileFormValues, 'resumeFile'>, resumeUrl: string) {
+    try {
+        const db = await verifyUserAndGetDb(uid);
+        const userRef = db.collection("users").doc(uid);
+
+        const newProfileData: CandidateProfile = {
+            professionalTitle: data.professionalTitle,
+            summary: data.summary,
+            skills: data.skills,
+            resumeUrl: resumeUrl,
+        };
+
+        await userRef.update({
+            candidateProfile: newProfileData
+        });
+
+        revalidatePath('/dashboard/candidate-profile');
+        return { success: true };
+
+    } catch (error) {
+        console.error('Error al guardar los datos del perfil del candidato:', error);
+        const errorMessage = error instanceof Error ? error.message : "Un error desconocido ocurrió.";
+        return { success: false, error: errorMessage };
+    }
 }
