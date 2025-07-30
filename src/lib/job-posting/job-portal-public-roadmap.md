@@ -7,19 +7,19 @@ Construir la cara pública del portal de empleo, permitiendo a los visitantes de
 
 ---
 
-## Fase 1: Exponer los Datos de Empleo de Forma Pública
+## Fase 1: Exponer los Datos de Empleo de Forma Pública (✓ Completada)
 
 El backend y la lógica de negocio ya existen gracias a la arquitectura hexagonal. Ahora necesitamos crear una capa de acceso pública y segura.
 
-### Tarea 1.1: Crear Server Actions Públicas
+### Tarea 1.1: Crear Server Actions Públicas (✓)
 
 *   **Archivo:** `src/lib/job-posting/infrastructure/nextjs/job-posting.server-actions.ts`
 *   **Acciones:**
-    1.  Crear una nueva función `getPublicJobPostingsAction`.
-    2.  Esta función llamará al `GetJobPostingsUseCase` existente.
-    3.  **Lógica Clave:** Filtrará los resultados para devolver solo las ofertas con `status: 'ACTIVE'`. Esto asegura que los borradores o las ofertas cubiertas no sean visibles públicamente.
-    4.  Crear una nueva función `getPublicJobPostingByIdAction(id: string)`.
-    5.  Llamará al `findById` del repositorio y devolverá la oferta solo si su estado es `ACTIVE`.
+    1.  Crear una nueva función `getPublicJobPostingsAction`. (✓)
+    2.  Esta función llamará al `GetJobPostingsUseCase` existente. (✓)
+    3.  **Lógica Clave:** Filtrará los resultados para devolver solo las ofertas con `status: 'ACTIVE'`. Esto asegura que los borradores o las ofertas cubiertas no sean visibles públicamente. (✓)
+    4.  Crear una nueva función `getPublicJobPostingByIdAction(id: string)`. (✓)
+    5.  Llamará al `findById` del repositorio y devolverá la oferta solo si su estado es `ACTIVE`. (✓)
 
 ---
 

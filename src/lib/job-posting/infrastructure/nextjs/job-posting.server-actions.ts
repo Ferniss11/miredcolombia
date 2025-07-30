@@ -1,3 +1,4 @@
+
 "use server";
 
 import { CreateJobPostingUseCase } from "../../application/create-job-posting.use-case";
@@ -11,11 +12,11 @@ import { uploadImageToStorage } from "../storage/firebase-storage.adapter";
 const jobPostingRepository = new FirestoreJobPostingRepository();
 
 // Helper to serialize JobPosting dates for client components
-const serializeJobPosting = (job: JobPosting) => ({
+const serializeJobPosting = (job: JobPosting): any => ({
   ...job,
   createdAt: job.createdAt.toISOString(),
   updatedAt: job.updatedAt.toISOString(),
-  applicationDeadline: job.applicationDeadline ? job.applicationDeadline.toString() : undefined,
+  applicationDeadline: job.applicationDeadline ? new Date(job.applicationDeadline).toISOString().split('T')[0] : undefined,
 });
 
 type CreateJobPostingClientData = Omit<JobPosting, 'id' | 'createdAt' | 'updatedAt' | 'imageUrl' | 'companyLogoUrl'>;
@@ -82,8 +83,7 @@ export async function deleteJobPostingAction(id: string) {
 
 export async function updateJobPostingAction(
   id: string,
-  jobData: Partial<Omit<JobPosting, 'id' | 'createdAt' | 'updatedAt' | 'imageUrl' | 'companyLogoUrl'>
-  >,
+  jobData: Partial<Omit<JobPosting, 'id' | 'createdAt' | 'updatedAt' | 'imageUrl' | 'companyLogoUrl'>>,
   imageFile?: File,
   companyLogoFile?: File
 ) {
@@ -112,4 +112,42 @@ export async function updateJobPostingAction(
     console.error("Error updating job posting:", error);
     return { success: false, error: error.message };
   }
+}
+
+// --- Public Facing Actions ---
+
+export async function getPublicJobPostingsAction() {
+  try {
+    const getUseCase = new GetJobPostingsUseCase(jobPostingRepository);
+    const allJobPostings = await getUseCase.execute();
+    
+    // Filter for only active job postings
+    const activeJobPostings = allJobPostings.filter(job => job.status === 'ACTIVE');
+    
+    const serializableJobPostings = activeJobPostings.map(serializeJobPosting);
+    return { success: true, data: serializableJobPostings };
+  } catch (error: any) {
+    console.error("Error fetching public job postings:", error);
+    return { success: false, error: error.message };
+  }
+}
+
+export async function getPublicJobPostingByIdAction(id: string) {
+    try {
+        const job = await jobPostingRepository.findById(id);
+        
+        if (!job) {
+             return { success: false, error: "Job posting not found." };
+        }
+
+        // Ensure only active jobs are publicly visible
+        if (job.status !== 'ACTIVE') {
+            return { success: false, error: "This job posting is not currently active." };
+        }
+        
+        return { success: true, data: serializeJobPosting(job) };
+    } catch (error: any) {
+        console.error(`Error fetching public job posting with id ${id}:`, error);
+        return { success: false, error: error.message };
+    }
 }
