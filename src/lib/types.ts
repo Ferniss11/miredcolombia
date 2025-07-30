@@ -109,12 +109,33 @@ export type BusinessProfile = {
   agentConfig?: BusinessAgentConfig;
 };
 
+export type CandidateProfile = {
+  professionalTitle?: string;
+  summary?: string;
+  skills?: string[];
+  resumeUrl?: string;
+  experience?: Array<{
+    jobTitle: string;
+    company: string;
+    startDate: string;
+    endDate: string;
+    description: string;
+  }>;
+  education?: Array<{
+    institution: string;
+    degree: string;
+    startDate: string;
+    endDate: string;
+  }>;
+};
+
 export type UserProfile = {
   uid: string; // Document ID should match auth UID
   name: string | null;
   email: string | null;
   role: UserRole;
   businessProfile?: BusinessProfile;
+  candidateProfile?: CandidateProfile;
 };
 
 export type Business = {

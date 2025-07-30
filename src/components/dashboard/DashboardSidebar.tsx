@@ -26,6 +26,7 @@ import {
   Bug,
   MessageSquare,
   Scale,
+  Briefcase,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -64,6 +65,10 @@ export function DashboardSidebar() {
     { href: "/dashboard/admin/debug", label: "Depuración", icon: Bug },
   ];
 
+  const userNav = [
+    { href: "/dashboard/candidate-profile", label: "Mi Perfil", icon: Briefcase },
+  ];
+
   const handleSignOut = async () => {
     await signOutUser();
     toast({ title: "Has cerrado sesión." });
@@ -72,7 +77,16 @@ export function DashboardSidebar() {
   };
   
   const role = userProfile?.role;
-  const navItems = role === 'Admin' ? adminNav : role === 'Advertiser' ? advertiserNav : [];
+  let navItems;
+  if (role === 'Admin') {
+    navItems = adminNav;
+  } else if (role === 'Advertiser') {
+    navItems = advertiserNav;
+  } else if (role === 'User') {
+    navItems = userNav;
+  } else {
+    navItems = [];
+  }
 
   const getRoleDisplayName = () => {
     if (role === 'Admin') return 'Administrador';
