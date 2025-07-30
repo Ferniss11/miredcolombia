@@ -325,6 +325,11 @@ const JobsPage = () => {
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {jobPostings.map((job) => (
               <Card key={job.id} className="flex flex-col overflow-hidden">
+                 {job.imageUrl && (
+                    <div className="relative h-32 w-full">
+                         <Image src={job.imageUrl} alt={job.title} layout="fill" objectFit="cover" />
+                    </div>
+                )}
                 <CardHeader className="p-4 flex flex-row items-start gap-4">
                     {job.companyLogoUrl && <Image src={job.companyLogoUrl} alt={job.companyName} width={48} height={48} className="rounded-md object-contain border bg-white" />}
                     <div className="flex-grow">

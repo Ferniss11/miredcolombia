@@ -27,7 +27,7 @@ export async function createJobPostingAction(
   companyLogoFile?: File
 ) {
   try {
-    const completeJobData: Omit<JobPosting, 'id'> = {
+    const completeJobData: Omit<JobPosting, 'id' | 'imageUrl' | 'companyLogoUrl'> = {
       ...jobData,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -64,6 +64,20 @@ export async function getJobPostingsAction() {
   }
 }
 
+export async function getJobPostingByIdAction(id: string) {
+    try {
+        const job = await jobPostingRepository.findById(id);
+        if (!job) {
+            return { success: false, error: "Job posting not found." };
+        }
+        return { success: true, data: serializeJobPosting(job) };
+    } catch (error: any) {
+        console.error(`Error fetching job posting with id ${id}:`, error);
+        return { success: false, error: error.message };
+    }
+}
+
+
 export async function deleteJobPostingAction(id: string) {
   try {
     const deleteUseCase = new DeleteJobPostingUseCase(jobPostingRepository);
@@ -82,25 +96,20 @@ export async function updateJobPostingAction(
   companyLogoFile?: File
 ) {
   try {
-    let imageUrl: string | undefined;
-    let companyLogoUrl: string | undefined;
+    const dataToUpdate: Partial<JobPosting> = { ...jobData };
 
     if (imageFile) {
       const buffer = Buffer.from(await imageFile.arrayBuffer());
-      imageUrl = await uploadImageToStorage(buffer, `job-postings/${id}/${Date.now()}-${imageFile.name}`, imageFile.type);
+      dataToUpdate.imageUrl = await uploadImageToStorage(buffer, `job-postings/${id}/${Date.now()}-${imageFile.name}`, imageFile.type);
     }
 
     if (companyLogoFile) {
       const buffer = Buffer.from(await companyLogoFile.arrayBuffer());
-      companyLogoUrl = await uploadImageToStorage(buffer, `job-postings/${id}/${Date.now()}-logo-${companyLogoFile.name}`, companyLogoFile.type);
+      dataToUpdate.companyLogoUrl = await uploadImageToStorage(buffer, `job-postings/${id}/${Date.now()}-logo-${companyLogoFile.name}`, companyLogoFile.type);
     }
 
     const updateUseCase = new UpdateJobPostingUseCase(jobPostingRepository);
-    const updatedJob = await updateUseCase.execute(id, {
-      ...jobData,
-      imageUrl,
-      companyLogoUrl,
-    });
+    const updatedJob = await updateUseCase.execute(id, dataToUpdate);
     return { success: true, data: serializeJobPosting(updatedJob) };
   } catch (error: any) {
     console.error("Error updating job posting:", error);
