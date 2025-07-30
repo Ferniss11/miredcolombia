@@ -215,10 +215,10 @@ export async function updateCandidateProfileAction(uid: string, formData: FormDa
         const validatedData = CandidateProfileSchema.parse(rawData);
 
         // Prepare the object to update in Firestore
-        const updates: { [key: string]: any } = {};
+        const updateData: { [key: string]: any } = {};
         for (const [key, value] of Object.entries(validatedData)) {
-            if (value !== undefined) {
-                updates[`candidateProfile.${key}`] = value;
+            if (value !== undefined && value !== null) {
+                updateData[`candidateProfile.${key}`] = value;
             }
         }
         
@@ -228,11 +228,11 @@ export async function updateCandidateProfileAction(uid: string, formData: FormDa
             const buffer = Buffer.from(await resumeFile.arrayBuffer());
             const filePath = `resumes/${uid}/${Date.now()}-${resumeFile.name}`;
             const resumeUrl = await uploadPdfToStorage(buffer, filePath);
-            updates['candidateProfile.resumeUrl'] = resumeUrl;
+            updateData['candidateProfile.resumeUrl'] = resumeUrl;
         }
 
-        if (Object.keys(updates).length > 0) {
-            await userRef.set({ candidateProfile: updates }, { merge: true });
+        if (Object.keys(updateData).length > 0) {
+            await userRef.update(updateData);
         }
         
         revalidatePath('/dashboard/candidate-profile');
