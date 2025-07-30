@@ -27,29 +27,23 @@ export async function createJobPostingAction(
   companyLogoFile?: File
 ) {
   try {
-    let imageUrl: string | undefined;
-    let companyLogoUrl: string | undefined;
-
-    if (imageFile) {
-      const buffer = Buffer.from(await imageFile.arrayBuffer());
-      imageUrl = await uploadImageToStorage(buffer, `job-postings/${jobData.creatorId}/${Date.now()}-${imageFile.name}`, imageFile.type);
-    }
-
-    if (companyLogoFile) {
-      const buffer = Buffer.from(await companyLogoFile.arrayBuffer());
-      companyLogoUrl = await uploadImageToStorage(buffer, `job-postings/${jobData.creatorId}/${Date.now()}-logo-${companyLogoFile.name}`, companyLogoFile.type);
-    }
-
-    const createUseCase = new CreateJobPostingUseCase(jobPostingRepository);
-
     const completeJobData: Omit<JobPosting, 'id'> = {
       ...jobData,
-      imageUrl,
-      companyLogoUrl,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
 
+    if (imageFile) {
+      const buffer = Buffer.from(await imageFile.arrayBuffer());
+      completeJobData.imageUrl = await uploadImageToStorage(buffer, `job-postings/${jobData.creatorId}/${Date.now()}-${imageFile.name}`, imageFile.type);
+    }
+
+    if (companyLogoFile) {
+      const buffer = Buffer.from(await companyLogoFile.arrayBuffer());
+      completeJobData.companyLogoUrl = await uploadImageToStorage(buffer, `job-postings/${jobData.creatorId}/${Date.now()}-logo-${companyLogoFile.name}`, companyLogoFile.type);
+    }
+
+    const createUseCase = new CreateJobPostingUseCase(jobPostingRepository);
     const newJob = await createUseCase.execute(completeJobData);
     return { success: true, data: serializeJobPosting(newJob) };
   } catch (error: any) {
