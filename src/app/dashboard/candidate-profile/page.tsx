@@ -4,9 +4,9 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useAuth } from '@/context/AuthContext';
-import { useTransition, useEffect, useRef } from 'react';
+import { useTransition, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { uploadResumeAndGetUrl, updateCandidateProfileDataAction } from '@/lib/user-actions';
+import { updateCandidateProfileAction } from '@/lib/user-actions';
 import { CandidateProfileSchema, type CandidateProfileFormValues } from '@/lib/types';
 
 import { Button } from '@/components/ui/button';
@@ -15,7 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Loader2, Briefcase, FileText, Upload, Trash2, Eye } from 'lucide-react';
+import { Loader2, Briefcase, FileText, Upload, Eye } from 'lucide-react';
 import Link from 'next/link';
 
 export default function CandidateProfilePage() {
@@ -43,7 +43,10 @@ export default function CandidateProfilePage() {
             });
         }
     }, [userProfile, form]);
-
+    
+    // Make resume file required only if there isn't one already uploaded
+    const isResumeRequired = !userProfile?.candidateProfile?.resumeUrl;
+    
     async function onSubmit(data: CandidateProfileFormValues) {
         if (!user) {
             toast({ variant: 'destructive', title: 'Error', description: 'Debes iniciar sesión para actualizar.' });
@@ -52,47 +55,32 @@ export default function CandidateProfilePage() {
 
         startTransition(async () => {
             try {
-                let resumeUrl = userProfile?.candidateProfile?.resumeUrl;
-                
-                // Step 1: Upload file if a new one is provided.
+                const formData = new FormData();
+                formData.append('professionalTitle', data.professionalTitle || '');
+                formData.append('summary', data.summary || '');
+                formData.append('skills', (data.skills || []).join(','));
+
                 if (data.resumeFile && data.resumeFile.length > 0) {
-                    const fileFormData = new FormData();
-                    fileFormData.append('resumeFile', data.resumeFile[0]);
-
-                    const uploadResult = await uploadResumeAndGetUrl(user.uid, fileFormData);
-
-                    if (!uploadResult.success || !uploadResult.url) {
-                        throw new Error(uploadResult.error || "No se pudo subir el archivo.");
-                    }
-                    resumeUrl = uploadResult.url;
-                }
-
-                // If there's no existing resume, a new one is required.
-                if (!resumeUrl) {
+                    formData.append('resumeFile', data.resumeFile[0]);
+                } else if (isResumeRequired) {
                     toast({ variant: 'destructive', title: 'Archivo Requerido', description: 'Por favor, sube tu currículum en formato PDF.' });
                     return;
                 }
 
-                // Step 2: Save the profile data with the new (or existing) URL.
-                const profileDataToSave = {
-                    professionalTitle: data.professionalTitle,
-                    summary: data.summary,
-                    skills: data.skills,
-                };
-                
-                const saveResult = await updateCandidateProfileDataAction(user.uid, profileDataToSave, resumeUrl);
+                const result = await updateCandidateProfileAction(user.uid, formData);
 
-                if (saveResult.error) {
-                    throw new Error(saveResult.error);
+                if (result.success) {
+                    toast({ title: 'Éxito', description: 'Tu perfil ha sido actualizado.' });
+                    await refreshUserProfile();
+                    form.reset({ ...form.getValues(), resumeFile: undefined });
+                } else {
+                    // Display the specific server error
+                    toast({ variant: 'destructive', title: 'Error al Guardar', description: result.error });
                 }
 
-                toast({ title: 'Éxito', description: 'Tu perfil ha sido actualizado.' });
-                await refreshUserProfile();
-                form.reset({ ...form.getValues(), resumeFile: undefined }); // Clear file input
-                
             } catch (error) {
                  const errorMessage = error instanceof Error ? error.message : "Un error desconocido ocurrió durante la operación.";
-                 toast({ variant: 'destructive', title: 'Error al Guardar', description: errorMessage });
+                 toast({ variant: 'destructive', title: 'Error Inesperado en Cliente', description: errorMessage });
             }
         });
     }
@@ -175,7 +163,7 @@ export default function CandidateProfilePage() {
                                 render={({ field: { value, onChange, ...fieldProps } }) => (
                                 <FormItem>
                                     <FormLabel>Currículum (PDF)</FormLabel>
-                                    {userProfile?.candidateProfile?.resumeUrl && !value?.length && (
+                                    {userProfile?.candidateProfile?.resumeUrl && (
                                         <div className="flex items-center gap-4 p-2 border rounded-md">
                                             <FileText className="h-6 w-6 text-primary"/>
                                             <p className="text-sm font-medium flex-grow">CV Actual Cargado</p>
@@ -193,7 +181,7 @@ export default function CandidateProfilePage() {
                                             accept="application/pdf"
                                             onChange={(event) => onChange(event.target.files)}
                                             className="mt-2"
-                                            required={!userProfile?.candidateProfile?.resumeUrl}
+                                            required={isResumeRequired}
                                         />
                                     </FormControl>
                                     <FormDescription>
