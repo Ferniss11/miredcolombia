@@ -109,6 +109,18 @@ export type BusinessProfile = {
   agentConfig?: BusinessAgentConfig;
 };
 
+// --- Candidate Profile Schemas ---
+export const CandidateProfileSchema = z.object({
+    professionalTitle: z.string().optional(),
+    summary: z.string().optional(),
+    skills: z.preprocess(
+      (val) => (typeof val === 'string' ? val.split(',').map(s => s.trim()).filter(Boolean) : val),
+      z.array(z.string()).optional()
+    ),
+});
+export type CandidateProfileFormValues = z.infer<typeof CandidateProfileSchema>;
+
+
 export type CandidateProfile = {
   professionalTitle?: string;
   summary?: string;

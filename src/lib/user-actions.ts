@@ -2,10 +2,10 @@
 'use server';
 
 import { z } from 'zod';
-import { adminDb, adminAuth, adminInstance } from '@/lib/firebase/admin-config';
-import type { BusinessProfile, BusinessAgentConfig, BusinessAnalytics } from './types';
+import { adminDb, adminAuth, adminInstance, adminStorage } from '@/lib/firebase/admin-config';
+import type { BusinessProfile, BusinessAgentConfig, BusinessAnalytics, CandidateProfile, CandidateProfileFormValues } from './types';
 import { revalidatePath } from 'next/cache';
-import { BusinessAgentConfigSchema } from './types';
+import { BusinessAgentConfigSchema, CandidateProfileSchema } from './types';
 import { getPlatformConfig } from '@/services/platform.service';
 
 const FieldValue = adminInstance?.firestore.FieldValue;
@@ -171,5 +171,80 @@ export async function getBusinessAnalyticsAction(uid: string): Promise<BusinessA
     } catch (error) {
         console.error("Error getting business analytics:", error);
         return defaultAnalytics;
+    }
+}
+
+async function uploadPdfToStorage(fileBuffer: Buffer, filePath: string): Promise<string> {
+  if (!adminStorage) {
+    throw new Error("Firebase Admin Storage is not initialized. Check admin-config.ts");
+  }
+  const bucketName = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET;
+  if (!bucketName) {
+    throw new Error("NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET environment variable is not set.");
+  }
+
+  const bucket = adminStorage.bucket(bucketName);
+  const file = bucket.file(filePath);
+
+  await file.save(fileBuffer, {
+    metadata: {
+      contentType: 'application/pdf',
+      cacheControl: 'public, max-age=31536000',
+    },
+  });
+
+  const [url] = await file.getSignedUrl({
+    action: 'read',
+    expires: '01-01-2100',
+  });
+
+  return url;
+}
+
+export async function updateCandidateProfileAction(uid: string, formData: FormData) {
+    try {
+        const db = await verifyUserAndGetDb(uid);
+        const userRef = db.collection("users").doc(uid);
+
+        // Extract and validate text fields
+        const rawData = {
+            professionalTitle: formData.get('professionalTitle'),
+            summary: formData.get('summary'),
+            skills: formData.get('skills'),
+        };
+        const validatedData = CandidateProfileSchema.parse(rawData);
+
+        // Prepare the object to update in Firestore
+        const updates: { [key: string]: any } = {};
+        for (const [key, value] of Object.entries(validatedData)) {
+            if (value !== undefined) {
+                updates[`candidateProfile.${key}`] = value;
+            }
+        }
+        
+        // Handle file upload
+        const resumeFile = formData.get('resumeFile') as File | null;
+        if (resumeFile && resumeFile.size > 0) {
+            const buffer = Buffer.from(await resumeFile.arrayBuffer());
+            const filePath = `resumes/${uid}/${Date.now()}-${resumeFile.name}`;
+            const resumeUrl = await uploadPdfToStorage(buffer, filePath);
+            updates['candidateProfile.resumeUrl'] = resumeUrl;
+        }
+
+        if (Object.keys(updates).length > 0) {
+            await userRef.set({ candidateProfile: updates }, { merge: true });
+        }
+        
+        revalidatePath('/dashboard/candidate-profile');
+        return { success: true };
+    } catch (error) {
+        console.error('Error al actualizar el perfil del candidato:', error);
+        if (error instanceof z.ZodError) {
+            return { error: error.errors.map(e => e.message).join(', ') };
+        }
+        if (error instanceof Error) {
+            return { error: error.message };
+        }
+        return { error: 'No se pudo actualizar el perfil. Por favor, inténtalo de nuevo.' };
     }
 }
