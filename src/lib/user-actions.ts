@@ -3,10 +3,11 @@
 
 import { z } from 'zod';
 import { adminDb, adminAuth, adminInstance, adminStorage } from '@/lib/firebase/admin-config';
-import type { BusinessProfile, BusinessAgentConfig, BusinessAnalytics, CandidateProfile, CandidateProfileFormValues } from './types';
+import type { BusinessProfile, BusinessAgentConfig, BusinessAnalytics, CandidateProfile, CandidateProfileFormValues, UserProfile } from './types';
 import { revalidatePath } from 'next/cache';
 import { BusinessAgentConfigSchema, CandidateProfileSchema } from './types';
 import { getPlatformConfig } from '@/services/platform.service';
+import { getUserProfileByUid } from '@/services/admin.service';
 
 const FieldValue = adminInstance?.firestore.FieldValue;
 
@@ -210,52 +211,35 @@ export async function updateCandidateProfileAction(
     const db = await verifyUserAndGetDb(uid);
     const userRef = db.collection("users").doc(uid);
 
+    // 1. Get existing profile data to merge with
+    const userDoc = await userRef.get();
+    const existingProfile = (userDoc.data() as UserProfile)?.candidateProfile || {};
+
+    // 2. Validate incoming form data
     const validatedData = CandidateProfileSchema.parse(values);
 
-    const updateData: { [key: string]: any } = {};
-
-    if (validatedData.professionalTitle) {
-      updateData['candidateProfile.professionalTitle'] = validatedData.professionalTitle;
-    }
-    if (validatedData.summary) {
-      updateData['candidateProfile.summary'] = validatedData.summary;
-    }
-    if (validatedData.skills && validatedData.skills.length > 0) {
-      updateData['candidateProfile.skills'] = validatedData.skills;
-    }
-
+    // 3. Handle file upload if present
+    let resumeUrl = existingProfile.resumeUrl; // Keep old URL by default
     const resumeFile = formData.get('resumeFile') as File | null;
     if (resumeFile && resumeFile.size > 0) {
       const buffer = Buffer.from(await resumeFile.arrayBuffer());
       const filePath = `resumes/${uid}/${Date.now()}-${resumeFile.name}`;
-      const resumeUrl = await uploadPdfToStorage(buffer, filePath);
-      updateData['candidateProfile.resumeUrl'] = resumeUrl;
+      resumeUrl = await uploadPdfToStorage(buffer, filePath);
     }
-
-    if (Object.keys(updateData).length > 0) {
-      // For updating nested objects, it's safer to merge fields onto the existing profile.
-      // We read the existing profile first.
-      const userDoc = await userRef.get();
-      const existingProfile = userDoc.data()?.candidateProfile || {};
-      
-      const newProfile = {
-        ...existingProfile,
-        ...updateData, // This only contains dot notation fields, which is wrong. Let's fix.
-      };
-      
-      const finalUpdateData = {
-          'candidateProfile.professionalTitle': validatedData.professionalTitle,
-          'candidateProfile.summary': validatedData.summary,
-          'candidateProfile.skills': validatedData.skills,
-      };
-
-      if (updateData['candidateProfile.resumeUrl']) {
-          finalUpdateData['candidateProfile.resumeUrl'] = updateData['candidateProfile.resumeUrl'];
-      }
-      
-      await userRef.set({ candidateProfile: finalUpdateData }, { merge: true });
-
-    }
+    
+    // 4. Construct the complete new profile object
+    const newProfile: CandidateProfile = {
+      ...existingProfile,
+      professionalTitle: validatedData.professionalTitle,
+      summary: validatedData.summary,
+      skills: validatedData.skills, // Use the parsed array
+      resumeUrl: resumeUrl,
+    };
+    
+    // 5. Perform a single update operation with the complete object
+    await userRef.update({
+      candidateProfile: newProfile
+    });
     
     revalidatePath('/dashboard/candidate-profile');
     return { success: true };
