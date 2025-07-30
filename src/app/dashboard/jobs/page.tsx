@@ -32,7 +32,6 @@ import {
   SheetDescription,
   SheetHeader,
   SheetTitle,
-  SheetTrigger,
   SheetFooter,
   SheetClose,
 } from '@/components/ui/sheet';
@@ -40,7 +39,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Plus, Edit, Trash2, MoreVertical, Briefcase } from 'lucide-react';
+import { Loader2, Plus, Edit, Trash2, MoreVertical, Briefcase, Eye } from 'lucide-react';
 import Image from 'next/image';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
@@ -51,6 +50,7 @@ import { useAuth } from '@/context/AuthContext';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
+import Link from 'next/link';
 
 const JobsPage = () => {
   const router = useRouter();
@@ -138,6 +138,7 @@ const JobsPage = () => {
   
   const handleOpenSheetForCreate = () => {
     setEditingJob(null);
+    form.reset(); // Explicitly reset form for creation
     setIsSheetOpen(true);
   };
 
@@ -284,6 +285,11 @@ const JobsPage = () => {
                           <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                               <DropdownMenuItem onClick={() => handleOpenSheetForEdit(job)}><Edit className="mr-2 h-4 w-4" /> Editar</DropdownMenuItem>
+                              <DropdownMenuItem asChild>
+                                <Link href={`/jobs/preview/${job.id}`} target="_blank">
+                                    <Eye className="mr-2 h-4 w-4" /> Previsualizar
+                                </Link>
+                              </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => handleDelete(job.id)} disabled={isPending} className="text-red-600"><Trash2 className="mr-2 h-4 w-4" /> Eliminar</DropdownMenuItem>
                           </DropdownMenuContent>
                       </DropdownMenu>
