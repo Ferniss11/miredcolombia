@@ -3,20 +3,17 @@
 
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Map } from "lucide-react";
+import { ArrowRight, Map, Megaphone } from "lucide-react";
 import Link from "next/link";
 import { JobPosting } from '@/lib/types';
 import JobCard from '@/components/jobs/JobCard';
+import { Card, CardContent } from '../ui/card';
 
 interface JobsSectionProps {
     jobs: JobPosting[];
 }
 
 const JobsSection: React.FC<JobsSectionProps> = ({ jobs }) => {
-    if (!jobs || jobs.length === 0) {
-        return null; // Don't render if there are no jobs
-    }
-
     return (
         <section className="w-full py-12 md:py-24 lg:py-32 bg-gray-50 dark:bg-gray-900/50">
             <div className="container px-4 md:px-6">
@@ -30,19 +27,40 @@ const JobsSection: React.FC<JobsSectionProps> = ({ jobs }) => {
                     </div>
                 </div>
 
-                <div className="mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 py-12">
-                    {jobs.map((job) => (
-                        <JobCard key={job.id} job={job} />
-                    ))}
-                </div>
+                {jobs && jobs.length > 0 ? (
+                    <>
+                        <div className="mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 py-12">
+                            {jobs.map((job) => (
+                                <JobCard key={job.id} job={job} />
+                            ))}
+                        </div>
 
-                <div className="flex justify-center">
-                    <Button asChild>
-                        <Link href="/jobs">
-                            Ver Todas las Ofertas <ArrowRight className="ml-2 h-4 w-4" />
-                        </Link>
-                    </Button>
-                </div>
+                        <div className="flex justify-center">
+                            <Button asChild>
+                                <Link href="/jobs">
+                                    Ver Todas las Ofertas <ArrowRight className="ml-2 h-4 w-4" />
+                                </Link>
+                            </Button>
+                        </div>
+                    </>
+                ) : (
+                    <div className="py-12 flex justify-center">
+                        <Card className="max-w-md w-full bg-gradient-to-br from-primary/10 via-background to-background shadow-lg text-center">
+                           <CardContent className="p-8">
+                               <div className="mx-auto p-4 bg-primary/20 rounded-full inline-flex mb-4">
+                                   <Megaphone className="w-8 h-8 text-primary" />
+                               </div>
+                               <h3 className="text-xl font-bold font-headline">¿Tienes una vacante?</h3>
+                               <p className="text-muted-foreground mt-2 mb-6">
+                                 Publica tu oferta de empleo y llega a miles de profesionales colombianos en España.
+                               </p>
+                               <Button asChild>
+                                   <Link href="/signup?role=advertiser">Publica tu oferta gratis</Link>
+                               </Button>
+                           </CardContent>
+                        </Card>
+                    </div>
+                )}
             </div>
         </section>
     );
