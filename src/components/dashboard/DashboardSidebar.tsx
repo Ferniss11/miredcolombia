@@ -26,6 +26,7 @@ import {
   Bug,
   MessageSquare,
   Scale,
+  Briefcase,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -44,6 +45,7 @@ export function DashboardSidebar() {
 
   const advertiserNav = [
     { href: "/dashboard/advertiser", label: "Resumen", icon: LayoutGrid },
+    { href: "/dashboard/jobs", label: "Empleos", icon: FileText }, // Added for Advertiser
     { href: "/dashboard/advertiser/agent", label: "Agente IA", icon: Bot },
     { href: "/dashboard/advertiser/conversations", label: "Conversaciones", icon: MessageSquare },
     { href: "/dashboard/advertiser/analytics", label: "Analíticas IA", icon: BarChart2 },
@@ -53,6 +55,7 @@ export function DashboardSidebar() {
 
   const adminNav = [
     { href: "/dashboard/admin", label: "Resumen", icon: LayoutGrid },
+    { href: "/dashboard/jobs", label: "Empleos", icon: FileText }, // Added for Admin
     { href: "/dashboard/admin/blog", label: "Blog", icon: FileText },
     { href: "/dashboard/admin/content", label: "Contenido IA", icon: Sparkles },
     { href: "/dashboard/admin/agent", label: "Agente Global", icon: Bot },
@@ -60,6 +63,10 @@ export function DashboardSidebar() {
     { href: "/dashboard/admin/directory", label: "Directorio", icon: Building },
     { href: "/dashboard/admin/economics", label: "IA Económico", icon: Scale },
     { href: "/dashboard/admin/debug", label: "Depuración", icon: Bug },
+  ];
+
+  const userNav = [
+    { href: "/dashboard/candidate-profile", label: "Mi Perfil", icon: Briefcase },
   ];
 
   const handleSignOut = async () => {
@@ -70,7 +77,16 @@ export function DashboardSidebar() {
   };
   
   const role = userProfile?.role;
-  const navItems = role === 'Admin' ? adminNav : role === 'Advertiser' ? advertiserNav : [];
+  let navItems;
+  if (role === 'Admin') {
+    navItems = adminNav;
+  } else if (role === 'Advertiser') {
+    navItems = advertiserNav;
+  } else if (role === 'User') {
+    navItems = userNav;
+  } else {
+    navItems = [];
+  }
 
   const getRoleDisplayName = () => {
     if (role === 'Admin') return 'Administrador';

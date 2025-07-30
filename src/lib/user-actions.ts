@@ -2,11 +2,12 @@
 'use server';
 
 import { z } from 'zod';
-import { adminDb, adminAuth, adminInstance } from '@/lib/firebase/admin-config';
-import type { BusinessProfile, BusinessAgentConfig, BusinessAnalytics } from './types';
+import { adminDb, adminAuth, adminInstance, adminStorage } from '@/lib/firebase/admin-config';
+import type { BusinessProfile, BusinessAgentConfig, BusinessAnalytics, CandidateProfile, CandidateProfileFormValues, UserProfile } from './types';
 import { revalidatePath } from 'next/cache';
-import { BusinessAgentConfigSchema } from './types';
+import { BusinessAgentConfigSchema, CandidateProfileSchema } from './types';
 import { getPlatformConfig } from '@/services/platform.service';
+import { getUserProfileByUid } from '@/services/admin.service';
 
 const FieldValue = adminInstance?.firestore.FieldValue;
 
@@ -171,5 +172,73 @@ export async function getBusinessAnalyticsAction(uid: string): Promise<BusinessA
     } catch (error) {
         console.error("Error getting business analytics:", error);
         return defaultAnalytics;
+    }
+}
+
+export async function updateCandidateProfileAction(uid: string, formData: FormData) {
+    try {
+        const db = await verifyUserAndGetDb(uid);
+
+        // Extract data and file from FormData
+        const professionalTitle = formData.get('professionalTitle') as string;
+        const summary = formData.get('summary') as string;
+        const skills = (formData.get('skills') as string).split(',').map(s => s.trim());
+        const resumeFile = formData.get('resumeFile') as File;
+
+        // --- File Upload Logic ---
+        if (!resumeFile) {
+            throw new Error('El archivo del currículum es requerido.');
+        }
+
+        if (!adminStorage) {
+            throw new Error('Firebase Admin Storage no está inicializado.');
+        }
+        const BUCKET_NAME = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET;
+        if (!BUCKET_NAME) {
+            throw new Error('El nombre del bucket de Firebase Storage no está configurado.');
+        }
+
+        const buffer = Buffer.from(await resumeFile.arrayBuffer());
+        const filePath = `resumes/${uid}/${Date.now()}-${resumeFile.name}`;
+        
+        const bucket = adminStorage.bucket(BUCKET_NAME);
+        const file = bucket.file(filePath);
+      
+        await file.save(buffer, {
+            metadata: {
+                contentType: resumeFile.type,
+                cacheControl: 'public, max-age=31536000',
+            },
+        });
+      
+        const [resumeUrl] = await file.getSignedUrl({
+            action: 'read',
+            expires: '01-01-2100',
+        });
+
+        // --- Firestore Update Logic ---
+        const userRef = db.collection("users").doc(uid);
+        const userDoc = await userRef.get();
+        const existingProfile = (userDoc.data() as UserProfile)?.candidateProfile || {};
+
+        const newProfile: CandidateProfile = {
+            ...existingProfile,
+            professionalTitle,
+            summary,
+            skills,
+            resumeUrl,
+        };
+
+        await userRef.update({
+            candidateProfile: newProfile,
+        });
+    
+        revalidatePath('/dashboard/candidate-profile');
+        return { success: true };
+
+    } catch (error) {
+        console.error('[SERVER ACTION ERROR] updateCandidateProfileAction:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Un error desconocido ocurrió durante la actualización del perfil.';
+        return { success: false, error: errorMessage };
     }
 }

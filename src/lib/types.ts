@@ -1,5 +1,4 @@
 
-
 import { z } from 'zod';
 
 // Schema for Blog Content Generation
@@ -110,12 +109,55 @@ export type BusinessProfile = {
   agentConfig?: BusinessAgentConfig;
 };
 
+// --- Candidate Profile Schemas ---
+const zStringOrFileList = z.custom<string | FileList>((data) => {
+    return typeof data === 'string' || data instanceof FileList;
+});
+
+export const CandidateProfileSchema = z.object({
+    professionalTitle: z.string().optional(),
+    summary: z.string().optional(),
+    skills: z.preprocess(
+      (val) => {
+        if (typeof val === 'string') {
+          return val.split(',').map(s => s.trim()).filter(Boolean);
+        }
+        return val;
+      },
+      z.array(z.string()).optional()
+    ),
+    resumeFile: z.custom<FileList>().optional(),
+});
+export type CandidateProfileFormValues = z.infer<typeof CandidateProfileSchema>;
+
+
+export type CandidateProfile = {
+  professionalTitle?: string;
+  summary?: string;
+  skills?: string[];
+  resumeUrl?: string;
+  experience?: Array<{
+    jobTitle: string;
+    company: string;
+    startDate: string;
+    endDate: string;
+    description: string;
+  }>;
+  education?: Array<{
+    institution: string;
+    degree: string;
+    startDate: string;
+    endDate: string;
+  }>;
+};
+
 export type UserProfile = {
   uid: string; // Document ID should match auth UID
   name: string | null;
   email: string | null;
   role: UserRole;
   businessProfile?: BusinessProfile;
+  candidateProfile?: CandidateProfile;
 };
 
 export type Business = {
@@ -333,3 +375,59 @@ export type ChatSessionWithTokens = ChatSession & {
     totalInputTokens: number;
     totalOutputTokens: number;
 };
+
+export interface JobPosting {
+  id: string;
+  title: string;
+  description: string;
+  companyName: string;
+  companyLogoUrl?: string;
+  imageUrl?: string;
+  location: string;
+  locationType: 'ON_SITE' | 'REMOTE' | 'HYBRID';
+  salaryRange?: {
+    min: number;
+    max: number;
+    currency: 'EUR';
+  };
+  jobType: 'FULL_TIME' | 'PART_TIME' | 'CONTRACT' | 'INTERNSHIP';
+  applicationUrl?: string;
+  applicationEmail?: string;
+  applicationDeadline?: string;
+  requiredSkills?: string[];
+  creatorId: string;
+  creatorRole: 'admin' | 'advertiser';
+  status: 'ACTIVE' | 'INACTIVE' | 'FILLED';
+  createdAt: string; // Storing as ISO string for client-side compatibility
+  updatedAt: string; // Storing as ISO string
+}
+
+export const JobPostingFormSchema = z.object({
+  title: z.string().min(1, "El título es requerido."),
+  description: z.string().min(1, "La descripción es requerida."),
+  companyName: z.string().min(1, "El nombre de la empresa es requerido."),
+  location: z.string().min(1, "La ubicación es requerida."),
+  locationType: z.enum(['ON_SITE', 'REMOTE', 'HYBRID'], {
+    errorMap: () => ({ message: "Tipo de ubicación inválido." }),
+  }),
+  salaryRangeMin: z.preprocess(
+    (val) => (val === "" ? undefined : Number(val)),
+    z.number().min(0, "El salario mínimo no puede ser negativo.").optional()
+  ),
+  salaryRangeMax: z.preprocess(
+    (val) => (val === "" ? undefined : Number(val)),
+    z.number().min(0, "El salario máximo no puede ser negativo.").optional()
+  ),
+  jobType: z.enum(['FULL_TIME', 'PART_TIME', 'CONTRACT', 'INTERNSHIP'], {
+    errorMap: () => ({ message: "Tipo de empleo inválido." }),
+  }),
+  applicationUrl: z.string().url("URL de aplicación inválida.").optional().or(z.literal('')),
+  applicationEmail: z.string().email("Email de aplicación inválido.").optional().or(z.literal('')),
+  applicationDeadline: z.string().optional().or(z.literal('')), // Will be a string from date picker
+  requiredSkills: z.array(z.string()).optional(), // Comma separated string to array
+  status: z.enum(['ACTIVE', 'INACTIVE', 'FILLED'], {
+    errorMap: () => ({ message: "Estado inválido." }),
+  }).default('ACTIVE'),
+});
+
+export type JobPostingFormValues = z.infer<typeof JobPostingFormSchema>;

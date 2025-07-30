@@ -4,7 +4,7 @@
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import StripeCheckoutForm from "@/components/checkout/StripeCheckoutForm";
-import type { MigrationPackage, MigrationService, PurchaseableItem, BlogPost, PlaceDetails } from '@/lib/types';
+import type { MigrationPackage, MigrationService, PurchaseableItem, BlogPost, PlaceDetails, JobPosting } from '@/lib/types';
 import ChatWidget from '@/components/chat/ChatWidget';
 import VideoModal from '@/components/ui/video-modal';
 
@@ -19,14 +19,16 @@ import BlogSection from './BlogSection';
 import BusinessSection from './BusinessSection';
 import TestimonialsSection from './TestimonialsSection';
 import DirectorySection from './DirectorySection';
+import JobsSection from './JobsSection';
 
 type HomePageClientProps = {
   initialPosts: BlogPost[];
   eurToCopRate: number;
   initialBusinesses: PlaceDetails[];
+  initialJobs: JobPosting[]; // Add jobs prop
 }
 
-export default function HomePageClient({ initialPosts, eurToCopRate, initialBusinesses }: HomePageClientProps) {
+export default function HomePageClient({ initialPosts, eurToCopRate, initialBusinesses, initialJobs }: HomePageClientProps) {
   const [isCheckoutOpen, setCheckoutOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<PurchaseableItem | null>(null);
 
@@ -34,7 +36,7 @@ export default function HomePageClient({ initialPosts, eurToCopRate, initialBusi
   const [videoUrl, setVideoUrl] = useState('');
   const [videoTitle, setVideoTitle] = useState('');
 
-  const [isChatModalOpen, setIsChatModalOpen] = useState(false); // New state for chat modal
+  const [isChatModalOpen, setIsChatModalOpen] = useState(false);
 
   const handlePurchaseClick = (item: MigrationPackage | MigrationService, type: 'package' | 'service') => {
     setSelectedItem({ ...item, type });
@@ -53,17 +55,17 @@ export default function HomePageClient({ initialPosts, eurToCopRate, initialBusi
         <HeroSection />
         <StepsSection />
         <AboutSection handleVideoClick={handleVideoClick} />
-        <AiAssistantSection onOpenChatModal={() => setIsChatModalOpen(true)} /> {/* Pass setter to AiAssistantSection */}
+        <AiAssistantSection onOpenChatModal={() => setIsChatModalOpen(true)} />
         <PackagesSection eurToCopRate={eurToCopRate} />
         <ServicesSection eurToCopRate={eurToCopRate} />
+        <JobsSection jobs={initialJobs} />
         <DirectorySection businesses={initialBusinesses} />
         <BlogSection posts={initialPosts} />
         <BusinessSection />
         <TestimonialsSection />
-        <AiAssistantSection onOpenChatModal={() => setIsChatModalOpen(true)} /> {/* Pass setter to AiAssistantSection */}
       </main>
 
-      <ChatWidget isOpen={isChatModalOpen} setIsOpen={setIsChatModalOpen} /> {/* Pass state to ChatWidget */}
+      <ChatWidget isOpen={isChatModalOpen} setIsOpen={setIsChatModalOpen} />
 
       <Dialog open={isCheckoutOpen} onOpenChange={setCheckoutOpen}>
         <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
