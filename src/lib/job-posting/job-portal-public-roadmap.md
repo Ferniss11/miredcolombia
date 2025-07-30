@@ -69,14 +69,14 @@ Con los datos accesibles, podemos construir las páginas que los usuarios verán
 
 ---
 
-## Fase 3: Integración y Refinamiento
+## Fase 3: Integración y Refinamiento (✓ Completada)
 
-### Tarea 3.1: Actualizar la Navegación
+### Tarea 3.1: Actualizar la Navegación (✓)
 
 *   **Archivo:** `src/components/layout/Header.tsx`
 *   **Acción:** Añadir un nuevo enlace "Empleo" en la barra de navegación principal que apunte a `/jobs`.
 
-### Tarea 3.2: SEO y Metadatos
+### Tarea 3.2: SEO y Metadatos (✓)
 
 *   **Archivos:** `src/app/jobs/page.tsx` y `src/app/jobs/[id]/page.tsx`
 *   **Acción:** Implementar las funciones `generateMetadata` en ambas páginas para asegurar que cada página de oferta y el listado general tengan títulos y descripciones SEO-friendly. Para la página de detalles, el título debe incluir el nombre del puesto y la empresa.

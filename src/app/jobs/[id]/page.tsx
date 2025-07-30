@@ -1,5 +1,6 @@
 
 import React from 'react';
+import type { Metadata } from 'next';
 import { getPublicJobPostingByIdAction } from '@/lib/job-posting/infrastructure/nextjs/job-posting.server-actions';
 import { notFound } from 'next/navigation';
 import { 
@@ -18,6 +19,40 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+
+type Props = {
+  params: { id: string }
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { data: job } = await getPublicJobPostingByIdAction(params.id);
+
+  if (!job) {
+    return {
+      title: "Oferta no encontrada",
+    }
+  }
+
+  const title = `${job.title} en ${job.companyName} | Mi Red Colombia`;
+  const description = job.description.substring(0, 155).trim() + '...';
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      images: [
+        {
+          url: job.imageUrl || 'https://firebasestorage.googleapis.com/v0/b/colombia-en-esp.firebasestorage.app/o/web%2FLOGO.png?alt=media&token=86f8e9f6-587a-4cb6-bae1-15b0c815f22b',
+          width: 1200,
+          height: 630,
+          alt: job.title,
+        },
+      ],
+    },
+  }
+}
 
 const JobDetailsPage = async ({ params }: { params: { id: string } }) => {
     const { data: job, error } = await getPublicJobPostingByIdAction(params.id);

@@ -1,10 +1,29 @@
 
 import React from 'react';
+import type { Metadata } from 'next';
 import { getPublicJobPostingsAction } from '@/lib/job-posting/infrastructure/nextjs/job-posting.server-actions';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Input } from '@/components/ui/input';
 import { Search, AlertCircle } from 'lucide-react';
 import JobCard from '@/components/jobs/JobCard';
+
+export const metadata: Metadata = {
+    title: 'Portal de Empleo | Mi Red Colombia',
+    description: 'Encuentra tu próxima oportunidad profesional en España. Explora las últimas ofertas de empleo para colombianos.',
+    openGraph: {
+        title: 'Portal de Empleo | Mi Red Colombia',
+        description: 'Encuentra tu próxima oportunidad profesional en España.',
+        url: 'https://www.miredcolombia.com/jobs',
+        images: [
+            {
+                url: 'https://firebasestorage.googleapis.com/v0/b/colombia-en-esp.firebasestorage.app/o/web%2FLOGO.png?alt=media&token=86f8e9f6-587a-4cb6-bae1-15b0c815f22b',
+                width: 512,
+                height: 512,
+                alt: 'Mi Red Colombia Logo',
+            },
+        ],
+    },
+};
 
 const JobsPublicPage = async () => {
     const { data: jobs, error } = await getPublicJobPostingsAction();
