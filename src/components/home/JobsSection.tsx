@@ -3,7 +3,7 @@
 
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Map, Megaphone } from "lucide-react";
+import { ArrowRight, Briefcase, Building } from "lucide-react";
 import Link from "next/link";
 import { JobPosting } from '@/lib/types';
 import JobCard from '@/components/jobs/JobCard';
@@ -44,18 +44,32 @@ const JobsSection: React.FC<JobsSectionProps> = ({ jobs }) => {
                         </div>
                     </>
                 ) : (
-                    <div className="py-12 flex justify-center">
-                        <Card className="max-w-md w-full bg-gradient-to-br from-primary/10 via-background to-background shadow-lg text-center">
-                           <CardContent className="p-8">
+                    <div className="py-12 grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+                        <Card className="bg-gradient-to-br from-primary/10 via-background to-background shadow-lg text-center">
+                           <CardContent className="p-8 flex flex-col items-center justify-center h-full">
                                <div className="mx-auto p-4 bg-primary/20 rounded-full inline-flex mb-4">
-                                   <Megaphone className="w-8 h-8 text-primary" />
+                                   <Building className="w-8 h-8 text-primary" />
                                </div>
                                <h3 className="text-xl font-bold font-headline">¿Tienes una vacante?</h3>
-                               <p className="text-muted-foreground mt-2 mb-6">
-                                 Publica tu oferta de empleo y llega a miles de profesionales colombianos en España.
+                               <p className="text-muted-foreground mt-2 mb-6 flex-grow">
+                                 Publica tu oferta de empleo y llega a miles de profesionales colombianos cualificados en España.
                                </p>
                                <Button asChild>
                                    <Link href="/signup?role=advertiser">Publica tu oferta gratis</Link>
+                               </Button>
+                           </CardContent>
+                        </Card>
+                         <Card className="bg-gradient-to-br from-secondary to-background shadow-lg text-center">
+                           <CardContent className="p-8 flex flex-col items-center justify-center h-full">
+                               <div className="mx-auto p-4 bg-secondary/80 rounded-full inline-flex mb-4">
+                                   <Briefcase className="w-8 h-8 text-secondary-foreground" />
+                               </div>
+                               <h3 className="text-xl font-bold font-headline">¿Buscas tu próxima oportunidad?</h3>
+                               <p className="text-muted-foreground mt-2 mb-6 flex-grow">
+                                 Explora nuestro portal. Próximamente podrás crear tu perfil y recibir alertas de empleo personalizadas.
+                               </p>
+                               <Button asChild variant="secondary">
+                                   <Link href="/jobs">Explorar ofertas ahora</Link>
                                </Button>
                            </CardContent>
                         </Card>
