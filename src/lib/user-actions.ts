@@ -8,7 +8,6 @@ import { revalidatePath } from 'next/cache';
 import { BusinessAgentConfigSchema, CandidateProfileSchema } from './types';
 import { getPlatformConfig } from '@/services/platform.service';
 import { getUserProfileByUid } from '@/services/admin.service';
-import { uploadImageToStorage } from './job-posting/infrastructure/storage/firebase-storage.adapter';
 
 const FieldValue = adminInstance?.firestore.FieldValue;
 
@@ -183,31 +182,54 @@ export async function updateCandidateProfileAction(
 ) {
   try {
     const db = await verifyUserAndGetDb(uid);
-    const userRef = db.collection("users").doc(uid);
+    if (!adminStorage) {
+      throw new Error("Firebase Admin Storage is not initialized.");
+    }
 
+    const userRef = db.collection("users").doc(uid);
+    
     const professionalTitle = formData.get('professionalTitle') as string || '';
     const summary = formData.get('summary') as string || '';
     const skills = (formData.get('skills') as string || '').split(',').map(s => s.trim()).filter(Boolean);
     const resumeFile = formData.get('resumeFile') as File | null;
 
-    // 1. Get existing profile data to merge with
+    // Get existing profile data to merge with
     const userDoc = await userRef.get();
     const existingProfile = (userDoc.data() as UserProfile)?.candidateProfile || {};
 
     let resumeUrl = existingProfile.resumeUrl; // Start with existing URL
 
-    // 2. Upload file if a new one is provided
-    if (resumeFile) {
-        const buffer = Buffer.from(await resumeFile.arrayBuffer());
-        const filePath = `resumes/${uid}/${Date.now()}-${resumeFile.name}`;
-        resumeUrl = await uploadImageToStorage(buffer, filePath, resumeFile.type);
+    // Upload file if a new one is provided
+    if (resumeFile && resumeFile.size > 0) {
+      const BUCKET_NAME = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET;
+      if (!BUCKET_NAME) {
+          throw new Error("Firebase Storage bucket name is not configured.");
+      }
+      const buffer = Buffer.from(await resumeFile.arrayBuffer());
+      const filePath = `resumes/${uid}/${Date.now()}-${resumeFile.name}`;
+      
+      const bucket = adminStorage.bucket(BUCKET_NAME);
+      const file = bucket.file(filePath);
+      
+      await file.save(buffer, {
+        metadata: {
+          contentType: resumeFile.type,
+          cacheControl: 'public, max-age=31536000',
+        },
+      });
+      
+      const [url] = await file.getSignedUrl({
+          action: 'read',
+          expires: '01-01-2100',
+      });
+      resumeUrl = url;
     }
     
     if (!resumeUrl) {
       throw new Error("El currículum es obligatorio y no se pudo procesar.");
     }
 
-    // 3. Construct the complete new profile object
+    // Construct the complete new profile object
     const newProfile: CandidateProfile = {
       ...existingProfile,
       professionalTitle,
@@ -216,7 +238,7 @@ export async function updateCandidateProfileAction(
       resumeUrl,
     };
 
-    // 4. Perform a single update operation with the complete object
+    // Perform a single update operation with the complete object
     await userRef.update({
       candidateProfile: newProfile
     });
