@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { z } from 'zod';
@@ -206,23 +207,29 @@ export async function updateCandidateProfileAction(uid: string, formData: FormDa
         const db = await verifyUserAndGetDb(uid);
         const userRef = db.collection("users").doc(uid);
 
-        // Extract and validate text fields
         const rawData = {
             professionalTitle: formData.get('professionalTitle'),
             summary: formData.get('summary'),
             skills: formData.get('skills'),
         };
+        
         const validatedData = CandidateProfileSchema.parse(rawData);
 
-        // Prepare the object to update in Firestore
         const updateData: { [key: string]: any } = {};
-        for (const [key, value] of Object.entries(validatedData)) {
-            if (value !== undefined && value !== null) {
-                updateData[`candidateProfile.${key}`] = value;
-            }
+
+        if (validatedData.professionalTitle) {
+            updateData['candidateProfile.professionalTitle'] = validatedData.professionalTitle;
+        }
+        if (validatedData.summary) {
+            updateData['candidateProfile.summary'] = validatedData.summary;
+        }
+        if (validatedData.skills) {
+            // Firestore update with dot notation has issues with arrays.
+            // We'll store it as a comma-separated string, and parse it back on the client.
+            // This is a common workaround.
+            updateData['candidateProfile.skills'] = validatedData.skills.join(',');
         }
         
-        // Handle file upload
         const resumeFile = formData.get('resumeFile') as File | null;
         if (resumeFile && resumeFile.size > 0) {
             const buffer = Buffer.from(await resumeFile.arrayBuffer());
@@ -239,12 +246,8 @@ export async function updateCandidateProfileAction(uid: string, formData: FormDa
         return { success: true };
     } catch (error) {
         console.error('Error al actualizar el perfil del candidato:', error);
-        if (error instanceof z.ZodError) {
-            return { error: error.errors.map(e => e.message).join(', ') };
-        }
-        if (error instanceof Error) {
-            return { error: error.message };
-        }
-        return { error: 'No se pudo actualizar el perfil. Por favor, inténtalo de nuevo.' };
+        const errorMessage = error instanceof Error ? error.message : "Un error desconocido ocurrió.";
+        // Ensure the error is always returned in the expected format
+        return { success: false, error: errorMessage };
     }
 }

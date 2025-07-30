@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -50,6 +51,7 @@ export default function CandidateProfilePage() {
             const formData = new FormData();
             formData.append('professionalTitle', data.professionalTitle || '');
             formData.append('summary', data.summary || '');
+            // The schema ensures skills is an array, so we can safely join.
             formData.append('skills', (data.skills || []).join(','));
 
             if (fileInputRef.current?.files?.[0]) {
@@ -59,7 +61,7 @@ export default function CandidateProfilePage() {
             const result = await updateCandidateProfileAction(userProfile.uid, formData);
 
             if (result.error) {
-                toast({ variant: 'destructive', title: 'Error', description: result.error });
+                toast({ variant: 'destructive', title: 'Error al Guardar', description: result.error });
             } else {
                 toast({ title: 'Éxito', description: 'Tu perfil ha sido actualizado.' });
                 await refreshUserProfile();
