@@ -23,49 +23,49 @@ El backend y la lógica de negocio ya existen gracias a la arquitectura hexagona
 
 ---
 
-## Fase 2: Construir la Interfaz de Usuario Pública
+## Fase 2: Construir la Interfaz de Usuario Pública (✓ Completada)
 
 Con los datos accesibles, podemos construir las páginas que los usuarios verán.
 
-### Tarea 2.1: Página de Detalles de la Oferta (`/jobs/[id]`)
+### Tarea 2.1: Página de Detalles de la Oferta (`/jobs/[id]`) (✓)
 
 *   **Ruta:** `src/app/jobs/[id]/page.tsx`
 *   **Componente:** `JobDetailsPage`
 *   **Funcionalidad:**
-    *   Será un Server Component que recibe el `id` de la oferta desde los `params`.
-    *   Llamará a `getPublicJobPostingByIdAction(id)` para obtener los datos de la oferta.
-    *   Si no se encuentra la oferta, mostrará una página de "No Encontrado" (`notFound()`).
+    *   Será un Server Component que recibe el `id` de la oferta desde los `params`. (✓)
+    *   Llamará a `getPublicJobPostingByIdAction(id)` para obtener los datos de la oferta. (✓)
+    *   Si no se encuentra la oferta, mostrará una página de "No Encontrado" (`notFound()`). (✓)
     *   **Diseño:**
-        *   Header con el título del puesto, nombre de la empresa, ubicación y tipo de contrato.
-        *   Mostrará el logo de la empresa y la imagen principal de la oferta si existen.
-        *   Cuerpo principal con la descripción completa del puesto (renderizando el Markdown).
-        *   Una barra lateral o tarjeta con información clave: salario (si está disponible), habilidades requeridas, tipo de jornada.
-        *   Un botón claro de "Aplicar Ahora" que redirija a `applicationUrl` o abra un `mailto:` a `applicationEmail`.
+        *   Header con el título del puesto, nombre de la empresa, ubicación y tipo de contrato. (✓)
+        *   Mostrará el logo de la empresa y la imagen principal de la oferta si existen. (✓)
+        *   Cuerpo principal con la descripción completa del puesto (renderizando el Markdown). (✓)
+        *   Una barra lateral o tarjeta con información clave: salario (si está disponible), habilidades requeridas, tipo de jornada. (✓)
+        *   Un botón claro de "Aplicar Ahora" que redirija a `applicationUrl` o abra un `mailto:` a `applicationEmail`. (✓)
 
-### Tarea 2.2: Página de Listado de Ofertas (`/jobs`)
+### Tarea 2.2: Página de Listado de Ofertas (`/jobs`) (✓)
 
 *   **Ruta:** `src/app/jobs/page.tsx`
 *   **Componente:** `JobsPublicPage`
 *   **Funcionalidad:**
-    *   Será un Server Component que llama a `getPublicJobPostingsAction()` para obtener todas las ofertas activas.
+    *   Será un Server Component que llama a `getPublicJobPostingsAction()` para obtener todas las ofertas activas. (✓)
     *   **Diseño:**
-        *   Un header con un título principal y una barra de búsqueda (funcionalidad de búsqueda a implementar en una fase posterior).
-        *   Un área de filtros en una barra lateral (por tipo de contrato, ubicación, etc. - a implementar después).
-        *   El listado principal mostrará cada oferta en una `Card` individual.
-        *   Cada `Card` mostrará: logo de la empresa, título del puesto, nombre de la empresa, ubicación y salario (resumido).
-        *   Cada `Card` será un `Link` que llevará a la página de detalles `/jobs/[id]`.
+        *   Un header con un título principal y una barra de búsqueda (funcionalidad de búsqueda a implementar en una fase posterior). (✓)
+        *   Un área de filtros en una barra lateral (por tipo de contrato, ubicación, etc. - a implementar después). (✓)
+        *   El listado principal mostrará cada oferta en una `Card` individual. (✓)
+        *   Cada `Card` mostrará: logo de la empresa, título del puesto, nombre de la empresa, ubicación y salario (resumido). (✓)
+        *   Cada `Card` será un `Link` que llevará a la página de detalles `/jobs/[id]`. (✓)
 
-### Tarea 2.3: Sección de Empleos en la Página de Inicio
+### Tarea 2.3: Sección de Empleos en la Página de Inicio (✓)
 
-*   **Archivo:** `src/components/home/JobsSection.tsx` (crear este componente)
-*   **Integración:** `src/components/home/HomePageClient.tsx`
+*   **Archivo:** `src/components/home/JobsSection.tsx` (crear este componente) (✓)
+*   **Integración:** `src/components/home/HomePageClient.tsx` (✓)
 *   **Funcionalidad:**
-    *   La página principal (`src/app/page.tsx`) llamará a `getPublicJobPostingsAction()` y pasará las 3-4 ofertas más recientes como `props` a `HomePageClient`.
-    *   `HomePageClient` pasará estas ofertas al nuevo componente `JobsSection`.
+    *   La página principal (`src/app/page.tsx`) llamará a `getPublicJobPostingsAction()` y pasará las 3-4 ofertas más recientes como `props` a `HomePageClient`. (✓)
+    *   `HomePageClient` pasará estas ofertas al nuevo componente `JobsSection`. (✓)
     *   **Diseño de `JobsSection`:**
-        *   Un título claro como "Últimas Ofertas de Empleo".
-        *   Mostrará 3 o 4 ofertas en formato de `Card`, similar al de la página `/jobs` pero quizás un poco más compacto.
-        *   Incluirá un botón visible de "Ver Todas las Ofertas" que enlace a la página `/jobs`.
+        *   Un título claro como "Últimas Ofertas de Empleo". (✓)
+        *   Mostrará 3 o 4 ofertas en formato de `Card`, similar al de la página `/jobs` pero quizás un poco más compacto. (✓)
+        *   Incluirá un botón visible de "Ver Todas las Ofertas" que enlace a la página `/jobs`. (✓)
 
 ---
 
