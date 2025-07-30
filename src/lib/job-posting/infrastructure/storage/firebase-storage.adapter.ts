@@ -20,6 +20,12 @@ export async function uploadImageToStorage(fileBuffer: Buffer, filePath: string,
     },
   });
 
-  // Return the public URL
-  return `https://storage.googleapis.com/${BUCKET_NAME}/${filePath}`;
+  // Generate a signed URL that is publicly accessible.
+  // Set an expiration date far in the future.
+  const [url] = await file.getSignedUrl({
+    action: 'read',
+    expires: '01-01-2100', // An arbitrary distant future date
+  });
+
+  return url;
 }

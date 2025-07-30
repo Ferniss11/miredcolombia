@@ -113,7 +113,21 @@ const JobsPage = () => {
         applicationDeadline: editingJob.applicationDeadline ? new Date(editingJob.applicationDeadline).toISOString().split('T')[0] : '',
       });
     } else {
-      form.reset();
+      form.reset({
+        title: '',
+        description: '',
+        companyName: '',
+        location: '',
+        locationType: 'ON_SITE',
+        salaryRangeMin: undefined,
+        salaryRangeMax: undefined,
+        jobType: 'FULL_TIME',
+        applicationUrl: '',
+        applicationEmail: '',
+        applicationDeadline: '',
+        requiredSkills: [],
+        status: 'ACTIVE',
+      });
     }
   }, [editingJob, form]);
 
@@ -124,7 +138,6 @@ const JobsPage = () => {
   
   const handleOpenSheetForCreate = () => {
     setEditingJob(null);
-    form.reset();
     setIsSheetOpen(true);
   };
 
