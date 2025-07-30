@@ -1,5 +1,4 @@
 
-
 import { z } from 'zod';
 
 // Schema for Blog Content Generation
@@ -114,13 +113,15 @@ export type BusinessProfile = {
 export const CandidateProfileSchema = z.object({
     professionalTitle: z.string().optional(),
     summary: z.string().optional(),
-    // Preprocess skills to handle both string and array inputs
     skills: z.preprocess(
       (val) => {
-        if (typeof val === 'string') {
+        if (typeof val === 'string' && val.trim() !== '') {
           return val.split(',').map(s => s.trim()).filter(Boolean);
         }
-        return val;
+        if (Array.isArray(val)) {
+            return val;
+        }
+        return [];
       },
       z.array(z.string()).optional()
     ),
@@ -131,7 +132,7 @@ export type CandidateProfileFormValues = z.infer<typeof CandidateProfileSchema>;
 export type CandidateProfile = {
   professionalTitle?: string;
   summary?: string;
-  skills?: string[] | string; // Can be array in app, but string in Firestore
+  skills?: string[] | string;
   resumeUrl?: string;
   experience?: Array<{
     jobTitle: string;

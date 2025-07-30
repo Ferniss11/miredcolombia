@@ -1,5 +1,4 @@
 
-
 'use server';
 
 import { z } from 'zod';
@@ -202,52 +201,67 @@ async function uploadPdfToStorage(fileBuffer: Buffer, filePath: string): Promise
   return url;
 }
 
-export async function updateCandidateProfileAction(uid: string, formData: FormData) {
-    try {
-        const db = await verifyUserAndGetDb(uid);
-        const userRef = db.collection("users").doc(uid);
+export async function updateCandidateProfileAction(
+  uid: string,
+  values: CandidateProfileFormValues,
+  formData: FormData
+) {
+  try {
+    const db = await verifyUserAndGetDb(uid);
+    const userRef = db.collection("users").doc(uid);
 
-        const rawData = {
-            professionalTitle: formData.get('professionalTitle'),
-            summary: formData.get('summary'),
-            skills: formData.get('skills'),
-        };
-        
-        const validatedData = CandidateProfileSchema.parse(rawData);
+    const validatedData = CandidateProfileSchema.parse(values);
 
-        const updateData: { [key: string]: any } = {};
+    const updateData: { [key: string]: any } = {};
 
-        if (validatedData.professionalTitle) {
-            updateData['candidateProfile.professionalTitle'] = validatedData.professionalTitle;
-        }
-        if (validatedData.summary) {
-            updateData['candidateProfile.summary'] = validatedData.summary;
-        }
-        if (validatedData.skills) {
-            // Firestore update with dot notation has issues with arrays.
-            // We'll store it as a comma-separated string, and parse it back on the client.
-            // This is a common workaround.
-            updateData['candidateProfile.skills'] = validatedData.skills.join(',');
-        }
-        
-        const resumeFile = formData.get('resumeFile') as File | null;
-        if (resumeFile && resumeFile.size > 0) {
-            const buffer = Buffer.from(await resumeFile.arrayBuffer());
-            const filePath = `resumes/${uid}/${Date.now()}-${resumeFile.name}`;
-            const resumeUrl = await uploadPdfToStorage(buffer, filePath);
-            updateData['candidateProfile.resumeUrl'] = resumeUrl;
-        }
-
-        if (Object.keys(updateData).length > 0) {
-            await userRef.update(updateData);
-        }
-        
-        revalidatePath('/dashboard/candidate-profile');
-        return { success: true };
-    } catch (error) {
-        console.error('Error al actualizar el perfil del candidato:', error);
-        const errorMessage = error instanceof Error ? error.message : "Un error desconocido ocurrió.";
-        // Ensure the error is always returned in the expected format
-        return { success: false, error: errorMessage };
+    if (validatedData.professionalTitle) {
+      updateData['candidateProfile.professionalTitle'] = validatedData.professionalTitle;
     }
+    if (validatedData.summary) {
+      updateData['candidateProfile.summary'] = validatedData.summary;
+    }
+    if (validatedData.skills && validatedData.skills.length > 0) {
+      updateData['candidateProfile.skills'] = validatedData.skills;
+    }
+
+    const resumeFile = formData.get('resumeFile') as File | null;
+    if (resumeFile && resumeFile.size > 0) {
+      const buffer = Buffer.from(await resumeFile.arrayBuffer());
+      const filePath = `resumes/${uid}/${Date.now()}-${resumeFile.name}`;
+      const resumeUrl = await uploadPdfToStorage(buffer, filePath);
+      updateData['candidateProfile.resumeUrl'] = resumeUrl;
+    }
+
+    if (Object.keys(updateData).length > 0) {
+      // For updating nested objects, it's safer to merge fields onto the existing profile.
+      // We read the existing profile first.
+      const userDoc = await userRef.get();
+      const existingProfile = userDoc.data()?.candidateProfile || {};
+      
+      const newProfile = {
+        ...existingProfile,
+        ...updateData, // This only contains dot notation fields, which is wrong. Let's fix.
+      };
+      
+      const finalUpdateData = {
+          'candidateProfile.professionalTitle': validatedData.professionalTitle,
+          'candidateProfile.summary': validatedData.summary,
+          'candidateProfile.skills': validatedData.skills,
+      };
+
+      if (updateData['candidateProfile.resumeUrl']) {
+          finalUpdateData['candidateProfile.resumeUrl'] = updateData['candidateProfile.resumeUrl'];
+      }
+      
+      await userRef.set({ candidateProfile: finalUpdateData }, { merge: true });
+
+    }
+    
+    revalidatePath('/dashboard/candidate-profile');
+    return { success: true };
+  } catch (error) {
+    console.error('Error al actualizar el perfil del candidato:', error);
+    const errorMessage = error instanceof Error ? error.message : "Un error desconocido ocurrió.";
+    return { success: false, error: errorMessage };
+  }
 }

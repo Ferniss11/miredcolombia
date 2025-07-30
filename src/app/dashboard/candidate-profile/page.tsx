@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -39,7 +38,8 @@ export default function CandidateProfilePage() {
             form.reset({
                 professionalTitle: userProfile.candidateProfile.professionalTitle || '',
                 summary: userProfile.candidateProfile.summary || '',
-                skills: userProfile.candidateProfile.skills || [],
+                // Ensure skills are always an array for the form
+                skills: Array.isArray(userProfile.candidateProfile.skills) ? userProfile.candidateProfile.skills : (userProfile.candidateProfile.skills || '').split(',').filter(Boolean),
             });
         }
     }, [userProfile, form]);
@@ -48,17 +48,13 @@ export default function CandidateProfilePage() {
         if (!userProfile) return;
 
         startTransition(async () => {
+            const file = fileInputRef.current?.files?.[0];
             const formData = new FormData();
-            formData.append('professionalTitle', data.professionalTitle || '');
-            formData.append('summary', data.summary || '');
-            // The schema ensures skills is an array, so we can safely join.
-            formData.append('skills', (data.skills || []).join(','));
-
-            if (fileInputRef.current?.files?.[0]) {
-                formData.append('resumeFile', fileInputRef.current.files[0]);
+            if (file) {
+                formData.append('resumeFile', file);
             }
 
-            const result = await updateCandidateProfileAction(userProfile.uid, formData);
+            const result = await updateCandidateProfileAction(userProfile.uid, data, formData);
 
             if (result.error) {
                 toast({ variant: 'destructive', title: 'Error al Guardar', description: result.error });
@@ -132,7 +128,6 @@ export default function CandidateProfilePage() {
                                         <FormControl>
                                              <Input
                                                 placeholder="Ej: React, Figma, Contabilidad..."
-                                                // Convert array to string for input, and string back to array on change
                                                 value={Array.isArray(field.value) ? field.value.join(', ') : ''}
                                                 onChange={(e) => field.onChange(e.target.value.split(',').map(s => s.trim()))}
                                             />
