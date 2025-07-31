@@ -1,6 +1,10 @@
+'use client';
+
 import { Instagram, Youtube } from "lucide-react";
 import Link from "next/link";
 import Image from 'next/image';
+import ChatWidget from "../chat/ChatWidget";
+import { useState } from "react";
 
 const TikTokIcon = () => (
     <svg 
@@ -17,7 +21,10 @@ const TikTokIcon = () => (
 
 
 export default function Footer() {
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  
   return (
+    <>
     <footer className="bg-white dark:bg-gray-900 border-t">
       <div className="container mx-auto py-12 px-4 sm:px-6 lg:px-8">
         <div className="xl:grid xl:grid-cols-3 xl:gap-8">
@@ -69,5 +76,8 @@ export default function Footer() {
         </div>
       </div>
     </footer>
+    {/* The global chat widget is now rendered here */}
+    <ChatWidget isOpen={isChatOpen} setIsOpen={setIsChatOpen} />
+    </>
   );
 }

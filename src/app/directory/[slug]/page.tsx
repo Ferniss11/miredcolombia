@@ -1,4 +1,6 @@
+'use client';
 
+import { useState, useEffect } from "react";
 import { getPublicBusinessDetailsAction } from "@/lib/directory-actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,6 +15,8 @@ import { Separator } from "@/components/ui/separator";
 import BusinessMap from "@/components/directory/BusinessMap";
 import { cn } from "@/lib/utils";
 import ChatWidget from "@/components/chat/ChatWidget";
+import { PlaceDetails } from "@/lib/types";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const StarRating = ({ rating }: { rating: number }) => {
     return (
@@ -24,17 +28,64 @@ const StarRating = ({ rating }: { rating: number }) => {
     );
 };
 
+function BusinessProfileSkeleton() {
+    return (
+        <div className="container mx-auto px-4 py-12 md:px-6">
+            <div className="grid lg:grid-cols-3 gap-8">
+                <div className="lg:col-span-1 space-y-8">
+                    <Card className="overflow-hidden sticky top-24 shadow-lg">
+                        <Skeleton className="h-64 w-full" />
+                        <CardContent className="p-6 space-y-4">
+                            <Skeleton className="h-8 w-3/4" />
+                            <Skeleton className="h-4 w-1/2" />
+                            <Skeleton className="h-5 w-1/3" />
+                            <Separator />
+                            <div className="space-y-3">
+                                <Skeleton className="h-4 w-full" />
+                                <Skeleton className="h-4 w-5/6" />
+                                <Skeleton className="h-4 w-4/6" />
+                            </div>
+                            <Separator />
+                             <div className="flex gap-2">
+                                <Skeleton className="h-10 w-full" />
+                                <Skeleton className="h-10 w-full" />
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+                 <div className="lg:col-span-2 space-y-8">
+                    <Skeleton className="h-24 w-full" />
+                    <Skeleton className="h-48 w-full" />
+                 </div>
+            </div>
+        </div>
+    )
+}
 
-export default async function BusinessProfilePage({ params }: { params: { slug: string } }) {
-  // The slug is now the Place ID
-  const { business, error } = await getPublicBusinessDetailsAction(params.slug);
+export default function BusinessProfilePage({ params }: { params: { slug: string } }) {
+  const [business, setBusiness] = useState<PlaceDetails | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isChatOpen, setIsChatOpen] = useState(false);
 
-  if (error || !business) {
-    notFound();
+  useEffect(() => {
+    async function fetchBusiness() {
+      setIsLoading(true);
+      const { business: fetchedBusiness, error } = await getPublicBusinessDetailsAction(params.slug);
+      if (error || !fetchedBusiness) {
+        notFound();
+      }
+      setBusiness(fetchedBusiness);
+      setIsLoading(false);
+    }
+    fetchBusiness();
+  }, [params.slug]);
+
+
+  if (isLoading || !business) {
+    return <BusinessProfileSkeleton />;
   }
 
   const gmapsUrl = `https://www.google.com/maps/search/?api=1&query=Google&query_place_id=${business.id}`;
-
 
   return (
     <>
@@ -239,7 +290,7 @@ export default async function BusinessProfilePage({ params }: { params: { slug: 
         </div>
     </div>
     {business.isAgentEnabled && business.id && (
-        <ChatWidget businessId={business.id} businessName={business.displayName} />
+        <ChatWidget businessId={business.id} businessName={business.displayName} isOpen={isChatOpen} setIsOpen={setIsChatOpen} />
     )}
     </>
   );

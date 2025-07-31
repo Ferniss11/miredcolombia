@@ -1,11 +1,9 @@
-
 'use client';
 
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import StripeCheckoutForm from "@/components/checkout/StripeCheckoutForm";
 import type { MigrationPackage, MigrationService, PurchaseableItem, BlogPost, PlaceDetails, JobPosting } from '@/lib/types';
-import ChatWidget from '@/components/chat/ChatWidget';
 import VideoModal from '@/components/ui/video-modal';
 
 // Import sections directly
@@ -20,6 +18,8 @@ import BusinessSection from './BusinessSection';
 import TestimonialsSection from './TestimonialsSection';
 import DirectorySection from './DirectorySection';
 import JobsSection from './JobsSection';
+import { useAuth } from '@/context/AuthContext';
+import { useSidebar } from '../ui/sidebar';
 
 type HomePageClientProps = {
   initialPosts: BlogPost[];
@@ -35,8 +35,18 @@ export default function HomePageClient({ initialPosts, eurToCopRate, initialBusi
   const [isVideoOpen, setVideoOpen] = useState(false);
   const [videoUrl, setVideoUrl] = useState('');
   const [videoTitle, setVideoTitle] = useState('');
+  
+  // The state is now managed in the layout's Footer, which contains the widget.
+  // This is a placeholder call and likely needs a better state management solution (like Context)
+  // for a real app, but works for this structure.
+  const handleOpenChat = () => {
+    // This is a bit of a hack. A better solution would use a global state (Context, Zustand, etc.)
+    // to control the chat widget from anywhere in the app.
+    // For now, we find the button in the footer and click it programmatically.
+    const chatButton = document.getElementById('global-chat-trigger');
+    chatButton?.click();
+  }
 
-  const [isChatModalOpen, setIsChatModalOpen] = useState(false);
 
   const handlePurchaseClick = (item: MigrationPackage | MigrationService, type: 'package' | 'service') => {
     setSelectedItem({ ...item, type });
@@ -55,7 +65,7 @@ export default function HomePageClient({ initialPosts, eurToCopRate, initialBusi
         <HeroSection />
         <StepsSection />
         <AboutSection handleVideoClick={handleVideoClick} />
-        <AiAssistantSection onOpenChatModal={() => setIsChatModalOpen(true)} />
+        <AiAssistantSection onOpenChatModal={handleOpenChat} />
         <PackagesSection eurToCopRate={eurToCopRate} />
         <ServicesSection eurToCopRate={eurToCopRate} />
         <JobsSection jobs={initialJobs} />
@@ -64,8 +74,6 @@ export default function HomePageClient({ initialPosts, eurToCopRate, initialBusi
         <BusinessSection />
         <TestimonialsSection />
       </main>
-
-      <ChatWidget isOpen={isChatModalOpen} setIsOpen={setIsChatModalOpen} />
 
       <Dialog open={isCheckoutOpen} onOpenChange={setCheckoutOpen}>
         <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">

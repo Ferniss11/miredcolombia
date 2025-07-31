@@ -1,7 +1,6 @@
-
 'use client';
 
-import { useState, useRef, useEffect, useTransition } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import * as z from 'zod';
 import { useForm } from 'react-hook-form';
@@ -128,7 +127,7 @@ export default function ChatWidget({ businessId, businessName, isOpen, setIsOpen
 
   // Effect for proactive messages with progressive delay
   useEffect(() => {
-      if (!isMounted || isOpen || proactiveClosed) {
+      if (!isMounted || isOpen || proactiveClosed || isBusinessChat) {
           return;
       }
 
@@ -151,7 +150,7 @@ export default function ChatWidget({ businessId, businessName, isOpen, setIsOpen
           clearTimeout(timeoutId);
       };
 
-  }, [isMounted, isOpen, proactiveCloseCount, proactiveClosed]);
+  }, [isMounted, isOpen, proactiveCloseCount, proactiveClosed, isBusinessChat]);
   
   // Effect to play sound when a new proactive message appears
   useEffect(() => {
@@ -199,7 +198,7 @@ export default function ChatWidget({ businessId, businessName, isOpen, setIsOpen
 
   const handleStartSession = async (values: z.infer<typeof formSchema>, initialQuestion?: string) => {
     const action = isBusinessChat ? startBusinessChatSessionAction : startChatSessionAction;
-    const params = isBusinessChat ? { ...values, businessId: businessId!, businessName: businessName! } : { ...values, userEmail: values.userEmail };
+    const params = isBusinessChat ? { ...values, businessId: businessId!, businessName: businessName! } : { ...values };
     
     // @ts-ignore
     const result = await action(params);
@@ -410,7 +409,7 @@ export default function ChatWidget({ businessId, businessName, isOpen, setIsOpen
                     <div className="flex flex-col gap-1 w-full max-w-lg">
                         {authorName && <span className={cn("text-xs text-muted-foreground", isUser ? 'text-right' : 'text-left')}>{authorName}</span>}
                         <div className={cn('p-3 rounded-lg shadow-sm w-fit', bgColor, isUser ? 'ml-auto rounded-br-none' : 'mr-auto rounded-bl-none')}>
-                            <p className="text-sm whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: msg.text.replace(/\n/g, '<br />') }} />
+                            <p className="text-sm whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: msg.text.replace(/\\n/g, '<br />') }} />
                         </div>
                         <div className={cn("flex items-center gap-1.5 text-xs text-muted-foreground pr-2", isUser && "justify-end")}>
                             <Clock className="h-3 w-3" />
@@ -472,7 +471,7 @@ export default function ChatWidget({ businessId, businessName, isOpen, setIsOpen
   return (
     <>
       {isMounted && !embedded && (
-        <div className="fixed bottom-6 right-6 z-20">
+        <div className="fixed bottom-6 right-6 z-50">
             {showProactive && !isOpen && proactiveMessage && (
                 <div className="absolute bottom-full right-0 mb-3 w-max max-w-[280px] animate-in fade-in-50 slide-in-from-bottom-2">
                     <div className="flex items-end gap-2">
@@ -504,19 +503,22 @@ export default function ChatWidget({ businessId, businessName, isOpen, setIsOpen
             </Button>
         </div>
       )}
-
-      {isMounted && !embedded && isOpen && (
+      
+      {isMounted && isOpen && (
         <div
-          className="fixed inset-0 z-[998] bg-black/50 backdrop-blur-sm transition-opacity duration-300"
-          onClick={() => setIsOpen(false)} // Close chat when clicking outside
-        ></div>
+            className={cn(
+                'fixed inset-0 z-[51] transition-opacity duration-300',
+                isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
+            )}
+            onClick={() => setIsOpen(false)} // Close chat when clicking outside
+        >
+            <div className="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
+        </div>
       )}
 
       <div
         className={cn(
-          'fixed inset-0 z-[999] transition-all duration-300 ease-in-out', // Full screen on mobile
-          'md:w-[80vw] md:h-[80vh] md:max-w-3xl md:max-h-[900px] md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2', // Tablet sizing and centering
-          'lg:w-full lg:h-full', // Desktop full screen
+          'fixed bottom-6 right-6 z-[52] w-[calc(100%-48px)] h-[75vh] max-w-lg rounded-xl overflow-hidden transition-all duration-300 ease-in-out origin-bottom-right',
           isOpen ? 'scale-100 opacity-100' : 'scale-95 opacity-0 pointer-events-none'
         )}
       >
