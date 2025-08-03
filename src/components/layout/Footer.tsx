@@ -4,7 +4,7 @@ import { Instagram, Youtube } from "lucide-react";
 import Link from "next/link";
 import Image from 'next/image';
 import ChatWidget from "../chat/ChatWidget";
-import { useState } from "react";
+import { useChat } from "@/context/ChatContext";
 
 const TikTokIcon = () => (
     <svg 
@@ -21,7 +21,7 @@ const TikTokIcon = () => (
 
 
 export default function Footer() {
-  const [isChatOpen, setIsChatOpen] = useState(false);
+  const { chatContext, isChatOpen, setChatOpen } = useChat();
   
   return (
     <>
@@ -76,8 +76,13 @@ export default function Footer() {
         </div>
       </div>
     </footer>
-    {/* The global chat widget is now rendered here */}
-    <ChatWidget isOpen={isChatOpen} setIsOpen={setIsChatOpen} />
+    {/* The global chat widget is now rendered here and controlled by context */}
+    <ChatWidget 
+        isOpen={isChatOpen} 
+        setIsOpen={setChatOpen} 
+        businessId={chatContext?.businessId} 
+        businessName={chatContext?.businessName} 
+    />
     </>
   );
 }

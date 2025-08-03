@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Building, Globe, Phone, Clock, Star, Users, MapPin, ExternalLink } from "lucide-react";
@@ -13,8 +13,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import BusinessMap from "@/components/directory/BusinessMap";
 import { cn } from "@/lib/utils";
-import ChatWidget from "@/components/chat/ChatWidget";
 import { PlaceDetails } from "@/lib/types";
+import { useChat } from "@/context/ChatContext";
 
 const StarRating = ({ rating }: { rating: number }) => {
     return (
@@ -27,9 +27,24 @@ const StarRating = ({ rating }: { rating: number }) => {
 };
 
 export default function BusinessProfileClientPage({ initialBusiness }: { initialBusiness: PlaceDetails }) {
-  const [isChatOpen, setIsChatOpen] = useState(false);
+  const { setChatContext, openChat } = useChat();
   const business = initialBusiness;
   
+  useEffect(() => {
+    if (business.isAgentEnabled && business.id) {
+        setChatContext({
+            businessId: business.id,
+            businessName: business.displayName,
+        });
+    }
+
+    // Cleanup function to reset context when leaving the page
+    return () => {
+        setChatContext(null);
+    };
+  }, [business, setChatContext]);
+
+
   const gmapsUrl = `https://www.google.com/maps/search/?api=1&query=Google&query_place_id=${business.id}`;
 
   return (
@@ -133,6 +148,26 @@ export default function BusinessProfileClientPage({ initialBusiness }: { initial
 
             {/* Main Content */}
             <div className="lg:col-span-2 space-y-8">
+                {business.isAgentEnabled && (
+                    <Card className="bg-primary/5 border-primary/20">
+                         <CardContent className="p-4">
+                              <div className="flex items-center gap-4">
+                                <div className="flex-shrink-0">
+                                    <div className="p-3 bg-primary/10 rounded-full">
+                                        <Star className="w-6 h-6 text-primary" />
+                                    </div>
+                                </div>
+                                <div className="flex-grow">
+                                    <h3 className="font-bold">Habla con nuestro Asistente IA</h3>
+                                    <p className="text-sm text-muted-foreground">¿Tienes preguntas? Nuestro asistente virtual puede ayudarte a reservar o resolver tus dudas al instante.</p>
+                                </div>
+                                <Button onClick={openChat}>Iniciar Chat</Button>
+                            </div>
+                         </CardContent>
+                    </Card>
+                )}
+
+
                 {business.isOpenNow !== undefined && (
                     <Card>
                         <CardContent className="p-4">
@@ -234,9 +269,6 @@ export default function BusinessProfileClientPage({ initialBusiness }: { initial
         </div>
         </div>
     </div>
-    {business.isAgentEnabled && business.id && (
-        <ChatWidget businessId={business.id} businessName={business.displayName} isOpen={isChatOpen} setIsOpen={setIsChatOpen} />
-    )}
     </>
   );
 }
