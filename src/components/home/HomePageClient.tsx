@@ -70,8 +70,8 @@ export default function HomePageClient({ initialPosts, eurToCopRate, initialBusi
         <ServicesSection eurToCopRate={eurToCopRate} />
         <JobsSection jobs={initialJobs} />
         <DirectorySection businesses={initialBusinesses} />
-        <BlogSection posts={initialPosts} />
         <BusinessSection />
+        <BlogSection posts={initialPosts} />
         <TestimonialsSection />
       </main>
 

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from "react";
@@ -7,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Building, Globe, Phone, Clock, Star, Users, MapPin, ExternalLink } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, useParams } from "next/navigation";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -62,15 +63,16 @@ function BusinessProfileSkeleton() {
     )
 }
 
-export default function BusinessProfilePage({ params }: { params: { slug: string } }) {
+export default function BusinessProfilePage() {
   const [business, setBusiness] = useState<PlaceDetails | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const { slug } = useParams() as { slug: string };
 
   useEffect(() => {
     async function fetchBusiness() {
       setIsLoading(true);
-      const { business: fetchedBusiness, error } = await getPublicBusinessDetailsAction(params.slug);
+      const { business: fetchedBusiness, error } = await getPublicBusinessDetailsAction(slug);
       if (error || !fetchedBusiness) {
         notFound();
       }
@@ -78,7 +80,7 @@ export default function BusinessProfilePage({ params }: { params: { slug: string
       setIsLoading(false);
     }
     fetchBusiness();
-  }, [params.slug]);
+  }, [slug]);
 
 
   if (isLoading || !business) {
