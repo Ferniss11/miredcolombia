@@ -22,7 +22,7 @@ function BusinessChatConversationPage() {
     const { sessionId } = useParams();
     const router = useRouter();
     const { toast } = useToast();
-    const { userProfile } = useAuth();
+    const { userProfile, loading: authLoading } = useAuth();
     const [session, setSession] = useState<ChatSessionWithTokens | null>(null);
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -31,11 +31,13 @@ function BusinessChatConversationPage() {
     const [replyTo, setReplyTo] = useState<ChatMessage | null>(null);
     const scrollAreaRef = useRef<HTMLDivElement>(null);
 
+    const businessId = userProfile?.businessProfile?.placeId;
+
     useEffect(() => {
-        if (typeof sessionId === 'string' && userProfile?.businessProfile?.placeId) {
+        if (typeof sessionId === 'string' && businessId) {
             const fetchDetails = async () => {
                 setIsLoading(true);
-                const result = await getBusinessChatSessionDetailsAction(sessionId);
+                const result = await getBusinessChatSessionDetailsAction(sessionId, businessId);
                 if (result.error) {
                     toast({ variant: 'destructive', title: 'Error', description: result.error });
                     router.push('/dashboard/advertiser/conversations');
@@ -46,8 +48,13 @@ function BusinessChatConversationPage() {
                 setIsLoading(false);
             };
             fetchDetails();
+        } else if (!authLoading && !businessId) {
+            // Handle case where user has no linked business
+            toast({ variant: 'destructive', title: 'Error', description: 'No se encontró un negocio vinculado a tu perfil.' });
+            router.push('/dashboard/advertiser/profile');
+            setIsLoading(false);
         }
-    }, [sessionId, router, toast, userProfile]);
+    }, [sessionId, router, toast, businessId, authLoading]);
 
     useEffect(() => {
         if (scrollAreaRef.current) {
@@ -72,7 +79,7 @@ function BusinessChatConversationPage() {
 
     const handleSendMessage = async (e?: FormEvent) => {
         e?.preventDefault();
-        if (!newMessage.trim() || !userProfile || !session) return;
+        if (!newMessage.trim() || !userProfile || !session || !businessId) return;
 
         setIsSending(true);
         const tempId = Math.random().toString();
@@ -94,6 +101,7 @@ function BusinessChatConversationPage() {
         
         const result = await postBusinessAdminMessageAction({
             sessionId: session.id,
+            businessId: businessId,
             text: newMessage,
             authorName: userProfile.name || 'Propietario',
             replyTo: replyTo ? {
@@ -108,7 +116,7 @@ function BusinessChatConversationPage() {
             setMessages(prev => prev.filter(m => m.id !== tempId));
         } else if (result.newMessage) {
             if (typeof sessionId === 'string') {
-                const updatedSession = await getBusinessChatSessionDetailsAction(sessionId);
+                const updatedSession = await getBusinessChatSessionDetailsAction(sessionId, businessId);
                 if (updatedSession.session) setSession(updatedSession.session);
             }
             setMessages(prev => prev.map(m => m.id === tempId ? { ...result.newMessage } as ChatMessage : m));

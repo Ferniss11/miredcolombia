@@ -55,6 +55,7 @@ const startSessionSchema = z.object({
   businessName: z.string(),
   userName: z.string().min(2, "El nombre es obligatorio."),
   userPhone: z.string().min(7, "El teléfono es obligatorio."),
+  userEmail: z.string().email().optional(),
 });
 
 const postMessageSchema = z.object({
@@ -72,16 +73,12 @@ const postMessageSchema = z.object({
 async function findBusinessSessionByPhone(businessId: string, phone: string) {
     const db = getDbInstance();
     const sessionsRef = db.collection('directory').doc(businessId).collection('businessChatSessions');
-    const querySnapshot = await sessionsRef.where('userPhone', '==', phone).get();
+    const querySnapshot = await sessionsRef.where('userPhone', '==', phone).orderBy('createdAt', 'desc').limit(1).get();
 
     if (querySnapshot.empty) return null;
     
-    // Sort on the server to find the most recent
-    const sessions = querySnapshot.docs
-        .map(doc => ({ id: doc.id, ...doc.data() }))
-        .sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
-
-    return sessions[0] as ChatSession & { id: string };
+    const sessionDoc = querySnapshot.docs[0];
+    return { id: sessionDoc.id, ...sessionDoc.data() } as ChatSession & { id: string };
 }
 
 async function getBusinessChatHistory(businessId: string, sessionId: string): Promise<ChatMessage[]> {
@@ -106,30 +103,6 @@ async function getBusinessChatHistory(businessId: string, sessionId: string): Pr
     });
 }
 
-async function getBusinessProfileFromSession(sessionId: string): Promise<UserProfile | null> {
-    const db = getDbInstance();
-    const sessionDoc = await db.collectionGroup('businessChatSessions').where('__name__', '==', `directory/${sessionId}`).get();
-    if(sessionDoc.empty) {
-        const parts = sessionId.split('/');
-        const businessId = parts[1];
-        const sessionDocId = parts[3];
-        const sessionRef = await db.collection('directory').doc(businessId).collection('businessChatSessions').doc(sessionDocId).get();
-        if(!sessionRef.exists) return null;
-        const businessDoc = await db.collection('directory').doc(businessId).get();
-        if(!businessDoc.exists) return null;
-        const ownerUid = businessDoc.data()?.ownerUid;
-        if (!ownerUid) return null;
-        return getUserProfileByUid(ownerUid);
-    }
-    const docPath = sessionDoc.docs[0].ref.path;
-    const businessId = docPath.split('/')[1];
-    const businessDoc = await db.collection('directory').doc(businessId).get();
-    if(!businessDoc.exists) return null;
-    const ownerUid = businessDoc.data()?.ownerUid;
-    if (!ownerUid) return null;
-    return getUserProfileByUid(ownerUid);
-}
-
 
 // --- Server Actions ---
 
@@ -138,7 +111,7 @@ export async function startBusinessChatSessionAction(input: z.infer<typeof start
     if (!FieldValue) throw new Error("Firebase Admin SDK is not fully initialized.");
 
     try {
-        const { businessId, businessName, userName, userPhone } = startSessionSchema.parse(input);
+        const { businessId, businessName, userName, userPhone, userEmail } = startSessionSchema.parse(input);
 
         let existingSession = await findBusinessSessionByPhone(businessId, userPhone);
         if (existingSession) {
@@ -150,6 +123,7 @@ export async function startBusinessChatSessionAction(input: z.infer<typeof start
         await newSessionRef.set({
             userName,
             userPhone,
+            userEmail,
             createdAt: FieldValue.serverTimestamp(),
             totalCost: 0,
             totalInputTokens: 0,
@@ -157,10 +131,9 @@ export async function startBusinessChatSessionAction(input: z.infer<typeof start
             totalTokens: 0
         });
         
-        const welcomeText = `¡Hola! Soy el asistente virtual de ${businessName}. ¿Cómo puedo ayudarte hoy?`;
-        const initialHistory = [{ role: 'model' as const, text: welcomeText, timestamp: new Date().toISOString() }];
+        const welcomeText = `¡Hola, ${userName}! Soy el asistente virtual de ${businessName}. ¿Cómo puedo ayudarte hoy?`;
+        const initialHistory = [{ role: 'model' as const, text: welcomeText, timestamp: new Date().toISOString(), id: 'initial-message', replyTo: null }];
 
-        // Add the initial welcome message to the new session
         await newSessionRef.collection('messages').add({
             text: welcomeText,
             role: 'model',
@@ -204,7 +177,9 @@ export async function postBusinessMessageAction(input: z.infer<typeof postMessag
         if (ownerUid) {
             const userProfile = await getUserProfileByUid(ownerUid);
             if (userProfile?.businessProfile?.agentConfig) {
-                agentConfig = userProfile.businessProfile.agentConfig;
+                // Use the custom prompt if available
+                agentConfig.model = userProfile.businessProfile.agentConfig.model;
+                agentConfig.systemPrompt = userProfile.businessProfile.agentConfig.systemPrompt;
             }
         }
         
@@ -273,7 +248,7 @@ async function getAdvertiserPlaceId(idToken: string): Promise<string | null> {
 export async function getBusinessChatSessionsAction(idToken: string) {
     try {
         const placeId = await getAdvertiserPlaceId(idToken);
-        if (!placeId) throw new Error("No se pudo identificar el negocio del anunciante.");
+        if (!placeId) return { sessions: [] };
 
         const db = getDbInstance();
         const snapshot = await db.collection('directory').doc(placeId).collection('businessChatSessions').orderBy('createdAt', 'desc').get();
@@ -300,16 +275,15 @@ export async function getBusinessChatSessionsAction(idToken: string) {
 }
 
 
-export async function getBusinessChatSessionDetailsAction(sessionId: string) {
+export async function getBusinessChatSessionDetailsAction(sessionId: string, businessId: string) {
     try {
-        const placeId = "dummy_place_id"; // This needs a proper way to get the placeId, maybe from the sessionID structure itself
-        if (!placeId) throw new Error("No se pudo identificar el negocio del anunciante.");
+        if (!businessId) throw new Error("Business ID is required.");
         
         const db = getDbInstance();
-        const sessionRef = db.collection('directory').doc(placeId).collection('businessChatSessions').doc(sessionId);
+        const sessionRef = db.collection('directory').doc(businessId).collection('businessChatSessions').doc(sessionId);
         const [sessionDoc, messages, platformConfig] = await Promise.all([
             sessionRef.get(),
-            getBusinessChatHistory(placeId, sessionId),
+            getBusinessChatHistory(businessId, sessionId),
             getPlatformConfig()
         ]);
         
@@ -329,8 +303,8 @@ export async function getBusinessChatSessionDetailsAction(sessionId: string) {
             totalCost: finalCost,
             totalTokens: sessionData.totalTokens || 0,
             messageCount: messages.length,
-            totalInputTokens: 0, // Simplified for now
-            totalOutputTokens: 0, // Simplified for now
+            totalInputTokens: sessionData.totalInputTokens || 0,
+            totalOutputTokens: sessionData.totalOutputTokens || 0,
         };
         
         return { session, messages };
@@ -344,18 +318,18 @@ export async function getBusinessChatSessionDetailsAction(sessionId: string) {
 
 export async function postBusinessAdminMessageAction(input: {
     sessionId: string;
+    businessId: string;
     text: string;
     authorName: string;
     replyTo?: ChatMessage['replyTo'];
 }) {
     try {
-        const placeId = "dummy_place_id"; // This needs a proper way to get the placeId
-        if (!placeId) throw new Error("No se pudo identificar el negocio del anunciante.");
-
         const db = getDbInstance();
-        const { sessionId, text, authorName, replyTo } = input;
+        if (!FieldValue) throw new Error("Firebase Admin SDK is not fully initialized.");
+
+        const { sessionId, businessId, text, authorName, replyTo } = input;
         
-        const messageRef = db.collection('directory').doc(placeId).collection('businessChatSessions').doc(sessionId).collection('messages');
+        const messageRef = db.collection('directory').doc(businessId).collection('businessChatSessions').doc(sessionId).collection('messages');
         const newDocRef = await messageRef.add({
             text,
             role: 'admin',
