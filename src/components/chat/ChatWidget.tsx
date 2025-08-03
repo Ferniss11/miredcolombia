@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
@@ -19,7 +20,7 @@ import { startBusinessChatSessionAction, postBusinessMessageAction } from '@/lib
 import { useToast } from '@/hooks/use-toast';
 import type { ChatMessage } from '@/lib/chat-types';
 import { Avatar, AvatarFallback } from '../ui/avatar';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '../ui/sheet';
 import { useChat } from '@/context/ChatContext';
 
 
