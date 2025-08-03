@@ -1,7 +1,6 @@
-
 'use client';
 
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Building, Globe, Phone, Clock, Star, Users, MapPin, ExternalLink } from "lucide-react";
@@ -27,22 +26,29 @@ const StarRating = ({ rating }: { rating: number }) => {
 };
 
 export default function BusinessProfileClientPage({ initialBusiness }: { initialBusiness: PlaceDetails }) {
-  const { setChatContext, openChat } = useChat();
+  const { setChatContext, openChat, setChatVisible } = useChat();
   const business = initialBusiness;
   
   useEffect(() => {
-    if (business.isAgentEnabled && business.id) {
-        setChatContext({
-            businessId: business.id,
-            businessName: business.displayName,
-        });
+    if (business.id) {
+        if (business.isAgentEnabled) {
+            setChatContext({
+                businessId: business.id,
+                businessName: business.displayName,
+            });
+            setChatVisible(true);
+        } else {
+            // If the agent is not enabled, hide the chat widget entirely
+            setChatVisible(false);
+        }
     }
 
     // Cleanup function to reset context when leaving the page
     return () => {
         setChatContext(null);
+        setChatVisible(true); // Make the global widget visible again
     };
-  }, [business, setChatContext]);
+  }, [business, setChatContext, setChatVisible]);
 
 
   const gmapsUrl = `https://www.google.com/maps/search/?api=1&query=Google&query_place_id=${business.id}`;

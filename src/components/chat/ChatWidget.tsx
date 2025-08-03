@@ -19,14 +19,11 @@ import { startBusinessChatSessionAction, postBusinessMessageAction } from '@/lib
 import { useToast } from '@/hooks/use-toast';
 import type { ChatMessage } from '@/lib/chat-types';
 import { Avatar, AvatarFallback } from '../ui/avatar';
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '../ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../ui/sheet';
+import { useChat } from '@/context/ChatContext';
 
 
 type ChatWidgetProps = {
-  businessId?: string;
-  businessName?: string;
-  isOpen: boolean; 
-  setIsOpen: (isOpen: boolean) => void;
   embedded?: boolean; 
 };
 
@@ -79,7 +76,14 @@ const allBusinessQuestions = [
 ];
 
 
-export default function ChatWidget({ businessId, businessName, isOpen, setIsOpen, embedded = false }: ChatWidgetProps) {
+export default function ChatWidget({ embedded = false }: ChatWidgetProps) {
+  const { 
+    isChatOpen, 
+    setChatOpen, 
+    chatContext, 
+    isChatVisible 
+  } = useChat();
+
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Omit<ChatMessage, 'id'>[]>([]);
   const [isAiResponding, setIsAiResponding] = useState(false);
@@ -109,7 +113,7 @@ export default function ChatWidget({ businessId, businessName, isOpen, setIsOpen
     },
   });
 
-  const isBusinessChat = !!businessId;
+  const isBusinessChat = !!chatContext?.businessId;
   const suggestionPool = isBusinessChat ? allBusinessQuestions : allGeneralQuestions;
   const proactivePool = isBusinessChat ? businessProactiveMessages : migrationProactiveMessages;
   
@@ -136,7 +140,7 @@ export default function ChatWidget({ businessId, businessName, isOpen, setIsOpen
 
   // Effect for proactive messages with progressive delay
   useEffect(() => {
-      if (!isMounted || isOpen || proactiveClosed) {
+      if (!isMounted || isChatOpen || proactiveClosed) {
           return;
       }
 
@@ -159,7 +163,7 @@ export default function ChatWidget({ businessId, businessName, isOpen, setIsOpen
           clearTimeout(timeoutId);
       };
 
-  }, [isMounted, isOpen, proactiveCloseCount, proactiveClosed, proactivePool]);
+  }, [isMounted, isChatOpen, proactiveCloseCount, proactiveClosed, proactivePool]);
   
   // Effect to play sound when a new proactive message appears
   useEffect(() => {
@@ -171,7 +175,7 @@ export default function ChatWidget({ businessId, businessName, isOpen, setIsOpen
 
   // Effect for rotating suggestions
   useEffect(() => {
-    if (!isMounted || !isOpen || sessionId) {
+    if (!isMounted || !isChatOpen || sessionId) {
       return;
     }
 
@@ -184,7 +188,7 @@ export default function ChatWidget({ businessId, businessName, isOpen, setIsOpen
     const suggestionInterval = setInterval(getNextSuggestions, 5000);
     
     return () => clearInterval(suggestionInterval);
-  }, [isMounted, isOpen, sessionId, suggestionPool]);
+  }, [isMounted, isChatOpen, sessionId, suggestionPool]);
 
 
   useEffect(() => {
@@ -194,10 +198,10 @@ export default function ChatWidget({ businessId, businessName, isOpen, setIsOpen
   }, [messages]);
 
   useEffect(() => {
-    if(isOpen) {
+    if(isChatOpen) {
       setShowProactive(false);
     }
-  }, [isOpen]);
+  }, [isChatOpen]);
 
   const handleProactiveMessageClose = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -207,7 +211,7 @@ export default function ChatWidget({ businessId, businessName, isOpen, setIsOpen
 
   const handleStartSession = async (values: z.infer<typeof formSchema>, initialQuestion?: string) => {
     const action = isBusinessChat ? startBusinessChatSessionAction : startChatSessionAction;
-    const params = isBusinessChat ? { ...values, businessId: businessId!, businessName: businessName! } : { ...values };
+    const params = isBusinessChat ? { ...values, businessId: chatContext.businessId!, businessName: chatContext.businessName! } : { ...values };
     
     // @ts-ignore
     const result = await action(params);
@@ -240,7 +244,7 @@ export default function ChatWidget({ businessId, businessName, isOpen, setIsOpen
          sessionId: newSessionId, 
          message: userMessage.text, 
          history: initialHistory,
-         ...(isBusinessChat && { businessId: businessId! })
+         ...(isBusinessChat && { businessId: chatContext.businessId! })
      };
 
      // @ts-ignore
@@ -277,7 +281,7 @@ export default function ChatWidget({ businessId, businessName, isOpen, setIsOpen
         sessionId, 
         message: userMessage.text, 
         history: messages,
-        ...(isBusinessChat && { businessId: businessId! })
+        ...(isBusinessChat && { businessId: chatContext.businessId! })
     };
 
     // @ts-ignore
@@ -305,11 +309,11 @@ export default function ChatWidget({ businessId, businessName, isOpen, setIsOpen
             <div className="flex-1">
                 <div className="flex items-center gap-2 mb-2">
                     {isBusinessChat ? <Building className="h-5 w-5 text-primary"/> : <Phone className="h-5 w-5 text-primary"/>}
-                    <h3 className="font-bold font-headline">{isBusinessChat ? `Asistente de ${businessName}` : "Asistente de Inmigración"}</h3>
+                    <h3 className="font-bold font-headline">{isBusinessChat ? `Asistente de ${chatContext?.businessName}` : "Asistente de Inmigración"}</h3>
                 </div>
                 <p className="text-sm text-muted-foreground mb-6">
                     {isBusinessChat
-                        ? `Hola, ¿listo para chatear con ${businessName}? Solo necesitamos unos datos para empezar.`
+                        ? `Hola, ¿listo para chatear con ${chatContext?.businessName}? Solo necesitamos unos datos para empezar.`
                         : 'Necesitamos unos datos para poder ayudarte mejor. Si ya has hablado con nosotros, usa el mismo teléfono para continuar la conversación.'
                     }
                 </p>
@@ -404,7 +408,7 @@ export default function ChatWidget({ businessId, businessName, isOpen, setIsOpen
                  </Avatar>
               );
 
-              const authorName = isAdmin ? (msg.authorName || 'Admin') : isModel ? (businessName || 'Asistente IA') : '';
+              const authorName = isAdmin ? (msg.authorName || 'Admin') : isModel ? (chatContext?.businessName || 'Asistente IA') : '';
 
               return (
                 <div key={index} className={cn("flex items-end gap-2 w-full", alignment)}>
@@ -463,11 +467,15 @@ export default function ChatWidget({ businessId, businessName, isOpen, setIsOpen
     )
   }
 
+  if (!isChatVisible) {
+    return null;
+  }
+
   return (
     <>
       {isMounted && (
         <div className="fixed bottom-6 right-6 z-50">
-            {showProactive && !isOpen && proactiveMessage && (
+            {showProactive && !isChatOpen && proactiveMessage && (
                 <div className="absolute bottom-full right-0 mb-3 w-max max-w-[280px] animate-in fade-in-50 slide-in-from-bottom-2">
                     <div className="flex items-end gap-2">
                         <div className="flex-shrink-0 w-12 h-12 rounded-full bg-primary flex items-center justify-center text-primary-foreground shadow-lg z-10 -mr-2">
@@ -488,27 +496,29 @@ export default function ChatWidget({ businessId, businessName, isOpen, setIsOpen
                     </div>
                 </div>
             )}
-             <Sheet open={isOpen} onOpenChange={setIsOpen}>
+             <Sheet open={isChatOpen} onOpenChange={setChatOpen}>
                 <SheetTrigger asChild>
                     <Button
                         className="w-16 h-16 rounded-full shadow-lg flex items-center justify-center"
                         size="icon"
                         id="global-chat-trigger"
                     >
-                        {isOpen ? <X size={32} /> : <Bot size={40} />}
+                        {isChatOpen ? <X size={32} /> : <Bot size={40} />}
                     </Button>
                 </SheetTrigger>
                 <SheetContent 
-                    className="w-full sm:max-w-md p-0 flex flex-col"
+                    className="w-full sm:max-w-md p-0 flex flex-col h-full"
                     side="right"
                 >
                     <SheetHeader className="p-4 border-b">
                         <SheetTitle className="flex items-center gap-2 font-headline text-lg">
                             {isBusinessChat ? <Building className="h-6 w-6 text-primary" /> : <Sparkles className="h-6 w-6 text-primary" />}
-                            {isBusinessChat ? `Asistente de ${businessName}` : "Asistente de Inmigración"}
+                            {isBusinessChat ? `Asistente de ${chatContext.businessName}` : "Asistente de Inmigración"}
                         </SheetTitle>
                     </SheetHeader>
-                    {isMounted ? renderChatContent() : <div className='flex-1 flex items-center justify-center'><Loader2 className='animate-spin'/></div>}
+                    <div className="flex-1 min-h-0">
+                      {isMounted ? renderChatContent() : <div className='flex-1 flex items-center justify-center'><Loader2 className='animate-spin'/></div>}
+                    </div>
                 </SheetContent>
             </Sheet>
         </div>

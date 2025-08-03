@@ -11,6 +11,8 @@ type ChatContextType = {
     businessName: string;
   } | null;
   setChatContext: (context: { businessId: string; businessName: string } | null) => void;
+  isChatVisible: boolean;
+  setChatVisible: (isVisible: boolean) => void;
 };
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
@@ -26,6 +28,7 @@ export const useChat = () => {
 export const ChatProvider = ({ children }: { children: ReactNode }) => {
   const [isChatOpen, setChatOpen] = useState(false);
   const [chatContext, setChatContext] = useState<{ businessId: string; businessName: string } | null>(null);
+  const [isChatVisible, setChatVisible] = useState(true);
 
   const openChat = () => setChatOpen(true);
 
@@ -37,6 +40,8 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
         openChat,
         chatContext,
         setChatContext,
+        isChatVisible,
+        setChatVisible,
       }}
     >
       {children}
