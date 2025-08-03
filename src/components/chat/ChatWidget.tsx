@@ -7,7 +7,6 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -20,13 +19,15 @@ import { startBusinessChatSessionAction, postBusinessMessageAction } from '@/lib
 import { useToast } from '@/hooks/use-toast';
 import type { ChatMessage } from '@/lib/chat-types';
 import { Avatar, AvatarFallback } from '../ui/avatar';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '../ui/sheet';
+
 
 type ChatWidgetProps = {
   businessId?: string;
   businessName?: string;
-  isOpen: boolean; // Controlled by parent
-  setIsOpen: (isOpen: boolean) => void; // Controlled by parent
-  embedded?: boolean; // New prop to control embedded mode
+  isOpen: boolean; 
+  setIsOpen: (isOpen: boolean) => void;
+  embedded?: boolean; 
 };
 
 const formSchema = z.object({
@@ -38,12 +39,19 @@ const formSchema = z.object({
   }),
 });
 
-const proactiveMessages = [
+const migrationProactiveMessages = [
   "¡Hola! ¿Dudas sobre migración?",
   "Tu asistente virtual está aquí.",
   "¿En qué puedo ayudarte hoy?",
   "Pregúntame sobre trámites.",
   "¿Listo para empezar tu viaje a España?"
+];
+
+const businessProactiveMessages = [
+    "¡Hola! ¿Puedo ayudarte con algo?",
+    "¿Tienes alguna pregunta sobre nuestros servicios?",
+    "¡No dudes en consultarme lo que necesites!",
+    "Estoy aquí para ayudarte a reservar o a responder tus dudas."
 ];
 
 const allGeneralQuestions = [
@@ -103,6 +111,7 @@ export default function ChatWidget({ businessId, businessName, isOpen, setIsOpen
 
   const isBusinessChat = !!businessId;
   const suggestionPool = isBusinessChat ? allBusinessQuestions : allGeneralQuestions;
+  const proactivePool = isBusinessChat ? businessProactiveMessages : migrationProactiveMessages;
   
   useEffect(() => {
     setIsMounted(true);
@@ -127,19 +136,19 @@ export default function ChatWidget({ businessId, businessName, isOpen, setIsOpen
 
   // Effect for proactive messages with progressive delay
   useEffect(() => {
-      if (!isMounted || isOpen || proactiveClosed || isBusinessChat) {
+      if (!isMounted || isOpen || proactiveClosed) {
           return;
       }
 
       let timeoutId: NodeJS.Timeout;
 
       const scheduleNextMessage = () => {
-          const delays = [2000, 7000, 15000]; // 2s, 7s, 15s
+          const delays = [2000, 7000, 15000];
           const delay = delays[Math.min(proactiveCloseCount, delays.length - 1)];
 
           timeoutId = setTimeout(() => {
-              const randomIndex = Math.floor(Math.random() * proactiveMessages.length);
-              setProactiveMessage(proactiveMessages[randomIndex]);
+              const randomIndex = Math.floor(Math.random() * proactivePool.length);
+              setProactiveMessage(proactivePool[randomIndex]);
               setShowProactive(true);
           }, delay);
       };
@@ -150,7 +159,7 @@ export default function ChatWidget({ businessId, businessName, isOpen, setIsOpen
           clearTimeout(timeoutId);
       };
 
-  }, [isMounted, isOpen, proactiveCloseCount, proactiveClosed, isBusinessChat]);
+  }, [isMounted, isOpen, proactiveCloseCount, proactiveClosed, proactivePool]);
   
   // Effect to play sound when a new proactive message appears
   useEffect(() => {
@@ -193,7 +202,7 @@ export default function ChatWidget({ businessId, businessName, isOpen, setIsOpen
   const handleProactiveMessageClose = (e: React.MouseEvent) => {
     e.stopPropagation();
     setShowProactive(false);
-    setProactiveClosed(true); // Stop showing proactive messages for this session
+    setProactiveClosed(true);
   };
 
   const handleStartSession = async (values: z.infer<typeof formSchema>, initialQuestion?: string) => {
@@ -292,89 +301,83 @@ export default function ChatWidget({ businessId, businessName, isOpen, setIsOpen
   
   const renderWelcomeContent = () => {
     return (
-        <div className="flex flex-col h-full">
-            <ScrollArea className="flex-1">
-                <Card className="border-none shadow-none">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            {isBusinessChat ? <Building className="h-5 w-5 text-primary"/> : <Phone className="h-5 w-5 text-primary"/>}
-                            {isBusinessChat ? `Asistente de ${businessName}` : "Asistente de Inmigración"}
-                        </CardTitle>
-                        <CardDescription>
-                            {isBusinessChat
-                                ? `Hola, ¿listo para chatear con ${businessName}? Solo necesitamos unos datos para empezar.`
-                                : 'Necesitamos unos datos para poder ayudarte mejor. Si ya has hablado con nosotros, usa el mismo teléfono para continuar la conversación.'
-                            }
-                        </CardDescription>
-                         <div className="pt-4">
-                            <p className="text-sm font-medium mb-2 flex items-center gap-2 text-muted-foreground"><MessageSquareQuote className="h-4 w-4"/> O pregúntale directamente...</p>
-                            <div className="flex flex-col gap-2">
-                                {currentSuggestions.map((q, i) => (
-                                    <Button 
-                                        key={i} 
-                                        variant="outline" 
-                                        size="sm" 
-                                        className="w-full text-left justify-start h-auto whitespace-normal animate-in fade-in duration-500" 
-                                        onClick={() => handleSuggestionClick(q)}
-                                    >
-                                        {q}
-                                    </Button>
-                                ))}
-                            </div>
-                        </div>
-                    </CardHeader>
-                    <CardContent className="pt-6 border-t">
-                        <Form {...form}>
-                            <form onSubmit={form.handleSubmit((values) => handleStartSession(values))} className="space-y-4">
-                                <FormField control={form.control} name="userName" render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Nombre</FormLabel>
-                                    <FormControl><Input placeholder="Tu nombre completo" {...field} /></FormControl>
+        <div className="flex flex-col h-full p-4">
+            <div className="flex-1">
+                <div className="flex items-center gap-2 mb-2">
+                    {isBusinessChat ? <Building className="h-5 w-5 text-primary"/> : <Phone className="h-5 w-5 text-primary"/>}
+                    <h3 className="font-bold font-headline">{isBusinessChat ? `Asistente de ${businessName}` : "Asistente de Inmigración"}</h3>
+                </div>
+                <p className="text-sm text-muted-foreground mb-6">
+                    {isBusinessChat
+                        ? `Hola, ¿listo para chatear con ${businessName}? Solo necesitamos unos datos para empezar.`
+                        : 'Necesitamos unos datos para poder ayudarte mejor. Si ya has hablado con nosotros, usa el mismo teléfono para continuar la conversación.'
+                    }
+                </p>
+                <div className="pt-4 border-t">
+                    <p className="text-sm font-medium mb-2 flex items-center gap-2 text-muted-foreground"><MessageSquareQuote className="h-4 w-4"/> O pregúntale directamente...</p>
+                    <div className="flex flex-col gap-2">
+                        {currentSuggestions.map((q, i) => (
+                            <Button 
+                                key={i} 
+                                variant="outline" 
+                                size="sm" 
+                                className="w-full text-left justify-start h-auto whitespace-normal animate-in fade-in duration-500" 
+                                onClick={() => handleSuggestionClick(q)}
+                            >
+                                {q}
+                            </Button>
+                        ))}
+                    </div>
+                </div>
+            </div>
+            
+            <div className="pt-6 border-t mt-6">
+                <Form {...form}>
+                    <form onSubmit={form.handleSubmit((values) => handleStartSession(values))} className="space-y-4">
+                        <FormField control={form.control} name="userName" render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Nombre</FormLabel>
+                            <FormControl><Input placeholder="Tu nombre completo" {...field} /></FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        )} />
+                        <FormField control={form.control} name="userPhone" render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Teléfono</FormLabel>
+                            <FormControl><Input placeholder="+34 600 000 000" {...field} /></FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        )} />
+                         <FormField control={form.control} name="acceptTerms" render={({ field }) => (
+                            <FormItem className="flex flex-row items-start space-x-3 space-y-0 pt-2">
+                                <FormControl>
+                                    <Checkbox checked={field.value} onCheckedChange={field.onChange} id="terms" />
+                                </FormControl>
+                                <div className="grid gap-1.5 leading-none">
+                                    <label htmlFor="terms" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                                        Acepto los <Link href="/legal/terms" target="_blank" className="underline text-primary">términos y condiciones</Link>.
+                                    </label>
                                     <FormMessage />
-                                </FormItem>
-                                )} />
-                                <FormField control={form.control} name="userPhone" render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Teléfono</FormLabel>
-                                    <FormControl><Input placeholder="+34 600 000 000" {...field} /></FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                                )} />
-                                <FormField control={form.control} name="userEmail" render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Email (Opcional)</FormLabel>
-                                    <FormControl><Input placeholder="tu.email@ejemplo.com" {...field} /></FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                                )} />
-                                <FormField control={form.control} name="acceptTerms" render={({ field }) => (
-                                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 pt-2">
-                                        <FormControl>
-                                            <Checkbox checked={field.value} onCheckedChange={field.onChange} id="terms" />
-                                        </FormControl>
-                                        <div className="grid gap-1.5 leading-none">
-                                            <label htmlFor="terms" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                                                Acepto los <Link href="/legal/terms" target="_blank" className="underline text-primary">términos y condiciones</Link>.
-                                            </label>
-                                            <FormMessage />
-                                        </div>
-                                    </FormItem>
-                                )} />
-                                <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
-                                    {form.formState.isSubmitting ? <Loader2 className="animate-spin" /> : "Iniciar Chat"}
-                                </Button>
-                            </form>
-                        </Form>
-                    </CardContent>
-                </Card>
-            </ScrollArea>
+                                </div>
+                            </FormItem>
+                        )} />
+                        <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
+                            {form.formState.isSubmitting ? <Loader2 className="animate-spin" /> : "Iniciar Chat"}
+                        </Button>
+                    </form>
+                </Form>
+            </div>
         </div>
     )
   }
 
   const renderChatContent = () => {
     if (!sessionId) {
-      return renderWelcomeContent();
+      return (
+        <ScrollArea className="h-full">
+            {renderWelcomeContent()}
+        </ScrollArea>
+      );
     }
 
     return (
@@ -387,7 +390,7 @@ export default function ChatWidget({ businessId, businessName, isOpen, setIsOpen
               const isModel = msg.role === 'model';
               
               const alignment = isUser ? 'justify-end' : 'justify-start';
-              const bgColor = isUser ? 'bg-blue-100 dark:bg-blue-900/50' : isAdmin ? 'bg-yellow-100 dark:bg-yellow-900/50' : 'bg-gray-100 dark:bg-gray-800';
+              const bgColor = isUser ? 'bg-primary text-primary-foreground' : isAdmin ? 'bg-yellow-100 dark:bg-yellow-900/50' : 'bg-muted';
               
               const avatar = isUser ? (
                   <Avatar className="w-8 h-8 flex-shrink-0">
@@ -395,7 +398,7 @@ export default function ChatWidget({ businessId, businessName, isOpen, setIsOpen
                   </Avatar>
               ) : (
                   <Avatar className="w-8 h-8 flex-shrink-0">
-                    <AvatarFallback className={cn(isAdmin ? 'bg-yellow-400 text-black' : 'bg-primary text-primary-foreground')}>
+                    <AvatarFallback className={cn(isAdmin ? 'bg-yellow-400 text-black' : 'bg-primary/10 text-primary')}>
                         {isAdmin ? <UserCog size={18} /> : <Bot size={18} />}
                     </AvatarFallback>
                  </Avatar>
@@ -422,7 +425,7 @@ export default function ChatWidget({ businessId, businessName, isOpen, setIsOpen
             })}
             {isAiResponding && (
                 <div className="flex items-end gap-2 justify-start">
-                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground">
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
                         <Bot size={20} />
                     </div>
                     <div className="bg-muted rounded-xl px-4 py-3 rounded-bl-none flex items-center gap-2">
@@ -451,26 +454,18 @@ export default function ChatWidget({ businessId, businessName, isOpen, setIsOpen
     );
   };
 
-  // If embedded, we only render the main card content
+  // If embedded, render directly without triggers or pop-ups
   if (embedded) {
     return (
-        <Card className="h-full flex flex-col shadow-2xl w-full border-primary">
-             <CardHeader className="flex flex-row items-center justify-between">
-                <div className='flex items-center gap-2'>
-                    {isBusinessChat ? <Building className="h-6 w-6 text-primary" /> : <Sparkles className="h-6 w-6 text-primary" />}
-                    <CardTitle className="font-headline text-lg">
-                    {isBusinessChat ? `Asistente de ${businessName}` : "Asistente de Inmigración"}
-                    </CardTitle>
-                </div>
-            </CardHeader>
+        <div className="h-full flex flex-col shadow-2xl w-full border-primary border rounded-lg">
            {isMounted ? renderChatContent() : <div className='flex-1 flex items-center justify-center'><Loader2 className='animate-spin'/></div>}
-        </Card>
+        </div>
     )
   }
 
   return (
     <>
-      {isMounted && !embedded && (
+      {isMounted && (
         <div className="fixed bottom-6 right-6 z-50">
             {showProactive && !isOpen && proactiveMessage && (
                 <div className="absolute bottom-full right-0 mb-3 w-max max-w-[280px] animate-in fade-in-50 slide-in-from-bottom-2">
@@ -490,53 +485,34 @@ export default function ChatWidget({ businessId, businessName, isOpen, setIsOpen
                                 <X className="h-4 w-4" />
                             </Button>
                         </div>
-                        
                     </div>
                 </div>
             )}
-            <Button
-            onClick={() => setIsOpen(!isOpen)}
-            className="w-16 h-16 rounded-full shadow-lg flex items-center justify-center"
-            size="icon"
-            >
-            {isOpen ? <X size={32} /> : <Bot size={40} />}
-            </Button>
+             <Sheet open={isOpen} onOpenChange={setIsOpen}>
+                <SheetTrigger asChild>
+                    <Button
+                        className="w-16 h-16 rounded-full shadow-lg flex items-center justify-center"
+                        size="icon"
+                        id="global-chat-trigger"
+                    >
+                        {isOpen ? <X size={32} /> : <Bot size={40} />}
+                    </Button>
+                </SheetTrigger>
+                <SheetContent 
+                    className="w-full sm:max-w-md p-0 flex flex-col"
+                    side="right"
+                >
+                    <SheetHeader className="p-4 border-b">
+                        <SheetTitle className="flex items-center gap-2 font-headline text-lg">
+                            {isBusinessChat ? <Building className="h-6 w-6 text-primary" /> : <Sparkles className="h-6 w-6 text-primary" />}
+                            {isBusinessChat ? `Asistente de ${businessName}` : "Asistente de Inmigración"}
+                        </SheetTitle>
+                    </SheetHeader>
+                    {isMounted ? renderChatContent() : <div className='flex-1 flex items-center justify-center'><Loader2 className='animate-spin'/></div>}
+                </SheetContent>
+            </Sheet>
         </div>
       )}
-      
-      {isMounted && isOpen && (
-        <div
-            className={cn(
-                'fixed inset-0 z-[51] transition-opacity duration-300',
-                isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
-            )}
-            onClick={() => setIsOpen(false)} // Close chat when clicking outside
-        >
-            <div className="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
-        </div>
-      )}
-
-      <div
-        className={cn(
-          'fixed bottom-6 right-6 z-[52] w-[calc(100%-48px)] h-[75vh] max-w-lg rounded-xl overflow-hidden transition-all duration-300 ease-in-out origin-bottom-right',
-          isOpen ? 'scale-100 opacity-100' : 'scale-95 opacity-0 pointer-events-none'
-        )}
-      >
-        <Card className="h-full flex flex-col shadow-2xl">
-           <CardHeader className="flex flex-row items-center justify-between">
-              <div className='flex items-center gap-2'>
-                 {isBusinessChat ? <Building className="h-6 w-6 text-primary" /> : <Sparkles className="h-6 w-6 text-primary" />}
-                <CardTitle className="font-headline text-lg">
-                  {isBusinessChat ? `Asistente de ${businessName}` : "Asistente de Inmigración"}
-                </CardTitle>
-              </div>
-              <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)} className="h-7 w-7">
-                  <X size={16}/>
-              </Button>
-            </CardHeader>
-           {isMounted ? renderChatContent() : <div className='flex-1 flex items-center justify-center'><Loader2 className='animate-spin'/></div>}
-        </Card>
-      </div>
     </>
   );
 }
