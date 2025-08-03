@@ -46,50 +46,6 @@ const nextConfig: NextConfig = {
       }
     ],
   },
-  webpack: (config, { isServer }) => {
-    if (!isServer) {
-      // Don't resolve server-only modules on the client
-      config.resolve.fallback = {
-        ...config.resolve.fallback,
-        fs: false,
-        net: false,
-        tls: false,
-        child_process: false,
-      };
-    }
-
-    // Enable WebAssembly experiments for both client and server builds
-    config.experiments = {
-      ...config.experiments,
-      asyncWebAssembly: true,
-    };
-
-    // Add a rule to handle .wasm files
-    config.module.rules.push({
-      test: /\.wasm$/,
-      type: 'webassembly/async',
-    });
-
-    // Ensure config.externals is an array before pushing
-    if (!Array.isArray(config.externals)) {
-      config.externals = [];
-    }
-
-    // Externalize Node.js built-in modules and problematic packages for server builds
-    if (isServer) {
-      config.externals.push(
-        'http2',
-        'farmhash-modern',
-        'node:events',
-        'node:process',
-        'node:stream',
-        // Add other node: modules if they appear in errors
-      );
-    }
-
-    config.externals.push('@opentelemetry/exporter-jaeger');
-    return config;
-  },
   serverExternalPackages: ['firebase-admin', 'teeny-request', 'google-auth-library'],
 };
 

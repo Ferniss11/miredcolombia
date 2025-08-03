@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { googlePlacesSearch } from "@/ai/tools/google-places-search";
@@ -416,19 +417,19 @@ async function fetchAndCacheBusinessDetails(placeId: string): Promise<PlaceDetai
 }
 
 
-export async function getPublicBusinessDetailsAction(placeId: string): Promise<{ business?: PlaceDetails, error?: string }> {
+export async function getPublicBusinessDetailsAction(slug: string): Promise<{ business?: PlaceDetails, error?: string }> {
     try {
         const db = getDbInstance();
         
         // 1. Get our internal directory data (like category)
-        const directoryDoc = await db.collection('directory').doc(placeId).get();
+        const directoryDoc = await db.collection('directory').doc(slug).get();
         if (!directoryDoc.exists) {
             return { error: 'Este negocio no forma parte de nuestro directorio.' };
         }
         const directoryData = directoryDoc.data()!;
 
         // 2. Check for a valid cache entry
-        const cacheRef = db.collection('directoryCache').doc(placeId);
+        const cacheRef = db.collection('directoryCache').doc(slug);
         const cacheDoc = await cacheRef.get();
 
         if (cacheDoc.exists) {
@@ -438,10 +439,11 @@ export async function getPublicBusinessDetailsAction(placeId: string): Promise<{
             const hoursDiff = (now.getTime() - cacheTime.getTime()) / (1000 * 60 * 60);
 
             if (hoursDiff < CACHE_DURATION_HOURS) {
-                console.log(`[Cache] HIT for placeId: ${placeId}`);
+                console.log(`[Cache] HIT for placeId: ${slug}`);
                 // Return cached data, but enrich it with our internal category and agent status
                 const businessFromCache: PlaceDetails = {
                     ...cachedData,
+                    cachedAt: cachedData.cachedAt.toDate().toISOString(), // Convert Timestamp to ISO string
                     category: directoryData.category || 'Sin Categoría',
                     isAgentEnabled: directoryData.isAgentEnabled || false,
                 };
@@ -450,8 +452,8 @@ export async function getPublicBusinessDetailsAction(placeId: string): Promise<{
         }
         
         // 3. If no valid cache, fetch from Google API and update cache
-        console.log(`[Cache] MISS for placeId: ${placeId}. Fetching from Google.`);
-        const businessFromApi = await fetchAndCacheBusinessDetails(placeId);
+        console.log(`[Cache] MISS for placeId: ${slug}. Fetching from Google.`);
+        const businessFromApi = await fetchAndCacheBusinessDetails(slug);
         
         // Enrich with our internal category and agent status
         businessFromApi.category = directoryData.category || 'Sin Categoría';
@@ -461,7 +463,7 @@ export async function getPublicBusinessDetailsAction(placeId: string): Promise<{
 
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : "Unknown error";
-        console.error(`Error in getPublicBusinessDetailsAction for ${placeId}:`, errorMessage);
+        console.error(`Error in getPublicBusinessDetailsAction for ${slug}:`, errorMessage);
         return { error: 'Ocurrió un error al cargar los detalles del negocio.' };
     }
 }
