@@ -63,52 +63,48 @@ src/lib/
 
 *   **`user.entity.ts`**:
     *   Definir las interfaces `BusinessProfile` y `CandidateProfile`.
-    *   Definir la entidad principal `User` que contiene los perfiles opcionales, el `role`, etc., como lo discutimos.
+    *   Definir la entidad principal `User` que contiene los perfiles opcionales, el `role`, etc.
 *   **`user.repository.ts`**:
-    *   Definir el puerto `UserRepository` con los métodos CRUD:
-        *   `create(user: User): Promise<User>`
-        *   `findByUid(uid: string): Promise<User | null>`
-        *   `update(uid: string, data: Partial<User>): Promise<User>`
-        *   `findPublicProfileByUid(uid: string): Promise<Partial<User> | null>` (para perfiles públicos)
+    *   Definir el puerto `UserRepository` con los métodos CRUD y de borrado suave (`softDelete`).
 *   **`auth.repository.ts`**:
-    *   Definir un puerto `AuthRepository` para abstraer las operaciones de autenticación:
-        *   `signInWithGoogle(): Promise<{uid: string, isNewUser: boolean}>`
-        *   `signInWithEmail(email: string, pass: string): Promise<string>`
-        *   `signUpWithEmail(name: string, email: string, pass: string, role: UserRole): Promise<string>`
-        *   `signOut(): Promise<void>`
+    *   Definir un puerto `AuthRepository` para abstraer las operaciones de autenticación (Google, Email/Pass).
 
-### **Paso 1.2: Crear los Casos de Uso (`src/lib/user/application`)**
+### **Paso 1.2: Crear los Casos de Uso (`src/lib/user/application`) (✓ Completado)**
 
-*   **`create-user-profile.use-case.ts`**: Orquesta la creación de un nuevo `User` en nuestra base de datos después de que Auth lo haya creado.
+*   **`create-user-profile.use-case.ts`**: Orquesta la creación de un nuevo `User` en nuestra base de datos.
+*   **`update-user-profile.use-case.ts`**: Maneja la lógica para actualizar datos básicos (nombre, etc.).
 *   **`update-business-profile.use-case.ts`**: Maneja la lógica para actualizar los datos del perfil de negocio.
-*   **`update-candidate-profile.use-case.ts`**: Maneja la lógica para actualizar el perfil del candidato, incluida la subida del CV.
+*   **`update-candidate-profile.use-case.ts`**: Maneja la lógica para actualizar el perfil del candidato.
+*   **`get-user-profile.use-case.ts`**: Obtiene un perfil de usuario.
+*   **`soft-delete-user.use-case.ts`**: Implementa la lógica de borrado suave.
 
-### **Paso 1.3: Implementar la Infraestructura (`src/lib/user/infrastructure`)**
+### **Paso 1.3: Implementar la Infraestructura (`src/lib/user/infrastructure`) (✓ Completado)**
 
 *   **`persistence/firestore-user.repository.ts`**:
-    *   Implementa la interfaz `UserRepository` usando Firestore. Contendrá toda la lógica de `getDoc`, `setDoc`, `updateDoc`.
+    *   Implementa la interfaz `UserRepository` usando Firestore.
 *   **`auth/firebase-auth.adapter.ts`**:
-    *   Implementa la interfaz `AuthRepository`.
-    *   Encapsula todas las llamadas al SDK de Firebase Authentication (`createUserWithEmailAndPassword`, `signInWithPopup`, etc.).
-    *   Aquí es donde daremos **prioridad a la autenticación con Google**.
+    *   Implementa la interfaz `AuthRepository` usando Firebase Authentication.
 *   **`storage/firebase-storage.adapter.ts`**:
-    *   Crear una función genérica `uploadFile` (si no existe ya en `job-posting`) para manejar la subida de CVs para el `CandidateProfile`.
+    *   Crear una función genérica `uploadFile` para manejar la subida de archivos (ej. CVs).
 *   **`nextjs/user.server-actions.ts`**:
     *   Nuevas Server Actions que la UI llamará (ej. `updateBusinessProfileAction`).
-    *   Estas acciones instanciarán los `UseCase` y les inyectarán las implementaciones de la infraestructura (el `FirestoreUserRepository`).
+    *   Estas acciones instanciarán los `UseCase` y les inyectarán las implementaciones de la infraestructura.
 
 ### **Paso 1.4: Actualizar la UI y Eliminar Código Antiguo**
 
-1.  **Actualizar Flujo de Registro (`src/components/auth/SignUpForm.tsx` y `LoginForm.tsx`)**:
-    *   Modificar los formularios para que llamen a las nuevas `server actions` que usan el `AuthRepository` y el `UserRepository`.
-2.  **Actualizar Formularios de Perfil**:
-    *   `src/app/dashboard/advertiser/profile/page.tsx`
-    *   `src/app/dashboard/candidate-profile/page.tsx` para que usen las nuevas `server actions`.
-3.  **Actualizar Contexto de Auth (`src/context/AuthContext.tsx`)**:
-    *   Modificar el `AuthContext` para que consuma los nuevos casos de uso (a través de server actions) en lugar de llamar directamente a los servicios antiguos.
-4.  **Eliminación de Archivos Obsoletos**:
+1.  **Crear nuevas Server Actions (`src/lib/user/infrastructure/nextjs/user.server-actions.ts`)**:
+    *   Crear acciones como `signInWithGoogleAction`, `signUpWithEmailAction`, `updateBusinessProfileAction`, etc.
+    *   Estas acciones instanciarán los `UseCases` y les inyectarán las implementaciones de infraestructura (`FirestoreUserRepository`, `FirebaseAuthAdapter`).
+2.  **Actualizar Flujo de Registro/Login (`src/components/auth/SignUpForm.tsx`, `LoginForm.tsx`)**:
+    *   Modificar los formularios para que llamen a las nuevas `server actions`.
+3.  **Actualizar Formularios de Perfil (`.../advertiser/profile/page.tsx`, `.../candidate-profile/page.tsx`)**:
+    *   Modificar para que usen las nuevas `server actions`.
+4.  **Actualizar Contexto de Auth (`src/context/AuthContext.tsx`)**:
+    *   Modificar el `AuthContext` para que su función `refreshUserProfile` llame a una nueva `server action` que use el `GetUserProfileUseCase`.
+5.  **Eliminación de Archivos Obsoletos**:
     *   **ELIMINAR:** `src/lib/user-actions.ts`
     *   **ELIMINAR:** `src/services/user.service.ts`
+    *   **ELIMINAR:** `src/lib/firebase/auth.ts` (su lógica se moverá al `FirebaseAuthAdapter` y a las nuevas actions)
 
 ---
 
