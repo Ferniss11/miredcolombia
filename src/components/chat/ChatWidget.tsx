@@ -42,7 +42,7 @@ type WelcomeFormProps = {
 }
 
 const WelcomeForm = ({ onSessionStarted, isBusinessChat, businessContext, suggestionPool }: WelcomeFormProps) => {
-    const [isPending, startTransition] = useTransition();
+    const [isPending, setIsPending] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [initialQuestion, setInitialQuestion] = useState<string | null>(null);
     const [currentSuggestions, setCurrentSuggestions] = useState<string[]>([]);
@@ -63,40 +63,49 @@ const WelcomeForm = ({ onSessionStarted, isBusinessChat, businessContext, sugges
         const interval = setInterval(getNextSuggestions, 5000);
         return () => clearInterval(interval);
     }, [suggestionPool]);
+    
+    const handleFormSubmit = async (values: z.infer<typeof formSchema>) => {
+        setIsPending(true);
+        setError(null);
 
-    const handleSuggestionClick = (question: string) => {
-        setInitialQuestion(question);
-        form.setValue('userName', 'Usuario');
-        form.setValue('userPhone', '0000000');
-        form.setValue('acceptTerms', true);
-        form.handleSubmit(handleFormSubmit)();
+        try {
+            const action = isBusinessChat ? startBusinessChatSessionAction : startChatSessionAction;
+            const params = isBusinessChat ? { ...values, businessId: businessContext!.businessId, businessName: businessContext!.businessName } : { ...values };
+            
+            // @ts-ignore
+            const result = await action(params);
+            
+            if ('isIndexError' in result && result.isIndexError) {
+                sessionStorage.setItem('fullError', result.error || 'Unknown index error.');
+                router.push('/errors');
+                return;
+            }
+
+            if (result.success && result.sessionId) {
+                onSessionStarted(result.sessionId, result.history || [], initialQuestion || undefined);
+            } else {
+                setError(result.error || 'No se pudo iniciar el chat.');
+            }
+        } catch (e) {
+            const errorMessage = e instanceof Error ? e.message : 'An unknown client error occurred.';
+            setError(`Error de cliente: ${errorMessage}`);
+        } finally {
+            setIsPending(false);
+        }
     };
     
-    const handleFormSubmit = (values: z.infer<typeof formSchema>) => {
-        startTransition(async () => {
-            setError(null);
-            try {
-                const action = isBusinessChat ? startBusinessChatSessionAction : startChatSessionAction;
-                const params = isBusinessChat ? { ...values, businessId: businessContext!.businessId, businessName: businessContext!.businessName } : { ...values };
-                // @ts-ignore
-                const result = await action(params);
-
-                if ('isIndexError' in result && result.isIndexError) {
-                    sessionStorage.setItem('fullError', result.error || 'Unknown index error.');
-                    router.push('/errors');
-                    return;
-                }
-
-                if (result.success && result.sessionId) {
-                    onSessionStarted(result.sessionId, result.history || [], initialQuestion || undefined);
-                } else {
-                    setError(result.error || 'No se pudo iniciar el chat.');
-                }
-            } catch (e) {
-                const errorMessage = e instanceof Error ? e.message : 'An unknown client error occurred.';
-                setError(`Error de cliente: ${errorMessage}`);
-            }
-        });
+    const handleSuggestionClick = async (question: string) => {
+        setInitialQuestion(question);
+        // We set dummy data to pass validation and immediately trigger the form submission.
+        form.setValue('userName', 'Usuario');
+        form.setValue('userPhone', '000000000');
+        form.setValue('acceptTerms', true);
+        
+        // Trigger validation and then submit
+        const isValid = await form.trigger();
+        if (isValid) {
+            handleFormSubmit(form.getValues());
+        }
     };
     
     return (
@@ -162,7 +171,7 @@ const WelcomeForm = ({ onSessionStarted, isBusinessChat, businessContext, sugges
                                 </div>
                             </FormItem>
                         )} />
-                        <Button type="submit" className="w-full" disabled={isPending}>
+                        <Button type="submit" className="w-full" disabled={isPending} onClick={() => toast({ title: 'Debug: Click Event Fired', description: 'El botón "Iniciar Chat" fue presionado.' })}>
                             {isPending ? <Loader2 className="animate-spin" /> : "Iniciar Chat"}
                         </Button>
                         {error && (
@@ -183,10 +192,17 @@ const WelcomeForm = ({ onSessionStarted, isBusinessChat, businessContext, sugges
 
 // --- Main Chat Widget Component ---
 const migrationProactiveMessages = [
-    "¿Sabías que puedes trabajar en España con una visa de estudiante? Pregúntame cómo.",
-    "¿Tienes dudas sobre el empadronamiento? Puedo ayudarte con eso.",
-    "La homologación de títulos puede ser un proceso largo. ¡No dejes que te coja el toro!",
-    "Puedo ayudarte a entender los requisitos para la residencia no lucrativa.",
+    "Recuerda apostillar todos tus documentos oficiales en Colombia antes de viajar.",
+    "El empadronamiento es el primer trámite y el más importante al llegar a España. ¡No lo dejes para después!",
+    "Si vienes con visa de estudiante, puedes trabajar hasta 30 horas semanales con un permiso de trabajo.",
+    "Abre una cuenta bancaria tan pronto como tengas tu NIE. Facilitará todos los demás trámites.",
+    "Investiga sobre el sistema de transporte público de tu ciudad, suele ser muy eficiente y económico.",
+    "El seguro médico es obligatorio. Asegúrate de que tenga cobertura completa sin copagos.",
+    "La 'TIE' (Tarjeta de Identidad de Extranjero) es tu documento de identificación físico en España.",
+    "Guarda copias digitales de todos tus documentos importantes en la nube.",
+    "No tengas miedo de preguntar. Los españoles suelen ser amables y dispuestos a ayudar.",
+    "Para homologar tu título, el proceso puede tardar. ¡Inícialo cuanto antes!",
+    "Conoce las diferencias culturales en los horarios de comida y de las tiendas."
 ];
 
 const businessProactiveMessages = [
