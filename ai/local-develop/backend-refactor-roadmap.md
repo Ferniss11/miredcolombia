@@ -39,6 +39,9 @@ src/lib/
 │   ├───domain/
 │   ├───application/
 │   └───infrastructure/
+│       ├───auth/
+│       ├───persistence/
+│       └───api/
 ├───chat/
 │   ├───domain/
 │   ├───application/
@@ -50,7 +53,7 @@ src/lib/
 ├───job-posting/ (Ya refactorizado)
 │   └───...
 └───platform/
-    └───...
+    └───api/
 ```
 
 ---
@@ -61,17 +64,13 @@ src/lib/
 
 ### **Paso 1.1: Definir el Dominio (`src/lib/user/domain`) (✓ Completado)**
 
-*   **`user.entity.ts`**:
-    *   Definir las interfaces `BusinessProfile` y `CandidateProfile`.
-    *   Definir la entidad principal `User` que contiene los perfiles opcionales, el `role`, etc.
-*   **`user.repository.ts`**:
-    *   Definir el puerto `UserRepository` con los métodos CRUD y de borrado suave (`softDelete`).
-*   **`auth.repository.ts`**:
-    *   Definir un puerto `AuthRepository` para abstraer las operaciones de autenticación (Google, Email/Pass).
+*   **`user.entity.ts`**: Definir las interfaces `BusinessProfile`, `CandidateProfile` y la entidad principal `User` con el campo `status`.
+*   **`user.repository.ts`**: Definir el puerto `UserRepository` con los métodos CRUD y `softDelete`.
+*   **`auth.repository.ts`**: Definir el puerto `AuthRepository` para abstraer las operaciones de autenticación.
 
 ### **Paso 1.2: Crear los Casos de Uso (`src/lib/user/application`) (✓ Completado)**
 
-*   **`create-user-profile.use-case.ts`**: Orquesta la creación de un nuevo `User` en nuestra base de datos.
+*   **`create-user-profile.use-case.ts`**: Orquesta la creación de un nuevo `User`, asignando `status: 'active'`.
 *   **`update-user-profile.use-case.ts`**: Maneja la lógica para actualizar datos básicos (nombre, etc.).
 *   **`update-business-profile.use-case.ts`**: Maneja la lógica para actualizar los datos del perfil de negocio.
 *   **`update-candidate-profile.use-case.ts`**: Maneja la lógica para actualizar el perfil del candidato.
@@ -80,31 +79,48 @@ src/lib/
 
 ### **Paso 1.3: Implementar la Infraestructura (`src/lib/user/infrastructure`) (✓ Completado)**
 
-*   **`persistence/firestore-user.repository.ts`**:
-    *   Implementa la interfaz `UserRepository` usando Firestore.
-*   **`auth/firebase-auth.adapter.ts`**:
-    *   Implementa la interfaz `AuthRepository` usando Firebase Authentication.
-*   **`storage/firebase-storage.adapter.ts`**:
-    *   Crear una función genérica `uploadFile` para manejar la subida de archivos (ej. CVs).
-*   **`nextjs/user.server-actions.ts`**:
-    *   Nuevas Server Actions que la UI llamará (ej. `updateBusinessProfileAction`).
-    *   Estas acciones instanciarán los `UseCase` y les inyectarán las implementaciones de la infraestructura.
+*   **`persistence/firestore-user.repository.ts`**: Implementa `UserRepository` usando Firestore Admin SDK.
+*   **`auth/firebase-auth.adapter.ts`**: Implementa `AuthRepository` usando el SDK de cliente de Firebase Auth.
+*   **`storage/firebase-storage.adapter.ts`**: Crear una función genérica `uploadFile` para manejar la subida de archivos (ej. CVs).
 
-### **Paso 1.4: Actualizar la UI y Eliminar Código Antiguo**
+### **Paso 1.4: Implementar la Capa de Presentación (API REST) y Actualizar la UI**
 
-1.  **Crear nuevas Server Actions (`src/lib/user/infrastructure/nextjs/user.server-actions.ts`)**:
-    *   Crear acciones como `signInWithGoogleAction`, `signUpWithEmailAction`, `updateBusinessProfileAction`, etc.
-    *   Estas acciones instanciarán los `UseCases` y les inyectarán las implementaciones de infraestructura (`FirestoreUserRepository`, `FirebaseAuthAdapter`).
-2.  **Actualizar Flujo de Registro/Login (`src/components/auth/SignUpForm.tsx`, `LoginForm.tsx`)**:
-    *   Modificar los formularios para que llamen a las nuevas `server actions`.
-3.  **Actualizar Formularios de Perfil (`.../advertiser/profile/page.tsx`, `.../candidate-profile/page.tsx`)**:
-    *   Modificar para que usen las nuevas `server actions`.
-4.  **Actualizar Contexto de Auth (`src/context/AuthContext.tsx`)**:
-    *   Modificar el `AuthContext` para que su función `refreshUserProfile` llame a una nueva `server action` que use el `GetUserProfileUseCase`.
-5.  **Eliminación de Archivos Obsoletos**:
-    *   **ELIMINAR:** `src/lib/user-actions.ts`
-    *   **ELIMINAR:** `src/services/user.service.ts`
-    *   **ELIMINAR:** `src/lib/firebase/auth.ts` (su lógica se moverá al `FirebaseAuthAdapter` y a las nuevas actions)
+*   **Objetivo:** Exponer los casos de uso a través de una API REST segura y estandarizada, y conectar la UI a estos nuevos endpoints.
+
+*   **Paso 1.4.1: Crear Utilidades de Respuesta y Controladores Base**
+    *   **Crear `src/lib/platform/api/api-handler.ts`**:
+        *   Una función `apiHandler` que envuelva la lógica de los API Route. Manejará la captura de errores, el parsing del body, y la serialización de la respuesta.
+    *   **Crear `src/lib/platform/api/api-response.ts`**:
+        *   Funciones de ayuda estandarizadas para las respuestas HTTP (`ApiResponse.success`, `ApiResponse.error`, `ApiResponse.notFound`, etc.).
+    *   **Crear `src/lib/platform/api/base.controller.ts`**:
+        *   Definir una interfaz `BaseController` para estandarizar los métodos que todos los controladores tendrán.
+
+*   **Paso 1.4.2: Implementar el Controlador de Usuario**
+    *   **Crear `src/lib/user/infrastructure/api/user.controller.ts`**:
+        *   Crear una clase `UserController` que implemente la `BaseController`.
+        *   Instanciará los Casos de Uso del usuario (ej. `CreateUserProfileUseCase`) y les inyectará las dependencias (`FirestoreUserRepository`).
+        *   Tendrá métodos públicos como `createUser`, `getUser`, `updateBusinessProfile`, etc., que llamarán a los casos de uso.
+
+*   **Paso 1.4.3: Crear los API Routes**
+    *   **Crear `src/app/api/users/route.ts`**:
+        *   Implementar el método `POST` para el registro. Llamará al `apiHandler` y al `userController.createUser`.
+    *   **Crear `src/app/api/users/[uid]/route.ts`**:
+        *   Implementar el método `GET` para obtener un perfil de usuario.
+    *   **Crear `src/app/api/users/[uid]/business-profile/route.ts`**:
+        *   Implementar el método `PUT` para actualizar el perfil de negocio.
+
+*   **Paso 1.4.4: Actualizar la Interfaz de Usuario (UI)**
+    *   **Modificar `src/components/auth/SignUpForm.tsx` y `LoginForm.tsx`**:
+        *   Cambiar la lógica para que, en lugar de llamar a las funciones de `signInWithEmail` directamente, hagan una llamada `fetch` al nuevo endpoint `/api/auth/login` o `/api/users`.
+    *   **Modificar `src/context/AuthContext.tsx`**:
+        *   Actualizar la función `refreshUserProfile` para que haga un `fetch` a `/api/users/[uid]` para obtener los datos del perfil.
+    *   **Modificar Formularios de Perfil (`.../advertiser/profile/page.tsx`, etc.)**:
+        *   Actualizar para que llamen a los endpoints `PUT` de la API para guardar los cambios.
+
+*   **Paso 1.4.5: Eliminar Código Antiguo**
+    *   **ELIMINAR:** `src/lib/user-actions.ts` (reemplazado por los nuevos API endpoints).
+    *   **ELIMINAR:** `src/services/user.service.ts` (lógica movida al `FirestoreUserRepository` y a los `UseCases`).
+    *   **ELIMINAR:** `src/lib/firebase/auth.ts` (lógica movida al `FirebaseAuthAdapter` y a los `UseCases/Controllers` de autenticación).
 
 ---
 
