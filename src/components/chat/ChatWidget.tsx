@@ -67,6 +67,7 @@ const WelcomeForm = ({ onSessionStarted, isBusinessChat, businessContext, sugges
     const handleFormSubmit = async (values: z.infer<typeof formSchema>) => {
         setIsPending(true);
         setError(null);
+        toast({ title: "Iniciando sesión...", description: "Por favor, espera." }); // Temporary toast for debugging
 
         try {
             const action = isBusinessChat ? startBusinessChatSessionAction : startChatSessionAction;
