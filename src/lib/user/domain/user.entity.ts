@@ -30,7 +30,7 @@ export interface CandidateProfile {
   professionalTitle: string;
   summary: string;
   skills: string[];
-  resumeUrl: string;
+  resumeUrl: string; // URL al PDF en Firebase Storage
 }
 
 /**
@@ -43,6 +43,7 @@ export interface User {
   name: string;
   email: string;
   role: UserRole;
+  status: 'active' | 'deleted'; // For soft-delete functionality
   createdAt: Date;
   updatedAt: Date;
 

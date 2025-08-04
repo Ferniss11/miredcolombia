@@ -1,6 +1,6 @@
 // application/update-candidate-profile.use-case.ts
-import { CandidateProfile } from '../domain/user.entity';
-import { UserRepository } from '../domain/user.repository';
+import type { User, CandidateProfile } from '../domain/user.entity';
+import type { UserRepository } from '../domain/user.repository';
 
 export class UpdateCandidateProfileUseCase {
   constructor(private readonly userRepository: UserRepository) {}

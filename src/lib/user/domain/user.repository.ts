@@ -2,7 +2,7 @@
 // This interface dictates how the application layer interacts with the user database,
 // regardless of the underlying technology (e.g., Firestore, SQL).
 
-import { User } from './user.entity';
+import type { User } from './user.entity';
 
 export interface UserRepository {
   /**
@@ -27,6 +27,13 @@ export interface UserRepository {
    * @returns The updated user entity.
    */
   update(uid: string, data: Partial<User>): Promise<User>;
+  
+  /**
+   * Performs a soft delete on a user by changing their status.
+   * @param uid - The UID of the user to soft delete.
+   * @returns A promise that resolves when the operation is complete.
+   */
+  softDelete(uid: string): Promise<void>;
 
   /**
    * Finds a user's public profile information by their UID.
