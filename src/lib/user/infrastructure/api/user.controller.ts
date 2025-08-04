@@ -1,5 +1,5 @@
 // src/lib/user/infrastructure/api/user.controller.ts
-import type { NextRequest } from 'next/server';
+import type { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
 import type { BaseController } from '@/lib/platform/api/base.controller';
@@ -40,7 +40,7 @@ export class UserController implements Partial<BaseController> {
    * Handles the creation of a new user profile.
    * Linked to POST /api/users
    */
-  async create(req: NextRequest): Promise<Response> {
+  async create(req: NextRequest): Promise<NextResponse> {
     const json = await req.json();
     const userData: CreateUserInput = CreateUserSchema.parse(json);
 
@@ -51,25 +51,28 @@ export class UserController implements Partial<BaseController> {
 
   /**
    * Handles retrieving a user profile by their UID.
-   * Linked to GET /api/users/[uid]
+   * The parameter from the route is `id`, but we map it to `uid` internally.
+   * Linked to GET /api/users/[id]
    */
-  async getById(req: NextRequest, { params }: { params: { uid: string } }): Promise<Response> {
-    const user = await this.getUserUseCase.execute(params.uid);
+  async getById(req: NextRequest, { params }: { params: { id: string } }): Promise<NextResponse> {
+    const uid = params.id; // Treat the generic 'id' from the route as 'uid'
+    const user = await this.getUserUseCase.execute(uid);
     if (!user) {
-      return ApiResponse.notFound(`User with id ${params.uid} not found.`);
+      return ApiResponse.notFound(`User with id ${uid} not found.`);
     }
     return ApiResponse.success(user);
   }
 
    /**
    * Handles updating a business profile for a user.
-   * Linked to PUT /api/users/[uid]/business-profile
+   * Linked to PUT /api/users/[id]/business-profile
    */
-  async updateBusinessProfile(req: NextRequest, { params }: { params: { uid: string } }): Promise<Response> {
+  async updateBusinessProfile(req: NextRequest, { params }: { params: { id: string } }): Promise<NextResponse> {
+    const uid = params.id;
     const json: BusinessProfile = await req.json();
     // Here you would typically validate the incoming 'json' against a Zod schema for BusinessProfile
     
-    const updatedUser = await this.updateBusinessProfileUseCase.execute(params.uid, json);
+    const updatedUser = await this.updateBusinessProfileUseCase.execute(uid, json);
     return ApiResponse.success(updatedUser);
   }
 
