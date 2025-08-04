@@ -46,10 +46,12 @@ src/lib/
 │   ├───domain/
 │   ├───application/
 │   └───infrastructure/
+│       └───api/
 ├───directory/
 │   ├───domain/
 │   ├───application/
 │   └───infrastructure/
+│       └───api/
 ├───job-posting/ (Ya refactorizado)
 │   └───...
 └───platform/
@@ -75,6 +77,7 @@ src/lib/
 *   **`update-business-profile.use-case.ts`**: Maneja la lógica para actualizar los datos del perfil de negocio. (✓)
 *   **`update-candidate-profile.use-case.ts`**: Maneja la lógica para actualizar el perfil del candidato. (✓)
 *   **`get-user-profile.use-case.ts`**: Obtiene un perfil de usuario. (✓)
+*   **`get-all-users.use-case.ts`**: Obtiene todos los perfiles de usuario. (✓)
 *   **`soft-delete-user.use-case.ts`**: Implementa la lógica de borrado suave. (✓)
 
 ### **Paso 1.3: Implementar la Infraestructura (`src/lib/user/infrastructure`) (✓ Completado)**
@@ -101,13 +104,13 @@ src/lib/
         *   Instanciará los Casos de Uso del usuario (ej. `CreateUserProfileUseCase`) y les inyectará las dependencias (`FirestoreUserRepository`). (✓)
         *   Tendrá métodos públicos como `createUser`, `getUser`, `updateBusinessProfile`, etc., que llamarán a los casos de uso. (✓)
 
-*   **Paso 1.4.3: Crear los API Routes**
+*   **Paso 1.4.3: Crear los API Routes (✓ Completado)**
     *   **Crear `src/app/api/users/route.ts`**:
-        *   Implementar el método `POST` para el registro. Llamará al `apiHandler` y al `userController.createUser`.
+        *   Implementar el método `POST` para el registro y `GET` para obtener todos los usuarios. Llamará al `apiHandler` y a los métodos correspondientes del `userController`. (✓)
     *   **Crear `src/app/api/users/[uid]/route.ts`**:
-        *   Implementar el método `GET` para obtener un perfil de usuario.
+        *   Implementar los métodos `GET`, `PUT` y `DELETE` para un usuario específico. (✓)
     *   **Crear `src/app/api/users/[uid]/business-profile/route.ts`**:
-        *   Implementar el método `PUT` para actualizar el perfil de negocio.
+        *   Implementar el método `PUT` para actualizar el perfil de negocio. (✓)
 
 *   **Paso 1.4.4: Actualizar la Interfaz de Usuario (UI)**
     *   **Modificar `src/components/auth/SignUpForm.tsx` y `LoginForm.tsx`**:
@@ -146,8 +149,8 @@ src/lib/
 *   **`ai/genkit-agent.adapter.ts`**:
     *   Implementa una interfaz `AgentAdapter`.
     *   **Es el único lugar que importa y llama a los flujos de Genkit**. Adapta los datos del caso de uso al formato que el flujo de Genkit necesita.
-*   **`api/chat.controller.ts`**: Controlador para manejar las peticiones HTTP de `POST /api/chat/sessions` y `POST /api/chat/sessions/[id]/messages`.
-*   **`api/routes.ts`**: API Routes correspondientes que utilizan el `ChatController`.
+*   **`api/chat.controller.ts`**: Controlador para manejar las peticiones HTTP.
+*   **`api/routes.ts`**: API Routes correspondientes que utilizan el `ChatController` (`POST /api/chat/sessions`, `POST /api/chat/sessions/[id]/messages`).
 
 ### **Paso 2.4: Actualizar la UI y Eliminar Código Antiguo**
 
