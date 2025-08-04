@@ -100,10 +100,9 @@ export async function startBusinessChatSessionAction(input: z.infer<typeof start
     if (!FieldValue) throw new Error("Firebase Admin SDK is not fully initialized.");
 
     try {
-        const { businessId, businessName, userName, userPhone, userEmail } = startSessionSchema.parse(input);
+        const validatedInput = startSessionSchema.parse(input);
+        const { businessId, businessName, userName, userPhone, userEmail } = validatedInput;
 
-        // For business chat, we always start a new session to avoid confusion,
-        // but a real-world app could add logic to resume sessions.
         const newSessionRef = db.collection('directory').doc(businessId).collection('businessChatSessions').doc();
         await newSessionRef.set({
             userName,
@@ -130,6 +129,9 @@ export async function startBusinessChatSessionAction(input: z.infer<typeof start
     } catch (error) {
         console.error("Error starting business chat session:", error);
         const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
+        if (error instanceof z.ZodError) {
+            return { success: false, error: error.errors.map(e => e.message).join(', ') };
+        }
         return { success: false, error: `No se pudo iniciar el chat: ${errorMessage}` };
     }
 }
@@ -351,3 +353,5 @@ export async function postBusinessAdminMessageAction(input: {
         return { success: false, error: `No se pudo enviar el mensaje: ${errorMessage}` };
     }
 }
+
+    

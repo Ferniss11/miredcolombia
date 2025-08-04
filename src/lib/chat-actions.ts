@@ -11,6 +11,7 @@ import { ChatRoleSchema } from './chat-types';
 const startSessionSchema = z.object({
   userName: z.string().min(2, "El nombre es obligatorio."),
   userPhone: z.string().min(7, "El teléfono es obligatorio."),
+  userEmail: z.string().email().optional(),
 });
 
 export async function startChatSessionAction(input: z.infer<typeof startSessionSchema>) {
@@ -37,6 +38,10 @@ export async function startChatSessionAction(input: z.infer<typeof startSessionS
   } catch (error) {
     console.error("Error starting chat session action:", error);
     const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
+
+    if (error instanceof z.ZodError) {
+        return { success: false, error: error.errors.map(e => e.message).join(', ') };
+    }
     
     if (errorMessage.includes('requires an index')) {
         return { success: false, error: errorMessage, isIndexError: true };
@@ -99,3 +104,5 @@ export async function getChatHistoryAction(input: { sessionId: string }) {
         return { success: false, error: errorMessage };
     }
 }
+
+    

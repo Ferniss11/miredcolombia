@@ -22,6 +22,7 @@ import type { ChatMessage } from '@/lib/chat-types';
 import { Avatar, AvatarFallback } from '../ui/avatar';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '../ui/sheet';
 import { useChat } from '@/context/ChatContext';
+import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 
 
 type ChatWidgetProps = {
@@ -86,10 +87,11 @@ export default function ChatWidget({ embedded = false }: ChatWidgetProps) {
   } = useChat();
 
   const [sessionId, setSessionId] = useState<string | null>(null);
-  const [isLoadingSession, setIsLoadingSession] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const [messages, setMessages] = useState<Omit<ChatMessage, 'id'>[]>([]);
   const [isAiResponding, setIsAiResponding] = useState(false);
   const [currentMessage, setCurrentMessage] = useState('');
+  const [error, setError] = useState<string | null>(null);
   
   const [proactiveMessage, setProactiveMessage] = useState('');
   const [showProactive, setShowProactive] = useState(false);
@@ -142,7 +144,7 @@ export default function ChatWidget({ embedded = false }: ChatWidgetProps) {
         const storedSessionId = localStorage.getItem(storageKey);
 
         const loadSession = async (id: string) => {
-            setIsLoadingSession(true);
+            setIsLoading(true);
             const action = isBusinessChat ? getBusinessChatHistoryAction : getChatHistoryAction;
             const params = isBusinessChat ? { sessionId: id, businessId: chatContext.businessId! } : { sessionId: id };
             
@@ -157,13 +159,13 @@ export default function ChatWidget({ embedded = false }: ChatWidgetProps) {
                 localStorage.removeItem(storageKey);
                 setSessionId(null);
             }
-            setIsLoadingSession(false);
+            setIsLoading(false);
         };
 
         if (storedSessionId) {
             loadSession(storedSessionId);
         } else {
-            setIsLoadingSession(false);
+            setIsLoading(false);
         }
 
         return () => {
@@ -228,16 +230,20 @@ export default function ChatWidget({ embedded = false }: ChatWidgetProps) {
 
   // Effect to send the initial question after session is created
   useEffect(() => {
-    if (initialQuestion && sessionId && messages.length > 0) {
-      const userMessage: Omit<ChatMessage, 'id'> = { role: 'user', text: initialQuestion, timestamp: new Date().toISOString(), replyTo: null };
-      setMessages((prev) => [...prev, userMessage]);
-      
-      // Pass the current message history *before* adding the new user message
-      const historyForAi = messages;
-      handleSendMessage(initialQuestion, historyForAi);
-      setInitialQuestion(null);
+    if (sessionId && initialQuestion) {
+        // Create user message object
+        const userMessage: Omit<ChatMessage, 'id'> = { role: 'user', text: initialQuestion, timestamp: new Date().toISOString(), replyTo: null };
+        
+        // Use a function for state update to get the most recent messages
+        setMessages(prevMessages => [...prevMessages, userMessage]);
+        
+        // Pass the correct, updated history to the AI
+        handleSendMessage(initialQuestion, [...messages, userMessage]);
+
+        // Clear the initial question so it doesn't get sent again
+        setInitialQuestion(null);
     }
-  }, [sessionId, initialQuestion, messages]);
+}, [sessionId, initialQuestion]);
 
 
   useEffect(() => {
@@ -273,25 +279,31 @@ export default function ChatWidget({ embedded = false }: ChatWidgetProps) {
 
   const handleFormSubmit = (values: z.infer<typeof formSchema>) => {
     startSessionTransition(async () => {
-        const action = isBusinessChat ? startBusinessChatSessionAction : startChatSessionAction;
-        const params = isBusinessChat ? { ...values, businessId: chatContext.businessId!, businessName: chatContext.businessName! } : { ...values };
-        
-        // @ts-ignore
-        const result = await action(params);
+        setError(null); // Clear previous errors
+        try {
+            const action = isBusinessChat ? startBusinessChatSessionAction : startChatSessionAction;
+            const params = isBusinessChat ? { ...values, businessId: chatContext.businessId!, businessName: chatContext.businessName! } : { ...values };
+            
+            // @ts-ignore
+            const result = await action(params);
 
-        if ('isIndexError' in result && result.isIndexError) {
-            sessionStorage.setItem('fullError', result.error || 'Unknown index error.');
-            router.push('/errors');
-            return;
-        }
+            if ('isIndexError' in result && result.isIndexError) {
+                sessionStorage.setItem('fullError', result.error || 'Unknown index error.');
+                router.push('/errors');
+                return;
+            }
 
-        if (result.success && result.sessionId) {
-            localStorage.setItem(storageKey, result.sessionId);
-            setMessages(result.history as Omit<ChatMessage, 'id'>[] || []);
-            setSessionId(result.sessionId); // This will trigger the useEffect for the initial question
-        } else {
-            toast({ variant: 'destructive', title: 'Error', description: result.error || 'No se pudo iniciar el chat. Por favor, inténtalo de nuevo.' });
-            setInitialQuestion(null); // Clear initial question on failure
+            if (result.success && result.sessionId) {
+                localStorage.setItem(storageKey, result.sessionId);
+                setMessages(result.history as Omit<ChatMessage, 'id'>[] || []);
+                setSessionId(result.sessionId); 
+            } else {
+                setError(result.error || 'No se pudo iniciar el chat. Por favor, inténtalo de nuevo.');
+                setInitialQuestion(null); 
+            }
+        } catch(e) {
+            const errorMessage = e instanceof Error ? e.message : 'An unknown client error occurred.';
+            setError(`Error de cliente al iniciar sesión: ${errorMessage}`);
         }
     });
   };
@@ -403,6 +415,14 @@ export default function ChatWidget({ embedded = false }: ChatWidgetProps) {
                         <Button type="submit" className="w-full" disabled={isStartingSession}>
                             {isStartingSession ? <Loader2 className="animate-spin" /> : "Iniciar Chat"}
                         </Button>
+                        {error && (
+                            <Alert variant="destructive" className="mt-4">
+                                <AlertTitle>Error al Iniciar Chat</AlertTitle>
+                                <AlertDescription>
+                                    {error}
+                                </AlertDescription>
+                            </Alert>
+                        )}
                     </form>
                 </Form>
             </div>
@@ -411,7 +431,7 @@ export default function ChatWidget({ embedded = false }: ChatWidgetProps) {
   }
 
   const renderChatContent = () => {
-    if (isLoadingSession) {
+    if (isLoading) {
         return (
             <div className="flex-1 flex items-center justify-center">
                 <Loader2 className="animate-spin h-8 w-8 text-primary" />
@@ -574,3 +594,5 @@ export default function ChatWidget({ embedded = false }: ChatWidgetProps) {
     </>
   );
 }
+
+    
