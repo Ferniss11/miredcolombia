@@ -4,6 +4,10 @@
 
 import { UserRole } from './user.entity';
 
+/**
+ * Represents the result of an authentication operation,
+ * providing the UID and indicating if it's a new user to our system.
+ */
 export type AuthResult = {
   uid: string;
   isNewUser: boolean;

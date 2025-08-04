@@ -7,6 +7,10 @@ export type UserRole = 'Admin' | 'Advertiser' | 'User';
  * This is an optional part of a User entity.
  */
 export interface BusinessProfile {
+  /**
+   * The unique identifier from the Google Places API.
+   * This is the primary key linking our user to a real-world business entity.
+   */
   placeId: string;
   businessName: string;
   address: string;

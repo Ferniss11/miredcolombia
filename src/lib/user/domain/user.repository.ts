@@ -7,6 +7,7 @@ import { User } from './user.entity';
 export interface UserRepository {
   /**
    * Creates a new user record in the database.
+   * This method is used after a user has been successfully authenticated by an AuthRepository.
    * @param user - The complete user entity to create.
    * @returns The created user entity, possibly with a database-generated ID.
    */
