@@ -7,6 +7,7 @@ export type CreateUserInput = {
   name: string;
   email: string;
   role: UserRole;
+  
 };
 
 export class CreateUserProfileUseCase {
@@ -16,6 +17,7 @@ export class CreateUserProfileUseCase {
     const now = new Date();
     const newUser: User = {
       ...input,
+      status: 'active', // Set default status for new users
       createdAt: now,
       updatedAt: now,
     };
