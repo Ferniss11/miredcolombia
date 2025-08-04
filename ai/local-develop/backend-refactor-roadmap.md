@@ -59,7 +59,7 @@ src/lib/
 
 **Objetivo:** Establecer una base sólida para toda la aplicación refactorizando la gestión de perfiles de usuario y la autenticación.
 
-### **Paso 1.1: Definir el Dominio (`src/lib/user/domain`)**
+### **Paso 1.1: Definir el Dominio (`src/lib/user/domain`) (✓ Completado)**
 
 *   **`user.entity.ts`**:
     *   Definir las interfaces `BusinessProfile` y `CandidateProfile`.
