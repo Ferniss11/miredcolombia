@@ -100,7 +100,7 @@ export default function ChatWidget({ embedded = false }: ChatWidgetProps) {
 
   const [userHasInteracted, setUserHasInteracted] = useState(false);
   
-  const [isStartingSession, startSessionTransition] = useTransition();
+  const [isPending, startTransition] = useTransition();
   const [initialQuestion, setInitialQuestion] = useState<string | null>(null);
 
   const { toast } = useToast();
@@ -271,14 +271,28 @@ export default function ChatWidget({ embedded = false }: ChatWidgetProps) {
     form.reset();
   }
   
-  const handleSuggestionClick = (question: string) => {
-    setInitialQuestion(question);
-    form.handleSubmit(handleFormSubmit)();
+  const handleSuggestionClick = async (question: string) => {
+      setInitialQuestion(question);
+      
+      // Temporarily fill form for validation
+      form.setValue('userName', 'Usuario');
+      form.setValue('userPhone', '0000000');
+      form.setValue('acceptTerms', true);
+
+      // Trigger validation and submission
+      const isValid = await form.trigger();
+      if (isValid) {
+        form.handleSubmit(handleFormSubmit)();
+      } else {
+        // Handle case where even temp data is invalid (should not happen)
+         toast({ variant: 'destructive', title: 'Error', description: 'No se pudo iniciar el chat con la sugerencia.' });
+        setInitialQuestion(null);
+      }
   };
 
 
   const handleFormSubmit = (values: z.infer<typeof formSchema>) => {
-    startSessionTransition(async () => {
+    startTransition(async () => {
         setError(null); // Clear previous errors
         try {
             const action = isBusinessChat ? startBusinessChatSessionAction : startChatSessionAction;
@@ -373,7 +387,7 @@ export default function ChatWidget({ embedded = false }: ChatWidgetProps) {
                                 size="sm" 
                                 className="w-full text-left justify-start h-auto whitespace-normal animate-in fade-in duration-500" 
                                 onClick={() => handleSuggestionClick(q)}
-                                disabled={isStartingSession}
+                                disabled={isPending}
                             >
                                 {q}
                             </Button>
@@ -412,8 +426,8 @@ export default function ChatWidget({ embedded = false }: ChatWidgetProps) {
                                 </div>
                             </FormItem>
                         )} />
-                        <Button type="submit" className="w-full" disabled={isStartingSession}>
-                            {isStartingSession ? <Loader2 className="animate-spin" /> : "Iniciar Chat"}
+                        <Button type="submit" className="w-full" disabled={isPending}>
+                            {isPending ? <Loader2 className="animate-spin" /> : "Iniciar Chat"}
                         </Button>
                         {error && (
                             <Alert variant="destructive" className="mt-4">
@@ -594,5 +608,7 @@ export default function ChatWidget({ embedded = false }: ChatWidgetProps) {
     </>
   );
 }
+
+    
 
     
