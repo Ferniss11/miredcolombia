@@ -17,16 +17,19 @@ export async function startChatSessionAction(input: z.infer<typeof startSessionS
   try {
     const validatedInput = startSessionSchema.parse(input);
     
-    // We start a new session every time for simplicity in this flow,
-    // but a real app might check for existing sessions via `findSessionByPhone`.
+    // Always start a new session for simplicity and to ensure a clean state.
+    // The client-side localStorage will handle session resumption.
     const sessionId = await startChatSession(validatedInput);
     const agentConfig = await getAgentConfig();
+
     const welcomeMessage = agentConfig.systemPrompt.includes('inmigración')
         ? '¡Hola! Soy tu asistente de inmigración para España. ¿Cómo puedo ayudarte hoy?'
         : '¡Hola! ¿Cómo puedo ayudarte hoy?';
+    
+    // The history only needs the first message to be returned to the client
     const initialHistory = [{ role: 'model' as const, text: welcomeMessage, timestamp: new Date().toISOString() }];
     
-    // Save the initial welcome message to the history
+    // Save the initial welcome message to the new session's history in the DB
     await saveMessage(sessionId, { text: welcomeMessage, role: 'model' });
 
     return { success: true, sessionId, history: initialHistory };
