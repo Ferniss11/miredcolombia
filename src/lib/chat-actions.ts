@@ -17,28 +17,19 @@ export async function startChatSessionAction(input: z.infer<typeof startSessionS
   try {
     const validatedInput = startSessionSchema.parse(input);
     
-    let existingSession = await findSessionByPhone(validatedInput.userPhone);
+    // We start a new session every time for simplicity in this flow,
+    // but a real app might check for existing sessions via `findSessionByPhone`.
+    const sessionId = await startChatSession(validatedInput);
+    const agentConfig = await getAgentConfig();
+    const welcomeMessage = agentConfig.systemPrompt.includes('inmigración')
+        ? '¡Hola! Soy tu asistente de inmigración para España. ¿Cómo puedo ayudarte hoy?'
+        : '¡Hola! ¿Cómo puedo ayudarte hoy?';
+    const initialHistory = [{ role: 'model' as const, text: welcomeMessage, timestamp: new Date().toISOString() }];
     
-    if (existingSession) {
-      const history = await getChatHistory(existingSession.id);
-      if (history.length === 0) {
-        // This should theoretically not happen if a session exists, but as a fallback...
-        const agentConfig = await getAgentConfig();
-        const welcomeBackMessage = agentConfig.systemPrompt.includes('inmigración')
-          ? '¡Hola de nuevo! Soy tu asistente de inmigración. ¿En qué más te puedo ayudar?'
-          : '¡Hola de nuevo! ¿Cómo puedo ayudarte?';
-        history.push({ role: 'model', text: welcomeBackMessage, timestamp: new Date().toISOString(), id: 'initial', replyTo: null });
-      }
-      return { success: true, sessionId: existingSession.id, history };
-    } else {
-      const sessionId = await startChatSession(validatedInput);
-       const agentConfig = await getAgentConfig();
-       const welcomeMessage = agentConfig.systemPrompt.includes('inmigración')
-         ? '¡Hola! Soy tu asistente de inmigración para España. ¿Cómo puedo ayudarte hoy?'
-         : '¡Hola! ¿Cómo puedo ayudarte hoy?';
-      const initialHistory = [{ role: 'model' as const, text: welcomeMessage, timestamp: new Date().toISOString() }];
-      return { success: true, sessionId, history: initialHistory };
-    }
+    // Save the initial welcome message to the history
+    await saveMessage(sessionId, { text: welcomeMessage, role: 'model' });
+
+    return { success: true, sessionId, history: initialHistory };
 
   } catch (error) {
     console.error("Error starting chat session action:", error);
@@ -92,4 +83,16 @@ export async function postMessageAction(input: z.infer<typeof postMessageSchema>
     const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
     return { success: false, error: `Error de IA: ${errorMessage}` };
   }
+}
+
+
+export async function getChatHistoryAction(input: { sessionId: string }) {
+    try {
+        const history = await getChatHistory(input.sessionId);
+        return { success: true, history };
+    } catch (error) {
+        console.error("Error getting chat history:", error);
+        const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
+        return { success: false, error: errorMessage };
+    }
 }

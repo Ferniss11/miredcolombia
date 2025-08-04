@@ -70,17 +70,6 @@ const postMessageSchema = z.object({
 
 
 // --- Helper Functions ---
-async function findBusinessSessionByPhone(businessId: string, phone: string) {
-    const db = getDbInstance();
-    const sessionsRef = db.collection('directory').doc(businessId).collection('businessChatSessions');
-    const querySnapshot = await sessionsRef.where('userPhone', '==', phone).orderBy('createdAt', 'desc').limit(1).get();
-
-    if (querySnapshot.empty) return null;
-    
-    const sessionDoc = querySnapshot.docs[0];
-    return { id: sessionDoc.id, ...sessionDoc.data() } as ChatSession & { id: string };
-}
-
 async function getBusinessChatHistory(businessId: string, sessionId: string): Promise<ChatMessage[]> {
     const db = getDbInstance();
     const messagesSnapshot = await db.collection('directory').doc(businessId)
@@ -113,12 +102,8 @@ export async function startBusinessChatSessionAction(input: z.infer<typeof start
     try {
         const { businessId, businessName, userName, userPhone, userEmail } = startSessionSchema.parse(input);
 
-        let existingSession = await findBusinessSessionByPhone(businessId, userPhone);
-        if (existingSession) {
-            const history = await getBusinessChatHistory(businessId, existingSession.id);
-            return { success: true, sessionId: existingSession.id, history };
-        }
-
+        // For business chat, we always start a new session to avoid confusion,
+        // but a real-world app could add logic to resume sessions.
         const newSessionRef = db.collection('directory').doc(businessId).collection('businessChatSessions').doc();
         await newSessionRef.set({
             userName,
@@ -225,6 +210,17 @@ export async function postBusinessMessageAction(input: z.infer<typeof postMessag
         console.error("Error posting business message:", error);
         const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
         return { success: false, error: `Error de IA: ${errorMessage}` };
+    }
+}
+
+export async function getBusinessChatHistoryAction(input: { sessionId: string; businessId: string }) {
+    try {
+        const history = await getBusinessChatHistory(input.businessId, input.sessionId);
+        return { success: true, history };
+    } catch (error) {
+        console.error("Error getting business chat history:", error);
+        const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
+        return { success: false, error: errorMessage };
     }
 }
 

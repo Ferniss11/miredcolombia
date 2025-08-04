@@ -12,11 +12,11 @@ import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Checkbox } from '@/components/ui/checkbox';
-import { X, Send, User, Bot, Loader2, Sparkles, Phone, Building, MessageSquareQuote, UserCog, Clock } from 'lucide-react';
+import { X, Send, User, Bot, Loader2, Sparkles, Phone, Building, MessageSquareQuote, UserCog, Clock, RotateCcw } from 'lucide-react';
 import { LuBotMessageSquare } from "react-icons/lu";
 import Link from 'next/link';
-import { startChatSessionAction, postMessageAction } from '@/lib/chat-actions';
-import { startBusinessChatSessionAction, postBusinessMessageAction } from '@/lib/business-chat-actions';
+import { startChatSessionAction, postMessageAction, getChatHistoryAction } from '@/lib/chat-actions';
+import { startBusinessChatSessionAction, postBusinessMessageAction, getBusinessChatHistoryAction } from '@/lib/business-chat-actions';
 import { useToast } from '@/hooks/use-toast';
 import type { ChatMessage } from '@/lib/chat-types';
 import { Avatar, AvatarFallback } from '../ui/avatar';
@@ -86,6 +86,7 @@ export default function ChatWidget({ embedded = false }: ChatWidgetProps) {
   } = useChat();
 
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [isLoadingSession, setIsLoadingSession] = useState(true);
   const [messages, setMessages] = useState<Omit<ChatMessage, 'id'>[]>([]);
   const [isAiResponding, setIsAiResponding] = useState(false);
   const [currentMessage, setCurrentMessage] = useState('');
@@ -117,7 +118,9 @@ export default function ChatWidget({ embedded = false }: ChatWidgetProps) {
   const isBusinessChat = !!chatContext?.businessId;
   const suggestionPool = isBusinessChat ? allBusinessQuestions : allGeneralQuestions;
   const proactivePool = isBusinessChat ? businessProactiveMessages : migrationProactiveMessages;
-  
+
+  const storageKey = isBusinessChat ? `chatSessionId_${chatContext.businessId}` : 'globalChatSessionId';
+
   useEffect(() => {
     setIsMounted(true);
     if (typeof window !== 'undefined') {
@@ -131,13 +134,42 @@ export default function ChatWidget({ embedded = false }: ChatWidgetProps) {
 
         window.addEventListener('click', handleFirstInteraction, true);
         window.addEventListener('keydown', handleFirstInteraction, true);
+        
+        // --- Session Persistence Logic ---
+        const storedSessionId = localStorage.getItem(storageKey);
+
+        const loadSession = async (id: string) => {
+            setIsLoadingSession(true);
+            const action = isBusinessChat ? getBusinessChatHistoryAction : getChatHistoryAction;
+            const params = isBusinessChat ? { sessionId: id, businessId: chatContext.businessId! } : { sessionId: id };
+            
+            // @ts-ignore
+            const result = await action(params);
+
+            if (result.success && result.history) {
+                setSessionId(id);
+                setMessages(result.history);
+            } else {
+                console.error("Failed to load session history, starting new session.", result.error);
+                localStorage.removeItem(storageKey);
+                setSessionId(null);
+            }
+            setIsLoadingSession(false);
+        };
+
+        if (storedSessionId) {
+            loadSession(storedSessionId);
+        } else {
+            setIsLoadingSession(false);
+        }
 
         return () => {
             window.removeEventListener('click', handleFirstInteraction, true);
             window.removeEventListener('keydown', handleFirstInteraction, true);
         };
     }
-  }, []);
+  }, [isBusinessChat, chatContext?.businessId, storageKey]);
+
 
   // Effect for proactive messages with progressive delay
   useEffect(() => {
@@ -211,6 +243,7 @@ export default function ChatWidget({ embedded = false }: ChatWidgetProps) {
   };
 
   const handleStartSession = async (values: z.infer<typeof formSchema>, initialQuestion?: string) => {
+    form.clearErrors();
     const action = isBusinessChat ? startBusinessChatSessionAction : startChatSessionAction;
     const params = isBusinessChat ? { ...values, businessId: chatContext.businessId!, businessName: chatContext.businessName! } : { ...values };
     
@@ -224,6 +257,7 @@ export default function ChatWidget({ embedded = false }: ChatWidgetProps) {
     }
 
     if (result.success && result.sessionId) {
+      localStorage.setItem(storageKey, result.sessionId);
       setSessionId(result.sessionId);
       setMessages(result.history as Omit<ChatMessage, 'id'>[] || []);
       if (initialQuestion) {
@@ -233,6 +267,13 @@ export default function ChatWidget({ embedded = false }: ChatWidgetProps) {
       toast({ variant: 'destructive', title: 'Error', description: result.error || 'No se pudo iniciar el chat. Por favor, inténtalo de nuevo.' });
     }
   };
+  
+  const handleResetSession = () => {
+    localStorage.removeItem(storageKey);
+    setSessionId(null);
+    setMessages([]);
+    form.reset();
+  }
 
   const postInitialQuestion = async (newSessionId: string, initialHistory: Omit<ChatMessage, 'id'>[], question: string) => {
      const userMessage: Omit<ChatMessage, 'id'> = { role: 'user', text: question, timestamp: new Date().toISOString(), replyTo: null };
@@ -377,6 +418,14 @@ export default function ChatWidget({ embedded = false }: ChatWidgetProps) {
   }
 
   const renderChatContent = () => {
+    if (isLoadingSession) {
+        return (
+            <div className="flex-1 flex items-center justify-center">
+                <Loader2 className="animate-spin h-8 w-8 text-primary" />
+            </div>
+        )
+    }
+
     if (!sessionId) {
       return (
         <ScrollArea className="h-full">
@@ -511,11 +560,16 @@ export default function ChatWidget({ embedded = false }: ChatWidgetProps) {
                     className="w-full sm:max-w-md p-0 flex flex-col h-full"
                     side="right"
                 >
-                    <SheetHeader className="p-4 border-b">
+                    <SheetHeader className="p-4 border-b flex-row items-center justify-between">
                         <SheetTitle className="flex items-center gap-2 font-headline text-lg">
                             {isBusinessChat ? <Building className="h-6 w-6 text-primary" /> : <Sparkles className="h-6 w-6 text-primary" />}
                             {isBusinessChat ? `Asistente de ${chatContext.businessName}` : "Asistente de Inmigración"}
                         </SheetTitle>
+                        {sessionId && (
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleResetSession} title="Empezar de nuevo">
+                                <RotateCcw className="h-4 w-4" />
+                            </Button>
+                        )}
                     </SheetHeader>
                     <div className="flex-1 min-h-0">
                       {isMounted ? renderChatContent() : <div className='flex-1 flex items-center justify-center'><Loader2 className='animate-spin'/></div>}
@@ -527,3 +581,4 @@ export default function ChatWidget({ embedded = false }: ChatWidgetProps) {
     </>
   );
 }
+
