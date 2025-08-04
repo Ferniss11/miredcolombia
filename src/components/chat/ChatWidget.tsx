@@ -24,11 +24,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '../u
 import { useChat } from '@/context/ChatContext';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 
-
-type ChatWidgetProps = {
-  embedded?: boolean; 
-};
-
+// --- Welcome Form Sub-component ---
 const formSchema = z.object({
   userName: z.string().min(2, { message: 'El nombre es obligatorio.' }),
   userPhone: z.string().min(7, { message: 'El teléfono es obligatorio.' }),
@@ -38,342 +34,82 @@ const formSchema = z.object({
   }),
 });
 
-const migrationProactiveMessages = [
-  "¡Hola! ¿Dudas sobre migración?",
-  "Tu asistente virtual está aquí.",
-  "¿En qué puedo ayudarte hoy?",
-  "Pregúntame sobre trámites.",
-  "¿Listo para empezar tu viaje a España?"
-];
+type WelcomeFormProps = {
+  onSessionStarted: (sessionId: string, history: Omit<ChatMessage, 'id'>[], initialQuestion?: string) => void;
+  isBusinessChat: boolean;
+  businessContext?: { businessId: string, businessName: string };
+  suggestionPool: string[];
+}
 
-const businessProactiveMessages = [
-    "¡Hola! ¿Puedo ayudarte con algo?",
-    "¿Tienes alguna pregunta sobre nuestros servicios?",
-    "¡No dudes en consultarme lo que necesites!",
-    "Estoy aquí para ayudarte a reservar o a responder tus dudas."
-];
+const WelcomeForm = ({ onSessionStarted, isBusinessChat, businessContext, suggestionPool }: WelcomeFormProps) => {
+    const [isPending, startTransition] = useTransition();
+    const [error, setError] = useState<string | null>(null);
+    const [initialQuestion, setInitialQuestion] = useState<string | null>(null);
+    const [currentSuggestions, setCurrentSuggestions] = useState<string[]>([]);
+    const { toast } = useToast();
+    const router = useRouter();
 
-const allGeneralQuestions = [
-    "¿Qué tipos de visado existen para colombianos?",
-    "¿Cómo puedo homologar mi título universitario?",
-    "¿Qué necesito para empadronarme en España?",
-    "¿Cuáles son los primeros pasos al llegar a España?",
-    "¿Cómo funciona el sistema de salud para inmigrantes?",
-    "¿Puedo trabajar mientras estudio?",
-    "¿Qué es la tarjeta TIE y cómo la consigo?",
-    "¿Es difícil encontrar vivienda en Madrid?",
-    "¿Cuánto cuesta vivir en España?",
-    "¿Cómo puedo traer a mi familia a España?",
-    "¿Qué impuestos debo pagar como residente?",
-    "¿Cómo funciona el transporte público en las grandes ciudades?",
-];
-
-const allBusinessQuestions = [
-    "¿Cuál es vuestro horario de atención?",
-    "¿Cómo puedo reservar una cita?",
-    "¿Dónde estáis ubicados exactamente?",
-    "¿Qué servicios ofrecéis?",
-    "¿Cuáles son los precios?",
-    "¿Tenéis disponibilidad para mañana?",
-];
-
-
-export default function ChatWidget({ embedded = false }: ChatWidgetProps) {
-  const { 
-    isChatOpen, 
-    setChatOpen, 
-    chatContext, 
-    isChatVisible 
-  } = useChat();
-
-  const [sessionId, setSessionId] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [messages, setMessages] = useState<Omit<ChatMessage, 'id'>[]>([]);
-  const [isAiResponding, setIsAiResponding] = useState(false);
-  const [currentMessage, setCurrentMessage] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  
-  const [proactiveMessage, setProactiveMessage] = useState('');
-  const [showProactive, setShowProactive] = useState(false);
-  const [proactiveClosed, setProactiveClosed] = useState(false);
-  const [proactiveCloseCount, setProactiveCloseCount] = useState(0);
-
-  const [userHasInteracted, setUserHasInteracted] = useState(false);
-  
-  const [isPending, startTransition] = useTransition();
-  const [initialQuestion, setInitialQuestion] = useState<string | null>(null);
-
-  const { toast } = useToast();
-  const router = useRouter();
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
-  const [currentSuggestions, setCurrentSuggestions] = useState<string[]>([]);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const [isMounted, setIsMounted] = useState(false);
-  
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      userName: '',
-      userPhone: '',
-      userEmail: '',
-      acceptTerms: false,
-    },
-  });
-
-  const isBusinessChat = !!chatContext?.businessId;
-  const suggestionPool = isBusinessChat ? allBusinessQuestions : allGeneralQuestions;
-  const proactivePool = isBusinessChat ? businessProactiveMessages : migrationProactiveMessages;
-
-  const storageKey = isBusinessChat ? `chatSessionId_${chatContext.businessId}` : 'globalChatSessionId';
-
-  useEffect(() => {
-    setIsMounted(true);
-    if (typeof window !== 'undefined') {
-        audioRef.current = new Audio('https://firebasestorage.googleapis.com/v0/b/colombia-en-esp.firebasestorage.app/o/web%2FMessage%20Notification.mp3?alt=media&token=acb27764-c909-4265-9dfb-ea3f20463c68');
-        
-        const handleFirstInteraction = () => {
-            setUserHasInteracted(true);
-            window.removeEventListener('click', handleFirstInteraction, true);
-            window.removeEventListener('keydown', handleFirstInteraction, true);
-        };
-
-        window.addEventListener('click', handleFirstInteraction, true);
-        window.addEventListener('keydown', handleFirstInteraction, true);
-        
-        // --- Session Persistence Logic ---
-        const storedSessionId = localStorage.getItem(storageKey);
-
-        const loadSession = async (id: string) => {
-            setIsLoading(true);
-            const action = isBusinessChat ? getBusinessChatHistoryAction : getChatHistoryAction;
-            const params = isBusinessChat ? { sessionId: id, businessId: chatContext.businessId! } : { sessionId: id };
-            
-            // @ts-ignore
-            const result = await action(params);
-
-            if (result.success && result.history) {
-                setSessionId(id);
-                setMessages(result.history);
-            } else {
-                console.error("Failed to load session history, starting new session.", result.error);
-                localStorage.removeItem(storageKey);
-                setSessionId(null);
-            }
-            setIsLoading(false);
-        };
-
-        if (storedSessionId) {
-            loadSession(storedSessionId);
-        } else {
-            setIsLoading(false);
-        }
-
-        return () => {
-            window.removeEventListener('click', handleFirstInteraction, true);
-            window.removeEventListener('keydown', handleFirstInteraction, true);
-        };
-    }
-  }, [isBusinessChat, chatContext?.businessId, storageKey]);
-
-
-  // Effect for proactive messages with progressive delay
-  useEffect(() => {
-      if (!isMounted || isChatOpen || proactiveClosed) {
-          return;
-      }
-
-      let timeoutId: NodeJS.Timeout;
-
-      const scheduleNextMessage = () => {
-          const delays = [2000, 7000, 15000];
-          const delay = delays[Math.min(proactiveCloseCount, delays.length - 1)];
-
-          timeoutId = setTimeout(() => {
-              const randomIndex = Math.floor(Math.random() * proactivePool.length);
-              setProactiveMessage(proactivePool[randomIndex]);
-              setShowProactive(true);
-          }, delay);
-      };
-
-      scheduleNextMessage();
-      
-      return () => {
-          clearTimeout(timeoutId);
-      };
-
-  }, [isMounted, isChatOpen, proactiveCloseCount, proactiveClosed, proactivePool]);
-  
-  // Effect to play sound when a new proactive message appears
-  useEffect(() => {
-      if (showProactive && userHasInteracted && audioRef.current) {
-          audioRef.current.play().catch(e => console.error("Error playing audio:", e));
-      }
-  }, [showProactive, proactiveMessage, userHasInteracted]);
-
-
-  // Effect for rotating suggestions
-  useEffect(() => {
-    if (!isMounted || !isChatOpen || sessionId) {
-      return;
-    }
-
-    const getNextSuggestions = () => {
-        const shuffled = [...suggestionPool].sort(() => 0.5 - Math.random());
-        setCurrentSuggestions(shuffled.slice(0, 3));
-    };
-
-    getNextSuggestions();
-    const suggestionInterval = setInterval(getNextSuggestions, 5000);
-    
-    return () => clearInterval(suggestionInterval);
-  }, [isMounted, isChatOpen, sessionId, suggestionPool]);
-
-  // Effect to send the initial question after session is created
-  useEffect(() => {
-    if (sessionId && initialQuestion) {
-        // Create user message object
-        const userMessage: Omit<ChatMessage, 'id'> = { role: 'user', text: initialQuestion, timestamp: new Date().toISOString(), replyTo: null };
-        
-        // Use a function for state update to get the most recent messages
-        setMessages(prevMessages => [...prevMessages, userMessage]);
-        
-        // Pass the correct, updated history to the AI
-        handleSendMessage(initialQuestion, [...messages, userMessage]);
-
-        // Clear the initial question so it doesn't get sent again
-        setInitialQuestion(null);
-    }
-}, [sessionId, initialQuestion]);
-
-
-  useEffect(() => {
-    if (scrollAreaRef.current) {
-      scrollAreaRef.current.scrollTo({ top: scrollAreaRef.current.scrollHeight, behavior: 'smooth' });
-    }
-  }, [messages]);
-
-  useEffect(() => {
-    if(isChatOpen) {
-      setShowProactive(false);
-    }
-  }, [isChatOpen]);
-
-  const handleProactiveMessageClose = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setShowProactive(false);
-    setProactiveClosed(true);
-  };
-  
-  const handleResetSession = () => {
-    localStorage.removeItem(storageKey);
-    setSessionId(null);
-    setMessages([]);
-    form.reset();
-  }
-  
-  const handleSuggestionClick = async (question: string) => {
-      setInitialQuestion(question);
-      
-      // Temporarily fill form for validation
-      form.setValue('userName', 'Usuario');
-      form.setValue('userPhone', '0000000');
-      form.setValue('acceptTerms', true);
-
-      // Trigger validation and submission
-      const isValid = await form.trigger();
-      if (isValid) {
-        form.handleSubmit(handleFormSubmit)();
-      } else {
-        // Handle case where even temp data is invalid (should not happen)
-         toast({ variant: 'destructive', title: 'Error', description: 'No se pudo iniciar el chat con la sugerencia.' });
-        setInitialQuestion(null);
-      }
-  };
-
-
-  const handleFormSubmit = (values: z.infer<typeof formSchema>) => {
-    startTransition(async () => {
-        setError(null); // Clear previous errors
-        try {
-            const action = isBusinessChat ? startBusinessChatSessionAction : startChatSessionAction;
-            const params = isBusinessChat ? { ...values, businessId: chatContext.businessId!, businessName: chatContext.businessName! } : { ...values };
-            
-            // @ts-ignore
-            const result = await action(params);
-
-            if ('isIndexError' in result && result.isIndexError) {
-                sessionStorage.setItem('fullError', result.error || 'Unknown index error.');
-                router.push('/errors');
-                return;
-            }
-
-            if (result.success && result.sessionId) {
-                localStorage.setItem(storageKey, result.sessionId);
-                setMessages(result.history as Omit<ChatMessage, 'id'>[] || []);
-                setSessionId(result.sessionId); 
-            } else {
-                setError(result.error || 'No se pudo iniciar el chat. Por favor, inténtalo de nuevo.');
-                setInitialQuestion(null); 
-            }
-        } catch(e) {
-            const errorMessage = e instanceof Error ? e.message : 'An unknown client error occurred.';
-            setError(`Error de cliente al iniciar sesión: ${errorMessage}`);
-        }
+    const form = useForm<z.infer<typeof formSchema>>({
+        resolver: zodResolver(formSchema),
+        defaultValues: { userName: '', userPhone: '', userEmail: '', acceptTerms: false },
     });
-  };
 
-  const handleSendMessage = async (messageText: string, currentHistory: Omit<ChatMessage, 'id'>[]) => {
-    if (!messageText.trim() || !sessionId || isAiResponding) return;
+    useEffect(() => {
+        const getNextSuggestions = () => {
+            const shuffled = [...suggestionPool].sort(() => 0.5 - Math.random());
+            setCurrentSuggestions(shuffled.slice(0, 3));
+        };
+        getNextSuggestions();
+        const interval = setInterval(getNextSuggestions, 5000);
+        return () => clearInterval(interval);
+    }, [suggestionPool]);
 
-    setIsAiResponding(true);
-    setCurrentMessage('');
-
-    const action = isBusinessChat ? postBusinessMessageAction : postMessageAction;
-    const params = { 
-        sessionId, 
-        message: messageText.trim(), 
-        history: currentHistory,
-        ...(isBusinessChat && { businessId: chatContext.businessId! })
+    const handleSuggestionClick = (question: string) => {
+        setInitialQuestion(question);
+        form.setValue('userName', 'Usuario');
+        form.setValue('userPhone', '0000000');
+        form.setValue('acceptTerms', true);
+        form.handleSubmit(handleFormSubmit)();
     };
-
-    // @ts-ignore
-    const result = await action(params);
     
-    if (result.success && result.response) {
-      const aiMessage: Omit<ChatMessage, 'id'> = { role: 'model', text: result.response, timestamp: new Date().toISOString(), replyTo: null };
-      setMessages((prev) => [...prev, aiMessage]);
-    } else {
-      toast({ variant: 'destructive', title: 'Error', description: result.error });
-       const errorResponseMessage: Omit<ChatMessage, 'id'> = { role: 'model', text: 'Lo siento, he tenido un problema y no puedo responder ahora mismo.', timestamp: new Date().toISOString(), replyTo: null };
-      setMessages((prev) => [...prev, errorResponseMessage]);
-    }
-    setIsAiResponding(false);
-  };
-  
-  const handleFormSubmitAndSend = (e: React.FormEvent) => {
-      e.preventDefault();
-      const userMessage: Omit<ChatMessage, 'id'> = { role: 'user', text: currentMessage.trim(), timestamp: new Date().toISOString(), replyTo: null };
-      const currentHistory = [...messages];
-      setMessages(prev => [...prev, userMessage]);
-      handleSendMessage(currentMessage, currentHistory);
-  }
+    const handleFormSubmit = (values: z.infer<typeof formSchema>) => {
+        startTransition(async () => {
+            setError(null);
+            try {
+                const action = isBusinessChat ? startBusinessChatSessionAction : startChatSessionAction;
+                const params = isBusinessChat ? { ...values, businessId: businessContext!.businessId, businessName: businessContext!.businessName } : { ...values };
+                // @ts-ignore
+                const result = await action(params);
 
-  const formatTimestamp = (isoString?: string) => {
-    if (!isoString) return '';
-    return new Date(isoString).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
-  }
-  
-  const renderWelcomeContent = () => {
+                if ('isIndexError' in result && result.isIndexError) {
+                    sessionStorage.setItem('fullError', result.error || 'Unknown index error.');
+                    router.push('/errors');
+                    return;
+                }
+
+                if (result.success && result.sessionId) {
+                    onSessionStarted(result.sessionId, result.history || [], initialQuestion || undefined);
+                } else {
+                    setError(result.error || 'No se pudo iniciar el chat.');
+                }
+            } catch (e) {
+                const errorMessage = e instanceof Error ? e.message : 'An unknown client error occurred.';
+                setError(`Error de cliente: ${errorMessage}`);
+            }
+        });
+    };
+    
     return (
+      <ScrollArea className="h-full">
         <div className="flex flex-col h-full p-4">
             <div className="flex-1">
                 <div className="flex items-center gap-2 mb-2">
                     {isBusinessChat ? <Building className="h-5 w-5 text-primary"/> : <Phone className="h-5 w-5 text-primary"/>}
-                    <h3 className="font-bold font-headline">{isBusinessChat ? `Asistente de ${chatContext?.businessName}` : "Asistente de Inmigración"}</h3>
+                    <h3 className="font-bold font-headline">{isBusinessChat ? `Asistente de ${businessContext?.businessName}` : "Asistente de Inmigración"}</h3>
                 </div>
                 <p className="text-sm text-muted-foreground mb-6">
                     {isBusinessChat
-                        ? `Hola, ¿listo para chatear con ${chatContext?.businessName}? Solo necesitamos unos datos para empezar.`
+                        ? `Hola, ¿listo para chatear con ${businessContext?.businessName}? Solo necesitamos unos datos para empezar.`
                         : 'Necesitamos unos datos para poder ayudarte mejor. Si ya has hablado con nosotros, usa el mismo teléfono para continuar la conversación.'
                     }
                 </p>
@@ -441,11 +177,207 @@ export default function ChatWidget({ embedded = false }: ChatWidgetProps) {
                 </Form>
             </div>
         </div>
+      </ScrollArea>
     )
+}
+
+// --- Main Chat Widget Component ---
+const migrationProactiveMessages = [
+    "¿Sabías que puedes trabajar en España con una visa de estudiante? Pregúntame cómo.",
+    "¿Tienes dudas sobre el empadronamiento? Puedo ayudarte con eso.",
+    "La homologación de títulos puede ser un proceso largo. ¡No dejes que te coja el toro!",
+    "Puedo ayudarte a entender los requisitos para la residencia no lucrativa.",
+];
+
+const businessProactiveMessages = [
+    "¿Te gustaría reservar una cita? Puedo ver los horarios disponibles.",
+    "¿Tienes alguna pregunta sobre nuestros servicios? Estoy aquí para ayudarte.",
+    "No dudes en preguntar por nuestros productos más populares.",
+];
+
+const allGeneralQuestions = [
+    "¿Qué necesito para homologar mi título?",
+    "¿Cómo funciona el proceso de empadronamiento?",
+    "Explícame la diferencia entre NIE y TIE",
+];
+
+const allBusinessQuestions = [
+    "¿Cuál es vuestro horario de atención?",
+    "¿Me puedes dar la dirección?",
+    "Quisiera reservar una cita para mañana",
+];
+
+interface ChatWidgetProps {
+    embedded?: boolean;
+}
+
+
+export default function ChatWidget({ embedded = false }: ChatWidgetProps) {
+  const { 
+    isChatOpen, 
+    setChatOpen, 
+    chatContext, 
+    isChatVisible 
+  } = useChat();
+
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [isLoadingSession, setIsLoadingSession] = useState(true);
+  const [messages, setMessages] = useState<Omit<ChatMessage, 'id'>[]>([]);
+  const [isAiResponding, setIsAiResponding] = useState(false);
+  const [currentMessage, setCurrentMessage] = useState('');
+  
+  const [proactiveMessage, setProactiveMessage] = useState('');
+  const [showProactive, setShowProactive] = useState(false);
+  const [proactiveClosed, setProactiveClosed] = useState(false);
+  const [proactiveCloseCount, setProactiveCloseCount] = useState(0);
+
+  const [userHasInteracted, setUserHasInteracted] = useState(false);
+  
+  const { toast } = useToast();
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [isMounted, setIsMounted] = useState(false);
+  
+  const isBusinessChat = !!chatContext?.businessId;
+  const suggestionPool = isBusinessChat ? allBusinessQuestions : allGeneralQuestions;
+  const proactivePool = isBusinessChat ? businessProactiveMessages : migrationProactiveMessages;
+  const storageKey = isBusinessChat ? `chatSessionId_${chatContext.businessId}` : 'globalChatSessionId';
+
+  useEffect(() => {
+    setIsMounted(true);
+    if (typeof window !== 'undefined') {
+        audioRef.current = new Audio('https://firebasestorage.googleapis.com/v0/b/colombia-en-esp.firebasestorage.app/o/web%2FMessage%20Notification.mp3?alt=media&token=acb27764-c909-4265-9dfb-ea3f20463c68');
+        
+        const handleFirstInteraction = () => {
+            setUserHasInteracted(true);
+            window.removeEventListener('click', handleFirstInteraction, true);
+            window.removeEventListener('keydown', handleFirstInteraction, true);
+        };
+        window.addEventListener('click', handleFirstInteraction, true);
+        window.addEventListener('keydown', handleFirstInteraction, true);
+        
+        const storedSessionId = localStorage.getItem(storageKey);
+        const loadSession = async (id: string) => {
+            setIsLoadingSession(true);
+            const action = isBusinessChat ? getBusinessChatHistoryAction : getChatHistoryAction;
+            const params = isBusinessChat ? { sessionId: id, businessId: chatContext.businessId! } : { sessionId: id };
+            // @ts-ignore
+            const result = await action(params);
+
+            if (result.success && result.history) {
+                setSessionId(id);
+                setMessages(result.history);
+            } else {
+                localStorage.removeItem(storageKey);
+                setSessionId(null);
+            }
+            setIsLoadingSession(false);
+        };
+
+        if (storedSessionId) {
+            loadSession(storedSessionId);
+        } else {
+            setIsLoadingSession(false);
+        }
+
+        return () => {
+            window.removeEventListener('click', handleFirstInteraction, true);
+            window.removeEventListener('keydown', handleFirstInteraction, true);
+        };
+    }
+  }, [isBusinessChat, chatContext?.businessId, storageKey]);
+
+  useEffect(() => {
+      if (!isMounted || isChatOpen || proactiveClosed) return;
+      let timeoutId: NodeJS.Timeout;
+      const scheduleNextMessage = () => {
+          const delays = [2000, 7000, 15000];
+          const delay = delays[Math.min(proactiveCloseCount, delays.length - 1)];
+          timeoutId = setTimeout(() => {
+              const randomIndex = Math.floor(Math.random() * proactivePool.length);
+              setProactiveMessage(proactivePool[randomIndex]);
+              setShowProactive(true);
+          }, delay);
+      };
+      scheduleNextMessage();
+      return () => clearTimeout(timeoutId);
+  }, [isMounted, isChatOpen, proactiveCloseCount, proactiveClosed, proactivePool]);
+  
+  useEffect(() => {
+      if (showProactive && userHasInteracted && audioRef.current) {
+          audioRef.current.play().catch(e => console.error("Error playing audio:", e));
+      }
+  }, [showProactive, proactiveMessage, userHasInteracted]);
+
+  useEffect(() => {
+    if (scrollAreaRef.current) {
+      scrollAreaRef.current.scrollTo({ top: scrollAreaRef.current.scrollHeight, behavior: 'smooth' });
+    }
+  }, [messages]);
+
+  useEffect(() => {
+    if(isChatOpen) {
+      setShowProactive(false);
+    }
+  }, [isChatOpen]);
+  
+  const handleSendMessage = async (messageText: string, currentHistory: Omit<ChatMessage, 'id'>[]) => {
+    if (!messageText.trim() || !sessionId || isAiResponding) return;
+    setIsAiResponding(true);
+    setCurrentMessage('');
+    const action = isBusinessChat ? postBusinessMessageAction : postMessageAction;
+    const params = { sessionId, message: messageText.trim(), history: currentHistory, ...(isBusinessChat && { businessId: chatContext.businessId! })};
+    // @ts-ignore
+    const result = await action(params);
+    if (result.success && result.response) {
+      const aiMessage: Omit<ChatMessage, 'id'> = { role: 'model', text: result.response, timestamp: new Date().toISOString(), replyTo: null };
+      setMessages((prev) => [...prev, aiMessage]);
+    } else {
+      toast({ variant: 'destructive', title: 'Error', description: result.error });
+       const errorResponseMessage: Omit<ChatMessage, 'id'> = { role: 'model', text: 'Lo siento, he tenido un problema y no puedo responder ahora mismo.', timestamp: new Date().toISOString(), replyTo: null };
+      setMessages((prev) => [...prev, errorResponseMessage]);
+    }
+    setIsAiResponding(false);
+  };
+
+  const handleSessionStarted = (newSessionId: string, history: Omit<ChatMessage, 'id'>[], initialQuestion?: string) => {
+    localStorage.setItem(storageKey, newSessionId);
+    setSessionId(newSessionId);
+    setMessages(history);
+
+    if (initialQuestion) {
+        const userMessage: Omit<ChatMessage, 'id'> = { role: 'user', text: initialQuestion, timestamp: new Date().toISOString(), replyTo: null };
+        setMessages(prev => [...prev, userMessage]);
+        handleSendMessage(initialQuestion, [...history, userMessage]);
+    }
+  };
+  
+  const handleFormSubmitAndSend = (e: React.FormEvent) => {
+      e.preventDefault();
+      const userMessage: Omit<ChatMessage, 'id'> = { role: 'user', text: currentMessage.trim(), timestamp: new Date().toISOString(), replyTo: null };
+      setMessages(prev => [...prev, userMessage]);
+      handleSendMessage(currentMessage, [...messages, userMessage]);
+  }
+  
+  const handleProactiveMessageClose = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowProactive(false);
+    setProactiveClosed(true);
+  };
+  
+  const handleResetSession = () => {
+    localStorage.removeItem(storageKey);
+    setSessionId(null);
+    setMessages([]);
+  }
+
+  const formatTimestamp = (isoString?: string) => {
+    if (!isoString) return '';
+    return new Date(isoString).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
   }
 
   const renderChatContent = () => {
-    if (isLoading) {
+    if (isLoadingSession) {
         return (
             <div className="flex-1 flex items-center justify-center">
                 <Loader2 className="animate-spin h-8 w-8 text-primary" />
@@ -455,9 +387,12 @@ export default function ChatWidget({ embedded = false }: ChatWidgetProps) {
 
     if (!sessionId) {
       return (
-        <ScrollArea className="h-full">
-            {renderWelcomeContent()}
-        </ScrollArea>
+        <WelcomeForm 
+            onSessionStarted={handleSessionStarted} 
+            isBusinessChat={isBusinessChat}
+            businessContext={chatContext || undefined}
+            suggestionPool={suggestionPool}
+        />
       );
     }
 
@@ -469,10 +404,8 @@ export default function ChatWidget({ embedded = false }: ChatWidgetProps) {
               const isUser = msg.role === 'user';
               const isAdmin = msg.role === 'admin';
               const isModel = msg.role === 'model';
-              
               const alignment = isUser ? 'justify-end' : 'justify-start';
               const bgColor = isUser ? 'bg-primary text-primary-foreground' : isAdmin ? 'bg-yellow-100 dark:bg-yellow-900/50' : 'bg-muted';
-              
               const avatar = isUser ? (
                   <Avatar className="w-8 h-8 flex-shrink-0">
                     <AvatarFallback className="bg-muted"><User size={18} /></AvatarFallback>
@@ -484,7 +417,6 @@ export default function ChatWidget({ embedded = false }: ChatWidgetProps) {
                     </AvatarFallback>
                  </Avatar>
               );
-
               const authorName = isAdmin ? (msg.authorName || 'Admin') : isModel ? (chatContext?.businessName || 'Asistente IA') : '';
 
               return (
@@ -535,7 +467,6 @@ export default function ChatWidget({ embedded = false }: ChatWidgetProps) {
     );
   };
 
-  // If embedded, render directly without triggers or pop-ups
   if (embedded) {
     return (
         <div className="h-full flex flex-col shadow-2xl w-full border-primary border rounded-lg">
@@ -608,7 +539,3 @@ export default function ChatWidget({ embedded = false }: ChatWidgetProps) {
     </>
   );
 }
-
-    
-
-    
