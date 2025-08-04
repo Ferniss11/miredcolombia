@@ -5,7 +5,8 @@ import { ApiResponse } from './api-response';
 import { adminAuth } from '@/lib/firebase/admin-config';
 import type { UserRole } from '@/lib/user/domain/user.entity';
 
-type Handler<T> = (req: NextRequest, params?: { params: T }) => Promise<NextResponse>;
+// The handler can now receive params which might be undefined
+type Handler<T> = (req: NextRequest, params: { params: T }) => Promise<NextResponse>;
 
 /**
  * Higher-order function to wrap API route handlers with centralized error handling,
@@ -17,7 +18,7 @@ type Handler<T> = (req: NextRequest, params?: { params: T }) => Promise<NextResp
  * @returns A Next.js API route handler.
  */
 export function apiHandler(handler: Handler<any>, allowedRoles?: UserRole[]) {
-  return async (req: NextRequest, params?: { params: any }): Promise<NextResponse> => {
+  return async (req: NextRequest, params: { params: any }): Promise<NextResponse> => {
     try {
       if (allowedRoles && allowedRoles.length > 0) {
         // --- Authentication & Authorization ---
