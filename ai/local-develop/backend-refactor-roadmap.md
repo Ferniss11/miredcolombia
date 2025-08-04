@@ -64,42 +64,42 @@ src/lib/
 
 ### **Paso 1.1: Definir el Dominio (`src/lib/user/domain`) (✓ Completado)**
 
-*   **`user.entity.ts`**: Definir las interfaces `BusinessProfile`, `CandidateProfile` y la entidad principal `User` con el campo `status`.
-*   **`user.repository.ts`**: Definir el puerto `UserRepository` con los métodos CRUD y `softDelete`.
-*   **`auth.repository.ts`**: Definir el puerto `AuthRepository` para abstraer las operaciones de autenticación.
+*   **`user.entity.ts`**: Definir las interfaces `BusinessProfile`, `CandidateProfile` y la entidad principal `User` con el campo `status`. (✓)
+*   **`user.repository.ts`**: Definir el puerto `UserRepository` con los métodos CRUD y `softDelete`. (✓)
+*   **`auth.repository.ts`**: Definir el puerto `AuthRepository` para abstraer las operaciones de autenticación. (✓)
 
 ### **Paso 1.2: Crear los Casos de Uso (`src/lib/user/application`) (✓ Completado)**
 
-*   **`create-user-profile.use-case.ts`**: Orquesta la creación de un nuevo `User`, asignando `status: 'active'`.
-*   **`update-user-profile.use-case.ts`**: Maneja la lógica para actualizar datos básicos (nombre, etc.).
-*   **`update-business-profile.use-case.ts`**: Maneja la lógica para actualizar los datos del perfil de negocio.
-*   **`update-candidate-profile.use-case.ts`**: Maneja la lógica para actualizar el perfil del candidato.
-*   **`get-user-profile.use-case.ts`**: Obtiene un perfil de usuario.
-*   **`soft-delete-user.use-case.ts`**: Implementa la lógica de borrado suave.
+*   **`create-user-profile.use-case.ts`**: Orquesta la creación de un nuevo `User`, asignando `status: 'active'`. (✓)
+*   **`update-user-profile.use-case.ts`**: Maneja la lógica para actualizar datos básicos (nombre, etc.). (✓)
+*   **`update-business-profile.use-case.ts`**: Maneja la lógica para actualizar los datos del perfil de negocio. (✓)
+*   **`update-candidate-profile.use-case.ts`**: Maneja la lógica para actualizar el perfil del candidato. (✓)
+*   **`get-user-profile.use-case.ts`**: Obtiene un perfil de usuario. (✓)
+*   **`soft-delete-user.use-case.ts`**: Implementa la lógica de borrado suave. (✓)
 
 ### **Paso 1.3: Implementar la Infraestructura (`src/lib/user/infrastructure`) (✓ Completado)**
 
-*   **`persistence/firestore-user.repository.ts`**: Implementa `UserRepository` usando Firestore Admin SDK.
-*   **`auth/firebase-auth.adapter.ts`**: Implementa `AuthRepository` usando el SDK de cliente de Firebase Auth.
-*   **`storage/firebase-storage.adapter.ts`**: Crear una función genérica `uploadFile` para manejar la subida de archivos (ej. CVs).
+*   **`persistence/firestore-user.repository.ts`**: Implementa `UserRepository` usando Firestore Admin SDK. (✓)
+*   **`auth/firebase-auth.adapter.ts`**: Implementa `AuthRepository` usando el SDK de cliente de Firebase Auth. (✓)
+*   **`storage/firebase-storage.adapter.ts`**: Crear una función genérica `uploadFile` para manejar la subida de archivos (ej. CVs). (✓)
 
 ### **Paso 1.4: Implementar la Capa de Presentación (API REST) y Actualizar la UI**
 
 *   **Objetivo:** Exponer los casos de uso a través de una API REST segura y estandarizada, y conectar la UI a estos nuevos endpoints.
 
-*   **Paso 1.4.1: Crear Utilidades de Respuesta y Controladores Base**
+*   **Paso 1.4.1: Crear Utilidades de Respuesta y Controladores Base (✓ Completado)**
     *   **Crear `src/lib/platform/api/api-handler.ts`**:
-        *   Una función `apiHandler` que envuelva la lógica de los API Route. Manejará la captura de errores, el parsing del body, y la serialización de la respuesta.
+        *   Una función `apiHandler` que envuelva la lógica de los API Route. Manejará la captura de errores, el parsing del body, y la serialización de la respuesta. (✓)
     *   **Crear `src/lib/platform/api/api-response.ts`**:
-        *   Funciones de ayuda estandarizadas para las respuestas HTTP (`ApiResponse.success`, `ApiResponse.error`, `ApiResponse.notFound`, etc.).
+        *   Funciones de ayuda estandarizadas para las respuestas HTTP (`ApiResponse.success`, `ApiResponse.error`, `ApiResponse.notFound`, etc.). (✓)
     *   **Crear `src/lib/platform/api/base.controller.ts`**:
-        *   Definir una interfaz `BaseController` para estandarizar los métodos que todos los controladores tendrán.
+        *   Definir una interfaz `BaseController` para estandarizar los métodos que todos los controladores tendrán. (✓)
 
-*   **Paso 1.4.2: Implementar el Controlador de Usuario**
+*   **Paso 1.4.2: Implementar el Controlador de Usuario (✓ Completado)**
     *   **Crear `src/lib/user/infrastructure/api/user.controller.ts`**:
-        *   Crear una clase `UserController` que implemente la `BaseController`.
-        *   Instanciará los Casos de Uso del usuario (ej. `CreateUserProfileUseCase`) y les inyectará las dependencias (`FirestoreUserRepository`).
-        *   Tendrá métodos públicos como `createUser`, `getUser`, `updateBusinessProfile`, etc., que llamarán a los casos de uso.
+        *   Crear una clase `UserController` que implemente la `BaseController`. (✓)
+        *   Instanciará los Casos de Uso del usuario (ej. `CreateUserProfileUseCase`) y les inyectará las dependencias (`FirestoreUserRepository`). (✓)
+        *   Tendrá métodos públicos como `createUser`, `getUser`, `updateBusinessProfile`, etc., que llamarán a los casos de uso. (✓)
 
 *   **Paso 1.4.3: Crear los API Routes**
     *   **Crear `src/app/api/users/route.ts`**:
