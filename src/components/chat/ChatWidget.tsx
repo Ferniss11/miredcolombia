@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import * as z from 'zod';
 import { useForm } from 'react-hook-form';
@@ -97,6 +97,9 @@ export default function ChatWidget({ embedded = false }: ChatWidgetProps) {
   const [proactiveCloseCount, setProactiveCloseCount] = useState(0);
 
   const [userHasInteracted, setUserHasInteracted] = useState(false);
+  
+  const [isStartingSession, startSessionTransition] = useTransition();
+  const [initialQuestion, setInitialQuestion] = useState<string | null>(null);
 
   const { toast } = useToast();
   const router = useRouter();
@@ -223,6 +226,19 @@ export default function ChatWidget({ embedded = false }: ChatWidgetProps) {
     return () => clearInterval(suggestionInterval);
   }, [isMounted, isChatOpen, sessionId, suggestionPool]);
 
+  // Effect to send the initial question after session is created
+  useEffect(() => {
+    if (initialQuestion && sessionId && messages.length > 0) {
+      const userMessage: Omit<ChatMessage, 'id'> = { role: 'user', text: initialQuestion, timestamp: new Date().toISOString(), replyTo: null };
+      setMessages((prev) => [...prev, userMessage]);
+      
+      // Pass the current message history *before* adding the new user message
+      const historyForAi = messages;
+      handleSendMessage(initialQuestion, historyForAi);
+      setInitialQuestion(null);
+    }
+  }, [sessionId, initialQuestion, messages]);
+
 
   useEffect(() => {
     if (scrollAreaRef.current) {
@@ -241,32 +257,6 @@ export default function ChatWidget({ embedded = false }: ChatWidgetProps) {
     setShowProactive(false);
     setProactiveClosed(true);
   };
-
-  const handleStartSession = async (values: z.infer<typeof formSchema>, initialQuestion?: string) => {
-    form.clearErrors();
-    const action = isBusinessChat ? startBusinessChatSessionAction : startChatSessionAction;
-    const params = isBusinessChat ? { ...values, businessId: chatContext.businessId!, businessName: chatContext.businessName! } : { ...values };
-    
-    // @ts-ignore
-    const result = await action(params);
-    
-    if ('isIndexError' in result && result.isIndexError) {
-        sessionStorage.setItem('fullError', result.error || 'Unknown index error.');
-        router.push('/errors');
-        return;
-    }
-
-    if (result.success && result.sessionId) {
-      localStorage.setItem(storageKey, result.sessionId);
-      setSessionId(result.sessionId);
-      setMessages(result.history as Omit<ChatMessage, 'id'>[] || []);
-      if (initialQuestion) {
-        postInitialQuestion(result.sessionId, result.history as Omit<ChatMessage, 'id'>[] || [], initialQuestion);
-      }
-    } else {
-      toast({ variant: 'destructive', title: 'Error', description: result.error || 'No se pudo iniciar el chat. Por favor, inténtalo de nuevo.' });
-    }
-  };
   
   const handleResetSession = () => {
     localStorage.removeItem(storageKey);
@@ -274,55 +264,49 @@ export default function ChatWidget({ embedded = false }: ChatWidgetProps) {
     setMessages([]);
     form.reset();
   }
-
-  const postInitialQuestion = async (newSessionId: string, initialHistory: Omit<ChatMessage, 'id'>[], question: string) => {
-     const userMessage: Omit<ChatMessage, 'id'> = { role: 'user', text: question, timestamp: new Date().toISOString(), replyTo: null };
-     const newMessages = [...initialHistory, userMessage];
-     setMessages(newMessages);
-     setIsAiResponding(true);
-
-     const action = isBusinessChat ? postBusinessMessageAction : postMessageAction;
-     const params = { 
-         sessionId: newSessionId, 
-         message: userMessage.text, 
-         history: initialHistory,
-         ...(isBusinessChat && { businessId: chatContext.businessId! })
-     };
-
-     // @ts-ignore
-     const result = await action(params);
-     
-     if (result.success && result.response) {
-       const aiMessage: Omit<ChatMessage, 'id'> = { role: 'model', text: result.response, timestamp: new Date().toISOString(), replyTo: null };
-       setMessages((prev) => [...prev, aiMessage]);
-     } else {
-       toast({ variant: 'destructive', title: 'Error', description: result.error });
-        const errorResponseMessage: Omit<ChatMessage, 'id'> = { role: 'model', text: 'Lo siento, he tenido un problema y no puedo responder ahora mismo.', timestamp: new Date().toISOString(), replyTo: null };
-       setMessages((prev) => [...prev, errorResponseMessage]);
-     }
-     setIsAiResponding(false);
-  }
   
   const handleSuggestionClick = (question: string) => {
-    form.handleSubmit((values) => handleStartSession(values, question))();
+    setInitialQuestion(question);
+    form.handleSubmit(handleFormSubmit)();
   };
 
 
-  const handleSendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!currentMessage.trim() || !sessionId || isAiResponding) return;
+  const handleFormSubmit = (values: z.infer<typeof formSchema>) => {
+    startSessionTransition(async () => {
+        const action = isBusinessChat ? startBusinessChatSessionAction : startChatSessionAction;
+        const params = isBusinessChat ? { ...values, businessId: chatContext.businessId!, businessName: chatContext.businessName! } : { ...values };
+        
+        // @ts-ignore
+        const result = await action(params);
 
-    const userMessage: Omit<ChatMessage, 'id'> = { role: 'user', text: currentMessage.trim(), timestamp: new Date().toISOString(), replyTo: null };
-    const newMessages = [...messages, userMessage];
-    setMessages(newMessages);
-    setCurrentMessage('');
+        if ('isIndexError' in result && result.isIndexError) {
+            sessionStorage.setItem('fullError', result.error || 'Unknown index error.');
+            router.push('/errors');
+            return;
+        }
+
+        if (result.success && result.sessionId) {
+            localStorage.setItem(storageKey, result.sessionId);
+            setMessages(result.history as Omit<ChatMessage, 'id'>[] || []);
+            setSessionId(result.sessionId); // This will trigger the useEffect for the initial question
+        } else {
+            toast({ variant: 'destructive', title: 'Error', description: result.error || 'No se pudo iniciar el chat. Por favor, inténtalo de nuevo.' });
+            setInitialQuestion(null); // Clear initial question on failure
+        }
+    });
+  };
+
+  const handleSendMessage = async (messageText: string, currentHistory: Omit<ChatMessage, 'id'>[]) => {
+    if (!messageText.trim() || !sessionId || isAiResponding) return;
+
     setIsAiResponding(true);
+    setCurrentMessage('');
 
     const action = isBusinessChat ? postBusinessMessageAction : postMessageAction;
     const params = { 
         sessionId, 
-        message: userMessage.text, 
-        history: messages,
+        message: messageText.trim(), 
+        history: currentHistory,
         ...(isBusinessChat && { businessId: chatContext.businessId! })
     };
 
@@ -339,6 +323,14 @@ export default function ChatWidget({ embedded = false }: ChatWidgetProps) {
     }
     setIsAiResponding(false);
   };
+  
+  const handleFormSubmitAndSend = (e: React.FormEvent) => {
+      e.preventDefault();
+      const userMessage: Omit<ChatMessage, 'id'> = { role: 'user', text: currentMessage.trim(), timestamp: new Date().toISOString(), replyTo: null };
+      const currentHistory = [...messages];
+      setMessages(prev => [...prev, userMessage]);
+      handleSendMessage(currentMessage, currentHistory);
+  }
 
   const formatTimestamp = (isoString?: string) => {
     if (!isoString) return '';
@@ -369,6 +361,7 @@ export default function ChatWidget({ embedded = false }: ChatWidgetProps) {
                                 size="sm" 
                                 className="w-full text-left justify-start h-auto whitespace-normal animate-in fade-in duration-500" 
                                 onClick={() => handleSuggestionClick(q)}
+                                disabled={isStartingSession}
                             >
                                 {q}
                             </Button>
@@ -379,7 +372,7 @@ export default function ChatWidget({ embedded = false }: ChatWidgetProps) {
             
             <div className="pt-6 border-t mt-6">
                 <Form {...form}>
-                    <form onSubmit={form.handleSubmit((values) => handleStartSession(values))} className="space-y-4">
+                    <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
                         <FormField control={form.control} name="userName" render={({ field }) => (
                         <FormItem>
                             <FormLabel>Nombre</FormLabel>
@@ -407,8 +400,8 @@ export default function ChatWidget({ embedded = false }: ChatWidgetProps) {
                                 </div>
                             </FormItem>
                         )} />
-                        <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
-                            {form.formState.isSubmitting ? <Loader2 className="animate-spin" /> : "Iniciar Chat"}
+                        <Button type="submit" className="w-full" disabled={isStartingSession}>
+                            {isStartingSession ? <Loader2 className="animate-spin" /> : "Iniciar Chat"}
                         </Button>
                     </form>
                 </Form>
@@ -491,7 +484,7 @@ export default function ChatWidget({ embedded = false }: ChatWidgetProps) {
           </div>
         </ScrollArea>
         <div className="p-4 border-t bg-background rounded-b-lg">
-          <form onSubmit={handleSendMessage} className="flex gap-2">
+          <form onSubmit={handleFormSubmitAndSend} className="flex gap-2">
             <Input
               value={currentMessage}
               onChange={(e) => setCurrentMessage(e.target.value)}
@@ -581,4 +574,3 @@ export default function ChatWidget({ embedded = false }: ChatWidgetProps) {
     </>
   );
 }
-
