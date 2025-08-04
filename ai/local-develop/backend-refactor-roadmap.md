@@ -23,7 +23,7 @@ Utilizaremos la refactorización ya realizada en `job-posting` como nuestro mode
 
 La interacción con la IA seguirá un flujo estricto para mantener la separación de responsabilidades:
 
-`[UI] -> [Server Action] -> [Caso de Uso de App] -> [Adaptador de IA] -> [Flujo de Genkit] <--> [Herramientas]`
+`[UI] -> [API Route] -> [Controller] -> [Caso de Uso de App] -> [Adaptador de IA] -> [Flujo de Genkit] <--> [Herramientas]`
 
 *   El **Caso de Uso** orquesta el proceso de negocio.
 *   El **Adaptador de IA** (infraestructura) traduce las necesidades del negocio al lenguaje de la IA, siendo el único que conoce Genkit.
@@ -146,12 +146,13 @@ src/lib/
 *   **`ai/genkit-agent.adapter.ts`**:
     *   Implementa una interfaz `AgentAdapter`.
     *   **Es el único lugar que importa y llama a los flujos de Genkit**. Adapta los datos del caso de uso al formato que el flujo de Genkit necesita.
-*   **`nextjs/chat.server-actions.ts`**: Nuevas Server Actions que la UI llamará, instanciando los `UseCase`.
+*   **`api/chat.controller.ts`**: Controlador para manejar las peticiones HTTP de `POST /api/chat/sessions` y `POST /api/chat/sessions/[id]/messages`.
+*   **`api/routes.ts`**: API Routes correspondientes que utilizan el `ChatController`.
 
 ### **Paso 2.4: Actualizar la UI y Eliminar Código Antiguo**
 
-1.  **Actualizar `src/components/chat/ChatWidget.tsx`**: Modificar para que llame a las nuevas `chat.server-actions.ts`.
-2.  **Actualizar Paneles de Conversaciones**: Modificar las páginas (`/dashboard/admin/conversations` y `/dashboard/advertiser/conversations`) para que usen las nuevas actions.
+1.  **Actualizar `src/components/chat/ChatWidget.tsx`**: Modificar para que llame a los nuevos endpoints de la API REST del chat mediante `fetch`.
+2.  **Actualizar Paneles de Conversaciones**: Modificar las páginas (`/dashboard/admin/conversations` y `/dashboard/advertiser/conversations`) para que usen los nuevos endpoints.
 3.  **Eliminación de Archivos Obsoletos**:
     *   **ELIMINAR:** `src/lib/chat-actions.ts`
     *   **ELIMINAR:** `src/lib/business-chat-actions.ts`
@@ -176,11 +177,12 @@ src/lib/
 
 *   **`persistence/firestore-directory.repository.ts`**: Implementa `DirectoryRepository`.
 *   **`search/google-places.adapter.ts`**: Encapsula la llamada a la herramienta `googlePlacesSearch` o la API de Google Maps.
-*   **`nextjs/directory.server-actions.ts`**: Server Actions para la UI.
+*   **`api/directory.controller.ts`**: Controlador para manejar las peticiones HTTP del directorio.
+*   **`api/routes.ts`**: API Routes correspondientes que utilizan el `DirectoryController`.
 
 ### **Paso 3.4: Actualizar la UI y Eliminar Código Antiguo**
 
-1.  Actualizar todas las páginas que gestionan o muestran el directorio.
+1.  Actualizar todas las páginas que gestionan o muestran el directorio para que usen los nuevos endpoints de la API REST.
 2.  **ELIMINAR:** `src/lib/directory-actions.ts` y cualquier servicio relacionado obsoleto.
 
 ---
