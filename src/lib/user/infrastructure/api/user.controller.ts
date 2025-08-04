@@ -1,5 +1,6 @@
+
 // src/lib/user/infrastructure/api/user.controller.ts
-import type { NextRequest, NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
 import { z } from 'zod';
 
 import type { BaseController } from '@/lib/platform/api/base.controller';
@@ -12,7 +13,7 @@ import { UpdateUserProfileUseCase } from '../../application/update-user-profile.
 import { UpdateBusinessProfileUseCase } from '../../application/update-business-profile.use-case';
 import { UpdateCandidateProfileUseCase } from '../../application/update-candidate-profile.use-case';
 import { SoftDeleteUserUseCase } from '../../application/soft-delete-user.use-case';
-import type { BusinessProfile, CandidateProfile } from '../../domain/user.entity';
+import type { BusinessProfile, CandidateProfile, User } from '../../domain/user.entity';
 
 
 // Schema for validating the creation of a user
@@ -30,13 +31,15 @@ const UpdateUserSchema = z.object({
 
 // Note: Schemas for BusinessProfile and CandidateProfile would also be defined here for validation.
 
-export class UserController implements Partial<BaseController> {
+export class UserController implements BaseController {
   private createUserUseCase: CreateUserProfileUseCase;
   private getUserUseCase: GetUserProfileUseCase;
   private updateUserUseCase: UpdateUserProfileUseCase;
   private updateBusinessProfileUseCase: UpdateBusinessProfileUseCase;
   private updateCandidateProfileUseCase: UpdateCandidateProfileUseCase;
   private softDeleteUserUseCase: SoftDeleteUserUseCase;
+  // NOTE: We don't have a GetAllUsersUseCase yet, but we add the property for it.
+  // private getAllUsersUseCase: GetAllUsersUseCase;
 
   constructor() {
     const userRepository = new FirestoreUserRepository();
@@ -52,7 +55,7 @@ export class UserController implements Partial<BaseController> {
    * Handles the creation of a new user profile.
    * Linked to POST /api/users
    */
-  async create(req: NextRequest): Promise<NextResponse> {
+  async create(req: NextRequest) {
     const json = await req.json();
     const userData: CreateUserInput = CreateUserSchema.parse(json);
 
@@ -65,7 +68,7 @@ export class UserController implements Partial<BaseController> {
    * Handles retrieving a user profile by their UID.
    * Linked to GET /api/users/[id]
    */
-  async getById(req: NextRequest, { params }: { params: { id: string } }): Promise<NextResponse> {
+  async getById(req: NextRequest, { params }: { params: { id: string } }) {
     const uid = params.id;
     const user = await this.getUserUseCase.execute(uid);
     if (!user) {
@@ -78,7 +81,7 @@ export class UserController implements Partial<BaseController> {
    * Handles updating the basic profile of a user.
    * Linked to PUT /api/users/[id]
    */
-  async update(req: NextRequest, { params }: { params: { id: string } }): Promise<NextResponse> {
+  async update(req: NextRequest, { params }: { params: { id: string } }) {
       const uid = params.id;
       const json = await req.json();
       const userData = UpdateUserSchema.parse(json);
@@ -91,7 +94,7 @@ export class UserController implements Partial<BaseController> {
    * Handles updating a business profile for a user.
    * Linked to PUT /api/users/[id]/business-profile
    */
-  async updateBusinessProfile(req: NextRequest, { params }: { params: { id: string } }): Promise<NextResponse> {
+  async updateBusinessProfile(req: NextRequest, { params }: { params: { id: string } }) {
     const uid = params.id;
     const json: BusinessProfile = await req.json();
     // Here you would typically validate the incoming 'json' against a Zod schema for BusinessProfile
@@ -104,7 +107,7 @@ export class UserController implements Partial<BaseController> {
    * Handles updating a candidate profile for a user.
    * Linked to PUT /api/users/[id]/candidate-profile
    */
-  async updateCandidateProfile(req: NextRequest, { params }: { params: { id: string } }): Promise<NextResponse> {
+  async updateCandidateProfile(req: NextRequest, { params }: { params: { id: string } }) {
     const uid = params.id;
     const json: CandidateProfile = await req.json();
     // Here you would typically validate the incoming 'json' against a Zod schema for CandidateProfile
@@ -117,11 +120,21 @@ export class UserController implements Partial<BaseController> {
    * Handles soft-deleting a user.
    * Linked to DELETE /api/users/[id]
    */
-  async delete(req: NextRequest, { params }: { params: { id: string } }): Promise<NextResponse> {
+  async delete(req: NextRequest, { params }: { params: { id: string } }) {
       const uid = params.id;
       await this.softDeleteUserUseCase.execute(uid);
       return ApiResponse.noContent();
   }
 
-  // NOTE: Implement 'getAll' if an endpoint to list all users is needed in the future.
+  /**
+   * Handles retrieving all users.
+   * Linked to GET /api/users
+   */
+  async getAll(req: NextRequest) {
+    // This functionality would require a GetAllUsersUseCase and a findAll method in the repository.
+    // For now, we'll return a placeholder.
+    // const users = await this.getAllUsersUseCase.execute();
+    // return ApiResponse.success(users);
+    return ApiResponse.notImplemented('Method not implemented.');
+  }
 }
