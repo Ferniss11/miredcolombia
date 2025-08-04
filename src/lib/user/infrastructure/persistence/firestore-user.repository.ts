@@ -1,7 +1,7 @@
 // infrastructure/persistence/firestore-user.repository.ts
-import type { User, PartialUser } from '../../domain/user.entity';
+import type { User } from '../../domain/user.entity';
 import type { UserRepository } from '../../domain/user.repository';
-import { adminDb, adminInstance } from '@/lib/firebase/admin-config';
+import { adminDb } from '@/lib/firebase/admin-config';
 import type { DocumentData, QueryDocumentSnapshot } from 'firebase-admin/firestore';
 
 const USERS_COLLECTION = 'users';
@@ -50,6 +50,15 @@ export class FirestoreUserRepository implements UserRepository {
     return this.toUser(doc as QueryDocumentSnapshot);
   }
 
+  async findAll(): Promise<User[]> {
+    if (!adminDb) throw new Error('Firestore not initialized');
+    const snapshot = await adminDb.collection(USERS_COLLECTION).orderBy('createdAt', 'desc').get();
+    if (snapshot.empty) {
+      return [];
+    }
+    return snapshot.docs.map(doc => this.toUser(doc as QueryDocumentSnapshot));
+  }
+
   async update(uid: string, data: Partial<User>): Promise<User> {
     if (!adminDb) throw new Error('Firestore not initialized');
     const userRef = adminDb.collection(USERS_COLLECTION).doc(uid);
@@ -64,7 +73,7 @@ export class FirestoreUserRepository implements UserRepository {
     await userRef.update({ status: 'deleted', updatedAt: new Date() });
   }
 
-  async findPublicProfileByUid(uid: string): Promise<PartialUser | null> {
+  async findPublicProfileByUid(uid: string): Promise<Partial<User> | null> {
     const user = await this.findByUid(uid);
     if (!user) {
       return null;

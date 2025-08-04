@@ -19,6 +19,12 @@ export interface UserRepository {
    * @returns The user entity or null if not found.
    */
   findByUid(uid: string): Promise<User | null>;
+  
+  /**
+   * Retrieves all users from the database.
+   * @returns A promise that resolves to an array of User entities.
+   */
+  findAll(): Promise<User[]>;
 
   /**
    * Updates an existing user's data.

@@ -1,6 +1,5 @@
-
 // src/lib/user/infrastructure/api/user.controller.ts
-import type { NextRequest } from 'next/server';
+import type { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
 import type { BaseController } from '@/lib/platform/api/base.controller';
@@ -9,6 +8,7 @@ import { ApiResponse } from '@/lib/platform/api/api-response';
 import { FirestoreUserRepository } from '../persistence/firestore-user.repository';
 import { CreateUserProfileUseCase, type CreateUserInput } from '../../application/create-user-profile.use-case';
 import { GetUserProfileUseCase } from '../../application/get-user-profile.use-case';
+import { GetAllUsersUseCase } from '../../application/get-all-users.use-case';
 import { UpdateUserProfileUseCase } from '../../application/update-user-profile.use-case';
 import { UpdateBusinessProfileUseCase } from '../../application/update-business-profile.use-case';
 import { UpdateCandidateProfileUseCase } from '../../application/update-candidate-profile.use-case';
@@ -34,17 +34,17 @@ const UpdateUserSchema = z.object({
 export class UserController implements BaseController {
   private createUserUseCase: CreateUserProfileUseCase;
   private getUserUseCase: GetUserProfileUseCase;
+  private getAllUsersUseCase: GetAllUsersUseCase;
   private updateUserUseCase: UpdateUserProfileUseCase;
   private updateBusinessProfileUseCase: UpdateBusinessProfileUseCase;
   private updateCandidateProfileUseCase: UpdateCandidateProfileUseCase;
   private softDeleteUserUseCase: SoftDeleteUserUseCase;
-  // NOTE: We don't have a GetAllUsersUseCase yet, but we add the property for it.
-  // private getAllUsersUseCase: GetAllUsersUseCase;
 
   constructor() {
     const userRepository = new FirestoreUserRepository();
     this.createUserUseCase = new CreateUserProfileUseCase(userRepository);
     this.getUserUseCase = new GetUserProfileUseCase(userRepository);
+    this.getAllUsersUseCase = new GetAllUsersUseCase(userRepository);
     this.updateUserUseCase = new UpdateUserProfileUseCase(userRepository);
     this.updateBusinessProfileUseCase = new UpdateBusinessProfileUseCase(userRepository);
     this.updateCandidateProfileUseCase = new UpdateCandidateProfileUseCase(userRepository);
@@ -55,7 +55,7 @@ export class UserController implements BaseController {
    * Handles the creation of a new user profile.
    * Linked to POST /api/users
    */
-  async create(req: NextRequest) {
+  async create(req: NextRequest): Promise<NextResponse> {
     const json = await req.json();
     const userData: CreateUserInput = CreateUserSchema.parse(json);
 
@@ -68,7 +68,7 @@ export class UserController implements BaseController {
    * Handles retrieving a user profile by their UID.
    * Linked to GET /api/users/[id]
    */
-  async getById(req: NextRequest, { params }: { params: { id: string } }) {
+  async getById(req: NextRequest, { params }: { params: { id: string } }): Promise<NextResponse> {
     const uid = params.id;
     const user = await this.getUserUseCase.execute(uid);
     if (!user) {
@@ -81,7 +81,7 @@ export class UserController implements BaseController {
    * Handles updating the basic profile of a user.
    * Linked to PUT /api/users/[id]
    */
-  async update(req: NextRequest, { params }: { params: { id: string } }) {
+  async update(req: NextRequest, { params }: { params: { id: string } }): Promise<NextResponse> {
       const uid = params.id;
       const json = await req.json();
       const userData = UpdateUserSchema.parse(json);
@@ -94,7 +94,7 @@ export class UserController implements BaseController {
    * Handles updating a business profile for a user.
    * Linked to PUT /api/users/[id]/business-profile
    */
-  async updateBusinessProfile(req: NextRequest, { params }: { params: { id: string } }) {
+  async updateBusinessProfile(req: NextRequest, { params }: { params: { id: string } }): Promise<NextResponse> {
     const uid = params.id;
     const json: BusinessProfile = await req.json();
     // Here you would typically validate the incoming 'json' against a Zod schema for BusinessProfile
@@ -107,7 +107,7 @@ export class UserController implements BaseController {
    * Handles updating a candidate profile for a user.
    * Linked to PUT /api/users/[id]/candidate-profile
    */
-  async updateCandidateProfile(req: NextRequest, { params }: { params: { id: string } }) {
+  async updateCandidateProfile(req: NextRequest, { params }: { params: { id: string } }): Promise<NextResponse> {
     const uid = params.id;
     const json: CandidateProfile = await req.json();
     // Here you would typically validate the incoming 'json' against a Zod schema for CandidateProfile
@@ -120,7 +120,7 @@ export class UserController implements BaseController {
    * Handles soft-deleting a user.
    * Linked to DELETE /api/users/[id]
    */
-  async delete(req: NextRequest, { params }: { params: { id: string } }) {
+  async delete(req: NextRequest, { params }: { params: { id: string } }): Promise<NextResponse> {
       const uid = params.id;
       await this.softDeleteUserUseCase.execute(uid);
       return ApiResponse.noContent();
@@ -130,11 +130,8 @@ export class UserController implements BaseController {
    * Handles retrieving all users.
    * Linked to GET /api/users
    */
-  async getAll(req: NextRequest) {
-    // This functionality would require a GetAllUsersUseCase and a findAll method in the repository.
-    // For now, we'll return a placeholder.
-    // const users = await this.getAllUsersUseCase.execute();
-    // return ApiResponse.success(users);
-    return ApiResponse.notImplemented('Method not implemented.');
+  async getAll(req: NextRequest): Promise<NextResponse> {
+    const users = await this.getAllUsersUseCase.execute();
+    return ApiResponse.success(users);
   }
 }
