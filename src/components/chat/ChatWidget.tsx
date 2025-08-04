@@ -171,10 +171,10 @@ const WelcomeForm = ({ onSessionStarted, isBusinessChat, businessContext, sugges
                                 </div>
                             </FormItem>
                         )} />
-                        <Button type="submit" className="w-full" disabled={isPending} onClick={() => toast({ title: 'Debug: Click Event Fired', description: 'El botón "Iniciar Chat" fue presionado.' })}>
+                        <Button type="submit" className="w-full" disabled={isPending}>
                             {isPending ? <Loader2 className="animate-spin" /> : "Iniciar Chat"}
                         </Button>
-                        {error && (
+                         {error && (
                             <Alert variant="destructive" className="mt-4">
                                 <AlertTitle>Error al Iniciar Chat</AlertTitle>
                                 <AlertDescription>
@@ -555,3 +555,5 @@ export default function ChatWidget({ embedded = false }: ChatWidgetProps) {
     </>
   );
 }
+
+    
