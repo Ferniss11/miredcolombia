@@ -7,7 +7,7 @@ import {
   User, 
   createUserWithEmailAndPassword, 
   signInWithEmailAndPassword, 
-  signInWithPopup, 
+  signInWithRedirect, 
   GoogleAuthProvider,
   signOut,
   type Auth,
@@ -150,19 +150,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (!authInstance) return { error: { code: 'auth/unavailable', message: 'Firebase not initialized' } as AuthError };
     const provider = new GoogleAuthProvider();
     try {
-        const result = await signInWithPopup(authInstance, provider);
-
-        console.log(result)
-
-        const user = result.user;
-        await ensureUserProfileExists(user, user.displayName || 'Usuario de Google', role);
+        // Use signInWithRedirect instead of signInWithPopup
+        await signInWithRedirect(authInstance, provider);
+        // The rest of the logic (profile creation) will be handled by the onAuthStateChanged listener
+        // when the user is redirected back to the app. We can add a session storage item
+        // to remember the intended role across the redirect.
+        sessionStorage.setItem('pendingRole', role);
         return { error: null };
     } catch (error) {
       const authError = error as AuthError;
         if (authError.code === 'auth/account-exists-with-different-credential') {
              return { error: { ...authError, message: "Ya existe una cuenta con este email. Inicia sesión con tu contraseña para vincular tu cuenta de Google." }};
         }
-        // This will now catch the popup-closed-by-user error more cleanly if it still occurs
         console.error("Google Sign-In Error:", authError.code, authError.message);
         return { error: authError };
     }
