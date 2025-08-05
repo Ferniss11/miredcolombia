@@ -24,31 +24,31 @@ import type { UserRole } from "../types";
  */
 async function ensureUserProfileExists(user: import("firebase/auth").User, name: string, role: UserRole): Promise<void> {
   if (!db) throw new Error("Firebase client database is not initialized.");
-  const userRef = doc(db, "users", user.uid);
-  const docSnap = await getDoc(userRef);
+  
+  // We don't need to check on the client. The API will handle conflicts.
+  // The API is the source of truth for profile creation.
+  try {
+    const response = await fetch('/api/users', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        uid: user.uid,
+        name: name,
+        email: user.email,
+        role: role,
+      }),
+    });
 
-  if (!docSnap.exists()) {
-    try {
-      const response = await fetch('/api/users', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          uid: user.uid,
-          name: name,
-          email: user.email,
-          role: role,
-        }),
-      });
-
-      if (!response.ok) {
-        const apiError = await response.json();
-        throw new Error(apiError.error?.message || 'Server error creating profile.');
-      }
-    } catch (error) {
-      console.error("Failed to create user profile via API:", error);
-      // We might want to sign the user out here or handle the error more gracefully.
-      throw error;
+    // If the user already exists, the API might return a conflict error (e.g., 409).
+    // We can treat this as a success in this context because the profile exists.
+    if (!response.ok && response.status !== 409) {
+      const apiError = await response.json();
+      throw new Error(apiError.error?.message || 'Server error creating profile.');
     }
+  } catch (error) {
+    console.error("Failed to create user profile via API:", error);
+    // We might want to sign the user out here or handle the error more gracefully.
+    throw error;
   }
 }
 
@@ -89,6 +89,7 @@ export async function signInWithGoogle(role: UserRole = 'User') {
         const user = result.user;
         
         // After Google sign-in, ensure a profile exists in our DB via the API
+        // This will create the user on the first login, and do nothing on subsequent logins.
         await ensureUserProfileExists(user, user.displayName || 'Usuario de Google', role);
 
         return { user, error: null };

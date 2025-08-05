@@ -39,16 +39,17 @@ export class UserController implements BaseController {
   private updateBusinessProfileUseCase: UpdateBusinessProfileUseCase;
   private updateCandidateProfileUseCase: UpdateCandidateProfileUseCase;
   private softDeleteUserUseCase: SoftDeleteUserUseCase;
+  private userRepository: FirestoreUserRepository;
 
   constructor() {
-    const userRepository = new FirestoreUserRepository();
-    this.createUserUseCase = new CreateUserProfileUseCase(userRepository);
-    this.getUserUseCase = new GetUserProfileUseCase(userRepository);
-    this.getAllUsersUseCase = new GetAllUsersUseCase(userRepository);
-    this.updateUserUseCase = new UpdateUserProfileUseCase(userRepository);
-    this.updateBusinessProfileUseCase = new UpdateBusinessProfileUseCase(userRepository);
-    this.updateCandidateProfileUseCase = new UpdateCandidateProfileUseCase(userRepository);
-    this.softDeleteUserUseCase = new SoftDeleteUserUseCase(userRepository);
+    this.userRepository = new FirestoreUserRepository();
+    this.createUserUseCase = new CreateUserProfileUseCase(this.userRepository);
+    this.getUserUseCase = new GetUserProfileUseCase(this.userRepository);
+    this.getAllUsersUseCase = new GetAllUsersUseCase(this.userRepository);
+    this.updateUserUseCase = new UpdateUserProfileUseCase(this.userRepository);
+    this.updateBusinessProfileUseCase = new UpdateBusinessProfileUseCase(this.userRepository);
+    this.updateCandidateProfileUseCase = new UpdateCandidateProfileUseCase(this.userRepository);
+    this.softDeleteUserUseCase = new SoftDeleteUserUseCase(this.userRepository);
   }
 
   /**
@@ -58,6 +59,12 @@ export class UserController implements BaseController {
   async create(req: NextRequest): Promise<NextResponse> {
     const json = await req.json();
     const userData: CreateUserInput = CreateUserSchema.parse(json);
+
+    // Check if user already exists to prevent overwriting
+    const existingUser = await this.userRepository.findByUid(userData.uid);
+    if (existingUser) {
+        return ApiResponse.conflict('User profile already exists.');
+    }
 
     const newUser = await this.createUserUseCase.execute(userData);
 
