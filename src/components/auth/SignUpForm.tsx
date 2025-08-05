@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useTransition } from "react";
-import { signInWithGoogle, signUpWithEmail } from "@/lib/firebase/auth";
+import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 
 import { Button } from "@/components/ui/button";
@@ -47,6 +47,7 @@ export function SignUpForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
+  const { signUpWithEmail, loginWithGoogle } = useAuth();
   const [isPending, startTransition] = useTransition();
 
   const preselectedRole = searchParams.get("role") === "advertiser" ? "Advertiser" : "User";
@@ -63,48 +64,19 @@ export function SignUpForm() {
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     startTransition(async () => {
-      const role = values.role as UserRole;
-      
-      const { user: firebaseUser, error: authError } = await signUpWithEmail(values.name, values.email, values.password, role);
-
-      if (authError || !firebaseUser) {
+      const { error } = await signUpWithEmail(values.name, values.email, values.password, values.role);
+      if (error) {
         toast({
           variant: "destructive",
           title: "Error de Registro",
           description: "No se pudo crear la cuenta. El correo quizás ya esté en uso.",
         });
-        return;
-      }
-
-      try {
-        const response = await fetch('/api/users', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                uid: firebaseUser.uid,
-                name: values.name,
-                email: values.email,
-                role: role,
-            }),
-        });
-        
-        if (!response.ok) {
-            const apiError = await response.json();
-            throw new Error(apiError.error?.message || 'Error del servidor al crear el perfil.');
-        }
-
-        toast({
+      } else {
+         toast({
           title: "¡Bienvenido!",
           description: "Tu cuenta ha sido creada exitosamente.",
         });
         router.push("/dashboard");
-
-      } catch (profileError: any) {
-        toast({
-          variant: "destructive",
-          title: "Error de Perfil",
-          description: `Tu cuenta de autenticación fue creada, pero hubo un error al guardar tu perfil: ${profileError.message}`,
-        });
       }
     });
   }
@@ -112,12 +84,12 @@ export function SignUpForm() {
   function handleGoogleSignIn() {
     startTransition(async () => {
         const role = form.getValues('role') as UserRole;
-        const { error } = await signInWithGoogle(role);
+        const { error } = await loginWithGoogle(role);
         if (error) {
             toast({
                 variant: "destructive",
-                title: "Error de Inicio de Sesión",
-                description: error.message || "No se pudo iniciar sesión con Google. Inténtalo de nuevo.",
+                title: "Error de Inicio de Sesión con Google",
+                description: error.message,
             });
         } else {
             toast({

@@ -8,7 +8,6 @@ import { Menu, LogOut, User, LogIn, MessageCircle } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
-import { signOutUser } from "@/lib/firebase/auth";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
 import * as React from "react";
@@ -26,12 +25,12 @@ const navLinks = [
 export default function Header() {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, loading } = useAuth();
+  const { user, loading, logout } = useAuth();
   const { toast } = useToast();
   const [open, setOpen] = React.useState(false);
 
   const handleSignOut = async () => {
-    await signOutUser();
+    await logout();
     toast({ title: "Has cerrado sesión." });
     router.push("/");
     router.refresh();

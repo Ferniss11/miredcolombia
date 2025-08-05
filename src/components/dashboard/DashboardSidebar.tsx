@@ -31,7 +31,6 @@ import {
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { signOutUser } from "@/lib/firebase/auth";
 import { useToast } from "@/hooks/use-toast";
 import Image from 'next/image';
 import { ThemeToggle } from "../ui/theme-toggle";
@@ -39,7 +38,7 @@ import { ThemeToggle } from "../ui/theme-toggle";
 export function DashboardSidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  const { userProfile } = useAuth();
+  const { userProfile, logout } = useAuth();
   const { toast } = useToast();
   const { state } = useSidebar();
 
@@ -70,7 +69,7 @@ export function DashboardSidebar() {
   ];
 
   const handleSignOut = async () => {
-    await signOutUser();
+    await logout();
     toast({ title: "Has cerrado sesión." });
     router.push("/");
     router.refresh();

@@ -2,25 +2,65 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
-import { onAuthStateChanged, User } from 'firebase/auth';
+import { 
+  onAuthStateChanged, 
+  User, 
+  createUserWithEmailAndPassword, 
+  signInWithEmailAndPassword, 
+  signInWithPopup, 
+  GoogleAuthProvider,
+  signOut,
+  type AuthError
+} from 'firebase/auth';
 import { auth, firebaseInitialized } from '@/lib/firebase/config';
-import type { UserProfile } from '@/lib/types';
+import type { UserProfile, UserRole } from '@/lib/types';
+
+// --- Helper function to create profile via API ---
+async function ensureUserProfileExists(user: User, name: string, role: UserRole): Promise<void> {
+  try {
+    const response = await fetch('/api/users', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        uid: user.uid,
+        name: name,
+        email: user.email,
+        role: role,
+      }),
+    });
+
+    if (!response.ok && response.status !== 409) {
+      const apiError = await response.json();
+      throw new Error(apiError.error?.message || 'Server error creating profile.');
+    }
+  } catch (error) {
+    console.error("Failed to create user profile via API:", error);
+    throw error;
+  }
+}
+
 
 interface AuthContextType {
   user: User | null;
   userProfile: UserProfile | null;
   loading: boolean;
   refreshUserProfile: () => Promise<void>;
+  // --- Auth methods ---
+  signUpWithEmail: (name: string, email: string, password: string, role: UserRole) => Promise<{ error: AuthError | null }>;
+  loginWithEmail: (email: string, password: string) => Promise<{ error: AuthError | null }>;
+  loginWithGoogle: (role: UserRole) => Promise<{ error: AuthError | null }>;
+  logout: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextType>({
-  user: null,
-  userProfile: null,
-  loading: true,
-  refreshUserProfile: async () => {},
-});
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const useAuth = () => useContext(AuthContext);
+export const useAuth = () => {
+    const context = useContext(AuthContext);
+    if (context === undefined) {
+        throw new Error('useAuth must be used within an AuthProvider');
+    }
+    return context;
+};
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -75,8 +115,65 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => unsubscribe();
   }, [fetchUserProfile]);
 
+  // --- Auth Method Implementations ---
+
+  const signUpWithEmail = async (name: string, email: string, password: string, role: UserRole) => {
+    if (!auth) return { error: { code: 'auth/unavailable', message: 'Firebase not initialized' } as AuthError };
+    try {
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        await ensureUserProfileExists(userCredential.user, name, role);
+        return { error: null };
+    } catch (error) {
+        return { error: error as AuthError };
+    }
+  };
+
+  const loginWithEmail = async (email: string, password: string) => {
+    if (!auth) return { error: { code: 'auth/unavailable', message: 'Firebase not initialized' } as AuthError };
+    try {
+        await signInWithEmailAndPassword(auth, email, password);
+        return { error: null };
+    } catch (error) {
+        return { error: error as AuthError };
+    }
+  };
+
+  const loginWithGoogle = async (role: UserRole) => {
+    if (!auth) return { error: { code: 'auth/unavailable', message: 'Firebase not initialized' } as AuthError };
+    const provider = new GoogleAuthProvider();
+    try {
+        const result = await signInWithPopup(auth, provider);
+        const user = result.user;
+        await ensureUserProfileExists(user, user.displayName || 'Usuario de Google', role);
+        return { error: null };
+    } catch (error) {
+      const authError = error as AuthError;
+        if (authError.code === 'auth/account-exists-with-different-credential') {
+             return { error: { ...authError, message: "Ya existe una cuenta con este email. Inicia sesión con tu contraseña para vincular tu cuenta de Google." }};
+        }
+        return { error: authError };
+    }
+  };
+
+  const logout = async () => {
+    if (!auth) return;
+    await signOut(auth);
+  };
+
+
+  const value = {
+    user,
+    userProfile,
+    loading,
+    refreshUserProfile,
+    signUpWithEmail,
+    loginWithEmail,
+    loginWithGoogle,
+    logout,
+  };
+
   return (
-    <AuthContext.Provider value={{ user, userProfile, loading, refreshUserProfile }}>
+    <AuthContext.Provider value={value}>
         {children}
     </AuthContext.Provider>
   );

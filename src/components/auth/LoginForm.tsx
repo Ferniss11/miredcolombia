@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
-import { signInWithEmail, signInWithGoogle } from "@/lib/firebase/auth";
+import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 
 import { Button } from "@/components/ui/button";
@@ -42,6 +42,7 @@ const GoogleIcon = () => (
 export function LoginForm() {
   const router = useRouter();
   const { toast } = useToast();
+  const { loginWithEmail, loginWithGoogle } = useAuth();
   const [isPending, startTransition] = useTransition();
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -54,7 +55,7 @@ export function LoginForm() {
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     startTransition(async () => {
-      const { error } = await signInWithEmail(values.email, values.password);
+      const { error } = await loginWithEmail(values.email, values.password);
       if (error) {
         toast({
           variant: "destructive",
@@ -74,12 +75,12 @@ export function LoginForm() {
   function handleGoogleSignIn() {
     startTransition(async () => {
         // For login, we don't need to specify a role, as the profile should already exist.
-        const { error } = await signInWithGoogle();
+        const { error } = await loginWithGoogle('User'); // Default to 'User', it will be ignored if profile exists
         if (error) {
             toast({
                 variant: "destructive",
                 title: "Error de Inicio de Sesión",
-                description: "No se pudo iniciar sesión con Google. Inténtalo de nuevo.",
+                description: error.message || "No se pudo iniciar sesión con Google. Inténtalo de nuevo.",
             });
         } else {
             toast({
