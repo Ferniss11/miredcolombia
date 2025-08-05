@@ -94,7 +94,22 @@ export async function signInWithGoogle(role: UserRole = 'User') {
 
         return { user, error: null };
     } catch (error) {
-        return { user: null, error: error as AuthError };
+        const authError = error as AuthError;
+        // Log the detailed error for debugging
+        console.error("Google Sign-In Error:", authError.code, authError.message);
+
+        // Handle specific, common errors with user-friendly messages
+        if (authError.code === 'auth/account-exists-with-different-credential') {
+            return {
+                user: null,
+                error: {
+                    ...authError,
+                    message: "Ya tienes una cuenta con este email. Inicia sesión con tu contraseña para conectar tu cuenta de Google."
+                }
+            };
+        }
+        
+        return { user: null, error: authError };
     }
 }
 

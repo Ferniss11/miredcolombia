@@ -117,7 +117,7 @@ export function SignUpForm() {
             toast({
                 variant: "destructive",
                 title: "Error de Inicio de Sesión",
-                description: "No se pudo iniciar sesión con Google. Inténtalo de nuevo.",
+                description: error.message || "No se pudo iniciar sesión con Google. Inténtalo de nuevo.",
             });
         } else {
             toast({
