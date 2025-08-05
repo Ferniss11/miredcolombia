@@ -5,13 +5,14 @@ import { createContext, useContext, useEffect, useState, ReactNode, useCallback 
 import { 
   onAuthStateChanged, 
   User, 
-  createUserWithEmailAndPassword, 
-  signInWithEmailAndPassword, 
   signInWithRedirect, 
   GoogleAuthProvider,
   signOut,
+  getRedirectResult, // Import getRedirectResult
   type Auth,
-  type AuthError
+  type AuthError,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword
 } from 'firebase/auth';
 import { getFirebaseServices } from '@/lib/firebase/config';
 import type { UserProfile, UserRole } from '@/lib/types';
@@ -30,6 +31,7 @@ async function ensureUserProfileExists(user: User, name: string, role: UserRole)
       }),
     });
 
+    // A 409 Conflict is okay, it means the profile already exists.
     if (!response.ok && response.status !== 409) {
       const apiError = await response.json();
       throw new Error(apiError.error?.message || 'Server error creating profile.');
@@ -68,7 +70,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   
-  // Hold the auth instance in a ref to keep it stable across renders
   const [authInstance, setAuthInstance] = useState<Auth | null>(null);
 
 
@@ -82,6 +83,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           },
         });
         if (!response.ok) {
+           // If the profile is not found (404), it might be a new user via redirect. Don't throw error yet.
+          if (response.status === 404) {
+            setUserProfile(null);
+            return;
+          }
           throw new Error('Failed to fetch user profile from API.');
         }
         const profile = await response.json();
@@ -109,11 +115,41 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const { auth } = getFirebaseServices();
         setAuthInstance(auth);
 
+        // --- Handle Redirect Result ---
+        getRedirectResult(auth)
+          .then(async (result) => {
+            if (result) {
+              // This is the user coming back from the redirect.
+              const user = result.user;
+              const pendingRole = sessionStorage.getItem('pendingRole') as UserRole | null;
+              
+              if (pendingRole) {
+                // This was a new signup attempt.
+                await ensureUserProfileExists(user, user.displayName || 'Usuario de Google', pendingRole);
+                sessionStorage.removeItem('pendingRole'); // Clean up
+              }
+              // The onAuthStateChanged listener below will handle fetching the profile.
+            }
+          }).catch(error => {
+            console.error("Error getting redirect result:", error);
+          }).finally(() => {
+             setLoading(false);
+          });
+
+
         const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-          setLoading(true);
-          setUser(firebaseUser);
-          await fetchUserProfile(firebaseUser);
-          setLoading(false);
+          if (firebaseUser) {
+            setUser(firebaseUser);
+            await fetchUserProfile(firebaseUser);
+          } else {
+            setUser(null);
+            setUserProfile(null);
+          }
+           // Only set loading to false after the first auth check is complete.
+          // The redirect handling might finish later.
+          if (loading) {
+            setLoading(false);
+          }
         });
 
         return () => unsubscribe();
@@ -121,7 +157,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         console.error("Firebase initialization failed in AuthProvider:", error);
         setLoading(false);
     }
-  }, [fetchUserProfile]);
+  // We only want this effect to run once on mount.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // --- Auth Method Implementations ---
 
@@ -150,12 +188,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (!authInstance) return { error: { code: 'auth/unavailable', message: 'Firebase not initialized' } as AuthError };
     const provider = new GoogleAuthProvider();
     try {
-        // Use signInWithRedirect instead of signInWithPopup
-        await signInWithRedirect(authInstance, provider);
-        // The rest of the logic (profile creation) will be handled by the onAuthStateChanged listener
-        // when the user is redirected back to the app. We can add a session storage item
-        // to remember the intended role across the redirect.
+        // Set the role in session storage BEFORE redirecting
         sessionStorage.setItem('pendingRole', role);
+        await signInWithRedirect(authInstance, provider);
+        // The promise from signInWithRedirect never resolves as the page is left.
+        // Logic continues in the getRedirectResult handler.
         return { error: null };
     } catch (error) {
       const authError = error as AuthError;
