@@ -151,6 +151,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const provider = new GoogleAuthProvider();
     try {
         const result = await signInWithPopup(authInstance, provider);
+
+        console.log(result)
+
         const user = result.user;
         await ensureUserProfileExists(user, user.displayName || 'Usuario de Google', role);
         return { error: null };
