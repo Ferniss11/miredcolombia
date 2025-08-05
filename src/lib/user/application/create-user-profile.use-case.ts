@@ -1,13 +1,13 @@
 // application/create-user-profile.use-case.ts
 import { User, UserRole } from '../domain/user.entity';
 import { UserRepository } from '../domain/user.repository';
+import { adminAuth } from '@/lib/firebase/admin-config'; // Import Firebase Admin Auth
 
 export type CreateUserInput = {
   uid: string;
   name: string;
   email: string;
   role: UserRole;
-  
 };
 
 export class CreateUserProfileUseCase {
@@ -21,6 +21,21 @@ export class CreateUserProfileUseCase {
       createdAt: now,
       updatedAt: now,
     };
-    return this.userRepository.create(newUser);
+
+    // Step 1: Create the user profile in Firestore
+    const createdUser = await this.userRepository.create(newUser);
+
+    // Step 2: Set the custom claim on the user's auth token
+    if (adminAuth) {
+        try {
+            await adminAuth.setCustomUserClaims(createdUser.uid, { role: createdUser.role });
+        } catch (error) {
+            console.error(`Failed to set custom claims for user ${createdUser.uid}:`, error);
+            // This is a critical error, but we might not want to fail the whole process.
+            // For now, we'll log it. In a production system, we might add it to a retry queue.
+        }
+    }
+
+    return createdUser;
   }
 }
