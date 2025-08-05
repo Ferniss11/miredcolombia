@@ -10,9 +10,10 @@ import {
   signInWithPopup, 
   GoogleAuthProvider,
   signOut,
+  type Auth,
   type AuthError
 } from 'firebase/auth';
-import { auth, firebaseInitialized } from '@/lib/firebase/config';
+import { getFirebaseServices } from '@/lib/firebase/config';
 import type { UserProfile, UserRole } from '@/lib/types';
 
 // --- Helper function to create profile via API ---
@@ -66,6 +67,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  
+  // Hold the auth instance in a ref to keep it stable across renders
+  const [authInstance, setAuthInstance] = useState<Auth | null>(null);
+
 
   const fetchUserProfile = useCallback(async (firebaseUser: User | null) => {
     if (firebaseUser) {
@@ -100,27 +105,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
 
   useEffect(() => {
-    if (!firebaseInitialized || !auth) {
-      setLoading(false);
-      return;
+    try {
+        const { auth } = getFirebaseServices();
+        setAuthInstance(auth);
+
+        const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+          setLoading(true);
+          setUser(firebaseUser);
+          await fetchUserProfile(firebaseUser);
+          setLoading(false);
+        });
+
+        return () => unsubscribe();
+    } catch (error) {
+        console.error("Firebase initialization failed in AuthProvider:", error);
+        setLoading(false);
     }
-
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      setLoading(true);
-      setUser(firebaseUser);
-      await fetchUserProfile(firebaseUser);
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
   }, [fetchUserProfile]);
 
   // --- Auth Method Implementations ---
 
   const signUpWithEmail = async (name: string, email: string, password: string, role: UserRole) => {
-    if (!auth) return { error: { code: 'auth/unavailable', message: 'Firebase not initialized' } as AuthError };
+    if (!authInstance) return { error: { code: 'auth/unavailable', message: 'Firebase not initialized' } as AuthError };
     try {
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const userCredential = await createUserWithEmailAndPassword(authInstance, email, password);
         await ensureUserProfileExists(userCredential.user, name, role);
         return { error: null };
     } catch (error) {
@@ -129,9 +137,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const loginWithEmail = async (email: string, password: string) => {
-    if (!auth) return { error: { code: 'auth/unavailable', message: 'Firebase not initialized' } as AuthError };
+    if (!authInstance) return { error: { code: 'auth/unavailable', message: 'Firebase not initialized' } as AuthError };
     try {
-        await signInWithEmailAndPassword(auth, email, password);
+        await signInWithEmailAndPassword(authInstance, email, password);
         return { error: null };
     } catch (error) {
         return { error: error as AuthError };
@@ -139,10 +147,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const loginWithGoogle = async (role: UserRole) => {
-    if (!auth) return { error: { code: 'auth/unavailable', message: 'Firebase not initialized' } as AuthError };
+    if (!authInstance) return { error: { code: 'auth/unavailable', message: 'Firebase not initialized' } as AuthError };
     const provider = new GoogleAuthProvider();
     try {
-        const result = await signInWithPopup(auth, provider);
+        const result = await signInWithPopup(authInstance, provider);
         const user = result.user;
         await ensureUserProfileExists(user, user.displayName || 'Usuario de Google', role);
         return { error: null };
@@ -151,13 +159,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (authError.code === 'auth/account-exists-with-different-credential') {
              return { error: { ...authError, message: "Ya existe una cuenta con este email. Inicia sesión con tu contraseña para vincular tu cuenta de Google." }};
         }
+        // This will now catch the popup-closed-by-user error more cleanly if it still occurs
+        console.error("Google Sign-In Error:", authError.code, authError.message);
         return { error: authError };
     }
   };
 
   const logout = async () => {
-    if (!auth) return;
-    await signOut(auth);
+    if (!authInstance) return;
+    await signOut(authInstance);
   };
 
 
