@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { useSearchParams, useRouter } from "next/navigation";
-import { useTransition } from "react";
+import { useTransition, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 
@@ -48,7 +48,9 @@ export function SignUpForm() {
   const searchParams = useSearchParams();
   const { toast } = useToast();
   const { signUpWithEmail, loginWithGoogle } = useAuth();
-  const [isPending, startTransition] = useTransition();
+  const [isFormPending, startFormTransition] = useTransition();
+  const [isGooglePending, setIsGooglePending] = useState(false);
+
 
   const preselectedRole = searchParams.get("role") === "advertiser" ? "Advertiser" : "User";
 
@@ -63,7 +65,7 @@ export function SignUpForm() {
   });
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    startTransition(async () => {
+    startFormTransition(async () => {
       const { error } = await signUpWithEmail(values.name, values.email, values.password, values.role);
       if (error) {
         toast({
@@ -81,24 +83,24 @@ export function SignUpForm() {
     });
   }
 
-  function handleGoogleSignIn() {
-    startTransition(async () => {
-        const role = form.getValues('role') as UserRole;
-        const { error } = await loginWithGoogle(role);
-        if (error) {
-            toast({
-                variant: "destructive",
-                title: "Error de Inicio de Sesión con Google",
-                description: error.message,
-            });
-        } else {
-            toast({
-                title: "¡Bienvenido!",
-                description: "Has iniciado sesión exitosamente.",
-            });
-            router.push('/dashboard');
-        }
-    });
+  async function handleGoogleSignIn() {
+    setIsGooglePending(true);
+    const role = form.getValues('role') as UserRole;
+    const { error } = await loginWithGoogle(role);
+    if (error) {
+        toast({
+            variant: "destructive",
+            title: "Error de Inicio de Sesión con Google",
+            description: error.message,
+        });
+    } else {
+        toast({
+            title: "¡Bienvenido!",
+            description: "Has iniciado sesión exitosamente.",
+        });
+        router.push('/dashboard');
+    }
+    setIsGooglePending(false);
   }
 
   return (
@@ -147,7 +149,7 @@ export function SignUpForm() {
                     <FormItem>
                     <FormLabel>Nombre y Apellidos</FormLabel>
                     <FormControl>
-                        <Input placeholder="Tu nombre completo" {...field} disabled={isPending} />
+                        <Input placeholder="Tu nombre completo" {...field} disabled={isFormPending || isGooglePending} />
                     </FormControl>
                     <FormMessage />
                     </FormItem>
@@ -160,7 +162,7 @@ export function SignUpForm() {
                 <FormItem>
                   <FormLabel>Correo Electrónico</FormLabel>
                   <FormControl>
-                    <Input placeholder="nombre@ejemplo.com" {...field} disabled={isPending} />
+                    <Input placeholder="nombre@ejemplo.com" {...field} disabled={isFormPending || isGooglePending} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -173,21 +175,21 @@ export function SignUpForm() {
                 <FormItem>
                   <FormLabel>Contraseña</FormLabel>
                   <FormControl>
-                    <Input type="password" placeholder="••••••••" {...field} disabled={isPending} />
+                    <Input type="password" placeholder="••••••••" {...field} disabled={isFormPending || isGooglePending} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            <Button type="submit" className="w-full" disabled={isPending}>
-              {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            <Button type="submit" className="w-full" disabled={isFormPending || isGooglePending}>
+              {isFormPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Crear Cuenta
             </Button>
           </form>
         </Form>
         <Separator className="my-6" />
-        <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isPending}>
-            {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <GoogleIcon />}
+        <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isFormPending || isGooglePending}>
+            {isGooglePending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <GoogleIcon />}
             Continuar con Google
         </Button>
       </CardContent>

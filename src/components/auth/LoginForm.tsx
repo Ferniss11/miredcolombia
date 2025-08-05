@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { useRouter } from "next/navigation";
-import { useTransition } from "react";
+import { useTransition, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 
@@ -43,7 +43,8 @@ export function LoginForm() {
   const router = useRouter();
   const { toast } = useToast();
   const { loginWithEmail, loginWithGoogle } = useAuth();
-  const [isPending, startTransition] = useTransition();
+  const [isFormPending, startFormTransition] = useTransition();
+  const [isGooglePending, setIsGooglePending] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -54,7 +55,7 @@ export function LoginForm() {
   });
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    startTransition(async () => {
+    startFormTransition(async () => {
       const { error } = await loginWithEmail(values.email, values.password);
       if (error) {
         toast({
@@ -72,24 +73,24 @@ export function LoginForm() {
     });
   }
 
-  function handleGoogleSignIn() {
-    startTransition(async () => {
-        // For login, we don't need to specify a role, as the profile should already exist.
-        const { error } = await loginWithGoogle('User'); // Default to 'User', it will be ignored if profile exists
-        if (error) {
-            toast({
-                variant: "destructive",
-                title: "Error de Inicio de Sesión",
-                description: error.message || "No se pudo iniciar sesión con Google. Inténtalo de nuevo.",
-            });
-        } else {
-            toast({
-                title: "¡Bienvenido de vuelta!",
-                description: "Has iniciado sesión exitosamente.",
-            });
-            router.push('/dashboard');
-        }
-    });
+  async function handleGoogleSignIn() {
+    setIsGooglePending(true);
+    // For login, we don't need to specify a role, as the profile should already exist.
+    const { error } = await loginWithGoogle('User'); // Default to 'User', it will be ignored if profile exists
+    if (error) {
+        toast({
+            variant: "destructive",
+            title: "Error de Inicio de Sesión",
+            description: error.message || "No se pudo iniciar sesión con Google. Inténtalo de nuevo.",
+        });
+    } else {
+        toast({
+            title: "¡Bienvenido de vuelta!",
+            description: "Has iniciado sesión exitosamente.",
+        });
+        router.push('/dashboard');
+    }
+    setIsGooglePending(false);
   }
 
   return (
@@ -104,7 +105,7 @@ export function LoginForm() {
                 <FormItem>
                   <FormLabel>Correo Electrónico</FormLabel>
                   <FormControl>
-                    <Input placeholder="nombre@ejemplo.com" {...field} disabled={isPending} />
+                    <Input placeholder="nombre@ejemplo.com" {...field} disabled={isFormPending || isGooglePending} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -117,21 +118,21 @@ export function LoginForm() {
                 <FormItem>
                   <FormLabel>Contraseña</FormLabel>
                   <FormControl>
-                    <Input type="password" placeholder="••••••••" {...field} disabled={isPending} />
+                    <Input type="password" placeholder="••••••••" {...field} disabled={isFormPending || isGooglePending} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            <Button type="submit" className="w-full" disabled={isPending}>
-              {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            <Button type="submit" className="w-full" disabled={isFormPending || isGooglePending}>
+              {isFormPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Iniciar Sesión
             </Button>
           </form>
         </Form>
         <Separator className="my-6" />
-        <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isPending}>
-            {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <GoogleIcon />}
+        <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isFormPending || isGooglePending}>
+            {isGooglePending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <GoogleIcon />}
             Continuar con Google
         </Button>
       </CardContent>
