@@ -7,14 +7,12 @@ import * as z from "zod";
 import { useAuth } from "@/context/AuthContext";
 import { useTransition, useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { updateBusinessProfileAction } from "@/lib/user-actions";
 import { searchBusinessesOnGoogleAction, getBusinessDetailsForVerificationAction, verifyAndLinkBusinessAction, unlinkBusinessFromAdvertiserAction } from "@/lib/directory-actions";
 
 import type { BusinessProfile, PlaceDetails, UserProfile } from "@/lib/types";
 
-
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -196,12 +194,26 @@ export default function AdvertiserProfilePage() {
         }
 
         startTransition(async () => {
-            const result = await updateBusinessProfileAction(user.uid, data as BusinessProfile);
-            if (result.error) {
-                toast({ variant: 'destructive', title: 'Error al actualizar', description: result.error });
-            } else {
+            try {
+                const idToken = await user.getIdToken();
+                const response = await fetch(`/api/users/${user.uid}/business-profile`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${idToken}`,
+                    },
+                    body: JSON.stringify(data),
+                });
+
+                if (!response.ok) {
+                    const apiError = await response.json();
+                    throw new Error(apiError.error?.message || 'Error del servidor al actualizar.');
+                }
+
                 toast({ title: 'Éxito', 'description': '¡Tu perfil de negocio ha sido actualizado!' });
                 await refreshUserProfile();
+            } catch (error: any) {
+                toast({ variant: 'destructive', title: 'Error al actualizar', description: error.message });
             }
         });
     }

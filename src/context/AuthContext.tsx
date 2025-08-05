@@ -4,7 +4,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { auth, firebaseInitialized } from '@/lib/firebase/config';
-import { getUserProfile } from '@/services/user.service';
 import type { UserProfile } from '@/lib/types';
 
 interface AuthContextType {
@@ -30,8 +29,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const fetchUserProfile = useCallback(async (firebaseUser: User | null) => {
     if (firebaseUser) {
-      const profile = await getUserProfile(firebaseUser.uid);
-      setUserProfile(profile);
+      try {
+        const idToken = await firebaseUser.getIdToken();
+        const response = await fetch(`/api/users/${firebaseUser.uid}`, {
+          headers: {
+            'Authorization': `Bearer ${idToken}`,
+          },
+        });
+        if (!response.ok) {
+          throw new Error('Failed to fetch user profile from API.');
+        }
+        const profile = await response.json();
+        setUserProfile(profile);
+      } catch (error) {
+        console.error("Error fetching user profile:", error);
+        setUserProfile(null);
+      }
     } else {
       setUserProfile(null);
     }

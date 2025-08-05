@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { z } from 'zod';
@@ -29,7 +30,8 @@ async function verifyUserAndGetDb(uid: string) {
     return adminDb;
 }
 
-
+// THIS ACTION IS NOW DEPRECATED and will be removed.
+// It is replaced by PUT /api/users/[uid]/business-profile
 export async function updateBusinessProfileAction(uid: string, data: BusinessProfile) {
     try {
         const db = await verifyUserAndGetDb(uid);
@@ -186,48 +188,51 @@ export async function updateCandidateProfileAction(uid: string, formData: FormDa
         const resumeFile = formData.get('resumeFile') as File;
 
         // --- File Upload Logic ---
-        if (!resumeFile) {
-            throw new Error('El archivo del currículum es requerido.');
-        }
+        let resumeUrl;
+        if (resumeFile && resumeFile.size > 0) {
+            if (!adminStorage) {
+                throw new Error('Firebase Admin Storage no está inicializado.');
+            }
+            const BUCKET_NAME = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET;
+            if (!BUCKET_NAME) {
+                throw new Error('El nombre del bucket de Firebase Storage no está configurado.');
+            }
 
-        if (!adminStorage) {
-            throw new Error('Firebase Admin Storage no está inicializado.');
+            const buffer = Buffer.from(await resumeFile.arrayBuffer());
+            const filePath = `resumes/${uid}/${Date.now()}-${resumeFile.name}`;
+            
+            const bucket = adminStorage.bucket(BUCKET_NAME);
+            const file = bucket.file(filePath);
+          
+            await file.save(buffer, {
+                metadata: {
+                    contentType: resumeFile.type,
+                    cacheControl: 'public, max-age=31536000',
+                },
+            });
+          
+            const [url] = await file.getSignedUrl({
+                action: 'read',
+                expires: '01-01-2100',
+            });
+            resumeUrl = url;
         }
-        const BUCKET_NAME = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET;
-        if (!BUCKET_NAME) {
-            throw new Error('El nombre del bucket de Firebase Storage no está configurado.');
-        }
-
-        const buffer = Buffer.from(await resumeFile.arrayBuffer());
-        const filePath = `resumes/${uid}/${Date.now()}-${resumeFile.name}`;
-        
-        const bucket = adminStorage.bucket(BUCKET_NAME);
-        const file = bucket.file(filePath);
-      
-        await file.save(buffer, {
-            metadata: {
-                contentType: resumeFile.type,
-                cacheControl: 'public, max-age=31536000',
-            },
-        });
-      
-        const [resumeUrl] = await file.getSignedUrl({
-            action: 'read',
-            expires: '01-01-2100',
-        });
 
         // --- Firestore Update Logic ---
         const userRef = db.collection("users").doc(uid);
         const userDoc = await userRef.get();
         const existingProfile = (userDoc.data() as UserProfile)?.candidateProfile || {};
 
-        const newProfile: CandidateProfile = {
+        const newProfile: Partial<CandidateProfile> = {
             ...existingProfile,
             professionalTitle,
             summary,
             skills,
-            resumeUrl,
         };
+        
+        if (resumeUrl) {
+            newProfile.resumeUrl = resumeUrl;
+        }
 
         await userRef.update({
             candidateProfile: newProfile,

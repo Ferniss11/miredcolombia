@@ -1,3 +1,4 @@
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -5,7 +6,7 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useTransition } from "react";
-import { signUpWithEmail, signInWithGoogle } from "@/lib/firebase/auth";
+import { signInWithGoogle, signUpWithEmail } from "@/lib/firebase/auth";
 import { useToast } from "@/hooks/use-toast";
 
 import { Button } from "@/components/ui/button";
@@ -56,20 +57,49 @@ export function SignUpForm() {
   function onSubmit(values: z.infer<typeof formSchema>) {
     startTransition(async () => {
       const role = searchParams.get("role") === "advertiser" ? "Advertiser" : "User";
-      const { error } = await signUpWithEmail(values.name, values.email, values.password, role as UserRole);
+      
+      // Step 1: Create the user in Firebase Auth (client-side)
+      const { user: firebaseUser, error: authError } = await signUpWithEmail(values.name, values.email, values.password, role as UserRole);
 
-      if (error) {
+      if (authError || !firebaseUser) {
         toast({
           variant: "destructive",
           title: "Error de Registro",
           description: "No se pudo crear la cuenta. El correo quizás ya esté en uso.",
         });
-      } else {
+        return;
+      }
+
+      // Step 2: Call our own API to create the user profile in Firestore
+      try {
+        const response = await fetch('/api/users', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                uid: firebaseUser.uid,
+                name: values.name,
+                email: values.email,
+                role: role,
+            }),
+        });
+        
+        if (!response.ok) {
+            const apiError = await response.json();
+            throw new Error(apiError.error?.message || 'Error del servidor al crear el perfil.');
+        }
+
         toast({
           title: "¡Bienvenido!",
           description: "Tu cuenta ha sido creada exitosamente.",
         });
         router.push("/dashboard");
+
+      } catch (profileError: any) {
+        toast({
+          variant: "destructive",
+          title: "Error de Perfil",
+          description: `Tu cuenta de autenticación fue creada, pero hubo un error al guardar tu perfil: ${profileError.message}`,
+        });
       }
     });
   }
