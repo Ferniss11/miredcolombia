@@ -1,3 +1,4 @@
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -21,6 +22,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Loader2 } from "lucide-react";
+import type { UserRole } from "@/lib/types";
 
 const formSchema = z.object({
   email: z.string().email({ message: "Dirección de correo electrónico inválida." }),
@@ -71,12 +73,13 @@ export function LoginForm() {
 
   function handleGoogleSignIn() {
     startTransition(async () => {
+        // For login, we don't need to specify a role, as the profile should already exist.
         const { error } = await signInWithGoogle();
         if (error) {
             toast({
                 variant: "destructive",
                 title: "Error de Inicio de Sesión",
-                description: error.message,
+                description: "No se pudo iniciar sesión con Google. Inténtalo de nuevo.",
             });
         } else {
             toast({
@@ -128,7 +131,7 @@ export function LoginForm() {
         <Separator className="my-6" />
         <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isPending}>
             {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <GoogleIcon />}
-            Iniciar Sesión con Google
+            Continuar con Google
         </Button>
       </CardContent>
     </Card>
