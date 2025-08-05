@@ -125,6 +125,14 @@ src/lib/
     *   **ELIMINAR:** `src/services/user.service.ts` (lógica movida al `FirestoreUserRepository` y a los `UseCases`).
     *   **ELIMINAR:** `src/lib/firebase/auth.ts` (lógica movida al `FirebaseAuthAdapter` y a los `UseCases/Controllers` de autenticación).
 
+### **Paso 1.5: Configuración de Seguridad de Roles (Custom Claims)**
+
+*   **Objetivo:** Implementar un sistema de roles robusto y seguro utilizando Firebase Custom Claims.
+*   **Tareas:**
+    *   **Extender el `CreateUserProfileUseCase`:** Después de crear el documento de usuario en Firestore, este caso de uso también debe llamar al Admin SDK de Firebase Auth para establecer el `customClaim` de rol en el objeto de autenticación del usuario (`admin.auth().setCustomUserClaims(uid, { role: newUser.role })`).
+    *   **Crear un `SetUserRoleUseCase`:** Crear un nuevo caso de uso para que un administrador pueda cambiar el rol de otro usuario. Este caso de uso recibirá un `uid` y un `newRole`.
+    *   **Crear endpoint `POST /api/users/{uid}/role`:** Crear una nueva ruta y método en el `UserController` para exponer el `SetUserRoleUseCase`. Este endpoint debe estar protegido y ser accesible **solo por usuarios con rol 'Admin'**.
+
 ---
 
 ## **Fase 2: Refactorización del Flujo de Chat y Agentes de IA**
@@ -149,8 +157,8 @@ src/lib/
 *   **`ai/genkit-agent.adapter.ts`**:
     *   Implementa una interfaz `AgentAdapter`.
     *   **Es el único lugar que importa y llama a los flujos de Genkit**. Adapta los datos del caso de uso al formato que el flujo de Genkit necesita.
-*   **`api/chat.controller.ts`**: Controlador para manejar las peticiones HTTP.
-*   **`api/routes.ts`**: API Routes correspondientes que utilizan el `ChatController` (`POST /api/chat/sessions`, `POST /api/chat/sessions/[id]/messages`).
+*   **`api/chat.controller.ts`**: Crear un `ChatController` que implemente la `BaseController` para manejar las peticiones HTTP del chat.
+*   **`api/routes.ts`**: Crear los API Routes correspondientes (`POST /api/chat/sessions`, `POST /api/chat/sessions/[id]/messages`) que utilizarán el `ChatController` y el `apiHandler`.
 
 ### **Paso 2.4: Actualizar la UI y Eliminar Código Antiguo**
 
@@ -180,8 +188,8 @@ src/lib/
 
 *   **`persistence/firestore-directory.repository.ts`**: Implementa `DirectoryRepository`.
 *   **`search/google-places.adapter.ts`**: Encapsula la llamada a la herramienta `googlePlacesSearch` o la API de Google Maps.
-*   **`api/directory.controller.ts`**: Controlador para manejar las peticiones HTTP del directorio.
-*   **`api/routes.ts`**: API Routes correspondientes que utilizan el `DirectoryController`.
+*   **`api/directory.controller.ts`**: Crear un `DirectoryController` para manejar las peticiones HTTP del directorio.
+*   **`api/routes.ts`**: Crear los API Routes correspondientes que utilizarán el `DirectoryController` y el `apiHandler`.
 
 ### **Paso 3.4: Actualizar la UI y Eliminar Código Antiguo**
 
