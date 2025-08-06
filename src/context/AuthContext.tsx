@@ -112,50 +112,40 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const { auth } = getFirebaseServices();
     setAuthInstance(auth);
-    let unsubscribe: () => void;
 
-    const handleAuthFlow = async () => {
-      setLoading(true);
-      try {
-        const result = await getRedirectResult(auth);
-        
-        if (result) {
-          // User has just been redirected from Google.
-          const user = result.user;
-          const pendingRole = sessionStorage.getItem('pendingRole') as UserRole | null;
-          
-          if (pendingRole) {
-            // This was a new signup attempt.
-            await ensureUserProfileExists(user, user.displayName || 'Usuario de Google', pendingRole);
-            sessionStorage.removeItem('pendingRole');
-          }
-          // The onAuthStateChanged listener below will now correctly pick up this user.
+    // This function runs once on mount to handle the redirect result.
+    const handleRedirectResult = async () => {
+        try {
+            const result = await getRedirectResult(auth);
+            if (result) {
+                // User has successfully signed in via redirect.
+                const user = result.user;
+                const pendingRole = sessionStorage.getItem('pendingRole') as UserRole;
+                if (pendingRole) {
+                    await ensureUserProfileExists(user, user.displayName || 'Usuario de Google', pendingRole);
+                    sessionStorage.removeItem('pendingRole');
+                }
+            }
+        } catch (error) {
+            console.error("Error processing redirect result:", error);
         }
-      } catch (error) {
-        console.error("Error processing redirect result:", error);
-      }
 
-      // Now, set up the regular auth state listener.
-      unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-        if (firebaseUser) {
-          setUser(firebaseUser);
-          await fetchUserProfile(firebaseUser);
-        } else {
-          setUser(null);
-          setUserProfile(null);
-        }
-        setLoading(false);
-      });
+        // Set up the regular auth state listener AFTER handling the redirect.
+        const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+            if (firebaseUser) {
+                setUser(firebaseUser);
+                await fetchUserProfile(firebaseUser);
+            } else {
+                setUser(null);
+                setUserProfile(null);
+            }
+            setLoading(false);
+        });
+
+        return () => unsubscribe();
     };
 
-    handleAuthFlow();
-
-    // Cleanup function
-    return () => {
-      if (unsubscribe) {
-        unsubscribe();
-      }
-    };
+    handleRedirectResult();
   // We only want this effect to run once on mount.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -190,6 +180,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
         sessionStorage.setItem('pendingRole', role);
         await signInWithRedirect(authInstance, provider);
+        // signInWithRedirect does not return a result here, it redirects.
+        // The result is handled by getRedirectResult on page load.
         return { error: null };
     } catch (error) {
       const authError = error as AuthError;
