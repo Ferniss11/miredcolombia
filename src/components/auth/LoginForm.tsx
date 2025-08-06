@@ -68,7 +68,7 @@ export function LoginForm() {
           title: "¡Bienvenido de vuelta!",
           description: "Has iniciado sesión exitosamente.",
         });
-        router.push("/dashboard");
+        // The redirection is handled by the page's useEffect now.
       }
     });
   }
@@ -88,7 +88,7 @@ export function LoginForm() {
             title: "¡Bienvenido de vuelta!",
             description: "Has iniciado sesión exitosamente.",
         });
-        router.push('/dashboard');
+       // The redirection is handled by the page's useEffect now.
     }
     setIsGooglePending(false);
   }

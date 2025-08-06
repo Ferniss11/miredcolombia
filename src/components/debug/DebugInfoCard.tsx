@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
 import { ChevronDown, Code } from "lucide-react";
+import { useState } from "react";
 
 type DebugInfoCardProps = {
     title: string;
@@ -13,17 +14,19 @@ type DebugInfoCardProps = {
 };
 
 export default function DebugInfoCard({ title, description, data }: DebugInfoCardProps) {
+    const [isOpen, setIsOpen] = useState(false);
+
     return (
-        <Collapsible>
+        <Collapsible open={isOpen} onOpenChange={setIsOpen}>
             <Card>
                 <CollapsibleTrigger asChild>
                      <CardHeader className="flex flex-row items-center justify-between cursor-pointer hover:bg-muted/50">
                         <div>
                             <CardTitle className="flex items-center gap-2"><Code className="w-5 h-5"/>{title}</CardTitle>
-                            <CardDescription className="mt-1">{description}</CardDescription>
+                            <CardDescription className="mt-1 text-left">{description}</CardDescription>
                         </div>
                         <Button variant="ghost" size="sm" className="w-9 p-0">
-                            <ChevronDown className="h-4 w-4 transition-transform [&[data-state=open]]:rotate-180" />
+                            <ChevronDown className="h-4 w-4 transition-transform duration-200" data-state={isOpen ? 'open' : 'closed'} />
                         </Button>
                     </CardHeader>
                 </CollapsibleTrigger>
