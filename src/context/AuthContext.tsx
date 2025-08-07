@@ -32,7 +32,6 @@ async function ensureUserProfileExists(user: User, name: string, role: UserRole)
       }),
     });
 
-    // A 409 Conflict is okay, it means the profile already exists.
     if (!response.ok && response.status !== 409) {
       const apiError = await response.json();
       throw new Error(apiError.error?.message || 'Server error creating profile.');
@@ -77,7 +76,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const fetchUserProfile = useCallback(async (firebaseUser: User | null) => {
     if (firebaseUser) {
       try {
-        const idToken = await firebaseUser.getIdToken(true); // Force refresh token
+        const idToken = await firebaseUser.getIdToken(true);
         const response = await fetch(`/api/users/${firebaseUser.uid}`, {
           headers: {
             'Authorization': `Bearer ${idToken}`,
@@ -101,15 +100,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
-  const refreshUserProfile = useCallback(async () => {
-    if (user) {
-        setLoading(true);
-        await fetchUserProfile(user);
-        setLoading(false);
-    }
-  }, [user, fetchUserProfile]);
-
-
   useEffect(() => {
     const { auth } = getFirebaseServices();
     setAuthInstance(auth);
@@ -130,15 +120,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [fetchUserProfile]);
 
 
-  // --- Auth Method Implementations ---
+  const refreshUserProfile = useCallback(async () => {
+    if (user) {
+        setLoading(true);
+        await fetchUserProfile(user);
+        setLoading(false);
+    }
+  }, [user, fetchUserProfile]);
 
   const signUpWithEmail = async (name: string, email: string, password: string, role: UserRole) => {
     if (!authInstance) return { error: { code: 'auth/unavailable', message: 'Firebase not initialized' } as AuthError };
     try {
         const userCredential = await createUserWithEmailAndPassword(authInstance, email, password);
-        // Explicitly wait for the profile to be created before proceeding
         await ensureUserProfileExists(userCredential.user, name, role);
-        // Force a fetch of the newly created profile
         await fetchUserProfile(userCredential.user);
         return { error: null };
     } catch (error) {
@@ -160,49 +154,43 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (!authInstance) return { error: { code: 'auth/unavailable', message: 'Firebase not initialized' } as AuthError };
     const provider = new GoogleAuthProvider();
     try {
-        const result = await signInWithPopup(authInstance, provider);
-        const user = result.user;
-        await ensureUserProfileExists(user, user.displayName || 'Usuario de Google', role);
-        await fetchUserProfile(user);
-        return { error: null };
+      const result = await signInWithPopup(authInstance, provider);
+      const user = result.user;
+      await ensureUserProfileExists(user, user.displayName || 'Usuario de Google', role);
+      await fetchUserProfile(user);
+      return { error: null };
     } catch (error) {
       const authError = error as AuthError;
-        if (authError.code === 'auth/account-exists-with-different-credential' && authError.customData?.email) {
-            const email = authError.customData.email as string;
-            // Get the credential from the error
-            const credential = GoogleAuthProvider.credentialFromError(authError);
-            if (!credential) {
-                return { error: { ...authError, message: "No se pudo obtener la credencial de Google." }};
-            }
-            // Ask user for password to their existing account
-            const password = prompt(`Ya existe una cuenta con el correo ${email}. Por favor, introduce tu contraseña para vincular tu cuenta de Google.`);
-            if (!password) {
-                return { error: { ...authError, message: "Se requiere la contraseña para vincular las cuentas." }};
-            }
-            try {
-                // Sign in to the existing account
-                const userCredential = await signInWithEmailAndPassword(authInstance, email, password);
-                // Link the Google credential
-                await linkWithCredential(userCredential.user, credential);
-                await fetchUserProfile(userCredential.user);
-                return { error: null };
-            } catch (linkError) {
-                return { error: linkError as AuthError };
-            }
+      // Handle account linking flow
+      if (authError.code === 'auth/account-exists-with-different-credential' && authError.customData?.email) {
+        const email = authError.customData.email as string;
+        const credential = GoogleAuthProvider.credentialFromError(authError);
+        if (!credential) {
+          return { error: { ...authError, message: "Could not get credential from Google error." } };
         }
-        console.error("Google Sign-In Error:", authError.code, authError.message);
-        return { error: authError };
+        const password = prompt(`An account already exists with ${email}. Please enter your password to link your Google account.`);
+        if (!password) {
+          return { error: { ...authError, message: "Password is required to link accounts." } };
+        }
+        try {
+          const userCredential = await signInWithEmailAndPassword(authInstance, email, password);
+          await linkWithCredential(userCredential.user, credential);
+          await fetchUserProfile(userCredential.user);
+          return { error: null };
+        } catch (linkError) {
+          return { error: linkError as AuthError };
+        }
+      }
+      console.error("Google Sign-In Error:", authError.code, authError.message);
+      return { error: authError };
     }
   };
 
   const logout = async () => {
     if (!authInstance) return;
     await signOut(authInstance);
-    // Centralized redirection logic
     router.push('/');
-    router.refresh();
   };
-
 
   const value = {
     user,

@@ -5,11 +5,16 @@ import { google } from 'googleapis';
 import { adminDb } from '@/lib/firebase/admin-config';
 import type { GoogleTokens } from './types';
 
+// Ensure the redirect URI is consistent and points to the deployed endpoint.
+// It's crucial that this exact URI is listed in the "Authorized redirect URIs"
+// for your OAuth 2.0 Client ID in the Google Cloud Console.
+const REDIRECT_URI = `${process.env.NEXT_PUBLIC_APP_URL}/api/oauth/google/callback`;
+
 const SCOPES = ['https://www.googleapis.com/auth/calendar'];
 const oauth2Client = new google.auth.OAuth2(
   process.env.GOOGLE_CLIENT_ID,
   process.env.GOOGLE_CLIENT_SECRET,
-  process.env.NEXT_PUBLIC_GOOGLE_OAUTH_REDIRECT_URI
+  REDIRECT_URI
 );
 
 export async function getGoogleAuthUrlAction(uid: string) {
@@ -49,7 +54,7 @@ export async function getGoogleAuthClientForUser(uid: string) {
     const client = new google.auth.OAuth2(
         process.env.GOOGLE_CLIENT_ID,
         process.env.GOOGLE_CLIENT_SECRET,
-        process.env.NEXT_PUBLIC_GOOGLE_OAUTH_REDIRECT_URI
+        REDIRECT_URI
     );
 
     client.setCredentials(tokens);

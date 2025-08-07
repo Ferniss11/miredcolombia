@@ -3,10 +3,12 @@ import { google } from 'googleapis';
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase/admin-config';
 
+const REDIRECT_URI = `${process.env.NEXT_PUBLIC_APP_URL}/api/oauth/google/callback`;
+
 const oauth2Client = new google.auth.OAuth2(
   process.env.GOOGLE_CLIENT_ID,
   process.env.GOOGLE_CLIENT_SECRET,
-  process.env.NEXT_PUBLIC_GOOGLE_OAUTH_REDIRECT_URI
+  REDIRECT_URI
 );
 
 export async function GET(request: NextRequest) {
@@ -26,7 +28,10 @@ export async function GET(request: NextRequest) {
     
     // Store tokens securely in Firestore associated with the user
     if (tokens.access_token && tokens.refresh_token) {
-        const userRef = adminDb!.collection('users').doc(uid);
+        if (!adminDb) {
+          throw new Error('Firebase Admin SDK not initialized');
+        }
+        const userRef = adminDb.collection('users').doc(uid);
         await userRef.update({
             'businessProfile.googleCalendarConnected': true,
             'gcalTokens': tokens,
