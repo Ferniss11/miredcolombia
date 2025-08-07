@@ -13,7 +13,7 @@ import {
   type AuthError,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
-  getRedirectResult,
+  linkWithCredential,
 } from 'firebase/auth';
 import { getFirebaseServices } from '@/lib/firebase/config';
 import type { UserProfile, UserRole } from '@/lib/types';
@@ -136,7 +136,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (!authInstance) return { error: { code: 'auth/unavailable', message: 'Firebase not initialized' } as AuthError };
     try {
         const userCredential = await createUserWithEmailAndPassword(authInstance, email, password);
+        // Explicitly wait for the profile to be created before proceeding
         await ensureUserProfileExists(userCredential.user, name, role);
+        // Force a fetch of the newly created profile
         await fetchUserProfile(userCredential.user);
         return { error: null };
     } catch (error) {
@@ -159,15 +161,34 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const provider = new GoogleAuthProvider();
     try {
         const result = await signInWithPopup(authInstance, provider);
-        console.log(result);
         const user = result.user;
         await ensureUserProfileExists(user, user.displayName || 'Usuario de Google', role);
         await fetchUserProfile(user);
         return { error: null };
     } catch (error) {
       const authError = error as AuthError;
-        if (authError.code === 'auth/account-exists-with-different-credential') {
-             return { error: { ...authError, message: "Ya existe una cuenta con este email. Inicia sesión con tu contraseña para vincular tu cuenta de Google." }};
+        if (authError.code === 'auth/account-exists-with-different-credential' && authError.customData?.email) {
+            const email = authError.customData.email as string;
+            // Get the credential from the error
+            const credential = GoogleAuthProvider.credentialFromError(authError);
+            if (!credential) {
+                return { error: { ...authError, message: "No se pudo obtener la credencial de Google." }};
+            }
+            // Ask user for password to their existing account
+            const password = prompt(`Ya existe una cuenta con el correo ${email}. Por favor, introduce tu contraseña para vincular tu cuenta de Google.`);
+            if (!password) {
+                return { error: { ...authError, message: "Se requiere la contraseña para vincular las cuentas." }};
+            }
+            try {
+                // Sign in to the existing account
+                const userCredential = await signInWithEmailAndPassword(authInstance, email, password);
+                // Link the Google credential
+                await linkWithCredential(userCredential.user, credential);
+                await fetchUserProfile(userCredential.user);
+                return { error: null };
+            } catch (linkError) {
+                return { error: linkError as AuthError };
+            }
         }
         console.error("Google Sign-In Error:", authError.code, authError.message);
         return { error: authError };
