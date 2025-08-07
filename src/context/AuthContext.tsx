@@ -74,7 +74,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const fetchUserProfile = useCallback(async (firebaseUser: User | null) => {
     if (firebaseUser) {
       try {
-        const idToken = await firebaseUser.getIdToken();
+        const idToken = await firebaseUser.getIdToken(true); // Force refresh token
         const response = await fetch(`/api/users/${firebaseUser.uid}`, {
           headers: {
             'Authorization': `Bearer ${idToken}`,
@@ -112,7 +112,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setAuthInstance(auth);
 
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      setLoading(true); // Start loading whenever auth state changes
+      setLoading(true);
       if (firebaseUser) {
         setUser(firebaseUser);
         await fetchUserProfile(firebaseUser);
@@ -120,7 +120,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(null);
         setUserProfile(null);
       }
-      setLoading(false); // Finish loading after user and profile are set
+      setLoading(false);
     });
 
     return () => unsubscribe();
@@ -132,8 +132,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signUpWithEmail = async (name: string, email: string, password: string, role: UserRole) => {
     if (!authInstance) return { error: { code: 'auth/unavailable', message: 'Firebase not initialized' } as AuthError };
     try {
+        // Step 1: Create the user in Firebase Auth
         const userCredential = await createUserWithEmailAndPassword(authInstance, email, password);
+        
+        // Step 2: Ensure the profile is created in our backend (API call). Await this to complete.
         await ensureUserProfileExists(userCredential.user, name, role);
+
+        // Step 3: Now that we know the profile exists, fetch it to update the context.
+        await fetchUserProfile(userCredential.user);
+
         return { error: null };
     } catch (error) {
         return { error: error as AuthError };
@@ -155,8 +162,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const provider = new GoogleAuthProvider();
     try {
         const result = await signInWithPopup(authInstance, provider);
+        console.log(result);
         const user = result.user;
+        
+        // Ensure profile exists after Google sign-in and await completion
         await ensureUserProfileExists(user, user.displayName || 'Usuario de Google', role);
+
+        // Now fetch the profile to update context state
+        await fetchUserProfile(user);
+
         return { error: null };
     } catch (error) {
       const authError = error as AuthError;
