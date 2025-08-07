@@ -18,9 +18,11 @@ import { Label } from "@/components/ui/label";
 
 import { Textarea } from "@/components/ui/textarea";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Loader2, Search, Link as LinkIcon, Building, UserCheck, XCircle } from "lucide-react";
+import { Loader2, Search, Link as LinkIcon, Building, UserCheck, XCircle, KeyRound, ShieldCheck, CheckCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { GoogleAuthProvider } from "firebase/auth";
 
 
 const businessProfileSchema = z.object({
@@ -32,6 +34,15 @@ const businessProfileSchema = z.object({
 });
 
 type BusinessProfileFormValues = z.infer<typeof businessProfileSchema>;
+
+const passwordSchema = z.object({
+  password: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres.'),
+  confirmPassword: z.string()
+}).refine(data => data.password === data.confirmPassword, {
+  message: "Las contraseñas no coinciden.",
+  path: ["confirmPassword"],
+});
+
 
 type Place = {
     id: string;
@@ -131,8 +142,9 @@ function BusinessLinker({ userProfile, onBusinessLinked }: { userProfile: UserPr
 
 // Main page component
 export default function AdvertiserProfilePage() {
-    const { user, userProfile, loading, refreshUserProfile } = useAuth();
-    const [isPending, startTransition] = useTransition();
+    const { user, userProfile, loading, refreshUserProfile, linkPasswordToAccount } = useAuth();
+    const [isFormPending, startFormTransition] = useTransition();
+    const [isLinkPending, startLinkTransition] = useTransition();
     const { toast } = useToast();
 
     const form = useForm<BusinessProfileFormValues>({
@@ -144,6 +156,11 @@ export default function AdvertiserProfilePage() {
             website: "",
             description: "",
         },
+    });
+
+     const passwordForm = useForm<z.infer<typeof passwordSchema>>({
+        resolver: zodResolver(passwordSchema),
+        defaultValues: { password: '', confirmPassword: '' }
     });
     
     useEffect(() => {
@@ -175,7 +192,7 @@ export default function AdvertiserProfilePage() {
         if (!confirm("¿Estás seguro de que quieres desvincular este negocio? Perderás los beneficios de la suscripción asociada.")) {
             return;
         }
-        startTransition(async () => {
+        startFormTransition(async () => {
             const result = await unlinkBusinessFromAdvertiserAction(user.uid, userProfile.businessProfile.placeId!);
             if (result.error) {
                 toast({ variant: 'destructive', title: "Error", description: result.error });
@@ -193,7 +210,7 @@ export default function AdvertiserProfilePage() {
             return;
         }
 
-        startTransition(async () => {
+        startFormTransition(async () => {
             try {
                 const idToken = await user.getIdToken();
                 const response = await fetch(`/api/users/${user.uid}/business-profile`, {
@@ -218,16 +235,96 @@ export default function AdvertiserProfilePage() {
         });
     }
 
-    if (loading || !userProfile) {
+    async function onPasswordSubmit(data: z.infer<typeof passwordSchema>) {
+        startLinkTransition(async () => {
+            const result = await linkPasswordToAccount(data.password);
+            if (result.error) {
+                toast({ variant: 'destructive', title: 'Error al vincular', description: result.error });
+            } else {
+                toast({ title: 'Éxito', description: '¡Contraseña establecida! Ahora puedes iniciar sesión con tu email y contraseña.' });
+                await refreshUserProfile(); 
+                passwordForm.reset();
+            }
+        });
+    }
+
+    if (loading || !userProfile || !user) {
         return <div><Loader2 className="animate-spin" /></div>;
     }
 
     const isBusinessLinked = !!userProfile?.businessProfile?.placeId;
     const verificationStatus = userProfile?.businessProfile?.verificationStatus;
 
+    const hasPasswordProvider = user.providerData.some(p => p.providerId === 'password');
+    const hasGoogleProvider = user.providerData.some(p => p.providerId === GoogleAuthProvider.PROVIDER_ID);
+
     return (
         <div className="space-y-6">
             <h1 className="text-3xl font-bold font-headline">Perfil del Negocio</h1>
+
+            {!hasPasswordProvider && hasGoogleProvider && (
+                 <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2"><ShieldCheck className="h-6 w-6"/>Seguridad de la Cuenta</CardTitle>
+                        <CardDescription>Gestiona tus métodos de inicio de sesión.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="flex items-center justify-between p-3 border rounded-md">
+                            <div>
+                                <h4 className="font-semibold">Establecer Contraseña</h4>
+                                <p className="text-sm text-muted-foreground">Añade una contraseña para poder iniciar sesión también con tu email.</p>
+                            </div>
+                             <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button variant="outline"><KeyRound className="mr-2 h-4 w-4"/> Establecer Contraseña</Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>Establecer una nueva contraseña</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            Introduce una contraseña para añadir el inicio de sesión con email a tu cuenta de Google.
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <Form {...passwordForm}>
+                                        <form onSubmit={passwordForm.handleSubmit(onPasswordSubmit)} className="space-y-4">
+                                            <FormField
+                                                control={passwordForm.control}
+                                                name="password"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel>Nueva Contraseña</FormLabel>
+                                                        <FormControl><Input type="password" {...field} /></FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                            <FormField
+                                                control={passwordForm.control}
+                                                name="confirmPassword"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel>Confirmar Contraseña</FormLabel>
+                                                        <FormControl><Input type="password" {...field} /></FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                             <AlertDialogFooter className="pt-4">
+                                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                <Button type="submit" disabled={isLinkPending}>
+                                                    {isLinkPending && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+                                                    Guardar Contraseña
+                                                </Button>
+                                            </AlertDialogFooter>
+                                        </form>
+                                    </Form>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
+
              <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
@@ -252,7 +349,7 @@ export default function AdvertiserProfilePage() {
                                      : `Un administrador necesita aprobar la vinculación con ${userProfile?.businessProfile?.businessName}.`}
                                 </AlertDescription>
                             </Alert>
-                             <Button variant="link" className="text-destructive px-0 mt-2" onClick={handleUnlink} disabled={isPending}>
+                             <Button variant="link" className="text-destructive px-0 mt-2" onClick={handleUnlink} disabled={isFormPending}>
                                 Desvincular negocio
                             </Button>
                         </div>
@@ -348,8 +445,8 @@ export default function AdvertiserProfilePage() {
                                 )}
                             />
                             <div className="flex justify-end">
-                                <Button type="submit" disabled={isPending}>
-                                    {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                <Button type="submit" disabled={isFormPending}>
+                                    {isFormPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                     Guardar Cambios
                                 </Button>
                             </div>
@@ -360,3 +457,4 @@ export default function AdvertiserProfilePage() {
         </div>
     );
 }
+
