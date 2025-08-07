@@ -13,6 +13,7 @@ import {
   GoogleAuthProvider,
   linkWithCredential,
   EmailAuthProvider,
+  fetchSignInMethodsForEmail,
   type Auth,
   type AuthError,
   type IdTokenResult,
@@ -76,7 +77,7 @@ interface AuthContextType {
   loading: boolean;
   claims: IdTokenResult['claims'] | null;
   refreshUserProfile: () => Promise<void>;
-  signUpWithEmail: (name: string, email: string, password: string, role: UserRole) => Promise<{ error: AuthError | null }>;
+  signUpWithEmail: (name: string, email: string, password: string, role: UserRole) => Promise<{ error: string | null }>;
   loginWithEmail: (email: string, password: string) => Promise<{ error: AuthError | null }>;
   loginWithGoogle: (role: UserRole) => Promise<{ error?: string }>;
   logout: () => Promise<void>;
@@ -110,6 +111,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         
         const profile = await getUserProfile(firebaseUser.uid, idTokenResult.token);
         setUserProfile(profile);
+        console.log("[AuthContext] Fresh profile and claims fetched.", { profile, claims: idTokenResult.claims });
       } catch (error) {
         console.error("[AuthContext] Error fetching user profile and claims:", error);
         setUserProfile(null);
@@ -150,24 +152,42 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [user, fetchUserProfile]);
 
-  const signUpWithEmail = async (name: string, email: string, password: string, role: UserRole) => {
-    if (!authInstance) return { error: { code: 'auth/unavailable', message: 'Firebase not initialized' } as AuthError };
+  const signUpWithEmail = async (name: string, email: string, password: string, role: UserRole): Promise<{ error: string | null }> => {
+    if (!authInstance) return { error: 'Firebase not initialized' };
     try {
         const userCredential = await createUserWithEmailAndPassword(authInstance, email, password);
         await ensureUserProfileExists(userCredential.user, name, role);
         await fetchUserProfile(userCredential.user);
         return { error: null };
-    } catch (error) {
-        return { error: error as AuthError };
+    } catch (error: any) {
+        if (error.code === 'auth/email-already-in-use') {
+            const methods = await fetchSignInMethodsForEmail(authInstance, email);
+            if (methods.includes('google.com')) {
+                if (confirm("Ya tienes una cuenta con este email a través de Google. ¿Quieres vincular una contraseña a tu cuenta de Google para poder iniciar sesión con ambos métodos?")) {
+                    try {
+                        const googleProvider = new GoogleAuthProvider();
+                        const result = await signInWithPopup(authInstance, googleProvider);
+                        const credential = EmailAuthProvider.credential(email, password);
+                        await linkWithCredential(result.user, credential);
+                        await fetchUserProfile(result.user);
+                        return { error: null };
+                    } catch (linkError: any) {
+                        return { error: `No se pudo vincular la cuenta: ${linkError.message}` };
+                    }
+                } else {
+                    return { error: "Registro cancelado. Por favor, inicia sesión con Google." };
+                }
+            }
+        }
+        return { error: (error as AuthError).message };
     }
-  };
+};
 
   const loginWithEmail = async (email: string, password: string) => {
     if (!authInstance) return { error: { code: 'auth/unavailable', message: 'Firebase not initialized' } as AuthError };
     try {
         const userCredential = await signInWithEmailAndPassword(authInstance, email, password);
-        // Force a token refresh after email login to get latest claims
-        await fetchUserProfile(userCredential.user);
+        // Let the onAuthStateChanged listener handle the profile fetching
         return { error: null };
     } catch (error) {
         return { error: error as AuthError };
@@ -186,6 +206,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const user = result.user;
         console.log(`[Google Auth] signInWithPopup successful. User:`, user);
         
+        console.log(`[Google Auth] Checking for existing profile for UID: ${user.uid}`);
         const token = await user.getIdToken();
         const profile = await getUserProfile(user.uid, token);
         
@@ -194,8 +215,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             await ensureUserProfileExists(user, user.displayName || 'Usuario de Google', role);
         }
         
+        console.log(`[Google Auth] User profile exists or was created. Fetching fresh profile...`);
         await fetchUserProfile(user);
         console.log(`[Google Auth] Flow completed successfully.`);
+        
         return { error: undefined };
 
     } catch (error: any) {
@@ -208,18 +231,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             }
             
             try {
-                const password = prompt(`Ya existe una cuenta con ${email}. Por favor, introduce la contraseña de esa cuenta para vincularla con Google.`);
+                const password = prompt(`Ya tienes una cuenta con ${email} (registrada con email/contraseña). Por favor, introduce tu contraseña para vincular tu inicio de sesión con Google.`);
                 if (!password) {
                     return { error: "Vinculación cancelada. Contraseña no introducida." };
                 }
 
+                // First, sign in the user with their existing password to prove ownership.
                 const userCredential = await signInWithEmailAndPassword(authInstance, email, password);
 
+                // Then, get the Google credential from the original error.
                 const googleCredential = GoogleAuthProvider.credentialFromError(error);
                 if (!googleCredential) {
                     return { error: "No se pudo obtener la credencial de Google para la vinculación." };
                 }
                 
+                // Now, link the Google credential to the signed-in user.
                 await linkWithCredential(userCredential.user, googleCredential);
                 console.log(`[Google Auth] Account linked successfully.`);
 
@@ -230,11 +256,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
             } catch (linkError: any) {
                 console.error("Google Account Linking Error:", linkError.code, linkError.message);
-                return { error: `No se pudo vincular la cuenta. ${linkError.message}`};
+                const errorMessage = linkError.code === 'auth/wrong-password' ? 'La contraseña es incorrecta.' : linkError.message;
+                return { error: `No se pudo vincular la cuenta. ${errorMessage}`};
             }
         }
         
-        return { error: `Google Sign-In Error: ${error.code} ${error.message}` };
+        return { error: `Google Sign-In Error: ${error.code}` };
     }
   };
 
