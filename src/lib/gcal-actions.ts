@@ -10,20 +10,21 @@ import type { GoogleTokens } from './types';
 // for your OAuth 2.0 Client ID in the Google Cloud Console.
 const REDIRECT_URI = `${process.env.NEXT_PUBLIC_APP_URL}/api/oauth/google/callback`;
 
-const SCOPES = ['https://www.googleapis.com/auth/calendar'];
+const SCOPES = ['https://www.googleapis.com/auth/calendar.events', 'https://www.googleapis.com/auth/userinfo.email', 'https://www.googleapis.com/auth/userinfo.profile'];
+
 const oauth2Client = new google.auth.OAuth2(
   process.env.GOOGLE_CLIENT_ID,
   process.env.GOOGLE_CLIENT_SECRET,
   REDIRECT_URI
 );
 
-export async function getGoogleAuthUrlAction(uid: string) {
+export async function getGoogleAuthUrlAction(state: string) {
     try {
         const authUrl = oauth2Client.generateAuthUrl({
-            access_type: 'offline', // Important to get a refresh token
+            access_type: 'offline', 
             scope: SCOPES,
-            state: uid, // Pass the user's UID to identify them in the callback
-            prompt: 'consent', // Force consent screen to ensure refresh token is issued
+            state: state, 
+            prompt: 'consent',
         });
         return { authUrl };
     } catch (error) {
@@ -70,3 +71,4 @@ export async function getGoogleAuthClientForUser(uid: string) {
 
     return client;
 }
+

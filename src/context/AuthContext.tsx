@@ -2,21 +2,20 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   onAuthStateChanged,
   User,
-  signInWithPopup,
-  GoogleAuthProvider,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
   signOut,
+  signInWithCustomToken,
   type Auth,
   type AuthError,
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  linkWithCredential,
 } from 'firebase/auth';
 import { getFirebaseServices } from '@/lib/firebase/config';
 import type { UserProfile, UserRole } from '@/lib/types';
+import { getGoogleAuthUrlAction } from '@/lib/gcal-actions';
 
 // --- Helper function to create profile via API ---
 async function ensureUserProfileExists(user: User, name: string, role: UserRole): Promise<void> {
@@ -48,10 +47,9 @@ interface AuthContextType {
   userProfile: UserProfile | null;
   loading: boolean;
   refreshUserProfile: () => Promise<void>;
-  // --- Auth methods ---
   signUpWithEmail: (name: string, email: string, password: string, role: UserRole) => Promise<{ error: AuthError | null }>;
   loginWithEmail: (email: string, password: string) => Promise<{ error: AuthError | null }>;
-  loginWithGoogle: (role: UserRole) => Promise<{ error: AuthError | null }>;
+  loginWithGoogle: (role: UserRole) => Promise<{ error?: string }>;
   logout: () => Promise<void>;
 }
 
@@ -72,6 +70,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   
   const [authInstance, setAuthInstance] = useState<Auth | null>(null);
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const fetchUserProfile = useCallback(async (firebaseUser: User | null) => {
     if (firebaseUser) {
@@ -99,6 +98,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUserProfile(null);
     }
   }, []);
+  
+  // Effect to handle custom token from URL
+  useEffect(() => {
+    const customToken = searchParams.get('customToken');
+    if (customToken && authInstance) {
+      setLoading(true);
+      signInWithCustomToken(authInstance, customToken)
+        .then(() => {
+          // The onAuthStateChanged listener will handle the rest.
+          // We remove the token from the URL.
+          router.replace('/dashboard');
+        })
+        .catch((error) => {
+          console.error("Error signing in with custom token:", error);
+          setLoading(false);
+        });
+    }
+  }, [searchParams, authInstance, router]);
+
 
   useEffect(() => {
     const { auth } = getFirebaseServices();
@@ -133,7 +151,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
         const userCredential = await createUserWithEmailAndPassword(authInstance, email, password);
         await ensureUserProfileExists(userCredential.user, name, role);
-        await fetchUserProfile(userCredential.user);
+        await fetchUserProfile(userCredential.user); // Fetch profile immediately after creation
         return { error: null };
     } catch (error) {
         return { error: error as AuthError };
@@ -151,38 +169,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const loginWithGoogle = async (role: UserRole) => {
-    if (!authInstance) return { error: { code: 'auth/unavailable', message: 'Firebase not initialized' } as AuthError };
-    const provider = new GoogleAuthProvider();
-    try {
-      const result = await signInWithPopup(authInstance, provider);
-      const user = result.user;
-      await ensureUserProfileExists(user, user.displayName || 'Usuario de Google', role);
-      await fetchUserProfile(user);
-      return { error: null };
-    } catch (error) {
-      const authError = error as AuthError;
-      // Handle account linking flow
-      if (authError.code === 'auth/account-exists-with-different-credential' && authError.customData?.email) {
-        const email = authError.customData.email as string;
-        const credential = GoogleAuthProvider.credentialFromError(authError);
-        if (!credential) {
-          return { error: { ...authError, message: "Could not get credential from Google error." } };
-        }
-        const password = prompt(`An account already exists with ${email}. Please enter your password to link your Google account.`);
-        if (!password) {
-          return { error: { ...authError, message: "Password is required to link accounts." } };
-        }
-        try {
-          const userCredential = await signInWithEmailAndPassword(authInstance, email, password);
-          await linkWithCredential(userCredential.user, credential);
-          await fetchUserProfile(userCredential.user);
-          return { error: null };
-        } catch (linkError) {
-          return { error: linkError as AuthError };
-        }
-      }
-      console.error("Google Sign-In Error:", authError.code, authError.message);
-      return { error: authError };
+    const state = `auth:${role}`; // Format: "flow:role"
+    const result = await getGoogleAuthUrlAction(state);
+    if (result.authUrl) {
+      window.location.href = result.authUrl;
+      return {};
+    } else {
+      return { error: result.error || "Could not generate Google Auth URL." };
     }
   };
 

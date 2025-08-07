@@ -78,7 +78,7 @@ export function SignUpForm() {
           title: "¡Bienvenido!",
           description: "Tu cuenta ha sido creada exitosamente.",
         });
-        router.push("/dashboard");
+        // The redirection is handled by the page's useEffect now.
       }
     });
   }
@@ -91,16 +91,11 @@ export function SignUpForm() {
         toast({
             variant: "destructive",
             title: "Error de Inicio de Sesión con Google",
-            description: error.message,
+            description: error,
         });
-    } else {
-        toast({
-            title: "¡Bienvenido!",
-            description: "Has iniciado sesión exitosamente.",
-        });
-        router.push('/dashboard');
+        setIsGooglePending(false);
     }
-    setIsGooglePending(false);
+    // No need to handle success here, as the page will redirect
   }
 
   return (
