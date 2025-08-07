@@ -30,6 +30,7 @@ export class CreateUserProfileUseCase {
     if (adminAuth) {
         try {
             // Check existing claims to prevent unnecessary overwrites, although setCustomUserClaims does this.
+            // This is especially useful for users who might be "re-verified" upon login.
             const { customClaims } = await adminAuth.getUser(createdUser.uid);
             if (!customClaims || customClaims.role !== createdUser.role) {
                 await adminAuth.setCustomUserClaims(createdUser.uid, { role: createdUser.role });

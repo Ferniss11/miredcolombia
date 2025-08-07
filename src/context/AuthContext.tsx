@@ -21,6 +21,7 @@ import type { UserProfile, UserRole } from '@/lib/types';
 
 // --- Helper function to create profile via API ---
 async function ensureUserProfileExists(user: User, name: string, role: UserRole): Promise<void> {
+  console.log(`[AuthContext] Ensuring profile exists for UID: ${user.uid} with role: ${role}`);
   try {
     const response = await fetch('/api/users', {
       method: 'POST',
@@ -32,13 +33,15 @@ async function ensureUserProfileExists(user: User, name: string, role: UserRole)
         role: role,
       }),
     });
-
+    
+    // A 409 conflict is acceptable, it means the profile already exists.
     if (!response.ok && response.status !== 409) {
       const apiError = await response.json();
       throw new Error(apiError.error?.message || 'Server error creating profile.');
     }
+     console.log(`[AuthContext] Profile ensured for UID: ${user.uid}. Status: ${response.status}`);
   } catch (error) {
-    console.error("Failed to create user profile via API:", error);
+    console.error("[AuthContext] Failed to create user profile via API:", error);
     throw error;
   }
 }
@@ -47,8 +50,11 @@ async function ensureUserProfileExists(user: User, name: string, role: UserRole)
 async function getUserProfile(uid: string): Promise<UserProfile | null> {
     if (!uid) return null;
      try {
-        const idToken = await getFirebaseServices().auth.currentUser?.getIdToken(true);
-        if (!idToken) return null; // Can't fetch without a token
+        const idToken = await getFirebaseServices().auth.currentUser?.getIdToken();
+        if (!idToken) {
+           console.warn(`[AuthContext] getUserProfile: No idToken available for UID ${uid}. User might be logged out.`);
+           return null;
+        }
 
         const response = await fetch(`/api/users/${uid}`, {
           headers: {
@@ -63,7 +69,7 @@ async function getUserProfile(uid: string): Promise<UserProfile | null> {
         }
         return await response.json();
     } catch (error) {
-        console.error("Error fetching user profile:", error);
+        console.error("[AuthContext] Error fetching user profile:", error);
         return null;
     }
 }
@@ -102,23 +108,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (firebaseUser) {
       try {
         // Force refresh the token to get the latest custom claims.
-        const idToken = await firebaseUser.getIdToken(true); 
-        const response = await fetch(`/api/users/${firebaseUser.uid}`, {
-          headers: {
-            'Authorization': `Bearer ${idToken}`,
-          },
-        });
-        if (!response.ok) {
-          if (response.status === 404) {
-            setUserProfile(null);
-            return;
-          }
-          throw new Error('Failed to fetch user profile from API.');
-        }
-        const profile = await response.json();
+        // This is crucial for role-based access control.
+        await firebaseUser.getIdToken(true); 
+        const profile = await getUserProfile(firebaseUser.uid);
         setUserProfile(profile);
       } catch (error) {
-        console.error("Error fetching user profile:", error);
+        console.error("[AuthContext] Error fetching user profile:", error);
         setUserProfile(null);
       }
     } else {
@@ -159,7 +154,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
         const userCredential = await createUserWithEmailAndPassword(authInstance, email, password);
         await ensureUserProfileExists(userCredential.user, name, role);
-        await fetchUserProfile(userCredential.user); // Fetch profile right after creation
+        await fetchUserProfile(userCredential.user);
         return { error: null };
     } catch (error) {
         return { error: error as AuthError };
@@ -169,6 +164,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const loginWithEmail = async (email: string, password: string) => {
     if (!authInstance) return { error: { code: 'auth/unavailable', message: 'Firebase not initialized' } as AuthError };
     try {
+        // The onAuthStateChanged listener will handle fetching the profile
+        // and its useEffect will handle the custom claim refresh.
         await signInWithEmailAndPassword(authInstance, email, password);
         return { error: null };
     } catch (error) {
@@ -176,33 +173,45 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
   
-  const loginWithGoogle = async (role: UserRole) => {
+ const loginWithGoogle = async (role: UserRole) => {
     if (!authInstance) return { error: 'Firebase not initialized' };
-    
+    console.log(`[Google Auth] Starting login flow with role: ${role}`);
+
     const provider = new GoogleAuthProvider();
     
     try {
+        console.log(`[Google Auth] Calling signInWithPopup...`);
         const result = await signInWithPopup(authInstance, provider);
         const user = result.user;
+        console.log(`[Google Auth] signInWithPopup successful. User:`, user);
         
+        console.log(`[Google Auth] Checking for existing profile for UID: ${user.uid}`);
         const profile = await getUserProfile(user.uid);
         
         if (!profile) {
+            console.log(`[Google Auth] No profile found. Creating new user profile for ${user.email}`);
             await ensureUserProfileExists(user, user.displayName || 'Usuario de Google', role);
+            console.log(`[Google Auth] User profile created. Fetching fresh profile...`);
             await fetchUserProfile(user);
+            console.log(`[Google Auth] Fresh profile fetched.`);
         } else {
+            console.log(`[Google Auth] Existing profile found. Forcing token refresh to sync claims.`);
             // User exists, force a token refresh to get latest claims
             await user.getIdToken(true);
             await refreshUserProfile();
+             console.log(`[Google Auth] Token refreshed and profile re-fetched.`);
         }
 
+        console.log(`[Google Auth] Flow completed successfully.`);
         return { error: undefined };
 
     } catch (error: any) {
+        console.error("Google Sign-In Error:", error.code, error.message);
         if (error.code === 'auth/account-exists-with-different-credential') {
+            console.log(`[Google Auth] Account exists with different credential. Starting link flow.`);
             const email = error.customData?.email;
             if (!email) {
-                return { error: "No se pudo obtener el email del proveedor."};
+                 return { error: "No se pudo obtener el email del proveedor."};
             }
             
             try {
@@ -214,16 +223,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 const credential = EmailAuthProvider.credential(email, password);
                 
                 await linkWithCredential(authInstance.currentUser, credential);
-
+                 console.log(`[Google Auth] Account linked successfully.`);
                 return { error: undefined };
 
             } catch (linkError: any) {
+                console.error("Google Account Linking Error:", linkError.code, linkError.message);
                 return { error: `No se pudo vincular la cuenta. ${linkError.message}`};
             }
         }
         
-        console.error("Google Sign-In Error:", error.code, error.message);
-        return { error: `${error.code} ${error.message}` };
+        return { error: `Google Sign-In Error: ${error.code} ${error.message}` };
     }
   };
 
