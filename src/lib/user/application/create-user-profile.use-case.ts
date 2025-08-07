@@ -1,3 +1,4 @@
+
 // application/create-user-profile.use-case.ts
 import { User, UserRole } from '../domain/user.entity';
 import { UserRepository } from '../domain/user.repository';
@@ -28,7 +29,11 @@ export class CreateUserProfileUseCase {
     // Step 2: Set the custom claim on the user's auth token
     if (adminAuth) {
         try {
-            await adminAuth.setCustomUserClaims(createdUser.uid, { role: createdUser.role });
+            // Check existing claims to prevent unnecessary overwrites, although setCustomUserClaims does this.
+            const { customClaims } = await adminAuth.getUser(createdUser.uid);
+            if (!customClaims || customClaims.role !== createdUser.role) {
+                await adminAuth.setCustomUserClaims(createdUser.uid, { role: createdUser.role });
+            }
         } catch (error) {
             console.error(`Failed to set custom claims for user ${createdUser.uid}:`, error);
             // This is a critical error, but we might not want to fail the whole process.
