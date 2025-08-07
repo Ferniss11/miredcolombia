@@ -10,10 +10,10 @@ export default function AdvertiserLayout({ children }: { children: React.ReactNo
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading) {
-      if (!userProfile || userProfile.role !== 'Advertiser') {
+    // Si la carga ha finalizado y el perfil existe PERO el rol no es Advertiser,
+    // lo redirigimos al dashboard principal.
+    if (!loading && userProfile && userProfile.role !== 'Advertiser') {
         router.push('/dashboard');
-      }
     }
   }, [userProfile, loading, router]);
 
