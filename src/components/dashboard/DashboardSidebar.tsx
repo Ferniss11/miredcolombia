@@ -29,7 +29,7 @@ import {
   Briefcase,
 } from "lucide-react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import Image from 'next/image';
@@ -37,7 +37,6 @@ import { ThemeToggle } from "../ui/theme-toggle";
 
 export function DashboardSidebar() {
   const pathname = usePathname();
-  const router = useRouter();
   const { userProfile, logout } = useAuth();
   const { toast } = useToast();
   const { state } = useSidebar();
@@ -71,7 +70,7 @@ export function DashboardSidebar() {
   const handleSignOut = async () => {
     await logout();
     toast({ title: "Has cerrado sesión." });
-    router.push("/");
+    // Redirection is now handled globally by the AuthContext
   };
   
   const role = userProfile?.role;

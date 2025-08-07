@@ -2,16 +2,18 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
-import { 
-  onAuthStateChanged, 
-  User, 
-  signInWithPopup, 
+import { useRouter } from 'next/navigation';
+import {
+  onAuthStateChanged,
+  User,
+  signInWithPopup,
   GoogleAuthProvider,
   signOut,
   type Auth,
   type AuthError,
   createUserWithEmailAndPassword,
-  signInWithEmailAndPassword
+  signInWithEmailAndPassword,
+  getRedirectResult,
 } from 'firebase/auth';
 import { getFirebaseServices } from '@/lib/firebase/config';
 import type { UserProfile, UserRole } from '@/lib/types';
@@ -70,6 +72,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
   
   const [authInstance, setAuthInstance] = useState<Auth | null>(null);
+  const router = useRouter();
 
   const fetchUserProfile = useCallback(async (firebaseUser: User | null) => {
     if (firebaseUser) {
@@ -132,15 +135,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signUpWithEmail = async (name: string, email: string, password: string, role: UserRole) => {
     if (!authInstance) return { error: { code: 'auth/unavailable', message: 'Firebase not initialized' } as AuthError };
     try {
-        // Step 1: Create the user in Firebase Auth
         const userCredential = await createUserWithEmailAndPassword(authInstance, email, password);
-        
-        // Step 2: Ensure the profile is created in our backend (API call). Await this to complete.
         await ensureUserProfileExists(userCredential.user, name, role);
-
-        // Step 3: Now that we know the profile exists, fetch it to update the context.
         await fetchUserProfile(userCredential.user);
-
         return { error: null };
     } catch (error) {
         return { error: error as AuthError };
@@ -164,13 +161,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const result = await signInWithPopup(authInstance, provider);
         console.log(result);
         const user = result.user;
-        
-        // Ensure profile exists after Google sign-in and await completion
         await ensureUserProfileExists(user, user.displayName || 'Usuario de Google', role);
-
-        // Now fetch the profile to update context state
         await fetchUserProfile(user);
-
         return { error: null };
     } catch (error) {
       const authError = error as AuthError;
@@ -185,6 +177,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const logout = async () => {
     if (!authInstance) return;
     await signOut(authInstance);
+    // Centralized redirection logic
+    router.push('/');
+    router.refresh();
   };
 
 
