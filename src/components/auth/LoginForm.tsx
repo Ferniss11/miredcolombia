@@ -83,7 +83,6 @@ export function LoginForm() {
             title: "Error de Inicio de Sesión",
             description: error || "No se pudo iniciar sesión con Google. Inténtalo de nuevo.",
         });
-         setIsGooglePending(false);
     } else {
         toast({
             title: "¡Bienvenido de vuelta!",
@@ -91,6 +90,7 @@ export function LoginForm() {
         });
        // The redirection is handled by the page's useEffect now.
     }
+    setIsGooglePending(false);
   }
 
   return (

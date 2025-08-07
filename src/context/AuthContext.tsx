@@ -9,13 +9,15 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signOut,
-  signInWithCustomToken,
+  signInWithPopup,
+  GoogleAuthProvider,
+  linkWithCredential,
+  EmailAuthProvider,
   type Auth,
   type AuthError,
 } from 'firebase/auth';
 import { getFirebaseServices } from '@/lib/firebase/config';
 import type { UserProfile, UserRole } from '@/lib/types';
-import { getGoogleAuthUrlAction } from '@/lib/gcal-actions';
 
 // --- Helper function to create profile via API ---
 async function ensureUserProfileExists(user: User, name: string, role: UserRole): Promise<void> {
@@ -70,7 +72,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   
   const [authInstance, setAuthInstance] = useState<Auth | null>(null);
   const router = useRouter();
-  const searchParams = useSearchParams();
 
   const fetchUserProfile = useCallback(async (firebaseUser: User | null) => {
     if (firebaseUser) {
@@ -98,25 +99,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUserProfile(null);
     }
   }, []);
-  
-  // Effect to handle custom token from URL
-  useEffect(() => {
-    const customToken = searchParams.get('customToken');
-    if (customToken && authInstance) {
-      setLoading(true);
-      signInWithCustomToken(authInstance, customToken)
-        .then(() => {
-          // The onAuthStateChanged listener will handle the rest.
-          // We remove the token from the URL.
-          router.replace('/dashboard');
-        })
-        .catch((error) => {
-          console.error("Error signing in with custom token:", error);
-          setLoading(false);
-        });
-    }
-  }, [searchParams, authInstance, router]);
-
 
   useEffect(() => {
     const { auth } = getFirebaseServices();
@@ -167,15 +149,45 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return { error: error as AuthError };
     }
   };
-
+  
   const loginWithGoogle = async (role: UserRole) => {
-    const state = `auth:${role}`; // Format: "flow:role"
-    const result = await getGoogleAuthUrlAction(state);
-    if (result.authUrl) {
-      window.location.href = result.authUrl;
-      return {};
-    } else {
-      return { error: result.error || "Could not generate Google Auth URL." };
+    if (!authInstance) return { error: 'Firebase not initialized' };
+    
+    const provider = new GoogleAuthProvider();
+    
+    try {
+        const result = await signInWithPopup(authInstance, provider);
+        const user = result.user;
+        const profile = await getUserProfile(user.uid);
+        if (!profile) {
+            // New user, create their profile
+            await ensureUserProfileExists(user, user.displayName || 'Usuario de Google', role);
+            await fetchUserProfile(user);
+        }
+        return { error: undefined };
+    } catch (error: any) {
+        if (error.code === 'auth/account-exists-with-different-credential') {
+            // User's email exists, but not with Google. Link them.
+            const email = error.customData?.email;
+            if (!email) return { error: "No se pudo obtener el email del proveedor."};
+
+            try {
+                // Prompt user for their password. In a real app, use a secure modal.
+                const password = prompt(`Ya existe una cuenta con ${email}. Por favor, introduce la contraseña de esa cuenta para vincularla con Google.`);
+                if (!password || !authInstance.currentUser) {
+                    return { error: "Vinculación cancelada. Contraseña no introducida." };
+                }
+                const credential = EmailAuthProvider.credential(email, password);
+                await linkWithCredential(authInstance.currentUser, credential);
+                return { error: undefined };
+
+            } catch (linkError: any) {
+                console.error("Google Sign-In Error (Linking):", linkError);
+                return { error: `No se pudo vincular la cuenta. ${linkError.message}`};
+            }
+        }
+        console.error("Google Sign-In Error:", error);
+        return { error: `${error.code} ${error.message}` };
     }
   };
 

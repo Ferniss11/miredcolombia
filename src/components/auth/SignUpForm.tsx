@@ -93,9 +93,10 @@ export function SignUpForm() {
             title: "Error de Inicio de Sesión con Google",
             description: error,
         });
-        setIsGooglePending(false);
     }
-    // No need to handle success here, as the page will redirect
+    // No need to handle success here, as the page will redirect.
+    // The loading state will be set to false in any case.
+    setIsGooglePending(false);
   }
 
   return (

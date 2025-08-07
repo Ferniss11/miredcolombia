@@ -3,14 +3,16 @@
 
 import { google } from 'googleapis';
 import { adminDb } from '@/lib/firebase/admin-config';
-import type { GoogleTokens } from './types';
+import type { GoogleTokens } from '../types';
 
 // Ensure the redirect URI is consistent and points to the deployed endpoint.
 // It's crucial that this exact URI is listed in the "Authorized redirect URIs"
 // for your OAuth 2.0 Client ID in the Google Cloud Console.
 const REDIRECT_URI = `${process.env.NEXT_PUBLIC_APP_URL}/api/oauth/google/callback`;
 
-const SCOPES = ['https://www.googleapis.com/auth/calendar.events', 'https://www.googleapis.com/auth/userinfo.email', 'https://www.googleapis.com/auth/userinfo.profile'];
+// SCOPES for Google Calendar API access
+const GCAL_SCOPES = ['https://www.googleapis.com/auth/calendar.events'];
+
 
 const oauth2Client = new google.auth.OAuth2(
   process.env.GOOGLE_CLIENT_ID,
@@ -18,18 +20,19 @@ const oauth2Client = new google.auth.OAuth2(
   REDIRECT_URI
 );
 
-export async function getGoogleAuthUrlAction(state: string) {
+export async function getGoogleAuthUrlAction(uid: string) {
     try {
         const authUrl = oauth2Client.generateAuthUrl({
             access_type: 'offline', 
-            scope: SCOPES,
-            state: state, 
+            scope: GCAL_SCOPES,
+            // Pass the user's UID in the state to identify them on callback
+            state: `gcal:${uid}`, 
             prompt: 'consent',
         });
         return { authUrl };
     } catch (error) {
-        console.error("Error generating Google Auth URL:", error);
-        return { error: "No se pudo generar la URL de autenticación." };
+        console.error("Error generating Google Auth URL for GCal:", error);
+        return { error: "No se pudo generar la URL de autorización." };
     }
 }
 
@@ -71,4 +74,3 @@ export async function getGoogleAuthClientForUser(uid: string) {
 
     return client;
 }
-
