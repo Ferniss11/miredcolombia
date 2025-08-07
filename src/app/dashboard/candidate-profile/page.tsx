@@ -1,25 +1,41 @@
 
+
 'use client';
 
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useAuth } from '@/context/AuthContext';
-import { useTransition, useEffect } from 'react';
+import { useTransition, useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { updateCandidateProfileAction } from '@/lib/user-actions';
 import { CandidateProfileSchema, type CandidateProfileFormValues } from '@/lib/types';
+import * as z from "zod";
+
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Loader2, Briefcase, FileText, Upload, Eye } from 'lucide-react';
+import { Loader2, Briefcase, FileText, Upload, Eye, KeyRound, CheckCircle, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../ui/alert-dialog';
+import { GoogleAuthProvider } from 'firebase/auth';
+
+
+const passwordSchema = z.object({
+  password: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres.'),
+  confirmPassword: z.string()
+}).refine(data => data.password === data.confirmPassword, {
+  message: "Las contraseñas no coinciden.",
+  path: ["confirmPassword"],
+});
+
 
 export default function CandidateProfilePage() {
-    const { user, userProfile, loading, refreshUserProfile } = useAuth();
+    const { user, userProfile, loading, refreshUserProfile, linkPasswordToAccount } = useAuth();
     const [isPending, startTransition] = useTransition();
+    const [isLinking, startLinkingTransition] = useTransition();
     const { toast } = useToast();
 
     const form = useForm<CandidateProfileFormValues>({
@@ -30,6 +46,11 @@ export default function CandidateProfilePage() {
             skills: [],
             resumeFile: undefined,
         },
+    });
+    
+    const passwordForm = useForm<z.infer<typeof passwordSchema>>({
+        resolver: zodResolver(passwordSchema),
+        defaultValues: { password: '', confirmPassword: '' }
     });
 
     const isResumeRequired = !userProfile?.candidateProfile?.resumeUrl;
@@ -85,9 +106,25 @@ export default function CandidateProfilePage() {
         });
     }
 
-    if (loading) {
+    async function onPasswordSubmit(data: z.infer<typeof passwordSchema>) {
+        startLinkingTransition(async () => {
+            const result = await linkPasswordToAccount(data.password);
+            if (result.error) {
+                toast({ variant: 'destructive', title: 'Error al vincular', description: result.error });
+            } else {
+                toast({ title: 'Éxito', description: '¡Contraseña establecida! Ahora puedes iniciar sesión con tu email y contraseña.' });
+                await refreshUserProfile(); 
+                passwordForm.reset();
+            }
+        });
+    }
+
+    if (loading || !user) {
         return <div><Loader2 className="animate-spin" /> Cargando...</div>;
     }
+
+    const hasPasswordProvider = user.providerData.some(p => p.providerId === 'password');
+    const hasGoogleProvider = user.providerData.some(p => p.providerId === GoogleAuthProvider.PROVIDER_ID);
 
     return (
         <div className="space-y-6">
@@ -95,6 +132,74 @@ export default function CandidateProfilePage() {
                 <Briefcase className="w-8 h-8 text-primary" />
                 <h1 className="text-3xl font-bold font-headline">Mi Perfil Profesional</h1>
             </div>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><ShieldCheck className="h-6 w-6"/>Seguridad de la Cuenta</CardTitle>
+                    <CardDescription>Gestiona tus métodos de inicio de sesión.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    {hasPasswordProvider ? (
+                        <div className="flex items-center gap-2 p-3 bg-green-50 text-green-800 rounded-md border border-green-200">
+                            <CheckCircle className="h-5 w-5"/>
+                            <p className="text-sm font-medium">Tienes una contraseña establecida para tu cuenta.</p>
+                        </div>
+                    ) : (
+                         <div className="flex items-center justify-between p-3 border rounded-md">
+                            <div>
+                                <h4 className="font-semibold">Establecer Contraseña</h4>
+                                <p className="text-sm text-muted-foreground">Añade una contraseña para poder iniciar sesión también con tu email.</p>
+                            </div>
+                             <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button variant="outline"><KeyRound className="mr-2 h-4 w-4"/> Establecer Contraseña</Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>Establecer una nueva contraseña</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            Introduce una contraseña para añadir el inicio de sesión con email a tu cuenta de Google.
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <Form {...passwordForm}>
+                                        <form onSubmit={passwordForm.handleSubmit(onPasswordSubmit)} className="space-y-4">
+                                            <FormField
+                                                control={passwordForm.control}
+                                                name="password"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel>Nueva Contraseña</FormLabel>
+                                                        <FormControl><Input type="password" {...field} /></FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                            <FormField
+                                                control={passwordForm.control}
+                                                name="confirmPassword"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel>Confirmar Contraseña</FormLabel>
+                                                        <FormControl><Input type="password" {...field} /></FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                             <AlertDialogFooter className="pt-4">
+                                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                <Button type="submit" disabled={isLinking}>
+                                                    {isLinking && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+                                                    Guardar Contraseña
+                                                </Button>
+                                            </AlertDialogFooter>
+                                        </form>
+                                    </Form>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
 
             <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">

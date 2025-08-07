@@ -17,6 +17,8 @@ import {
   type Auth,
   type AuthError,
   type IdTokenResult,
+  reauthenticateWithPopup,
+  updatePassword,
 } from 'firebase/auth';
 import { getFirebaseServices } from '@/lib/firebase/config';
 import type { UserProfile, UserRole } from '@/lib/types';
@@ -80,6 +82,7 @@ interface AuthContextType {
   signUpWithEmail: (name: string, email: string, password: string, role: UserRole) => Promise<{ error: string | null }>;
   loginWithEmail: (email: string, password: string) => Promise<{ error: AuthError | null }>;
   loginWithGoogle: (role: UserRole) => Promise<{ error?: string }>;
+  linkPasswordToAccount: (password: string) => Promise<{ error?: string | null }>;
   logout: () => Promise<void>;
 }
 
@@ -162,13 +165,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } catch (error: any) {
         if (error.code === 'auth/email-already-in-use') {
             const methods = await fetchSignInMethodsForEmail(authInstance, email);
-            if (methods.includes('google.com')) {
+            if (methods.includes(GoogleAuthProvider.PROVIDER_ID)) {
                 if (confirm("Ya tienes una cuenta con este email a través de Google. ¿Quieres vincular una contraseña a tu cuenta de Google para poder iniciar sesión con ambos métodos?")) {
                     try {
+                        // First, sign user in with Google to confirm ownership
                         const googleProvider = new GoogleAuthProvider();
                         const result = await signInWithPopup(authInstance, googleProvider);
+                        
+                        // Then, create an email/password credential and link it
                         const credential = EmailAuthProvider.credential(email, password);
                         await linkWithCredential(result.user, credential);
+                        
                         await fetchUserProfile(result.user);
                         return { error: null };
                     } catch (linkError: any) {
@@ -177,6 +184,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 } else {
                     return { error: "Registro cancelado. Por favor, inicia sesión con Google." };
                 }
+            } else {
+                return { error: "Este correo electrónico ya está registrado con una contraseña." };
             }
         }
         return { error: (error as AuthError).message };
@@ -187,7 +196,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (!authInstance) return { error: { code: 'auth/unavailable', message: 'Firebase not initialized' } as AuthError };
     try {
         const userCredential = await signInWithEmailAndPassword(authInstance, email, password);
-        // Let the onAuthStateChanged listener handle the profile fetching
+        await fetchUserProfile(userCredential.user);
         return { error: null };
     } catch (error) {
         return { error: error as AuthError };
@@ -265,6 +274,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const linkPasswordToAccount = async (password: string) => {
+    if (!authInstance || !user) {
+        return { error: 'Usuario no autenticado.' };
+    }
+    try {
+        // Step 1: Re-authenticate with Google to confirm user identity securely
+        const provider = new GoogleAuthProvider();
+        await reauthenticateWithPopup(user, provider);
+
+        // Step 2: Create the new email/password credential
+        const credential = EmailAuthProvider.credential(user.email!, password);
+
+        // Step 3: Link the new credential to the existing account
+        await linkWithCredential(user, credential);
+
+        return { error: null };
+    } catch (error: any) {
+        console.error("Error linking password to account:", error);
+        return { error: `No se pudo establecer la contraseña: ${error.message}` };
+    }
+  };
+
   const logout = async () => {
     if (!authInstance) return;
     await signOut(authInstance);
@@ -281,6 +312,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     signUpWithEmail,
     loginWithEmail,
     loginWithGoogle,
+    linkPasswordToAccount,
     logout,
   };
 
