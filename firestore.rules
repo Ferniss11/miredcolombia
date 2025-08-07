@@ -3,45 +3,84 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper functions
-    function isOwner(userId) {
-      return request.auth.uid == userId;
-    }
-
+    // Helper function to check for Admin role from the auth token's custom claims
     function isAdmin() {
-      // Check if the user document exists and has the 'Admin' role.
-      return exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Admin';
+      return request.auth.token.role == 'Admin';
     }
 
-    // Rules for 'users' collection
+    // Rules for the 'users' collection
     match /users/{userId} {
-      allow read: if true;
-      allow create: if isOwner(userId);
-      allow update: if isOwner(userId) && request.resource.data.role == resource.data.role; // Prevent role change
-      allow delete: if false; // Generally, don't allow users to delete their own accounts from the client.
+      // Allow create by anyone (for new sign-ups)
+      allow create: if true;
+
+      // Allow read by the user themselves or by an admin
+      allow read: if request.auth.uid == userId || isAdmin();
+      
+      // Allow update by the user, BUT NOT the 'role' or 'status' fields.
+      // Those can only be changed by an admin.
+      allow update: if request.auth.uid == userId 
+                    && !('role' in request.resource.data)
+                    && !('status' in request.resource.data);
+      
+      // Allow full write access (including role/status changes) only for Admins
+      allow write: if isAdmin();
+    }
+
+    // Rules for 'posts' (Blog)
+    match /posts/{postId} {
+        // Anyone can read published posts
+        allow read: if resource.data.status == 'Published';
+        // Only admins can create, update, or delete posts
+        allow write: if isAdmin();
     }
     
-    // Rules for 'customers' collection
+    // Rules for 'directory'
+    match /directory/{businessId} {
+        // Anyone can read approved businesses
+        allow read: if resource.data.verificationStatus == 'approved';
+        // Only admins can write to the directory
+        allow write: if isAdmin();
+    }
+    
+    // Subcollection for business-specific chat
+    match /directory/{businessId}/businessChatSessions/{sessionId}/{document=**} {
+        // Allow anyone to create chat sessions and messages
+        allow create: if true;
+        // Reading/updating should be restricted to the business owner or an admin.
+        // This requires getting the owner UID from the parent directory document.
+        allow read, update: if request.auth.uid == get(/databases/$(database)/documents/directory/$(businessId)).data.ownerUid || isAdmin();
+    }
+
+    // Rules for 'chatSessions' (Global Chat)
+    match /chatSessions/{sessionId}/{document=**} {
+      // Allow anyone to create chat sessions and messages
+      allow create: if true;
+      // Only admins can read/update global chat sessions
+      allow read, update: if isAdmin();
+    }
+    
+    // Config collections should only be accessible by admins
+    match /agentConfig/{docId} {
+      allow read, write: if isAdmin();
+    }
+    match /platformConfig/{docId} {
+        allow read, write: if isAdmin();
+    }
+
+    // Rules for 'customers' and 'orders' (e-commerce)
     match /customers/{customerId} {
-      allow read: if isAdmin() || (request.auth.uid != null && request.auth.uid == resource.data.userId);
-      allow create: if true; // Allow anyone to create a customer profile during purchase.
-      allow update: if request.auth.uid != null && request.auth.uid == resource.data.userId;
-      allow delete: if false;
+        // Only admins can manage customer data directly
+        allow read, write: if isAdmin();
+        // Allow users to create their own customer record during checkout
+        allow create: if true; 
     }
-
-    // Rules for 'orders' collection
+    
     match /orders/{orderId} {
-      allow read: if isAdmin() || (request.auth.uid != null && request.auth.uid == resource.data.userId);
-      allow create: if true; // Allow anyone to create an order document after a successful payment.
-      allow update, delete: if false;
+         // Only admins can manage orders directly
+        allow read, write: if isAdmin();
+         // Allow users to create their own orders during checkout
+        allow create: if true;
     }
 
-    // Rules for 'jobPostings' collection
-    match /jobPostings/{jobId} {
-      allow read: if true;
-      allow create: if request.auth != null;
-      allow update, delete: if request.auth.uid == resource.data.creatorId;
-    }
   }
 }

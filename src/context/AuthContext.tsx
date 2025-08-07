@@ -2,7 +2,7 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import {
   onAuthStateChanged,
   User,
@@ -15,6 +15,7 @@ import {
   EmailAuthProvider,
   type Auth,
   type AuthError,
+  type IdTokenResult,
 } from 'firebase/auth';
 import { getFirebaseServices } from '@/lib/firebase/config';
 import type { UserProfile, UserRole } from '@/lib/types';
@@ -65,7 +66,8 @@ async function getUserProfile(uid: string): Promise<UserProfile | null> {
             return null;
         }
         if (!response.ok) {
-            throw new Error('Failed to fetch user profile from API.');
+            const error = await response.json();
+            throw new Error(error.error?.message || 'Failed to fetch user profile from API.');
         }
         return await response.json();
     } catch (error) {
@@ -79,6 +81,7 @@ interface AuthContextType {
   user: User | null;
   userProfile: UserProfile | null;
   loading: boolean;
+  claims: IdTokenResult['claims'] | null;
   refreshUserProfile: () => Promise<void>;
   signUpWithEmail: (name: string, email: string, password: string, role: UserRole) => Promise<{ error: AuthError | null }>;
   loginWithEmail: (email: string, password: string) => Promise<{ error: AuthError | null }>;
@@ -100,6 +103,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [claims, setClaims] = useState<IdTokenResult['claims'] | null>(null);
   
   const [authInstance, setAuthInstance] = useState<Auth | null>(null);
   const router = useRouter();
@@ -108,16 +112,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (firebaseUser) {
       try {
         // Force refresh the token to get the latest custom claims.
-        // This is crucial for role-based access control.
-        await firebaseUser.getIdToken(true); 
+        const idTokenResult = await firebaseUser.getIdTokenResult(true); 
+        setClaims(idTokenResult.claims);
+        
         const profile = await getUserProfile(firebaseUser.uid);
         setUserProfile(profile);
       } catch (error) {
         console.error("[AuthContext] Error fetching user profile:", error);
         setUserProfile(null);
+        setClaims(null);
       }
     } else {
       setUserProfile(null);
+      setClaims(null);
     }
   }, []);
 
@@ -133,6 +140,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       } else {
         setUser(null);
         setUserProfile(null);
+        setClaims(null);
       }
       setLoading(false);
     });
@@ -164,8 +172,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const loginWithEmail = async (email: string, password: string) => {
     if (!authInstance) return { error: { code: 'auth/unavailable', message: 'Firebase not initialized' } as AuthError };
     try {
-        // The onAuthStateChanged listener will handle fetching the profile
-        // and its useEffect will handle the custom claim refresh.
         await signInWithEmailAndPassword(authInstance, email, password);
         return { error: null };
     } catch (error) {
@@ -191,17 +197,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (!profile) {
             console.log(`[Google Auth] No profile found. Creating new user profile for ${user.email}`);
             await ensureUserProfileExists(user, user.displayName || 'Usuario de Google', role);
-            console.log(`[Google Auth] User profile created. Fetching fresh profile...`);
-            await fetchUserProfile(user);
-            console.log(`[Google Auth] Fresh profile fetched.`);
         } else {
-            console.log(`[Google Auth] Existing profile found. Forcing token refresh to sync claims.`);
-            // User exists, force a token refresh to get latest claims
-            await user.getIdToken(true);
-            await refreshUserProfile();
-             console.log(`[Google Auth] Token refreshed and profile re-fetched.`);
+            console.log(`[Google Auth] Existing profile found.`);
         }
-
+        
+        // This will trigger the onAuthStateChanged listener, which will then call
+        // fetchUserProfile and get the latest claims and profile data.
+        await fetchUserProfile(user);
+        console.log(`[Google Auth] Profile and claims refreshed.`);
         console.log(`[Google Auth] Flow completed successfully.`);
         return { error: undefined };
 
@@ -247,6 +250,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     user,
     userProfile,
     loading,
+    claims,
     refreshUserProfile,
     signUpWithEmail,
     loginWithEmail,

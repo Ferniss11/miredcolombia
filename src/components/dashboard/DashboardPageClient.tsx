@@ -2,36 +2,36 @@
 'use client';
 
 import { useAuth } from '@/context/AuthContext';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2 } from 'lucide-react';
 import DebugInfoCard from '@/components/debug/DebugInfoCard';
+import { useSearchParams } from 'next/navigation';
 
 export default function DashboardPageClient() {
-  const { user, userProfile, loading } = useAuth();
+  const { user, userProfile, loading, claims } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const customToken = searchParams.get('customToken');
+  const customToken = searchParams.get('customToken'); // This might be from a previous implementation, safe to keep for now
 
   useEffect(() => {
-    // Wait until loading is finished to make a decision
-    if (!loading && !customToken) { // Also wait if we're in the middle of a custom token sign-in
+    if (!loading && !customToken) {
       if (userProfile) {
+        // The role from the userProfile (Firestore) is used for initial redirection logic.
+        // The actual security is enforced by custom claims on the backend.
         if (userProfile.role === 'Admin') {
           router.replace('/dashboard/admin');
         } else if (userProfile.role === 'Advertiser') {
           router.replace('/dashboard/advertiser');
         }
       } else if (!user) {
-        // If there's no user and we're done loading, they shouldn't be here.
         router.replace('/login');
       }
     }
   }, [user, userProfile, loading, router, customToken]);
 
-  // Show a full-screen loader while loading, or if redirection is about to happen,
-  // or if we are processing a custom token login.
+  // Show a full-screen loader while loading or if redirection is about to happen.
   if (loading || customToken || (userProfile && (userProfile.role === 'Admin' || userProfile.role === 'Advertiser'))) {
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm z-50">
@@ -40,7 +40,7 @@ export default function DashboardPageClient() {
     );
   }
 
-  // Generic dashboard for 'User' role, or if a user has no role defined.
+  // Generic dashboard for 'User' role.
   return (
     <div>
       <h1 className="text-3xl font-bold font-headline mb-6">Panel de Usuario</h1>
@@ -60,7 +60,8 @@ export default function DashboardPageClient() {
       
       <div className="grid gap-6 md:grid-cols-2 mt-6">
           <DebugInfoCard title="Auth User Object" description="Datos del usuario desde Firebase Authentication." data={user} />
-          <DebugInfoCard title="User Profile Object" description="Datos del perfil desde Firestore." data={userProfile} />
+          <DebugInfoCard title="User Profile (Firestore)" description="Datos del perfil desde Firestore." data={userProfile} />
+          <DebugInfoCard title="Auth Token Claims" description="Claims decodificados del token de autenticación (incluye el rol)." data={claims} />
       </div>
     </div>
   );

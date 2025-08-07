@@ -29,10 +29,12 @@ export class CreateUserProfileUseCase {
     // Step 2: Set the custom claim on the user's auth token
     if (adminAuth) {
         try {
-            // Check existing claims to prevent unnecessary overwrites, although setCustomUserClaims does this.
-            // This is especially useful for users who might be "re-verified" upon login.
+            // Check existing claims. This is crucial for security.
+            // We only set the claim if it doesn't exist, preventing a Firestore
+            // role change from being propagated to the token on re-login.
+            // The authoritative source for roles is the token itself.
             const { customClaims } = await adminAuth.getUser(createdUser.uid);
-            if (!customClaims || customClaims.role !== createdUser.role) {
+            if (!customClaims || !customClaims.role) {
                 await adminAuth.setCustomUserClaims(createdUser.uid, { role: createdUser.role });
             }
         } catch (error) {
