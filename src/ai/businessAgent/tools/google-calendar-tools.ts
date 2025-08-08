@@ -6,19 +6,23 @@ import { z } from 'zod';
 import { google } from 'googleapis';
 import { getGoogleAuthClientForUser } from '@/lib/gcal-actions';
 
+// This tool's function now directly receives the owner's UID.
 export const getAvailableSlots = ai.defineTool(
     {
         name: 'getAvailableSlots',
-        description: 'Verifica los huecos disponibles en el calendario de un negocio para una fecha específica. Requiere el UID del propietario del negocio.',
+        description: 'Verifica los huecos disponibles en el calendario de un negocio para una fecha específica.',
         inputSchema: z.object({
-            uid: z.string().describe('El UID del propietario del negocio para el cual verificar la disponibilidad.'),
             date: z.string().describe('La fecha para la cual verificar la disponibilidad, en formato YYYY-MM-DD.'),
         }),
         outputSchema: z.object({
             availableSlots: z.array(z.string()).describe('Una lista de horarios de inicio disponibles, en formato HH:mm.'),
         }),
     },
-    async ({ uid, date }) => {
+    // The UID is now passed as a context parameter from the flow's execution.
+    async ({ date }, { uid }) => {
+        if (!uid) {
+            throw new Error("UID del propietario no fue proporcionado a la herramienta getAvailableSlots.");
+        }
         try {
             const auth = await getGoogleAuthClientForUser(uid);
             const calendar = google.calendar({ version: 'v3', auth });
@@ -66,9 +70,8 @@ export const getAvailableSlots = ai.defineTool(
 export const createAppointment = ai.defineTool(
     {
         name: 'createAppointment',
-        description: 'Crea una nueva cita en el calendario del negocio. Requiere el UID del propietario.',
+        description: 'Crea una nueva cita en el calendario del negocio.',
         inputSchema: z.object({
-            uid: z.string().describe('El UID del propietario del negocio.'),
             dateTime: z.string().describe('La fecha y hora de inicio de la cita en formato ISO (ej. 2024-08-15T14:00:00).'),
             summary: z.string().describe('Un resumen o título para la cita (ej. "Cita con Juan Pérez").'),
             durationMinutes: z.number().default(60).describe('La duración de la cita en minutos.'),
@@ -78,7 +81,10 @@ export const createAppointment = ai.defineTool(
             appointmentId: z.string().optional().describe('El ID del evento creado en Google Calendar.'),
         }),
     },
-    async ({ uid, dateTime, summary, durationMinutes }) => {
+    async ({ dateTime, summary, durationMinutes }, { uid }) => {
+         if (!uid) {
+            throw new Error("UID del propietario no fue proporcionado a la herramienta createAppointment.");
+        }
         try {
             const auth = await getGoogleAuthClientForUser(uid);
             const calendar = google.calendar({ version: 'v3', auth });

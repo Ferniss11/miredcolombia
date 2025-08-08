@@ -38,7 +38,7 @@ export async function businessChat(input: BusinessChatFlowInput) {
     return businessChatFlow(input);
 }
 
-
+// The tools are now correctly defined as an array.
 const prompt = ai.definePrompt({
     name: 'businessChatPrompt',
     input: { schema: BusinessChatFlowInputSchema },
@@ -69,14 +69,11 @@ const businessChatFlow = ai.defineFlow(
         inputSchema: BusinessChatFlowInputSchema,
         outputSchema: ChatOutputSchema,
     },
+    // The flow now receives the ownerUid in its input and passes it
+    // to the prompt's context, which the tools will then use.
     async (input) => {
         // Pass the ownerUid to all tool calls that require it
-        const { output, usage } = await prompt(input, {
-            tools: {
-                getAvailableSlots: { uid: input.ownerUid },
-                createAppointment: { uid: input.ownerUid },
-            }
-        });
+        const { output, usage } = await prompt(input, { context: { uid: input.ownerUid } });
 
         if (!output) {
             throw new Error('La respuesta de la IA fue vacía.');
