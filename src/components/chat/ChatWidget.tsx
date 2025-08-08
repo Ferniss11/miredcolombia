@@ -52,10 +52,16 @@ const WelcomeForm = ({ onSessionStarted, isBusinessChat, businessContext }: Welc
         setIsPending(true);
         setError(null);
         try {
-            const payload = {
-                ...values,
-                ...(isBusinessChat && businessContext && { businessId: businessContext.businessId }),
+            const payload: any = {
+                userName: values.userName,
+                userPhone: values.userPhone,
             };
+            if (values.userEmail) {
+                payload.userEmail = values.userEmail;
+            }
+            if (isBusinessChat && businessContext?.businessId) {
+                payload.businessId = businessContext.businessId;
+            }
 
             const response = await fetch('/api/chat/sessions', {
                 method: 'POST',
@@ -64,9 +70,9 @@ const WelcomeForm = ({ onSessionStarted, isBusinessChat, businessContext }: Welc
             });
 
             const result = await response.json();
-
+            
             if (!response.ok) {
-                 if (result.error?.fullError) {
+                if (result.error?.fullError) {
                     sessionStorage.setItem('fullError', result.error.fullError);
                     router.push('/errors');
                     return;
@@ -504,3 +510,5 @@ export default function ChatWidget() {
     </>
   );
 }
+
+    
