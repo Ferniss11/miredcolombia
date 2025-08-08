@@ -140,21 +140,22 @@ src/lib/
 
 **Objetivo:** Migrar toda la lógica de conversaciones (global y de negocio) a la nueva arquitectura. Esto solucionará los problemas de estado actuales y creará un sistema robusto.
 
-### **Paso 2.1: Definir el Dominio (`src/lib/chat/domain`)**
+### **Paso 2.1: Definir el Dominio (`src/lib/chat/domain`) (✓ Completado)**
 
-*   **`chat-message.entity.ts`**: Definir la interfaz `ChatMessage` (`id`, `sessionId`, `role`, `text`, `timestamp`, `usage?`, `authorName?`).
-*   **`chat-session.entity.ts`**: Definir la interfaz `ChatSession` (`id`, `userId?`, `businessId?`, `createdAt`, `totalCost`, `totalTokens`).
-*   **`chat.repository.ts`**: Definir el puerto `ChatRepository` con métodos para crear/leer sesiones y mensajes.
+*   **`chat-message.entity.ts`**: Definir la interfaz `ChatMessage` (`id`, `sessionId`, `role`, `text`, `timestamp`, `usage?`, `authorName?`). (✓)
+*   **`chat-session.entity.ts`**: Definir la interfaz `ChatSession` (`id`, `userId?`, `businessId?`, `createdAt`, `totalCost`, `totalTokens`). (✓)
+*   **`chat.repository.ts`**: Definir el puerto `ChatRepository` con métodos para crear/leer sesiones y mensajes. (✓)
 
-### **Paso 2.2: Crear los Casos de Uso (`src/lib/chat/application`)**
+### **Paso 2.2: Crear los Casos de Uso (`src/lib/chat/application`) (✓ Completado)**
 
-*   **`start-chat-session.use-case.ts`**: Usa el `ChatRepository` para crear una sesión y un mensaje de bienvenida.
-*   **`post-message.use-case.ts`**: Orquesta el flujo: persiste mensaje de usuario, invoca al adaptador de IA, persiste respuesta de IA.
-*   **`get-chat-history.use-case.ts`**: Obtiene el historial a través del `ChatRepository`.
+*   **`start-chat-session.use-case.ts`**: Usa el `ChatRepository` para crear una sesión y un mensaje de bienvenida. (✓)
+*   **`post-message.use-case.ts`**: Orquesta el flujo: persiste mensaje de usuario, invoca al adaptador de IA, persiste respuesta de IA. (✓)
+*   **`get-chat-history.use-case.ts`**: Obtiene el historial a través del `ChatRepository`. (✓)
+*   **`get-all-chat-sessions.use-case.ts`**: Obtiene todas las sesiones de chat para el panel de administración. (✓)
 
 ### **Paso 2.3: Implementar la Infraestructura (`src/lib/chat/infrastructure`)**
 
-*   **`persistence/firestore-chat.repository.ts`**: Implementa `ChatRepository` usando Firestore.
+*   **`persistence/firestore-chat.repository.ts`**: Implementa `ChatRepository` usando Firestore. (✓)
 *   **`ai/genkit-agent.adapter.ts`**:
     *   Implementa una interfaz `AgentAdapter`.
     *   **Es el único lugar que importa y llama a los flujos de Genkit**. Adapta los datos del caso de uso al formato que el flujo de Genkit necesita.
