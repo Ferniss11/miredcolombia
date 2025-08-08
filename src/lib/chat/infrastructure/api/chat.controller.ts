@@ -37,7 +37,9 @@ export class ChatController {
     this.startChatSessionUseCase = new StartChatSessionUseCase(chatRepository);
     this.postMessageUseCase = new PostMessageUseCase(chatRepository, agentAdapter);
     this.getChatHistoryUseCase = new GetChatHistoryUseCase(chatRepository);
-    this.getAllChatSessionsUseCase = new GetAllChatSessionsUseCase(); // Needs repository
+    // This use case might need the repository if we decide to implement it fully.
+    // For now, it's not used in this controller but is set up for future use.
+    this.getAllChatSessionsUseCase = new GetAllChatSessionsUseCase(chatRepository); 
   }
 
   /**
@@ -48,9 +50,8 @@ export class ChatController {
     const json = await req.json();
     const input = StartSessionSchema.parse(json);
 
-    // Check if an existing session for this phone number exists
-    // NOTE: This logic might be better inside the use case itself.
     const existingSession = await findSessionByPhone(input.userPhone);
+    
     if (existingSession) {
         const history = await this.getChatHistoryUseCase.execute({ sessionId: existingSession.id });
         return ApiResponse.success({ 
@@ -60,13 +61,11 @@ export class ChatController {
         });
     }
 
-    const { session, welcomeMessage } = await this.startChatSessionUseCase.execute(input);
+    const { session, history } = await this.startChatSessionUseCase.execute(input);
     
-    const history = [{ role: 'model', text: welcomeMessage, timestamp: new Date().toISOString() }];
-
     return ApiResponse.created({ 
         sessionId: session.id,
-        history,
+        history: history.map(m => ({...m, timestamp: m.timestamp.toISOString()})),
         isResumed: false,
     });
   }

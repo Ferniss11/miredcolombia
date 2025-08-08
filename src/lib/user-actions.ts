@@ -5,9 +5,11 @@ import { z } from 'zod';
 import { adminAuth } from '@/lib/firebase/admin-config';
 import { GetUserProfileUseCase } from '@/lib/user/application/get-user-profile.use-case';
 import { FirestoreUserRepository } from '@/lib/user/infrastructure/persistence/firestore-user.repository';
-import { SetUserRoleUseCase, type SetUserRoleInput } from '@/lib/user/application/set-user-role.use-case';
+import { SetUserRoleUseCase } from '@/lib/user/application/set-user-role.use-case';
 import type { UserRole } from '@/lib/user/domain/user.entity';
 import { revalidatePath } from 'next/cache';
+import { uploadFile } from './user/infrastructure/storage/firebase-storage.adapter';
+import { UpdateCandidateProfileUseCase } from './user/application/update-candidate-profile.use-case';
 
 /**
  * A server action to securely synchronize a user's role from Firestore
@@ -38,7 +40,6 @@ export async function syncUserRoleAction(uid: string): Promise<{ success: boolea
     const existingRoles = (customClaims?.roles || []) as UserRole[];
     const newRoles: UserRole[] = [userProfile.role];
     
-    // Add SAdmin role for the specific user
     if (userProfile.email === 'caangogi@gmail.com' && !newRoles.includes('SAdmin')) {
         newRoles.push('SAdmin');
     }
@@ -59,37 +60,38 @@ export async function syncUserRoleAction(uid: string): Promise<{ success: boolea
   }
 }
 
-const setUserRoleSchema = z.object({
-  uid: z.string().min(1),
-  role: z.enum(['Admin', 'Advertiser', 'User']), // SAdmin cannot be set manually
-});
 
-export async function setUserRoleAction(input: z.infer<typeof setUserRoleSchema>, actorId: string) {
-    if (!adminAuth) {
-        return { success: false, error: 'Authentication service is not configured.' };
-    }
-
+export async function updateCandidateProfileAction(uid: string, formData: FormData) {
     try {
-        // --- Authorization Check ---
-        const actor = await adminAuth.getUser(actorId);
-        const actorRoles = (actor.customClaims?.roles || []) as UserRole[];
-        if (!actorRoles.includes('SAdmin')) {
-            return { success: false, error: 'You are not authorized to perform this action.' };
+        const userRepository = new FirestoreUserRepository();
+        const updateUseCase = new UpdateCandidateProfileUseCase(userRepository);
+
+        const resumeFile = formData.get('resumeFile') as File | null;
+        let resumeUrl: string | undefined = undefined;
+
+        if (resumeFile && resumeFile.size > 0) {
+            const buffer = Buffer.from(await resumeFile.arrayBuffer());
+            const filePath = `resumes/${uid}/${resumeFile.name}`;
+            resumeUrl = await uploadFile(buffer, filePath, resumeFile.type);
         }
 
-        const { uid, role } = setUserRoleSchema.parse(input);
-        const userRepository = new FirestoreUserRepository();
-        const setUserRoleUseCase = new SetUserRoleUseCase(userRepository);
+        const skillsString = formData.get('skills') as string;
+        const skillsArray = skillsString ? skillsString.split(',').map(s => s.trim()) : [];
 
-        await setUserRoleUseCase.execute({ targetUid: uid, newRole: role });
+        const profileData = {
+            professionalTitle: formData.get('professionalTitle') as string,
+            summary: formData.get('summary') as string,
+            skills: skillsArray,
+            ...(resumeUrl && { resumeUrl: resumeUrl }),
+        };
 
-        revalidatePath('/dashboard/admin/users');
-
+        await updateUseCase.execute(uid, profileData);
+        revalidatePath('/dashboard/candidate-profile');
         return { success: true };
 
     } catch (error) {
-        console.error(`Failed to set role for user ${input.uid} by actor ${actorId}:`, error);
-        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
+        console.error("Error updating candidate profile:", error);
+        const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
         return { success: false, error: errorMessage };
     }
 }

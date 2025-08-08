@@ -2,7 +2,8 @@
 'use server';
 
 import { getPlatformAiCosts, getPlatformConfig, savePlatformConfig } from "@/services/platform.service";
-import type { PlatformConfig } from './types';
+import type { PlatformConfig, PlatformCosts } from './types';
+import { revalidatePath } from "next/cache";
 
 export async function getPlatformAiCostsAction() {
     try {
@@ -27,6 +28,7 @@ export async function getPlatformConfigAction() {
 export async function savePlatformConfigAction(config: PlatformConfig) {
     try {
         await savePlatformConfig(config);
+        revalidatePath('/dashboard/admin/economics');
         return { success: true };
     } catch (error) {
         console.error("Error saving platform config:", error);

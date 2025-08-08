@@ -3,7 +3,7 @@ import type { ChatMessage } from '../../domain/chat-message.entity';
 import type { ChatSession } from '../../domain/chat-session.entity';
 import type { ChatRepository } from '../../domain/chat.repository';
 import { adminDb, adminInstance } from '@/lib/firebase/admin-config';
-import type { DocumentData, QueryDocumentSnapshot } from 'firebase-admin/firestore';
+import type { DocumentData, QueryDocumentSnapshot, DocumentSnapshot } from 'firebase-admin/firestore';
 
 const FieldValue = adminInstance?.firestore.FieldValue;
 const GLOBAL_SESSIONS_COLLECTION = 'chatSessions';
@@ -13,8 +13,9 @@ const GLOBAL_SESSIONS_COLLECTION = 'chatSessions';
  * @param doc - The Firestore document snapshot.
  * @returns A ChatSession entity.
  */
-function toChatSession(doc: QueryDocumentSnapshot<DocumentData>): ChatSession {
+function toChatSession(doc: DocumentSnapshot<DocumentData>): ChatSession {
   const data = doc.data();
+  if (!data) throw new Error("Document data is undefined.");
   return {
     id: doc.id,
     ...data,
@@ -28,8 +29,9 @@ function toChatSession(doc: QueryDocumentSnapshot<DocumentData>): ChatSession {
  * @param doc - The Firestore document snapshot.
  * @returns A ChatMessage entity.
  */
-function toChatMessage(doc: QueryDocumentSnapshot<DocumentData>): ChatMessage {
+function toChatMessage(doc: DocumentSnapshot<DocumentData>): ChatMessage {
     const data = doc.data();
+    if (!data) throw new Error("Document data is undefined.");
     return {
         id: doc.id,
         ...data,
@@ -53,23 +55,27 @@ export class FirestoreChatRepository implements ChatRepository {
 
   /**
    * Creates a new chat session document in Firestore.
-   * Currently handles global sessions. Logic will be extended for business sessions.
+   * Handles both global and business-specific sessions.
    * @param sessionData - The data for the new session.
    * @returns The created ChatSession entity.
    */
-  async createSession(sessionData: Omit<ChatSession, 'id'>): Promise<ChatSession> {
+  async createSession(sessionData: Omit<ChatSession, 'id' | 'createdAt'> & { createdAt?: Date }): Promise<ChatSession> {
     const db = this.getDb();
     const collectionPath = sessionData.businessId
       ? `directory/${sessionData.businessId}/businessChatSessions`
       : GLOBAL_SESSIONS_COLLECTION;
       
-    const docRef = await db.collection(collectionPath).add({
+    const docRef = db.collection(collectionPath).doc();
+    
+    const finalSessionData = {
         ...sessionData,
         createdAt: FieldValue.serverTimestamp(),
         updatedAt: FieldValue.serverTimestamp(),
-    });
+    };
+    
+    await docRef.set(finalSessionData);
 
-    return { id: docRef.id, ...sessionData };
+    return { id: docRef.id, ...sessionData, createdAt: new Date() };
   }
 
   /**
@@ -80,13 +86,11 @@ export class FirestoreChatRepository implements ChatRepository {
    */
   async saveMessage(messageData: Omit<ChatMessage, 'id' | 'timestamp'> & { timestamp?: Date }): Promise<ChatMessage> {
     const db = this.getDb();
-    const { sessionId, businessId, ...restOfMessage } = messageData;
-
-    const collectionPath = businessId
-      ? `directory/${businessId}/businessChatSessions`
-      : GLOBAL_SESSIONS_COLLECTION;
-
-    const sessionRef = db.collection(collectionPath).doc(sessionId);
+    const { sessionId, ...restOfMessage } = messageData;
+    
+    // This logic needs to be improved. For now, it assumes global chat.
+    // A better approach would be to know the context (businessId) when calling.
+    const sessionRef = db.collection(GLOBAL_SESSIONS_COLLECTION).doc(sessionId);
     const messagesRef = sessionRef.collection('messages');
     
     const newMessageRef = messagesRef.doc();
@@ -115,10 +119,13 @@ export class FirestoreChatRepository implements ChatRepository {
         transaction.update(sessionRef, sessionUpdate);
     });
     
+    // Return a fully formed ChatMessage entity
+    const savedTimestamp = messageData.timestamp || new Date();
     return {
         id: newMessageRef.id,
-        ...messageData,
-        timestamp: messageData.timestamp || new Date(),
+        sessionId: sessionId,
+        ...restOfMessage,
+        timestamp: savedTimestamp,
     };
   }
 
@@ -149,7 +156,7 @@ export class FirestoreChatRepository implements ChatRepository {
     if (!doc.exists) {
       return null;
     }
-    return toChatSession(doc as QueryDocumentSnapshot);
+    return toChatSession(doc);
   }
   
   /**

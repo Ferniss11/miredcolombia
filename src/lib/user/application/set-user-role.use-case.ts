@@ -6,18 +6,31 @@ import { UserRepository } from '../domain/user.repository';
 export type SetUserRoleInput = {
   targetUid: string;
   newRole: UserRole;
+  actorUid: string; // The user performing the action
 };
 
 export class SetUserRoleUseCase {
   constructor(private readonly userRepository: UserRepository) {}
 
-  async execute({ targetUid, newRole }: SetUserRoleInput): Promise<void> {
+  async execute({ targetUid, newRole, actorUid }: SetUserRoleInput): Promise<void> {
+    if (!adminAuth) {
+      throw new Error('Firebase Admin Auth is not initialized.');
+    }
+    
+    // --- Authorization Check ---
+    const actorRecord = await adminAuth.getUser(actorUid);
+    const actorRoles = (actorRecord.customClaims?.roles || []) as UserRole[];
+    if (!actorRoles.includes('SAdmin')) {
+        throw new Error('Forbidden: You do not have permission to change user roles.');
+    }
+    
     if (newRole === 'SAdmin') {
         throw new Error("The SAdmin role cannot be assigned manually.");
     }
-
-    if (!adminAuth) {
-      throw new Error('Firebase Admin Auth is not initialized.');
+    
+    // Prevent SAdmin from changing their own role
+    if (actorUid === targetUid && actorRoles.includes('SAdmin') && newRole !== 'SAdmin') {
+        throw new Error("Super Admin cannot change their own role.");
     }
 
     // Step 1: Update the user's role in Firestore.
@@ -25,16 +38,15 @@ export class SetUserRoleUseCase {
     await this.userRepository.update(targetUid, { role: newRole });
 
     // Step 2: Update the custom claims on the user's auth token.
-    // This is the source of truth for security rules and backend checks.
     const { customClaims } = await adminAuth.getUser(targetUid);
     const newClaims = {
         ...customClaims,
         roles: [newRole], // Set the new role in an array
     };
     
-    // Check for the super admin email and preserve the SAdmin role if it exists
-    const userRecord = await adminAuth.getUser(targetUid);
-    if (userRecord.email === 'caangogi@gmail.com' && !newClaims.roles.includes('SAdmin')) {
+    // Preserve SAdmin role if the target is the super admin, regardless of what's being set
+    const targetRecord = await adminAuth.getUser(targetUid);
+    if (targetRecord.email === 'caangogi@gmail.com' && !newClaims.roles.includes('SAdmin')) {
         newClaims.roles.push('SAdmin');
     }
     

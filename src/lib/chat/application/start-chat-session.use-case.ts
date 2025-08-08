@@ -1,6 +1,7 @@
 // src/lib/chat/application/start-chat-session.use-case.ts
 import type { ChatSession } from '../domain/chat-session.entity';
 import type { ChatRepository } from '../domain/chat.repository';
+import type { ChatMessage } from '../domain/chat-message.entity';
 
 export type StartChatSessionInput = {
   userName: string;
@@ -11,7 +12,7 @@ export type StartChatSessionInput = {
 
 export type StartChatSessionOutput = {
   session: ChatSession;
-  welcomeMessage: string;
+  history: ChatMessage[];
 };
 
 /**
@@ -36,13 +37,13 @@ export class StartChatSessionUseCase {
     const welcomeMessage = `¡Hola, ${input.userName}! Soy tu asistente virtual. ¿Cómo puedo ayudarte hoy?`;
     
     // Persist the initial welcome message
-    await this.chatRepository.saveMessage({
+    const initialMessage = await this.chatRepository.saveMessage({
       sessionId: session.id,
       text: welcomeMessage,
       role: 'model',
       timestamp: new Date(),
     });
 
-    return { session, welcomeMessage };
+    return { session, history: [initialMessage] };
   }
 }

@@ -6,6 +6,14 @@ export class GetAllUsersUseCase {
   constructor(private readonly userRepository: UserRepository) {}
 
   async execute(): Promise<User[]> {
-    return this.userRepository.findAll();
+    const allUsers = await this.userRepository.findAll();
+    // Sort users so that 'SAdmin' and 'Admin' appear first
+    return allUsers.sort((a, b) => {
+        if (a.role === 'SAdmin') return -1;
+        if (b.role === 'SAdmin') return 1;
+        if (a.role === 'Admin') return -1;
+        if (b.role === 'Admin') return 1;
+        return 0;
+    });
   }
 }

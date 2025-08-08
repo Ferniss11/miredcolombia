@@ -15,6 +15,7 @@ import { UpdateCandidateProfileUseCase } from '../../application/update-candidat
 import { SoftDeleteUserUseCase } from '../../application/soft-delete-user.use-case';
 import { SetUserRoleUseCase } from '../../application/set-user-role.use-case';
 import type { BusinessProfile, CandidateProfile, User, UserRole } from '../../domain/user.entity';
+import { adminAuth } from '@/lib/firebase/admin-config';
 
 
 // Schema for validating the creation of a user
@@ -157,8 +158,16 @@ export class UserController implements BaseController {
     const targetUid = params.id;
     const json = await req.json();
     const { role } = SetRoleSchema.parse(json);
+    
+    const idToken = req.headers.get('Authorization')?.split('Bearer ')[1];
+    if (!idToken || !adminAuth) {
+        return ApiResponse.unauthorized('Authentication required.');
+    }
+    const decodedToken = await adminAuth.verifyIdToken(idToken);
+    const actorUid = decodedToken.uid;
 
-    await this.setUserRoleUseCase.execute({ targetUid, newRole: role });
+
+    await this.setUserRoleUseCase.execute({ targetUid, newRole: role, actorUid });
     
     return ApiResponse.success({ message: `Role for user ${targetUid} updated to ${role}`});
   }
