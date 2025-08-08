@@ -58,7 +58,7 @@ export default async function DirectoryPage() {
                 <CardHeader className="p-0 relative">
                   <Image
                     src={business.photoUrl || "https://placehold.co/400x250.png"}
-                    alt={business.displayName}
+                    alt={business.displayName || "Imagen del negocio"}
                     width={400}
                     height={250}
                     data-ai-hint={`${business.category} storefront`}
