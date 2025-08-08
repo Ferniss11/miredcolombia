@@ -158,6 +158,21 @@ export class FirestoreChatRepository implements ChatRepository {
     }
     return toChatSession(doc);
   }
+
+  async findSessionByPhone(phone: string): Promise<ChatSession | null> {
+    const db = this.getDb();
+    // For now, we only search in the global sessions. This can be expanded later.
+    const snapshot = await db.collection(GLOBAL_SESSIONS_COLLECTION)
+        .where('userPhone', '==', phone)
+        .orderBy('createdAt', 'desc')
+        .limit(1)
+        .get();
+        
+    if (snapshot.empty) {
+        return null;
+    }
+    return toChatSession(snapshot.docs[0]);
+  }
   
   /**
    * Retrieves all global chat sessions.

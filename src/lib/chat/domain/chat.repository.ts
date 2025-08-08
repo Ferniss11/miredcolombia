@@ -20,6 +20,13 @@ export interface ChatRepository {
    * @returns The ChatSession entity or null if not found.
    */
   findSessionById(sessionId: string): Promise<ChatSession | null>;
+  
+  /**
+   * Finds a chat session by the user's phone number.
+   * @param phone - The phone number to search for.
+   * @returns The most recent ChatSession entity for that phone number, or null if not found.
+   */
+  findSessionByPhone(phone: string): Promise<ChatSession | null>;
 
   /**
    * Saves a new message to a specific chat session.

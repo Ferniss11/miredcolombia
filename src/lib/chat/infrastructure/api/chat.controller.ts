@@ -8,7 +8,7 @@ import { StartChatSessionUseCase } from '../../application/start-chat-session.us
 import { PostMessageUseCase } from '../../application/post-message.use-case';
 import { GetChatHistoryUseCase } from '../../application/get-chat-history.use-case';
 import { GetAllChatSessionsUseCase } from '../../application/get-all-chat-sessions.use-case';
-import { findSessionByPhone } from '@/services/chat.service';
+import { FindSessionByPhoneUseCase } from '../../application/find-session-by-phone.use-case';
 
 // --- Input Validation Schemas ---
 const StartSessionSchema = z.object({
@@ -29,6 +29,7 @@ export class ChatController {
   private postMessageUseCase: PostMessageUseCase;
   private getChatHistoryUseCase: GetChatHistoryUseCase;
   private getAllChatSessionsUseCase: GetAllChatSessionsUseCase;
+  private findSessionByPhoneUseCase: FindSessionByPhoneUseCase;
 
   constructor() {
     const chatRepository = new FirestoreChatRepository();
@@ -37,9 +38,8 @@ export class ChatController {
     this.startChatSessionUseCase = new StartChatSessionUseCase(chatRepository);
     this.postMessageUseCase = new PostMessageUseCase(chatRepository, agentAdapter);
     this.getChatHistoryUseCase = new GetChatHistoryUseCase(chatRepository);
-    // This use case might need the repository if we decide to implement it fully.
-    // For now, it's not used in this controller but is set up for future use.
-    this.getAllChatSessionsUseCase = new GetAllChatSessionsUseCase(chatRepository); 
+    this.getAllChatSessionsUseCase = new GetAllChatSessionsUseCase(chatRepository);
+    this.findSessionByPhoneUseCase = new FindSessionByPhoneUseCase(chatRepository);
   }
 
   /**
@@ -50,7 +50,7 @@ export class ChatController {
     const json = await req.json();
     const input = StartSessionSchema.parse(json);
 
-    const existingSession = await findSessionByPhone(input.userPhone);
+    const existingSession = await this.findSessionByPhoneUseCase.execute(input.userPhone);
     
     if (existingSession) {
         const history = await this.getChatHistoryUseCase.execute({ sessionId: existingSession.id });
