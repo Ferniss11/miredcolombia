@@ -78,7 +78,11 @@ export class GenkitAgentAdapter implements AgentAdapter {
     // The owner's config is stored on the user profile now
     const userProfile = await this.userRepository.findUserByBusinessId(businessId);
     if (userProfile?.businessProfile?.agentConfig) {
-        return userProfile.businessProfile.agentConfig;
+        // If the user has a custom prompt, use it. Otherwise, use the default.
+        return {
+            model: userProfile.businessProfile.agentConfig.model || defaultConfig.model,
+            systemPrompt: userProfile.businessProfile.agentConfig.systemPrompt || defaultConfig.systemPrompt,
+        };
     }
 
     return defaultConfig;
