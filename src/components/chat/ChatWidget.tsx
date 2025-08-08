@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useRef, useEffect, useTransition } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import * as z from 'zod';
 import { useForm } from 'react-hook-form';
@@ -15,8 +15,6 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { X, Send, User, Bot, Loader2, Sparkles, Phone, Building, MessageSquareQuote, UserCog, Clock, RotateCcw } from 'lucide-react';
 import { LuBotMessageSquare } from "react-icons/lu";
 import Link from 'next/link';
-import { startChatSessionAction, postMessageAction, getChatHistoryAction } from '@/lib/chat-actions';
-import { startBusinessChatSessionAction, postBusinessMessageAction, getBusinessChatHistoryAction } from '@/lib/business-chat-actions';
 import { useToast } from '@/hooks/use-toast';
 import type { ChatMessage } from '@/lib/chat-types';
 import { Avatar, AvatarFallback } from '../ui/avatar';
@@ -35,7 +33,7 @@ const formSchema = z.object({
 });
 
 type WelcomeFormProps = {
-  onSessionStarted: (sessionId: string, history: Omit<ChatMessage, 'id'>[], initialQuestion?: string) => void;
+  onSessionStarted: (sessionId: string, history: ChatMessage[], initialQuestion?: string) => void;
   isBusinessChat: boolean;
   businessContext?: { businessId: string, businessName: string };
   suggestionPool: string[];
@@ -67,26 +65,22 @@ const WelcomeForm = ({ onSessionStarted, isBusinessChat, businessContext, sugges
     const handleFormSubmit = async (values: z.infer<typeof formSchema>) => {
         setIsPending(true);
         setError(null);
-        toast({ title: "Iniciando sesión...", description: "Por favor, espera." }); // Temporary toast for debugging
 
         try {
-            const action = isBusinessChat ? startBusinessChatSessionAction : startChatSessionAction;
-            const params = isBusinessChat ? { ...values, businessId: businessContext!.businessId, businessName: businessContext!.businessName } : { ...values };
-            
-            // @ts-ignore
-            const result = await action(params);
-            
-            if ('isIndexError' in result && result.isIndexError) {
-                sessionStorage.setItem('fullError', result.error || 'Unknown index error.');
-                router.push('/errors');
-                return;
-            }
+            const response = await fetch('/api/chat/sessions', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ ...values, businessId: businessContext?.businessId })
+            });
 
-            if (result.success && result.sessionId) {
-                onSessionStarted(result.sessionId, result.history || [], initialQuestion || undefined);
-            } else {
-                setError(result.error || 'No se pudo iniciar el chat.');
+            const result = await response.json();
+
+            if (!response.ok) {
+              throw new Error(result.error?.message || 'Error en el servidor');
             }
+            
+            onSessionStarted(result.sessionId, result.history, initialQuestion || undefined);
+            
         } catch (e) {
             const errorMessage = e instanceof Error ? e.message : 'An unknown client error occurred.';
             setError(`Error de cliente: ${errorMessage}`);
@@ -97,12 +91,10 @@ const WelcomeForm = ({ onSessionStarted, isBusinessChat, businessContext, sugges
     
     const handleSuggestionClick = async (question: string) => {
         setInitialQuestion(question);
-        // We set dummy data to pass validation and immediately trigger the form submission.
         form.setValue('userName', 'Usuario');
         form.setValue('userPhone', '000000000');
         form.setValue('acceptTerms', true);
         
-        // Trigger validation and then submit
         const isValid = await form.trigger();
         if (isValid) {
             handleFormSubmit(form.getValues());
@@ -228,7 +220,6 @@ interface ChatWidgetProps {
     embedded?: boolean;
 }
 
-
 export default function ChatWidget({ embedded = false }: ChatWidgetProps) {
   const { 
     isChatOpen, 
@@ -238,8 +229,7 @@ export default function ChatWidget({ embedded = false }: ChatWidgetProps) {
   } = useChat();
 
   const [sessionId, setSessionId] = useState<string | null>(null);
-  const [isLoadingSession, setIsLoadingSession] = useState(true);
-  const [messages, setMessages] = useState<Omit<ChatMessage, 'id'>[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isAiResponding, setIsAiResponding] = useState(false);
   const [currentMessage, setCurrentMessage] = useState('');
   
@@ -274,27 +264,9 @@ export default function ChatWidget({ embedded = false }: ChatWidgetProps) {
         window.addEventListener('keydown', handleFirstInteraction, true);
         
         const storedSessionId = localStorage.getItem(storageKey);
-        const loadSession = async (id: string) => {
-            setIsLoadingSession(true);
-            const action = isBusinessChat ? getBusinessChatHistoryAction : getChatHistoryAction;
-            const params = isBusinessChat ? { sessionId: id, businessId: chatContext.businessId! } : { sessionId: id };
-            // @ts-ignore
-            const result = await action(params);
-
-            if (result.success && result.history) {
-                setSessionId(id);
-                setMessages(result.history);
-            } else {
-                localStorage.removeItem(storageKey);
-                setSessionId(null);
-            }
-            setIsLoadingSession(false);
-        };
-
         if (storedSessionId) {
-            loadSession(storedSessionId);
-        } else {
-            setIsLoadingSession(false);
+            setSessionId(storedSessionId);
+            // The history will be fetched when the chat is opened, for now, just set the ID.
         }
 
         return () => {
@@ -338,42 +310,76 @@ export default function ChatWidget({ embedded = false }: ChatWidgetProps) {
     }
   }, [isChatOpen]);
   
-  const handleSendMessage = async (messageText: string, currentHistory: Omit<ChatMessage, 'id'>[]) => {
+  const handleSendMessage = async (messageText: string) => {
     if (!messageText.trim() || !sessionId || isAiResponding) return;
     setIsAiResponding(true);
     setCurrentMessage('');
-    const action = isBusinessChat ? postBusinessMessageAction : postMessageAction;
-    const params = { sessionId, message: messageText.trim(), history: currentHistory, ...(isBusinessChat && { businessId: chatContext.businessId! })};
-    // @ts-ignore
-    const result = await action(params);
-    if (result.success && result.response) {
-      const aiMessage: Omit<ChatMessage, 'id'> = { role: 'model', text: result.response, timestamp: new Date().toISOString(), replyTo: null };
-      setMessages((prev) => [...prev, aiMessage]);
-    } else {
-      toast({ variant: 'destructive', title: 'Error', description: result.error });
-       const errorResponseMessage: Omit<ChatMessage, 'id'> = { role: 'model', text: 'Lo siento, he tenido un problema y no puedo responder ahora mismo.', timestamp: new Date().toISOString(), replyTo: null };
-      setMessages((prev) => [...prev, errorResponseMessage]);
+
+    const currentHistory = [...messages];
+    const userMessage: ChatMessage = { 
+        id: `temp-${Date.now()}`,
+        role: 'user', 
+        text: messageText.trim(), 
+        timestamp: new Date().toISOString(),
+        replyTo: null,
+    };
+    setMessages(prev => [...prev, userMessage]);
+    
+    try {
+        const response = await fetch(`/api/chat/sessions/${sessionId}/messages`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                userMessage: messageText.trim(),
+                businessId: chatContext?.businessId,
+                history: currentHistory, // Send history as it was *before* the new message
+             })
+        });
+
+        const result = await response.json();
+        if (!response.ok) {
+            throw new Error(result.error?.message || 'Error en el servidor');
+        }
+        
+        const aiMessage: ChatMessage = {
+            id: `ai-${Date.now()}`,
+            role: 'model',
+            text: result.aiResponse,
+            timestamp: new Date().toISOString(),
+            replyTo: null,
+            usage: result.usage,
+        };
+        setMessages(prev => [...prev, aiMessage]);
+
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
+        toast({ variant: 'destructive', title: 'Error', description: errorMessage });
+        const errorResponseMessage: ChatMessage = { 
+            id: `error-${Date.now()}`,
+            role: 'model', 
+            text: 'Lo siento, he tenido un problema y no puedo responder ahora mismo.', 
+            timestamp: new Date().toISOString(),
+            replyTo: null
+        };
+        setMessages(prev => [...prev, errorResponseMessage]);
+    } finally {
+        setIsAiResponding(false);
     }
-    setIsAiResponding(false);
   };
 
-  const handleSessionStarted = (newSessionId: string, history: Omit<ChatMessage, 'id'>[], initialQuestion?: string) => {
+  const handleSessionStarted = (newSessionId: string, history: ChatMessage[], initialQuestion?: string) => {
     localStorage.setItem(storageKey, newSessionId);
     setSessionId(newSessionId);
     setMessages(history);
 
     if (initialQuestion) {
-        const userMessage: Omit<ChatMessage, 'id'> = { role: 'user', text: initialQuestion, timestamp: new Date().toISOString(), replyTo: null };
-        setMessages(prev => [...prev, userMessage]);
-        handleSendMessage(initialQuestion, [...history, userMessage]);
+        handleSendMessage(initialQuestion);
     }
   };
   
   const handleFormSubmitAndSend = (e: React.FormEvent) => {
       e.preventDefault();
-      const userMessage: Omit<ChatMessage, 'id'> = { role: 'user', text: currentMessage.trim(), timestamp: new Date().toISOString(), replyTo: null };
-      setMessages(prev => [...prev, userMessage]);
-      handleSendMessage(currentMessage, [...messages, userMessage]);
+      handleSendMessage(currentMessage);
   }
   
   const handleProactiveMessageClose = (e: React.MouseEvent) => {
@@ -394,14 +400,6 @@ export default function ChatWidget({ embedded = false }: ChatWidgetProps) {
   }
 
   const renderChatContent = () => {
-    if (isLoadingSession) {
-        return (
-            <div className="flex-1 flex items-center justify-center">
-                <Loader2 className="animate-spin h-8 w-8 text-primary" />
-            </div>
-        )
-    }
-
     if (!sessionId) {
       return (
         <WelcomeForm 
@@ -437,7 +435,7 @@ export default function ChatWidget({ embedded = false }: ChatWidgetProps) {
               const authorName = isAdmin ? (msg.authorName || 'Admin') : isModel ? (chatContext?.businessName || 'Asistente IA') : '';
 
               return (
-                <div key={index} className={cn("flex items-end gap-2 w-full", alignment)}>
+                <div key={msg.id || index} className={cn("flex items-end gap-2 w-full", alignment)}>
                    {!isUser && avatar}
                     <div className="flex flex-col gap-1 w-full max-w-lg">
                         {authorName && <span className={cn("text-xs text-muted-foreground", isUser ? 'text-right' : 'text-left')}>{authorName}</span>}
@@ -556,5 +554,3 @@ export default function ChatWidget({ embedded = false }: ChatWidgetProps) {
     </>
   );
 }
-
-    

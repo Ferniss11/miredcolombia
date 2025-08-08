@@ -164,12 +164,14 @@ src/lib/
 
 ### **Paso 2.4: Actualizar la UI y Eliminar Código Antiguo**
 
-1.  **Actualizar `src/components/chat/ChatWidget.tsx`**: Modificar para que llame a los nuevos endpoints de la API REST del chat mediante `fetch`.
-2.  **Actualizar Paneles de Conversaciones**: Modificar las páginas (`/dashboard/admin/conversations` y `/dashboard/advertiser/conversations`) para que usen los nuevos endpoints.
-3.  **Eliminación de Archivos Obsoletos**:
-    *   **ELIMINAR:** `src/lib/chat-actions.ts`
-    *   **ELIMINAR:** `src/lib/business-chat-actions.ts`
-    *   **ELIMINAR:** `src/services/chat.service.ts`
+*   **Objetivo:** Conectar todos los componentes de frontend a los nuevos endpoints de la API de chat y luego eliminar las antiguas `Server Actions`.
+*   **Pasos:**
+    *   **Paso 2.4.1: Actualizar `ChatWidget.tsx`**: Modificar el widget de chat para que llame a `fetch` a los endpoints `/api/chat/sessions` (para iniciar) y `/api/chat/sessions/[id]/messages` (para enviar mensajes).
+    *   **Paso 2.4.2: Actualizar Paneles de Conversaciones**: Modificar las páginas (`/dashboard/admin/conversations` y `/dashboard/advertiser/conversations`) para que usen los nuevos endpoints.
+    *   **Paso 2.4.3: Eliminación de Archivos Obsoletos**:
+        *   ELIMINAR: `src/lib/chat-actions.ts`
+        *   ELIMINAR: `src/lib/business-chat-actions.ts`
+        *   ELIMINAR: `src/services/chat.service.ts`
 
 ---
 
