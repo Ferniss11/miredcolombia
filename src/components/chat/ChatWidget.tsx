@@ -21,6 +21,7 @@ import { Avatar, AvatarFallback } from '../ui/avatar';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '../ui/sheet';
 import { useChat } from '@/context/ChatContext';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
+import { Tooltip, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 
 // --- Welcome Form Sub-component ---
 const formSchema = z.object({
@@ -453,6 +454,7 @@ export default function ChatWidget() {
   return (
     <>
       {isMounted && (
+        <TooltipProvider>
         <div className="fixed bottom-6 right-6 z-50">
             {showProactive && !isChatOpen && proactiveMessage && (
                 <div className="absolute bottom-full right-0 mb-3 w-max max-w-[280px] animate-in fade-in-50 slide-in-from-bottom-2">
@@ -495,9 +497,16 @@ export default function ChatWidget() {
                             {isBusinessChat ? `Asistente de ${chatContext.businessName}` : "Asistente de Inmigración"}
                         </SheetTitle>
                         {sessionId && (
-                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleResetSession} title="Empezar de nuevo">
-                                <RotateCcw className="h-4 w-4" />
-                            </Button>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleResetSession}>
+                                        <RotateCcw className="h-4 w-4" />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>Empezar de nuevo</p>
+                                </TooltipContent>
+                            </Tooltip>
                         )}
                     </SheetHeader>
                     <div className="flex-1 min-h-0">
@@ -506,9 +515,8 @@ export default function ChatWidget() {
                 </SheetContent>
             </Sheet>
         </div>
+        </TooltipProvider>
       )}
     </>
   );
 }
-
-    
