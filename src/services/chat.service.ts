@@ -311,5 +311,3 @@ export async function getBusinessChatSessions(businessId: string): Promise<any[]
     }
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 }
-
-    

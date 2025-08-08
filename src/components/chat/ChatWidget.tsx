@@ -21,6 +21,8 @@ import { Avatar, AvatarFallback } from '../ui/avatar';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '../ui/sheet';
 import { useChat } from '@/context/ChatContext';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
+import { startChatSessionAction, postMessageAction, getChatHistoryAction } from '@/lib/chat-actions';
+
 
 // --- Welcome Form Sub-component ---
 const formSchema = z.object({
@@ -60,25 +62,25 @@ const WelcomeForm = ({ onSessionStarted, isBusinessChat, businessContext, sugges
         return () => clearInterval(interval);
     }, [suggestionPool]);
     
-    const handleStartSession = async (values: z.infer<typeof formSchema>) => {
+    const handleFormSubmit = async (values: z.infer<typeof formSchema>) => {
         setIsPending(true);
         setError(null);
         try {
-            const response = await fetch('/api/chat/sessions', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ ...values, businessId: businessContext?.businessId })
+            const result = await startChatSessionAction({
+                ...values,
+                businessId: businessContext?.businessId
             });
-            const result = await response.json();
-            if (!response.ok) {
-                if (result.error?.fullError) {
-                    sessionStorage.setItem('fullError', result.error.fullError);
+            
+            if (result.success) {
+                 onSessionStarted(result.sessionId, result.history);
+            } else {
+                 if (result.isIndexError) {
+                    sessionStorage.setItem('fullError', result.error!);
                     router.push('/errors');
                     return;
                 }
-                throw new Error(result.error?.message || 'Error en el servidor');
+                throw new Error(result.error || 'Error desconocido al iniciar sesión.');
             }
-            onSessionStarted(result.sessionId, result.history);
         } catch (e) {
             const errorMessage = e instanceof Error ? e.message : 'An unknown client error occurred.';
             setError(`Error al iniciar chat: ${errorMessage}`);
@@ -120,8 +122,17 @@ const WelcomeForm = ({ onSessionStarted, isBusinessChat, businessContext, sugges
             </div>
             
             <div className="pt-6 border-t mt-6">
+                 {error && (
+                    <Alert variant="destructive" className="mb-4">
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertTitle>Error al Iniciar Chat</AlertTitle>
+                        <AlertDescription>
+                            {error}
+                        </AlertDescription>
+                    </Alert>
+                )}
                 <Form {...form}>
-                    <form onSubmit={form.handleSubmit(handleStartSession)} className="space-y-4">
+                    <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
                         <FormField control={form.control} name="userName" render={({ field }) => (
                         <FormItem>
                             <FormLabel>Nombre</FormLabel>
@@ -133,6 +144,13 @@ const WelcomeForm = ({ onSessionStarted, isBusinessChat, businessContext, sugges
                         <FormItem>
                             <FormLabel>Teléfono</FormLabel>
                             <FormControl><Input placeholder="+34 600 000 000" {...field} /></FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        )} />
+                        <FormField control={form.control} name="userEmail" render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Email (Opcional)</FormLabel>
+                            <FormControl><Input placeholder="tu@email.com" {...field} /></FormControl>
                             <FormMessage />
                         </FormItem>
                         )} />
@@ -152,15 +170,6 @@ const WelcomeForm = ({ onSessionStarted, isBusinessChat, businessContext, sugges
                         <Button type="submit" className="w-full" disabled={isPending}>
                             {isPending ? <Loader2 className="animate-spin" /> : "Iniciar Chat"}
                         </Button>
-                         {error && (
-                            <Alert variant="destructive" className="mt-4">
-                                <AlertCircle className="h-4 w-4" />
-                                <AlertTitle>Error al Iniciar Chat</AlertTitle>
-                                <AlertDescription>
-                                    {error}
-                                </AlertDescription>
-                            </Alert>
-                        )}
                     </form>
                 </Form>
             </div>
@@ -227,10 +236,9 @@ export default function ChatWidget() {
 
   const fetchHistory = useCallback(async (sid: string) => {
     try {
-        const response = await fetch(`/api/chat/sessions/${sid}/messages`);
-        const result = await response.json();
-        if (!response.ok) throw new Error(result.error?.message || 'Error fetching history');
-        setMessages(result.history);
+        const result = await getChatHistoryAction({ sessionId: sid });
+        if (result.error) throw new Error(result.error);
+        setMessages(result.history || []);
     } catch (error) {
         console.error("Failed to fetch chat history:", error);
         localStorage.removeItem(storageKey);
@@ -308,40 +316,34 @@ export default function ChatWidget() {
         timestamp: new Date().toISOString(),
         replyTo: null,
     };
-    setMessages(prev => [...prev, userMessage]);
+    const newHistory = [...messages, userMessage];
+    setMessages(newHistory);
     
     try {
-        const response = await fetch(`/api/chat/sessions/${sessionId}/messages`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                userMessage: messageText.trim(),
-                businessId: chatContext?.businessId,
-             })
+        const result = await postMessageAction({
+            sessionId,
+            message: messageText.trim(),
+            history: newHistory.map(m => ({ role: m.role, text: m.text })),
         });
 
-        const result = await response.json();
-        if (!response.ok) {
-            if (result.error?.fullError) {
-                sessionStorage.setItem('fullError', result.error.fullError);
-                router.push('/errors');
-                return;
-            }
-            throw new Error(result.error?.message || 'Error en el servidor');
+        if (result.success && result.response) {
+            const aiMessage: ChatMessage = {
+                id: `ai-${Date.now()}`,
+                role: 'model',
+                text: result.response,
+                timestamp: new Date().toISOString(),
+                replyTo: null,
+            };
+            setMessages(prev => [...prev, aiMessage]);
+        } else {
+             throw new Error(result.error || 'Error en el servidor');
         }
-        
-        const aiMessage: ChatMessage = {
-            id: `ai-${Date.now()}`,
-            role: 'model',
-            text: result.aiResponse,
-            timestamp: new Date().toISOString(),
-            replyTo: null,
-            usage: result.usage,
-        };
-        setMessages(prev => [...prev, aiMessage]);
+
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
         toast({ variant: 'destructive', title: 'Error', description: errorMessage });
+        // Rollback optimistic UI update on error
+        setMessages(prev => prev.filter(m => m.id !== userMessage.id));
     } finally {
         setIsAiResponding(false);
     }

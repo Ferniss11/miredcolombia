@@ -11,15 +11,24 @@ import { ChatRoleSchema } from './chat-types';
 const startSessionSchema = z.object({
   userName: z.string().min(2, "El nombre es obligatorio."),
   userPhone: z.string().min(7, "El teléfono es obligatorio."),
-  userEmail: z.string().email().optional(),
+  userEmail: z.string().email().optional().or(z.literal('')),
+  businessId: z.string().optional(),
 });
 
 export async function startChatSessionAction(input: z.infer<typeof startSessionSchema>) {
   try {
     const validatedInput = startSessionSchema.parse(input);
     
-    // Always start a new session for simplicity and to ensure a clean state.
-    // The client-side localStorage will handle session resumption.
+    // Check if a session already exists for this phone number
+    const existingSession = await findSessionByPhone(validatedInput.userPhone);
+    if (existingSession) {
+        // TODO: Implement phone verification logic here (Phase 2.5)
+        // For now, we will just resume the session.
+        const history = await getChatHistory(existingSession.id);
+        return { success: true, sessionId: existingSession.id, history };
+    }
+
+    // If no session exists, create a new one
     const sessionId = await startChatSession(validatedInput);
     const agentConfig = await getAgentConfig();
 
@@ -28,7 +37,7 @@ export async function startChatSessionAction(input: z.infer<typeof startSessionS
         : '¡Hola! ¿Cómo puedo ayudarte hoy?';
     
     // The history only needs the first message to be returned to the client
-    const initialHistory = [{ role: 'model' as const, text: welcomeMessage, timestamp: new Date().toISOString() }];
+    const initialHistory = [{ role: 'model' as const, text: welcomeMessage, timestamp: new Date().toISOString(), id: 'initial-message', replyTo: null }];
     
     // Save the initial welcome message to the new session's history in the DB
     await saveMessage(sessionId, { text: welcomeMessage, role: 'model' });
@@ -57,7 +66,6 @@ const postMessageSchema = z.object({
   history: z.array(z.object({
       role: ChatRoleSchema,
       text: z.string(),
-      timestamp: z.string().optional(),
   })),
 });
 
@@ -104,5 +112,3 @@ export async function getChatHistoryAction(input: { sessionId: string }) {
         return { success: false, error: errorMessage };
     }
 }
-
-    

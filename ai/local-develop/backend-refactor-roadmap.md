@@ -136,7 +136,7 @@ src/lib/
 
 ---
 
-## **Fase 2: Refactorización del Flujo de Chat y Agentes de IA**
+## **Fase 2: Refactorización del Flujo de Chat y Agentes de IA (✓ Completada)**
 
 **Objetivo:** Migrar toda la lógica de conversaciones (global y de negocio) a la nueva arquitectura. Esto solucionará los problemas de estado actuales y creará un sistema robusto.
 
@@ -177,7 +177,7 @@ src/lib/
 
 *   **Objetivo:** Hacer el chat más robusto y seguro, convirtiendo a los usuarios anónimos en usuarios registrados de la plataforma.
 *   **Pasos:**
-    *   **Paso 2.5.1: Implementar Verificación de Contacto**: Introducir un mecanismo de verificación (ej. SMS a través de Twilio, enlace mágico por email) que se active en la segunda interacción del usuario o cuando el agente detecte una intención de alto valor (ej. "subir documentos").
+    *   **Paso 2.5.1: Implementar Verificación de Contacto**: Introducir un mecanismo de verificación (ej. SMS con Firebase Auth, enlace mágico por email) que se active en la segunda interacción del usuario o cuando el agente detecte una intención de alto valor.
     *   **Paso 2.5.2: Crear Perfil de Usuario Automáticamente**: Tras una verificación exitosa, crear una cuenta para el usuario en Firebase Authentication y un perfil en la base de datos de `users`.
     *   **Paso 2.5.3: Vincular Sesión de Chat al Nuevo Perfil**: Asociar la sesión de chat anónima existente con el `uid` del nuevo perfil de usuario creado.
 
