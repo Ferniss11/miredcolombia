@@ -1,5 +1,5 @@
 // src/lib/directory/infrastructure/search/google-places.adapter.ts
-import { Client } from '@googlemaps/google-maps-services-js';
+import { Client, PlaceData } from '@googlemaps/google-maps-services-js';
 import type { Business } from '../../domain/business.entity';
 import type { SearchAdapter } from './search.adapter';
 import type { Photo, Review } from '@/lib/types';
@@ -21,25 +21,26 @@ export class GooglePlacesAdapter implements SearchAdapter {
 
   async getRichDetails(placeId: string): Promise<Partial<Business> | null> {
     const apiKey = this.getApiKey();
-    const fields: (keyof Business)[] = [
-      'displayName', 'formattedAddress', 'internationalPhoneNumber', 'website', 'url',
-      'rating', 'userRatingsTotal', 'photos', 'openingHours', 'geometry',
-      'reviews', 'priceLevel', 'servesBeer', 'servesWine', 'wheelchairAccessibleEntrance',
-      'editorialSummary'
+    // These are the fields we request from Google Places API
+    const fields: (keyof PlaceData)[] = [
+      'name', 'formatted_address', 'international_phone_number', 'website', 'url',
+      'rating', 'user_ratings_total', 'photos', 'opening_hours', 'geometry',
+      'reviews', 'price_level', 'serves_beer', 'serves_wine', 'wheelchair_accessible_entrance',
+      'editorial_summary', 'address_components'
     ];
 
     try {
       const response = await this.client.placeDetails({
         params: {
           place_id: placeId,
-          fields: fields as any, // Cast because the library's types are slightly different
+          fields: fields as any,
           key: apiKey,
           language: 'es',
         },
       });
 
       if (response.data.status !== 'OK') {
-        throw new Error(`Google Places API returned status: ${response.data.status}`);
+        throw new Error(`Google Places API returned status: ${response.data.status} for placeId ${placeId}. Message: ${response.data.error_message}`);
       }
 
       const details = response.data.result;
@@ -51,8 +52,13 @@ export class GooglePlacesAdapter implements SearchAdapter {
           html_attributions: p.html_attributions,
           url: `https://maps.googleapis.com/maps/api/place/photo?maxwidth=1000&photoreference=${p.photo_reference}&key=${apiKey}`
       }));
+      
+      const cityComponent = details.address_components?.find((c: any) => c.types.includes('locality'));
+      const city = cityComponent ? cityComponent.long_name : 'Ciudad no disponible';
 
+      // Map API response to our Business entity
       const businessData: Partial<Business> = {
+        id: placeId,
         displayName: details.name,
         formattedAddress: details.formatted_address,
         internationalPhoneNumber: details.international_phone_number,
@@ -69,7 +75,8 @@ export class GooglePlacesAdapter implements SearchAdapter {
         servesBeer: details.serves_beer,
         servesWine: details.serves_wine,
         wheelchairAccessibleEntrance: details.wheelchair_accessible_entrance,
-        editorialSummary: details.editorial_summary?.overview
+        editorialSummary: details.editorial_summary?.overview,
+        city: city,
       };
 
       return businessData;
