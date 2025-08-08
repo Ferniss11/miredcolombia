@@ -3,9 +3,10 @@
 'use server';
 
 import { adminDb, adminInstance } from "@/lib/firebase/admin-config";
-import type { ChatSession, ChatMessage, TokenUsage, ChatSessionWithTokens, UserProfile } from "@/lib/chat-types";
+import { ChatSession, ChatMessage, TokenUsage, ChatSessionWithTokens } from "@/lib/chat-types";
 import { calculateCost } from "@/lib/ai-costs";
 import { getAgentConfig } from "./agent.service";
+import type { UserProfile } from "@/lib/types";
 
 const FieldValue = adminInstance?.firestore.FieldValue;
 
@@ -310,3 +311,5 @@ export async function getBusinessChatSessions(businessId: string): Promise<any[]
     }
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 }
+
+    

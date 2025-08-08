@@ -19,7 +19,7 @@ import { cn } from "@/lib/utils";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { BusinessAgentConfig } from '@/lib/types';
+import type { BusinessAgentConfig } from '@/lib/chat-types';
 
 
 import { SiGooglecalendar, SiWhatsapp, SiStripe, SiGoogleanalytics, SiGoogleads, SiGooglephotos } from "react-icons/si";
@@ -328,3 +328,5 @@ export default function AdvertiserAgentPage() {
         </div>
     )
 }
+
+    

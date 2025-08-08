@@ -88,11 +88,8 @@ export type IntelligentArticle = z.infer<typeof IntelligentArticleOutputSchema>;
 
 export type UserRole = 'Guest' | 'Advertiser' | 'Admin' | 'User';
 
-export const BusinessAgentConfigSchema = z.object({
-  model: z.string().default('googleai/gemini-1.5-flash-latest'),
-  systemPrompt: z.string().default('Eres un asistente amigable para mi negocio.'),
-});
-export type BusinessAgentConfig = z.infer<typeof BusinessAgentConfigSchema>;
+// BusinessAgentConfig is now in chat-types.ts
+export type { BusinessAgentConfig } from './chat-types';
 
 
 export type BusinessProfile = {
@@ -106,7 +103,7 @@ export type BusinessProfile = {
   verificationStatus?: 'pending' | 'approved' | 'rejected' | 'unclaimed';
   isAgentEnabled?: boolean;
   googleCalendarConnected?: boolean;
-  agentConfig?: BusinessAgentConfig;
+  agentConfig?: import('./chat-types').BusinessAgentConfig; // Use import() for type-only imports across modules
 };
 
 // --- Candidate Profile Schemas ---
@@ -342,40 +339,7 @@ export type BusinessAnalytics = {
     profitMargin: number;
 };
 
-
-// Chat Types Re-centralization
-export const ChatRoleSchema = z.enum(['user', 'model', 'admin']);
-export type ChatRole = z.infer<typeof ChatRoleSchema>;
-
-export type ChatMessage = {
-  id: string;
-  text: string;
-  role: ChatRole;
-  timestamp: string; // ISO string
-  authorName?: string;
-  replyTo: {
-    messageId: string;
-    text: string;
-    author: string;
-  } | null;
-};
-
-export type ChatSession = {
-  id: string;
-  userName: string;
-  userPhone: string;
-  userEmail?: string;
-  createdAt: string; // ISO string
-};
-
-export type ChatSessionWithTokens = ChatSession & {
-    messageCount: number;
-    totalTokens: number;
-    totalCost: number;
-    totalInputTokens: number;
-    totalOutputTokens: number;
-};
-
+// Job Posting related types
 export interface JobPosting {
   id: string;
   title: string;
@@ -431,3 +395,5 @@ export const JobPostingFormSchema = z.object({
 });
 
 export type JobPostingFormValues = z.infer<typeof JobPostingFormSchema>;
+
+    

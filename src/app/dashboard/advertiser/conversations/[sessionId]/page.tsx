@@ -4,7 +4,7 @@
 import { useEffect, useState, useRef, FormEvent, KeyboardEvent } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { getBusinessChatSessionDetailsAction, postBusinessAdminMessageAction } from '@/lib/business-chat-actions';
-import type { ChatSessionWithTokens, ChatMessage, BusinessAgentConfig } from '@/lib/types';
+import type { ChatSessionWithTokens, ChatMessage } from '@/lib/chat-types';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Bot, User, Send, UserCog, BrainCircuit, ChevronDown, Copy, Clock, Reply, X } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -277,3 +277,5 @@ function BusinessChatConversationPage() {
 }
 
 export default BusinessChatConversationPage;
+
+    

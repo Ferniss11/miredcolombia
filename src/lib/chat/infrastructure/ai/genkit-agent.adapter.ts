@@ -1,7 +1,8 @@
+
 // src/lib/chat/infrastructure/ai/genkit-agent.adapter.ts
 import type { AgentAdapter } from './agent.adapter';
 import type { ChatMessage } from '../../domain/chat-message.entity';
-import type { TokenUsage, BusinessAgentConfig } from '@/lib/types';
+import type { TokenUsage, BusinessAgentConfig } from '@/lib/chat-types';
 import { adminDb } from '@/lib/firebase/admin-config';
 import { calculateCost } from '@/lib/ai-costs';
 
@@ -109,3 +110,5 @@ export class GenkitAgentAdapter implements AgentAdapter {
     }
   }
 }
+
+    

@@ -8,9 +8,9 @@ export const ChatRoleSchema = z.enum(['user', 'model', 'admin']);
 export type ChatRole = z.infer<typeof ChatRoleSchema>;
 
 export const TokenUsageSchema = z.object({
-  inputTokens: z.number(),
-  outputTokens: z.number(),
-  totalTokens: z.number(),
+  inputTokens: z.number().default(0),
+  outputTokens: z.number().default(0),
+  totalTokens: z.number().default(0),
 });
 export type TokenUsage = z.infer<typeof TokenUsageSchema>;
 
@@ -68,6 +68,9 @@ export const AgentConfigSchema = z.object({
 });
 export type AgentConfig = z.infer<typeof AgentConfigSchema>;
 
+// Business Agent config is a specific type of AgentConfig
+export type BusinessAgentConfig = AgentConfig;
+
 
 // --- AI Flow I/O Schemas ---
 
@@ -76,3 +79,5 @@ export const ChatOutputSchema = z.object({
   usage: TokenUsageSchema.optional(),
 });
 export type ChatOutput = z.infer<typeof ChatOutputSchema>;
+
+    

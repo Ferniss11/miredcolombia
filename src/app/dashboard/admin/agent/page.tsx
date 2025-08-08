@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Save, Bot, TestTube, Power, PowerOff, Sparkles, Search, Book } from 'lucide-react';
 import { getAgentConfigAction, saveAgentConfigAction } from '@/lib/agent-actions';
-import type { AgentConfig } from '@/lib/types';
+import type { AgentConfig } from '@/lib/chat-types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { MdPlace } from "react-icons/md";
@@ -189,3 +189,5 @@ export default function AgentManagementPage() {
         </div>
     );
 }
+
+    
