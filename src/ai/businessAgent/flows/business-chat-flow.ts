@@ -38,7 +38,7 @@ export async function businessChat(input: BusinessChatFlowInput) {
     return businessChatFlow(input);
 }
 
-// The tools are now correctly defined as an array.
+// Define the prompt with more intelligent instructions
 const prompt = ai.definePrompt({
     name: 'businessChatPrompt',
     input: { schema: BusinessChatFlowInputSchema },
@@ -51,6 +51,8 @@ Esta es la información pública sobre el negocio con el que estás hablando. Ú
 
 {{{businessContext}}}
 ---
+### FECHA Y HORA ACTUAL
+La fecha y hora actual es: {{currentDate}}. Úsala como referencia para interpretar las peticiones del usuario (ej. "mañana" es {{tomorrow}}, "próximo lunes").
 `,
     prompt: `
         Historial de la Conversación:
@@ -69,11 +71,19 @@ const businessChatFlow = ai.defineFlow(
         inputSchema: BusinessChatFlowInputSchema,
         outputSchema: ChatOutputSchema,
     },
-    // The flow now receives the ownerUid in its input and passes it
-    // to the prompt's context, which the tools will then use.
     async (input) => {
-        // Pass the ownerUid to all tool calls that require it
-        const { output, usage } = await prompt(input, { context: { uid: input.ownerUid } });
+        // Calculate current date and tomorrow's date to inject into the prompt
+        const now = new Date();
+        const tomorrow = new Date(now);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        
+        const promptInput = {
+            ...input,
+            currentDate: now.toLocaleString('es-ES', { timeZone: 'Europe/Madrid' }),
+            tomorrow: tomorrow.toISOString().split('T')[0],
+        };
+
+        const { output, usage } = await prompt(promptInput, { context: { uid: input.ownerUid } });
 
         if (!output) {
             throw new Error('La respuesta de la IA fue vacía.');

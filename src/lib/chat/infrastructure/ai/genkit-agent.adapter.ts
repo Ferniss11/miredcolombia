@@ -18,7 +18,7 @@ import { FirestoreCacheAdapter } from '@/lib/directory/infrastructure/cache/fire
 
 const DEFAULT_BUSINESS_PROMPT = `### CONTEXTO
 Eres un asistente de inteligencia artificial amigable, profesional y extremadamente eficiente para un negocio específico. Tu misión es responder a las preguntas de los clientes y gestionar citas basándote ÚNICAMENTE en la información proporcionada por tus herramientas y el contexto del negocio que se te facilita.
-La fecha y hora actual es: {{currentDate}}. Úsala como referencia para interpretar las peticiones del usuario (ej. "mañana", "próximo lunes").
+
 En la conversación, pueden participar tres roles: 'user' (el cliente), 'model' (tú, el asistente IA) y 'admin' (un humano del negocio que puede intervenir). Trata los mensajes del 'admin' como una fuente de información verídica y autorizada.
 
 ### PROCESO DE RESPUESTA OBLIGATORIO Y SECUENCIAL
@@ -27,7 +27,7 @@ En la conversación, pueden participar tres roles: 'user' (el cliente), 'model' 
     - Si es sobre agendar o consultar citas, ve al paso 2.
 
 2.  **CONSULTAR DISPONIBILIDAD (SIEMPRE PRIMERO):**
-    - **Paso 2.1 (DEDUCIR FECHA):** Si el usuario pide una cita (ej. "quisiera reservar para mañana", "disponibilidad para el 25 de julio"), tu primer trabajo es DEDUCIR la fecha exacta en formato YYYY-MM-DD.
+    - **Paso 2.1 (DEDUCIR FECHA):** Si el usuario pide una cita (ej. "quisiera reservar para mañana", "disponibilidad para el 25 de julio"), tu primer trabajo es DEDUCIR la fecha exacta en formato YYYY-MM-DD usando la fecha actual que se te proporciona.
     - **Paso 2.2 (USAR HERRAMIENTA OBLIGATORIAMENTE):** Una vez deducida la fecha, DEBES usar la herramienta \`getAvailableSlots\` con esa fecha para ver los huecos libres.
     - **Paso 2.3 (RESPONDER CON DATOS):** Basa tu respuesta ESTRICTAMENTE en la salida de la herramienta \`getAvailableSlots\`.
         - Si hay horarios: preséntalos claramente. Ejemplo: "¡Claro! Para el día [fecha], tengo estos horarios: [lista]. ¿Cuál te viene bien?".
@@ -98,7 +98,6 @@ export class GenkitAgentAdapter implements AgentAdapter {
     if (input.businessId) {
       // --- Business Agent Logic ---
       const agentConfig = await this.getBusinessAgentConfig(input.businessId);
-      const systemPrompt = agentConfig.systemPrompt.replace('{{currentDate}}', new Date().toISOString());
 
       // Fetch business details to provide as context
       const businessDetails = await this.getBusinessDetailsUseCase.execute(input.businessId);
@@ -113,7 +112,7 @@ export class GenkitAgentAdapter implements AgentAdapter {
         chatHistory: chatHistoryForAI,
         currentMessage: input.currentMessage,
         businessContext,
-        agentConfig: { ...agentConfig, systemPrompt },
+        agentConfig,
       });
       
       const usage = aiResponse.usage || { inputTokens: 0, outputTokens: 0, totalTokens: 0 };
