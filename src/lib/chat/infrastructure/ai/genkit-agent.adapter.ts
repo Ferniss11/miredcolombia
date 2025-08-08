@@ -110,5 +110,3 @@ export class GenkitAgentAdapter implements AgentAdapter {
     }
   }
 }
-
-    
