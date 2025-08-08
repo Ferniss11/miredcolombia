@@ -112,13 +112,13 @@ src/lib/
     *   **Crear `src/app/api/users/[uid]/business-profile/route.ts`**:
         *   Implementar el método `PUT` para actualizar el perfil de negocio. (✓)
 
-*   **Paso 1.4.4: Actualizar la Interfaz de Usuario (UI)**
+*   **Paso 1.4.4: Actualizar la Interfaz de Usuario (UI) (✓ Completado)**
     *   **Modificar `src/components/auth/SignUpForm.tsx` y `LoginForm.tsx`**:
-        *   Cambiar la lógica para que, en lugar de llamar a las funciones de `signInWithEmail` directamente, hagan una llamada `fetch` al nuevo endpoint `/api/auth/login` o `/api/users`.
+        *   Cambiar la lógica para que, en lugar de llamar a las funciones de `signInWithEmail` directamente, hagan una llamada `fetch` al nuevo endpoint `/api/auth/login` o `/api/users`. (✓)
     *   **Modificar `src/context/AuthContext.tsx`**:
-        *   Actualizar la función `refreshUserProfile` para que haga un `fetch` a `/api/users/[uid]` para obtener los datos del perfil.
+        *   Actualizar la función `refreshUserProfile` para que haga un `fetch` a `/api/users/[uid]` para obtener los datos del perfil. (✓)
     *   **Modificar Formularios de Perfil (`.../advertiser/profile/page.tsx`, etc.)**:
-        *   Actualizar para que llamen a los endpoints `PUT` de la API para guardar los cambios.
+        *   Actualizar para que llamen a los endpoints `PUT` de la API para guardar los cambios. (✓)
 
 *   **Paso 1.4.5: Eliminar Código Antiguo**
     *   **ELIMINAR:** `src/lib/user-actions.ts` (reemplazado por los nuevos API endpoints).
