@@ -194,7 +194,7 @@ export class FirestoreChatRepository implements ChatRepository {
    * Retrieves all global chat sessions.
    * Note: This currently only gets global sessions. A more complex implementation
    * would be needed to fetch sessions from all businesses.
-   * @returns An array of ChatSession entities.
+   * @returns An array of all ChatSession entities.
    */
   async findAllSessions(): Promise<ChatSession[]> {
     const db = this.getDb();
