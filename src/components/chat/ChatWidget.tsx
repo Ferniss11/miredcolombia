@@ -36,13 +36,11 @@ type WelcomeFormProps = {
   onSessionStarted: (sessionId: string, history: ChatMessage[]) => void;
   isBusinessChat: boolean;
   businessContext?: { businessId: string, businessName: string };
-  suggestionPool: string[];
 }
 
-const WelcomeForm = ({ onSessionStarted, isBusinessChat, businessContext, suggestionPool }: WelcomeFormProps) => {
+const WelcomeForm = ({ onSessionStarted, isBusinessChat, businessContext }: WelcomeFormProps) => {
     const [isPending, setIsPending] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [currentSuggestions, setCurrentSuggestions] = useState<string[]>([]);
     const router = useRouter();
 
     const form = useForm<z.infer<typeof formSchema>>({
@@ -50,16 +48,6 @@ const WelcomeForm = ({ onSessionStarted, isBusinessChat, businessContext, sugges
         defaultValues: { userName: '', userPhone: '', userEmail: '', acceptTerms: false },
     });
 
-    useEffect(() => {
-        const getNextSuggestions = () => {
-            const shuffled = [...suggestionPool].sort(() => 0.5 - Math.random());
-            setCurrentSuggestions(shuffled.slice(0, 3));
-        };
-        getNextSuggestions();
-        const interval = setInterval(getNextSuggestions, 5000);
-        return () => clearInterval(interval);
-    }, [suggestionPool]);
-    
     const handleFormSubmit = async (values: z.infer<typeof formSchema>) => {
         setIsPending(true);
         setError(null);
@@ -99,28 +87,12 @@ const WelcomeForm = ({ onSessionStarted, isBusinessChat, businessContext, sugges
                     {isBusinessChat ? <Building className="h-5 w-5 text-primary"/> : <Phone className="h-5 w-5 text-primary"/>}
                     <h3 className="font-bold font-headline">{isBusinessChat ? `Asistente de ${businessContext?.businessName}` : "Asistente de Inmigración"}</h3>
                 </div>
-                <p className="text-sm text-muted-foreground mb-6">
+                <p className="text-sm text-muted-foreground">
                     {isBusinessChat
                         ? `Hola, ¿listo para chatear con ${businessContext?.businessName}? Solo necesitamos unos datos para empezar.`
                         : 'Necesitamos unos datos para poder ayudarte mejor. Si ya has hablado con nosotros, usa el mismo teléfono para continuar la conversación.'
                     }
                 </p>
-                <div className="pt-4 border-t">
-                    <p className="text-sm font-medium mb-2 flex items-center gap-2 text-muted-foreground"><MessageSquareQuote className="h-4 w-4"/> O pregúntale directamente...</p>
-                    <div className="flex flex-col gap-2">
-                        {currentSuggestions.map((q, i) => (
-                            <Button 
-                                key={i} 
-                                variant="outline" 
-                                size="sm" 
-                                className="w-full text-left justify-start h-auto whitespace-normal animate-in fade-in duration-500" 
-                                disabled={isPending}
-                            >
-                                {q}
-                            </Button>
-                        ))}
-                    </div>
-                </div>
             </div>
             
             <div className="pt-6 border-t mt-6">
@@ -149,12 +121,12 @@ const WelcomeForm = ({ onSessionStarted, isBusinessChat, businessContext, sugges
                             <FormMessage />
                         </FormItem>
                         )} />
-                        <FormField control={form.control} name="userEmail" render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Email (Opcional)</FormLabel>
-                            <FormControl><Input placeholder="tu@email.com" {...field} /></FormControl>
-                            <FormMessage />
-                        </FormItem>
+                         <FormField control={form.control} name="userEmail" render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Email (Opcional)</FormLabel>
+                                <FormControl><Input placeholder="tu@email.com" {...field} /></FormControl>
+                                <FormMessage />
+                            </FormItem>
                         )} />
                          <FormField control={form.control} name="acceptTerms" render={({ field }) => (
                             <FormItem className="flex flex-row items-start space-x-3 space-y-0 pt-2">
@@ -195,9 +167,9 @@ const businessProactiveMessages = [
 ];
 
 const allGeneralQuestions = [
+    "Explícame la diferencia entre NIE y TIE",
     "¿Qué necesito para homologar mi título?",
     "¿Cómo funciona el proceso de empadronamiento?",
-    "Explícame la diferencia entre NIE y TIE",
 ];
 
 const allBusinessQuestions = [
@@ -234,12 +206,6 @@ export default function ChatWidget() {
   const isBusinessChat = !!chatContext?.businessId;
   const suggestionPool = isBusinessChat ? allBusinessQuestions : allGeneralQuestions;
   const proactivePool = isBusinessChat ? businessProactiveMessages : migrationProactiveMessages;
-  const storageKey = isBusinessChat ? `chatSessionId_${chatContext.businessId}` : 'globalChatSessionId';
-
-  const fetchHistory = useCallback(async (sid: string) => {
-    // This function can be implemented if needed, but for now, 
-    // the welcome form handles resuming sessions by phone.
-  }, []);
 
   useEffect(() => {
     setIsMounted(true);
@@ -375,10 +341,11 @@ export default function ChatWidget() {
             onSessionStarted={handleSessionStarted} 
             isBusinessChat={isBusinessChat}
             businessContext={chatContext || undefined}
-            suggestionPool={suggestionPool}
         />
       );
     }
+
+    const showSuggestions = messages.length <= 1;
 
     return (
       <div className="flex flex-col h-full">
@@ -420,6 +387,23 @@ export default function ChatWidget() {
                 </div>
               )
             })}
+             {showSuggestions && (
+                <div className="pt-4 space-y-2">
+                    <p className="text-sm font-medium flex items-center gap-2 text-muted-foreground"><MessageSquareQuote className="h-4 w-4"/> O pregúntale directamente...</p>
+                    {suggestionPool.map((q, i) => (
+                        <Button
+                            key={i}
+                            variant="outline"
+                            size="sm"
+                            className="w-full text-left justify-start h-auto whitespace-normal"
+                            onClick={() => handleSendMessage(q)}
+                            disabled={isAiResponding}
+                        >
+                            {q}
+                        </Button>
+                    ))}
+                </div>
+            )}
             {isAiResponding && (
                 <div className="flex items-end gap-2 justify-start">
                     <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
