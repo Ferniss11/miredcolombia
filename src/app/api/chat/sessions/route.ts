@@ -9,3 +9,8 @@ const chatController = new ChatController();
 export const POST = apiHandler((req: NextRequest) =>
   chatController.startSession(req)
 );
+
+// This endpoint is protected for admins to get all sessions.
+export const GET = apiHandler((req: NextRequest) =>
+    chatController.getAllSessions(req)
+, ['Admin', 'SAdmin']);

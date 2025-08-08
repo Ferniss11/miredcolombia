@@ -9,6 +9,8 @@ import { PostMessageUseCase } from '../../application/post-message.use-case';
 import { GetChatHistoryUseCase } from '../../application/get-chat-history.use-case';
 import { FindSessionByPhoneUseCase } from '../../application/find-session-by-phone.use-case';
 import { StartOrResumeChatUseCase } from '../../application/start-or-resume-chat.use-case';
+import { GetAllChatSessionsUseCase } from '../../application/get-all-chat-sessions.use-case';
+
 
 // --- Input Validation Schemas ---
 const StartSessionSchema = z.object({
@@ -27,6 +29,7 @@ const PostMessageSchema = z.object({
 export class ChatController {
   private startOrResumeChatUseCase: StartOrResumeChatUseCase;
   private postMessageUseCase: PostMessageUseCase;
+  private getAllSessionsUseCase: GetAllChatSessionsUseCase;
   
   constructor() {
     const chatRepository = new FirestoreChatRepository();
@@ -44,6 +47,7 @@ export class ChatController {
         getChatHistoryUseCase
     );
     this.postMessageUseCase = new PostMessageUseCase(chatRepository, agentAdapter);
+    this.getAllSessionsUseCase = new GetAllChatSessionsUseCase(chatRepository);
   }
 
   /**
@@ -83,5 +87,14 @@ export class ChatController {
     });
 
     return ApiResponse.success(output);
+  }
+
+  /**
+   * Handles retrieving all chat sessions for the admin panel.
+   * Linked to GET /api/chat/sessions
+   */
+  async getAllSessions(req: NextRequest): Promise<ApiResponse> {
+    const sessions = await this.getAllSessionsUseCase.execute();
+    return ApiResponse.success(sessions);
   }
 }
