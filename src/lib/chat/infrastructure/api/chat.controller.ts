@@ -11,7 +11,6 @@ import { FindSessionByPhoneUseCase } from '../../application/find-session-by-pho
 import { StartOrResumeChatUseCase } from '../../application/start-or-resume-chat.use-case';
 import { GetAllChatSessionsUseCase } from '../../application/get-all-chat-sessions.use-case';
 import { GetSessionByIdUseCase } from '../../application/get-session-by-id.use-case';
-import { GetChatSessionDetailsUseCase } from '../../application/get-chat-session-details.use-case';
 
 
 // --- Input Validation Schemas ---
@@ -32,7 +31,8 @@ export class ChatController {
   private startOrResumeChatUseCase: StartOrResumeChatUseCase;
   private postMessageUseCase: PostMessageUseCase;
   private getAllSessionsUseCase: GetAllChatSessionsUseCase;
-  private getSessionDetailsUseCase: GetChatSessionDetailsUseCase;
+  private getSessionByIdUseCase: GetSessionByIdUseCase;
+  private getChatHistoryUseCase: GetChatHistoryUseCase;
   
   constructor() {
     const chatRepository = new FirestoreChatRepository();
@@ -41,18 +41,19 @@ export class ChatController {
     // Instantiate all necessary use cases
     const startChatSessionUseCase = new StartChatSessionUseCase(chatRepository);
     const findSessionByPhoneUseCase = new FindSessionByPhoneUseCase(chatRepository);
-    const getChatHistoryUseCase = new GetChatHistoryUseCase(chatRepository);
-    const getSessionByIdUseCase = new GetSessionByIdUseCase(chatRepository);
+    
+    // Use cases that will be called directly by the controller methods
+    this.getChatHistoryUseCase = new GetChatHistoryUseCase(chatRepository);
+    this.getSessionByIdUseCase = new GetSessionByIdUseCase(chatRepository);
 
     // Main use cases for the controller
     this.startOrResumeChatUseCase = new StartOrResumeChatUseCase(
         startChatSessionUseCase,
         findSessionByPhoneUseCase,
-        getChatHistoryUseCase
+        this.getChatHistoryUseCase
     );
     this.postMessageUseCase = new PostMessageUseCase(chatRepository, agentAdapter);
     this.getAllSessionsUseCase = new GetAllChatSessionsUseCase(chatRepository);
-    this.getSessionDetailsUseCase = new GetChatSessionDetailsUseCase(getSessionByIdUseCase, getChatHistoryUseCase);
   }
 
   /**
@@ -81,8 +82,7 @@ export class ChatController {
     const json = await req.json();
     const { userMessage, businessId } = PostMessageSchema.parse(json);
 
-    const getChatHistoryUseCase = new GetChatHistoryUseCase(new FirestoreChatRepository());
-    const chatHistory = await getChatHistoryUseCase.execute({ sessionId, businessId });
+    const chatHistory = await this.getChatHistoryUseCase.execute({ sessionId, businessId });
 
     const output = await this.postMessageUseCase.execute({
       sessionId,
@@ -111,13 +111,12 @@ export class ChatController {
       const { sessionId } = params;
       const businessId = req.nextUrl.searchParams.get('businessId') || undefined;
 
-      const details = await this.getSessionDetailsUseCase.execute({ sessionId, businessId });
-
-      if (!details) {
+      const session = await this.getSessionByIdUseCase.execute({ sessionId, businessId });
+      if (!session) {
           return ApiResponse.notFound('Chat session not found.');
       }
-      
-      const { session, messages } = details;
+
+      const messages = await this.getChatHistoryUseCase.execute({ sessionId, businessId });
 
       return ApiResponse.success({
           session,
