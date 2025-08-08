@@ -8,6 +8,7 @@ const DIRECTORY_COLLECTION = 'directory';
 
 // Helper to convert Firestore Timestamps to JS Dates in a nested object
 const convertTimestamps = (data: DocumentData): any => {
+    if (!data) return data;
     const newData: { [key: string]: any } = {};
     for (const key in data) {
         const value = data[key];

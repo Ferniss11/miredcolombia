@@ -2,33 +2,60 @@
 'use server';
 
 import type { PlaceDetails } from "./types";
+import { Business } from './directory/domain/business.entity';
 import { GetBusinessDetailsUseCase } from './directory/application/get-business-details.use-case';
 import { FirestoreDirectoryRepository } from './directory/infrastructure/persistence/firestore-directory.repository';
 import { GooglePlacesAdapter } from './directory/infrastructure/search/google-places.adapter';
 import { FirestoreCacheAdapter } from './directory/infrastructure/cache/firestore-cache.adapter';
 
 
+// Helper to serialize Date objects to ISO strings for client components
+const serializeBusiness = (business: Business | null): PlaceDetails | null => {
+    if (!business) return null;
+
+    const serialized: any = { ...business };
+
+    // Recursively serialize Date objects
+    const serializeDates = (obj: any) => {
+        for (const key in obj) {
+            if (obj[key] instanceof Date) {
+                obj[key] = obj[key].toISOString();
+            } else if (typeof obj[key] === 'object' && obj[key] !== null) {
+                serializeDates(obj[key]);
+            }
+        }
+    }
+
+    serializeDates(serialized);
+    return serialized as PlaceDetails;
+}
+
+
 export async function getSavedBusinessesAction(forPublic: boolean = false): Promise<{ businesses?: PlaceDetails[], error?: string }> {
     try {
         const directoryRepository = new FirestoreDirectoryRepository();
-        // We only care about the internal data from our DB here for the list view.
+        const searchAdapter = new GooglePlacesAdapter();
+        const cacheAdapter = new FirestoreCacheAdapter();
+        
+        const getBusinessDetailsUseCase = new GetBusinessDetailsUseCase(
+            directoryRepository,
+            searchAdapter,
+            cacheAdapter
+        );
+        
         const internalBusinesses = await directoryRepository.findAll(forPublic);
 
-        const businesses = internalBusinesses.map(biz => ({
-            id: biz.id,
-            displayName: biz.displayName,
-            formattedAddress: biz.formattedAddress,
-            category: biz.category,
-            subscriptionTier: biz.subscriptionTier,
-            ownerUid: biz.ownerUid,
-            verificationStatus: biz.verificationStatus,
-            // A simplified photo URL is constructed here for the list view.
-            // A full fetch isn't needed for every card, improving performance.
-            photoUrl: `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${biz.photos?.[0]?.photo_reference}&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}` || "https://placehold.co/400x250.png",
-            rating: biz.rating,
-            city: biz.city,
-        } as PlaceDetails));
+        const businessPromises = internalBusinesses.map(biz => getBusinessDetailsUseCase.execute(biz.id));
+        const resolvedBusinesses = await Promise.all(businessPromises);
 
+        const businesses = resolvedBusinesses
+            .map(serializeBusiness) // Serialize each business
+            .filter((biz): biz is PlaceDetails => biz !== null)
+            .map(biz => ({
+                ...biz,
+                photoUrl: biz.photos?.[0]?.url || "https://placehold.co/400x250.png",
+            }));
+            
         return { businesses };
 
     } catch (error) {
@@ -77,11 +104,15 @@ export async function getPublicBusinessDetailsAction(slug: string): Promise<{ bu
             return { error: 'Negocio no encontrado.' };
         }
 
-        const placeDetails: PlaceDetails = {
+        const placeDetails = serializeBusiness({
             ...business,
             city: business.city || 'Ciudad no disponible',
-        };
+        });
 
+        if (!placeDetails) {
+            return { error: 'Error serializando los datos del negocio.' };
+        }
+        
         return { business: placeDetails };
         
     } catch (error) {

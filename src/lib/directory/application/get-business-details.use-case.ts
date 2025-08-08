@@ -44,8 +44,8 @@ export class GetBusinessDetailsUseCase {
 
     // 5. Combine and return the complete, fresh entity.
     const finalBusinessEntity: Business = {
-        ...internalData,
         ...externalData,
+        ...internalData,
     };
 
     return finalBusinessEntity;
