@@ -47,7 +47,7 @@ export function apiHandler(handler: Handler<any>, allowedRoles?: UserRole[]) {
       return await handler(req, params);
 
     } catch (err: any) {
-      console.error('API Handler Error:', err);
+      console.error('API Handler Error:', err.stack || err);
 
       // --- Error Handling ---
       if (err instanceof ZodError) {
@@ -60,6 +60,16 @@ export function apiHandler(handler: Handler<any>, allowedRoles?: UserRole[]) {
       
       if (err.code === 'auth/argument-error') {
           return ApiResponse.unauthorized('Invalid authentication token.');
+      }
+      
+      // Special handling for Firestore index errors
+      if (err.message && err.message.includes('requires an index')) {
+          const fullError = err.stack || err.message;
+          return ApiResponse.error(
+              'A database query failed. This often requires creating a composite index in Firestore.', 
+              500, 
+              { fullError } // Send the full error for debugging on the client
+          );
       }
 
       if (err instanceof Error) {

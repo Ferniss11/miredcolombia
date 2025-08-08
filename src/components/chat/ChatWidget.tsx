@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Checkbox } from '@/components/ui/checkbox';
-import { X, Send, User, Bot, Loader2, Sparkles, Phone, Building, MessageSquareQuote, UserCog, Clock, RotateCcw } from 'lucide-react';
+import { X, Send, User, Bot, Loader2, Sparkles, Phone, Building, MessageSquareQuote, UserCog, Clock, RotateCcw, AlertCircle } from 'lucide-react';
 import { LuBotMessageSquare } from "react-icons/lu";
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
@@ -44,7 +44,6 @@ const WelcomeForm = ({ onSessionStarted, isBusinessChat, businessContext, sugges
     const [error, setError] = useState<string | null>(null);
     const [initialQuestion, setInitialQuestion] = useState<string | null>(null);
     const [currentSuggestions, setCurrentSuggestions] = useState<string[]>([]);
-    const { toast } = useToast();
     const router = useRouter();
 
     const form = useForm<z.infer<typeof formSchema>>({
@@ -62,7 +61,7 @@ const WelcomeForm = ({ onSessionStarted, isBusinessChat, businessContext, sugges
         return () => clearInterval(interval);
     }, [suggestionPool]);
     
-    const handleFormSubmit = async (values: z.infer<typeof formSchema>) => {
+    const handleStartSession = async (values: z.infer<typeof formSchema>, question?: string) => {
         setIsPending(true);
         setError(null);
 
@@ -73,49 +72,37 @@ const WelcomeForm = ({ onSessionStarted, isBusinessChat, businessContext, sugges
               body: JSON.stringify({ ...values, businessId: businessContext?.businessId })
             });
 
-            const result = await response.json();
-
             if (!response.ok) {
-              throw new Error(result.error?.message || 'Error en el servidor');
+                const result = await response.json();
+                if (response.status === 500 && result.error?.fullError) {
+                    sessionStorage.setItem('fullError', result.error.fullError);
+                    router.push('/errors');
+                    return;
+                }
+                throw new Error(result.error?.message || 'Error en el servidor');
             }
             
-            onSessionStarted(result.sessionId, result.history, initialQuestion || undefined);
+            const result = await response.json();
+            onSessionStarted(result.sessionId, result.history, question);
             
         } catch (e) {
             const errorMessage = e instanceof Error ? e.message : 'An unknown client error occurred.';
-            setError(`Error de cliente: ${errorMessage}`);
+            setError(`Error al iniciar chat: ${errorMessage}`);
         } finally {
             setIsPending(false);
         }
     };
     
     const handleSuggestionClick = (question: string) => {
-        // Set an indicator that a suggestion was clicked, and the form can be auto-submitted.
-        setInitialQuestion(question);
-        // The form submission will now be triggered by the main button's onClick or auto-submit logic
-        form.handleSubmit(handleFormSubmit)();
+        form.trigger().then(isValid => {
+            if (isValid) {
+                handleStartSession(form.getValues(), question);
+            }
+        });
     };
     
-    // We override the default form submit to also pass the initial question if it exists.
-    const onFinalSubmit = async (values: z.infer<typeof formSchema>) => {
-        setIsPending(true);
-        setError(null);
-        try {
-            const response = await fetch('/api/chat/sessions', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ...values, businessId: businessContext?.businessId })
-            });
-            const result = await response.json();
-            if (!response.ok) throw new Error(result.error?.message || 'Error en el servidor');
-            
-            onSessionStarted(result.sessionId, result.history, initialQuestion || undefined);
-        } catch (e) {
-            const errorMessage = e instanceof Error ? e.message : 'An unknown client error occurred.';
-            setError(`Error de cliente: ${errorMessage}`);
-        } finally {
-            setIsPending(false);
-        }
+    const onFinalSubmit = (values: z.infer<typeof formSchema>) => {
+        handleStartSession(values);
     };
     
     return (
@@ -186,6 +173,7 @@ const WelcomeForm = ({ onSessionStarted, isBusinessChat, businessContext, sugges
                         </Button>
                          {error && (
                             <Alert variant="destructive" className="mt-4">
+                                <AlertCircle className="h-4 w-4" />
                                 <AlertTitle>Error al Iniciar Chat</AlertTitle>
                                 <AlertDescription>
                                     {error}
@@ -349,7 +337,6 @@ export default function ChatWidget({ embedded = false }: ChatWidgetProps) {
             body: JSON.stringify({ 
                 userMessage: messageText.trim(),
                 businessId: chatContext?.businessId,
-                history: currentHistory, // Send history as it was *before* the new message
              })
         });
 
