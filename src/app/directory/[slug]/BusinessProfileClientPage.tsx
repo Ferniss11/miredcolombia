@@ -284,9 +284,9 @@ export default function BusinessProfileClientPage({ initialBusiness }: { initial
                              plugins={[autoplayPlugin.current]}
                              className="w-full"
                            >
-                            <CarouselContent className="sm:-ml-2">
+                            <CarouselContent>
                                 {business.reviews.map((review, i) => (
-                                    <CarouselItem key={i} className="sm:basis-1/2 lg:basis-1/3 sm:pl-2">
+                                    <CarouselItem key={i} className="sm:basis-1/2 lg:basis-1/3">
                                          <div className="p-1">
                                              <Card className="h-full">
                                                 <CardContent className="flex flex-col items-center justify-center p-6 text-center space-y-4">
