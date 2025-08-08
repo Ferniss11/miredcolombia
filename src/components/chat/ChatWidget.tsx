@@ -179,16 +179,30 @@ const businessProactiveMessages = [
 ];
 
 const allGeneralQuestions = [
+    "¿Qué papeles necesito para mi viaje?",
+    "Háblame sobre el costo de vida en Madrid",
+    "¿Cómo puedo encontrar mi primer piso en España?",
     "Explícame la diferencia entre NIE y TIE",
+    "Tengo una duda sobre el visado, ¿puedes ayudarme?",
     "¿Qué necesito para homologar mi título?",
     "¿Cómo funciona el proceso de empadronamiento?",
+    "¿Es difícil conseguir trabajo como colombiano en España?",
 ];
 
 const allBusinessQuestions = [
     "¿Cuál es vuestro horario de atención?",
     "¿Me puedes dar la dirección?",
     "Quisiera reservar una cita para mañana",
+    "¿Tenéis alguna promoción especial?",
+    "Me gustaría saber más sobre vuestros servicios",
+    "¿Cuáles son los productos más recomendados?",
 ];
+
+// Helper function to shuffle an array and return the first N items
+const getShuffledSample = (arr: string[], count: number) => {
+    return arr.sort(() => 0.5 - Math.random()).slice(0, count);
+}
+
 
 export default function ChatWidget() {
   const { 
@@ -208,6 +222,9 @@ export default function ChatWidget() {
   const [proactiveClosed, setProactiveClosed] = useState(false);
   
   const [userHasInteracted, setUserHasInteracted] = useState(false);
+
+  // State for dynamic suggestions
+  const [suggestions, setSuggestions] = useState<string[]>([]);
   
   const { toast } = useToast();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
@@ -265,10 +282,14 @@ export default function ChatWidget() {
   }, [messages]);
 
   useEffect(() => {
-    if(isChatOpen) {
-      setShowProactive(false);
-    }
-  }, [isChatOpen]);
+      if(isChatOpen) {
+        setShowProactive(false);
+        // Set dynamic suggestions when chat opens with a new session
+        if (!sessionId) {
+            setSuggestions(getShuffledSample(suggestionPool, 3));
+        }
+      }
+  }, [isChatOpen, sessionId, suggestionPool]);
   
   const handleSendMessage = async (messageText: string) => {
     if (!messageText.trim() || !sessionId || isAiResponding) return;
@@ -339,6 +360,8 @@ export default function ChatWidget() {
   const handleResetSession = () => {
     setSessionId(null);
     setMessages([]);
+    // Get a new set of suggestions for the new session
+    setSuggestions(getShuffledSample(suggestionPool, 3));
   }
 
   const formatTimestamp = (isoString?: string) => {
@@ -402,7 +425,7 @@ export default function ChatWidget() {
              {showSuggestions && (
                 <div className="pt-4 space-y-2">
                     <p className="text-sm font-medium flex items-center gap-2 text-muted-foreground"><MessageSquareQuote className="h-4 w-4"/> O pregúntale directamente...</p>
-                    {suggestionPool.map((q, i) => (
+                    {suggestions.map((q, i) => (
                         <Button
                             key={i}
                             variant="outline"
