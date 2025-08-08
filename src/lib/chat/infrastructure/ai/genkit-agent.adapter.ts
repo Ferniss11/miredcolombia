@@ -78,8 +78,8 @@ export class GenkitAgentAdapter implements AgentAdapter {
   }): Promise<{ response: string; usage: TokenUsage; cost: number; }> {
     
     const chatHistoryForAI = input.chatHistory.map(m => ({
-      role: m.role,
-      text: m.text,
+      role: m.role === 'admin' ? 'model' : m.role, // Treat admin messages as model messages from AI's perspective
+      text: m.role === 'admin' ? `[Mensaje del Administrador: ${m.text}]` : m.text,
     }));
     
     if (input.businessId) {
