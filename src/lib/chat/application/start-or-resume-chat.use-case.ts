@@ -41,7 +41,7 @@ export class StartOrResumeChatUseCase {
         isResumed: true,
       };
     } else {
-      // If no session exists, create a new one.
+      // If no session exists, create a new one, ensuring the businessId is passed along.
       const { session, history } = await this.startChatSessionUseCase.execute(input);
       return {
         session,
