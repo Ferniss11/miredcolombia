@@ -73,8 +73,8 @@ const WelcomeForm = ({ onSessionStarted, isBusinessChat, businessContext }: Welc
             const result = await response.json();
             
             if (!response.ok) {
-                if (result.error?.fullError) {
-                    sessionStorage.setItem('fullError', result.error.fullError);
+                if (result.error?.details?.fullError) {
+                    sessionStorage.setItem('fullError', result.error.details.fullError);
                     router.push('/errors');
                     return;
                 }
