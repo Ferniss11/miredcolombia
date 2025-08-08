@@ -1,8 +1,7 @@
-
 // application/create-user-profile.use-case.ts
 import { User, UserRole } from '../domain/user.entity';
 import { UserRepository } from '../domain/user.repository';
-import { adminAuth } from '@/lib/firebase/admin-config'; // Import Firebase Admin Auth
+import { adminAuth } from '@/lib/firebase/admin-config';
 
 export type CreateUserInput = {
   uid: string;
@@ -18,29 +17,39 @@ export class CreateUserProfileUseCase {
     const now = new Date();
     const newUser: User = {
       ...input,
-      status: 'active', // Set default status for new users
+      status: 'active',
       createdAt: now,
       updatedAt: now,
     };
 
-    // Step 1: Create the user profile in Firestore
     const createdUser = await this.userRepository.create(newUser);
 
-    // Step 2: Set the custom claim on the user's auth token
     if (adminAuth) {
         try {
-            // Check existing claims. This is crucial for security.
-            // We only set the claim if it doesn't exist, preventing a Firestore
-            // role change from being propagated to the token on re-login.
-            // The authoritative source for roles is the token itself.
             const { customClaims } = await adminAuth.getUser(createdUser.uid);
-            if (!customClaims || !customClaims.role) {
-                await adminAuth.setCustomUserClaims(createdUser.uid, { role: createdUser.role });
+            
+            // The roles to be set on the token.
+            const newClaims: { roles: UserRole[] } = { roles: [createdUser.role] };
+
+            // Special check for Super Admin.
+            if (createdUser.email === 'caangogi@gmail.com') {
+                if (!newClaims.roles.includes('SAdmin')) {
+                    newClaims.roles.push('SAdmin');
+                }
             }
+
+            // We only set claims if they don't exist or if they are different from what we want to set.
+            // This prevents unnecessary writes.
+            const existingRoles = (customClaims?.roles || []) as UserRole[];
+            const rolesAreDifferent = existingRoles.length !== newClaims.roles.length || 
+                                    !newClaims.roles.every(role => existingRoles.includes(role));
+
+            if (rolesAreDifferent) {
+                 await adminAuth.setCustomUserClaims(createdUser.uid, newClaims);
+            }
+           
         } catch (error) {
             console.error(`Failed to set custom claims for user ${createdUser.uid}:`, error);
-            // This is a critical error, but we might not want to fail the whole process.
-            // For now, we'll log it. In a production system, we might add it to a retry queue.
         }
     }
 

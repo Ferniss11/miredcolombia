@@ -113,12 +113,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const profile = await getUserProfile(firebaseUser.uid, idTokenResult.token);
         
         // --- Role Synchronization Logic ---
-        // If the role exists in Firestore but not in the token, it's a legacy user.
-        // Sync the role from Firestore to the custom claims.
-        if (profile?.role && !idTokenResult.claims.role) {
+        const firestoreRole = profile?.role;
+        const tokenRoles = (idTokenResult.claims.roles || []) as UserRole[];
+        
+        // If the role exists in Firestore but not in the token, sync it.
+        // This handles legacy users.
+        if (firestoreRole && tokenRoles.length === 0) {
             console.log(`[AuthContext] Legacy user detected (${firebaseUser.uid}). Synchronizing role to custom claims...`);
             await syncUserRoleAction(firebaseUser.uid);
-            // Force a token refresh to get the new custom claim immediately.
             idTokenResult = await firebaseUser.getIdTokenResult(true); 
             console.log(`[AuthContext] Token refreshed. New claims:`, idTokenResult.claims);
         }

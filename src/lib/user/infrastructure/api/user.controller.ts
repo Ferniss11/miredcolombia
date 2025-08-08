@@ -13,7 +13,8 @@ import { UpdateUserProfileUseCase } from '../../application/update-user-profile.
 import { UpdateBusinessProfileUseCase } from '../../application/update-business-profile.use-case';
 import { UpdateCandidateProfileUseCase } from '../../application/update-candidate-profile.use-case';
 import { SoftDeleteUserUseCase } from '../../application/soft-delete-user.use-case';
-import type { BusinessProfile, CandidateProfile, User } from '../../domain/user.entity';
+import { SetUserRoleUseCase } from '../../application/set-user-role.use-case';
+import type { BusinessProfile, CandidateProfile, User, UserRole } from '../../domain/user.entity';
 
 
 // Schema for validating the creation of a user
@@ -21,12 +22,16 @@ const CreateUserSchema = z.object({
   uid: z.string(),
   name: z.string(),
   email: z.string().email(),
-  role: z.enum(['Admin', 'Advertiser', 'User']),
+  role: z.enum(['Admin', 'Advertiser', 'User', 'SAdmin']),
 });
 
 // Schema for validating updates to the basic user profile
 const UpdateUserSchema = z.object({
   name: z.string().min(2),
+});
+
+const SetRoleSchema = z.object({
+    role: z.enum(['Admin', 'Advertiser', 'User']),
 });
 
 // Note: Schemas for BusinessProfile and CandidateProfile would also be defined here for validation.
@@ -39,6 +44,7 @@ export class UserController implements BaseController {
   private updateBusinessProfileUseCase: UpdateBusinessProfileUseCase;
   private updateCandidateProfileUseCase: UpdateCandidateProfileUseCase;
   private softDeleteUserUseCase: SoftDeleteUserUseCase;
+  private setUserRoleUseCase: SetUserRoleUseCase;
   private userRepository: FirestoreUserRepository;
 
   constructor() {
@@ -50,6 +56,7 @@ export class UserController implements BaseController {
     this.updateBusinessProfileUseCase = new UpdateBusinessProfileUseCase(this.userRepository);
     this.updateCandidateProfileUseCase = new UpdateCandidateProfileUseCase(this.userRepository);
     this.softDeleteUserUseCase = new SoftDeleteUserUseCase(this.userRepository);
+    this.setUserRoleUseCase = new SetUserRoleUseCase(this.userRepository);
   }
 
   /**
@@ -140,5 +147,19 @@ export class UserController implements BaseController {
   async getAll(req: NextRequest): Promise<NextResponse> {
     const users = await this.getAllUsersUseCase.execute();
     return ApiResponse.success(users);
+  }
+
+  /**
+   * Handles setting a user's role.
+   * Linked to POST /api/users/[uid]/role
+   */
+  async setRole(req: NextRequest, { params }: { params: { id: string } }): Promise<NextResponse> {
+    const targetUid = params.id;
+    const json = await req.json();
+    const { role } = SetRoleSchema.parse(json);
+
+    await this.setUserRoleUseCase.execute({ targetUid, newRole: role });
+    
+    return ApiResponse.success({ message: `Role for user ${targetUid} updated to ${role}`});
   }
 }

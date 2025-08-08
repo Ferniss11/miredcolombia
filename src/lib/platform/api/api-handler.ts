@@ -33,9 +33,12 @@ export function apiHandler(handler: Handler<any>, allowedRoles?: UserRole[]) {
         }
 
         const decodedToken = await adminAuth.verifyIdToken(idToken);
-        const userRole = decodedToken.role as UserRole; // 'role' is a custom claim
+        const userRoles = (decodedToken.roles || []) as UserRole[]; 
 
-        if (!userRole || !allowedRoles.includes(userRole)) {
+        // Check if the user has at least one of the allowed roles.
+        const isAuthorized = userRoles.some(role => allowedRoles.includes(role));
+
+        if (!isAuthorized) {
           return ApiResponse.forbidden('You do not have permission to access this resource.');
         }
       }
