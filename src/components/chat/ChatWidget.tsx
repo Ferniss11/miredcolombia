@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import * as z from 'zod';
 import { useForm } from 'react-hook-form';
@@ -26,14 +26,14 @@ import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 const formSchema = z.object({
   userName: z.string().min(2, { message: 'El nombre es obligatorio.' }),
   userPhone: z.string().min(7, { message: 'El teléfono es obligatorio.' }),
-  userEmail: z.string().email({ message: 'Debe ser un email válido.' }).optional(),
+  userEmail: z.string().email({ message: 'Debe ser un email válido.' }).optional().or(z.literal('')),
   acceptTerms: z.boolean().refine((data) => data === true, {
     message: 'Debes aceptar los términos y condiciones.',
   }),
 });
 
 type WelcomeFormProps = {
-  onSessionStarted: (sessionId: string, history: ChatMessage[], initialQuestion?: string) => void;
+  onSessionStarted: (sessionId: string, history: ChatMessage[]) => void;
   isBusinessChat: boolean;
   businessContext?: { businessId: string, businessName: string };
   suggestionPool: string[];
@@ -42,7 +42,6 @@ type WelcomeFormProps = {
 const WelcomeForm = ({ onSessionStarted, isBusinessChat, businessContext, suggestionPool }: WelcomeFormProps) => {
     const [isPending, setIsPending] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [initialQuestion, setInitialQuestion] = useState<string | null>(null);
     const [currentSuggestions, setCurrentSuggestions] = useState<string[]>([]);
     const router = useRouter();
 
@@ -61,48 +60,31 @@ const WelcomeForm = ({ onSessionStarted, isBusinessChat, businessContext, sugges
         return () => clearInterval(interval);
     }, [suggestionPool]);
     
-    const handleStartSession = async (values: z.infer<typeof formSchema>, question?: string) => {
+    const handleStartSession = async (values: z.infer<typeof formSchema>) => {
         setIsPending(true);
         setError(null);
-
         try {
             const response = await fetch('/api/chat/sessions', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ ...values, businessId: businessContext?.businessId })
             });
-
+            const result = await response.json();
             if (!response.ok) {
-                const result = await response.json();
-                if (response.status === 500 && result.error?.fullError) {
+                if (result.error?.fullError) {
                     sessionStorage.setItem('fullError', result.error.fullError);
                     router.push('/errors');
                     return;
                 }
                 throw new Error(result.error?.message || 'Error en el servidor');
             }
-            
-            const result = await response.json();
-            onSessionStarted(result.sessionId, result.history, question);
-            
+            onSessionStarted(result.sessionId, result.history);
         } catch (e) {
             const errorMessage = e instanceof Error ? e.message : 'An unknown client error occurred.';
             setError(`Error al iniciar chat: ${errorMessage}`);
         } finally {
             setIsPending(false);
         }
-    };
-    
-    const handleSuggestionClick = (question: string) => {
-        form.trigger().then(isValid => {
-            if (isValid) {
-                handleStartSession(form.getValues(), question);
-            }
-        });
-    };
-    
-    const onFinalSubmit = (values: z.infer<typeof formSchema>) => {
-        handleStartSession(values);
     };
     
     return (
@@ -128,7 +110,6 @@ const WelcomeForm = ({ onSessionStarted, isBusinessChat, businessContext, sugges
                                 variant="outline" 
                                 size="sm" 
                                 className="w-full text-left justify-start h-auto whitespace-normal animate-in fade-in duration-500" 
-                                onClick={() => handleSuggestionClick(q)}
                                 disabled={isPending}
                             >
                                 {q}
@@ -140,7 +121,7 @@ const WelcomeForm = ({ onSessionStarted, isBusinessChat, businessContext, sugges
             
             <div className="pt-6 border-t mt-6">
                 <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onFinalSubmit)} className="space-y-4">
+                    <form onSubmit={form.handleSubmit(handleStartSession)} className="space-y-4">
                         <FormField control={form.control} name="userName" render={({ field }) => (
                         <FormItem>
                             <FormLabel>Nombre</FormLabel>
@@ -194,13 +175,6 @@ const migrationProactiveMessages = [
     "El empadronamiento es el primer trámite y el más importante al llegar a España. ¡No lo dejes para después!",
     "Si vienes con visa de estudiante, puedes trabajar hasta 30 horas semanales con un permiso de trabajo.",
     "Abre una cuenta bancaria tan pronto como tengas tu NIE. Facilitará todos los demás trámites.",
-    "Investiga sobre el sistema de transporte público de tu ciudad, suele ser muy eficiente y económico.",
-    "El seguro médico es obligatorio. Asegúrate de que tenga cobertura completa sin copagos.",
-    "La 'TIE' (Tarjeta de Identidad de Extranjero) es tu documento de identificación físico en España.",
-    "Guarda copias digitales de todos tus documentos importantes en la nube.",
-    "No tengas miedo de preguntar. Los españoles suelen ser amables y dispuestos a ayudar.",
-    "Para homologar tu título, el proceso puede tardar. ¡Inícialo cuanto antes!",
-    "Conoce las diferencias culturales en los horarios de comida y de las tiendas."
 ];
 
 const businessProactiveMessages = [
@@ -221,11 +195,7 @@ const allBusinessQuestions = [
     "Quisiera reservar una cita para mañana",
 ];
 
-interface ChatWidgetProps {
-    embedded?: boolean;
-}
-
-export default function ChatWidget({ embedded = false }: ChatWidgetProps) {
+export default function ChatWidget() {
   const { 
     isChatOpen, 
     setChatOpen, 
@@ -241,27 +211,40 @@ export default function ChatWidget({ embedded = false }: ChatWidgetProps) {
   const [proactiveMessage, setProactiveMessage] = useState('');
   const [showProactive, setShowProactive] = useState(false);
   const [proactiveClosed, setProactiveClosed] = useState(false);
-  const [proactiveCloseCount, setProactiveCloseCount] = useState(0);
-
+  
   const [userHasInteracted, setUserHasInteracted] = useState(false);
   
   const { toast } = useToast();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isMounted, setIsMounted] = useState(false);
-  
+  const router = useRouter();
+
   const isBusinessChat = !!chatContext?.businessId;
   const suggestionPool = isBusinessChat ? allBusinessQuestions : allGeneralQuestions;
   const proactivePool = isBusinessChat ? businessProactiveMessages : migrationProactiveMessages;
   const storageKey = isBusinessChat ? `chatSessionId_${chatContext.businessId}` : 'globalChatSessionId';
 
+  const fetchHistory = useCallback(async (sid: string) => {
+    try {
+        const response = await fetch(`/api/chat/sessions/${sid}/messages`);
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error?.message || 'Error fetching history');
+        setMessages(result.history);
+    } catch (error) {
+        console.error("Failed to fetch chat history:", error);
+        localStorage.removeItem(storageKey);
+        setSessionId(null);
+        setMessages([]);
+    }
+  }, [storageKey]);
+
   useEffect(() => {
     setIsMounted(true);
     if (typeof window !== 'undefined') {
-        audioRef.current = new Audio('https://firebasestorage.googleapis.com/v0/b/colombia-en-esp.firebasestorage.app/o/web%2FMessage%20Notification.mp3?alt=media&token=acb27764-c909-4265-9dfb-ea3f20463c68');
-        
         const handleFirstInteraction = () => {
             setUserHasInteracted(true);
+            audioRef.current = new Audio('https://firebasestorage.googleapis.com/v0/b/colombia-en-esp.firebasestorage.app/o/web%2FMessage%20Notification.mp3?alt=media&token=acb27764-c909-4265-9dfb-ea3f20463c68');
             window.removeEventListener('click', handleFirstInteraction, true);
             window.removeEventListener('keydown', handleFirstInteraction, true);
         };
@@ -271,7 +254,7 @@ export default function ChatWidget({ embedded = false }: ChatWidgetProps) {
         const storedSessionId = localStorage.getItem(storageKey);
         if (storedSessionId) {
             setSessionId(storedSessionId);
-            // The history will be fetched when the chat is opened, for now, just set the ID.
+            fetchHistory(storedSessionId);
         }
 
         return () => {
@@ -279,29 +262,27 @@ export default function ChatWidget({ embedded = false }: ChatWidgetProps) {
             window.removeEventListener('keydown', handleFirstInteraction, true);
         };
     }
-  }, [isBusinessChat, chatContext?.businessId, storageKey]);
+  }, [isBusinessChat, chatContext?.businessId, storageKey, fetchHistory]);
 
   useEffect(() => {
-      if (!isMounted || isChatOpen || proactiveClosed) return;
+      if (!isMounted || isChatOpen || proactiveClosed || showProactive) return;
       let timeoutId: NodeJS.Timeout;
       const scheduleNextMessage = () => {
-          const delays = [2000, 7000, 15000];
-          const delay = delays[Math.min(proactiveCloseCount, delays.length - 1)];
           timeoutId = setTimeout(() => {
               const randomIndex = Math.floor(Math.random() * proactivePool.length);
               setProactiveMessage(proactivePool[randomIndex]);
               setShowProactive(true);
-          }, delay);
+          }, 2000); // Wait 2s before showing first proactive message
       };
       scheduleNextMessage();
       return () => clearTimeout(timeoutId);
-  }, [isMounted, isChatOpen, proactiveCloseCount, proactiveClosed, proactivePool]);
+  }, [isMounted, isChatOpen, proactiveClosed, proactivePool, showProactive]);
   
   useEffect(() => {
       if (showProactive && userHasInteracted && audioRef.current) {
           audioRef.current.play().catch(e => console.error("Error playing audio:", e));
       }
-  }, [showProactive, proactiveMessage, userHasInteracted]);
+  }, [showProactive, userHasInteracted]);
 
   useEffect(() => {
     if (scrollAreaRef.current) {
@@ -320,9 +301,8 @@ export default function ChatWidget({ embedded = false }: ChatWidgetProps) {
     setIsAiResponding(true);
     setCurrentMessage('');
 
-    const currentHistory = [...messages];
     const userMessage: ChatMessage = { 
-        id: `temp-${Date.now()}`,
+        id: `temp-user-${Date.now()}`,
         role: 'user', 
         text: messageText.trim(), 
         timestamp: new Date().toISOString(),
@@ -342,6 +322,11 @@ export default function ChatWidget({ embedded = false }: ChatWidgetProps) {
 
         const result = await response.json();
         if (!response.ok) {
+            if (result.error?.fullError) {
+                sessionStorage.setItem('fullError', result.error.fullError);
+                router.push('/errors');
+                return;
+            }
             throw new Error(result.error?.message || 'Error en el servidor');
         }
         
@@ -354,31 +339,18 @@ export default function ChatWidget({ embedded = false }: ChatWidgetProps) {
             usage: result.usage,
         };
         setMessages(prev => [...prev, aiMessage]);
-
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
         toast({ variant: 'destructive', title: 'Error', description: errorMessage });
-        const errorResponseMessage: ChatMessage = { 
-            id: `error-${Date.now()}`,
-            role: 'model', 
-            text: 'Lo siento, he tenido un problema y no puedo responder ahora mismo.', 
-            timestamp: new Date().toISOString(),
-            replyTo: null
-        };
-        setMessages(prev => [...prev, errorResponseMessage]);
     } finally {
         setIsAiResponding(false);
     }
   };
 
-  const handleSessionStarted = (newSessionId: string, history: ChatMessage[], initialQuestion?: string) => {
+  const handleSessionStarted = (newSessionId: string, history: ChatMessage[]) => {
     localStorage.setItem(storageKey, newSessionId);
     setSessionId(newSessionId);
     setMessages(history);
-
-    if (initialQuestion) {
-        handleSendMessage(initialQuestion);
-    }
   };
   
   const handleFormSubmitAndSend = (e: React.FormEvent) => {
@@ -485,14 +457,6 @@ export default function ChatWidget({ embedded = false }: ChatWidgetProps) {
       </div>
     );
   };
-
-  if (embedded) {
-    return (
-        <div className="h-full flex flex-col shadow-2xl w-full border-primary border rounded-lg">
-           {isMounted ? renderChatContent() : <div className='flex-1 flex items-center justify-center'><Loader2 className='animate-spin'/></div>}
-        </div>
-    )
-  }
 
   if (!isChatVisible) {
     return null;
