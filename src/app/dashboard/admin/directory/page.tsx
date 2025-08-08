@@ -9,7 +9,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Search, Plus, Building, Trash2, AlertCircle, UserCheck, UserX, UserRoundCog, CheckCircle, ChevronDown, Copy } from 'lucide-react';
-import { searchBusinessesOnGoogleAction, saveBusinessAction, getSavedBusinessesAction, deleteBusinessAction, updateBusinessVerificationStatusAction, publishBusinessAction } from '@/lib/directory-actions';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -19,6 +18,8 @@ import { useAuth } from '@/context/AuthContext';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
+import { getSavedBusinessesAction } from '@/lib/directory-actions';
+import { googlePlacesSearch } from '@/ai/tools/google-places-search';
 
 type Place = {
     id: string;
@@ -40,15 +41,12 @@ export default function AdminDirectoryPage() {
     const [isDeleting, startDeletingTransition] = useTransition();
     const [isUpdatingStatus, startUpdatingStatusTransition] = useTransition();
     
-    // State for Search
     const [query, setQuery] = useState('');
     const [searchResults, setSearchResults] = useState<Place[] | null>(null);
     const [selectedCategory, setSelectedCategory] = useState<string>('');
     const [searchError, setSearchError] = useState<string | null>(null);
     const [rawApiResponse, setRawApiResponse] = useState<any>(null);
 
-
-    // State for Saved Businesses
     const [savedBusinesses, setSavedBusinesses] = useState<PlaceDetails[]>([]);
     const [isLoadingSaved, setIsLoadingSaved] = useState(true);
 
@@ -68,24 +66,17 @@ export default function AdminDirectoryPage() {
     }, []);
 
     const handleSearch = () => {
-        if (!query) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Por favor, introduce una consulta.' });
-            return;
-        }
+        if (!query) return;
         startSearchTransition(async () => {
             setSearchResults(null);
             setSearchError(null);
             setRawApiResponse(null);
-
-            const actionResult = await searchBusinessesOnGoogleAction(query);
-            
-            setRawApiResponse(actionResult.rawResponse || { error: actionResult.error });
-
-            if (actionResult.error) {
-                setSearchError(actionResult.error);
-                toast({ variant: 'destructive', title: 'Error en la Búsqueda', description: actionResult.error });
-            } else if (actionResult.places) {
-                setSearchResults(actionResult.places as Place[]);
+            const result = await googlePlacesSearch({ query });
+            setRawApiResponse(result.rawResponse || { error: "No raw response" });
+            if ('error' in result) {
+                setSearchError(String(result.error));
+            } else {
+                setSearchResults(result.places as Place[]);
             }
         });
     };
@@ -95,76 +86,77 @@ export default function AdminDirectoryPage() {
             toast({ variant: 'destructive', title: 'Error', description: 'Por favor, selecciona una categoría para el negocio.' });
             return;
         }
-        if (!user) {
-             toast({ variant: 'destructive', title: 'Error', description: 'Debes estar autenticado para realizar esta acción.' });
-            return;
-        }
+        if (!user) return;
         startSavingTransition(async () => {
-            const result = await saveBusinessAction(placeId, selectedCategory, user.uid);
-            if (result.error) {
-                toast({ variant: 'destructive', title: 'Error al Guardar', description: result.error });
+            const idToken = await user.getIdToken();
+            const response = await fetch('/api/directory', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
+                body: JSON.stringify({ placeId, category: selectedCategory }),
+            });
+            const result = await response.json();
+            if (!response.ok) {
+                toast({ variant: 'destructive', title: 'Error al Guardar', description: result.error.message });
             } else {
-                toast({ title: 'Éxito', description: result.message });
+                toast({ title: 'Éxito', description: "Negocio añadido al directorio." });
                 setSearchResults(prev => prev ? prev.filter(p => p.id !== placeId) : null);
-                fetchSavedBusinesses(); // Refresh the list of saved businesses
+                fetchSavedBusinesses();
             }
         });
     };
 
     const handleDeleteBusiness = (placeId: string) => {
-        if (!confirm('¿Estás seguro de que quieres eliminar este negocio del directorio?')) {
-            return;
-        }
+        if (!confirm('¿Estás seguro de que quieres eliminar este negocio del directorio?')) return;
+        if (!user) return;
         startDeletingTransition(async () => {
-            const result = await deleteBusinessAction(placeId);
-            if (result.error) {
-                toast({ variant: 'destructive', title: 'Error al Eliminar', description: result.error });
+            const idToken = await user.getIdToken();
+            const response = await fetch(`/api/directory/${placeId}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${idToken}` },
+            });
+            if (!response.ok) {
+                const result = await response.json();
+                toast({ variant: 'destructive', title: 'Error al Eliminar', description: result.error.message });
             } else {
                 toast({ title: 'Éxito', description: 'El negocio ha sido eliminado.' });
-                fetchSavedBusinesses(); // Refresh the list
+                fetchSavedBusinesses();
             }
         });
     };
-
-    const handleVerificationUpdate = (placeId: string, ownerUid: string, status: 'approved' | 'rejected') => {
-        startUpdatingStatusTransition(async () => {
-            const result = await updateBusinessVerificationStatusAction(placeId, ownerUid, status);
-            if (result.error) {
-                toast({ variant: 'destructive', title: 'Error', description: result.error });
-            } else {
-                toast({ title: 'Éxito', description: `El estado del negocio ha sido actualizado a ${status === 'approved' ? 'Aprobado' : 'Rechazado'}.` });
-                fetchSavedBusinesses();
-            }
-        });
-    }
     
-    const handlePublishBusiness = (placeId: string) => {
+    const handleVerificationUpdate = (placeId: string, ownerUid: string, status: 'approved' | 'rejected') => {
+        if (!user) return;
         startUpdatingStatusTransition(async () => {
-            const result = await publishBusinessAction(placeId);
-            if (result.error) {
-                toast({ variant: 'destructive', title: 'Error', description: result.error });
+            const idToken = await user.getIdToken();
+            const response = await fetch('/api/directory/approve', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
+                body: JSON.stringify({ placeId, ownerUid, status }),
+            });
+            if (!response.ok) {
+                const result = await response.json();
+                toast({ variant: 'destructive', title: 'Error', description: result.error.message });
             } else {
-                toast({ title: 'Éxito', description: `El negocio ha sido publicado.` });
+                toast({ title: 'Éxito', description: `El estado del negocio ha sido actualizado.` });
                 fetchSavedBusinesses();
             }
         });
-    }
+    };
 
     const handleCopyRawResponse = () => {
         navigator.clipboard.writeText(JSON.stringify(rawApiResponse, null, 2));
         toast({ title: 'Copiado', description: 'La respuesta de la API ha sido copiada.' });
     };
-    
+
     const getStatusBadge = (biz: PlaceDetails) => {
         if (biz.verificationStatus === 'pending') {
-            return <Badge variant="destructive" className="bg-orange-500/80">Pendiente</Badge>
+            return <Badge variant="destructive" className="bg-orange-500/80">Pendiente</Badge>;
         }
         if (biz.verificationStatus === 'approved') {
-            return <Badge className="bg-green-500/80">Publicado</Badge>
+            return <Badge className="bg-green-500/80">Publicado</Badge>;
         }
-        return <Badge variant="secondary">No Reclamado</Badge>
-    }
-
+        return <Badge variant="secondary">No Reclamado</Badge>;
+    };
 
     return (
         <div className="space-y-6">
@@ -310,14 +302,6 @@ export default function AdminDirectoryPage() {
                                                         </Button>
                                                     </>
                                                 )}
-                                                {biz.verificationStatus === 'unclaimed' && (
-                                                    <Button variant="outline" size="sm" onClick={() => handlePublishBusiness(biz.id!)} disabled={isUpdatingStatus}>
-                                                        <CheckCircle className="mr-2 h-4 w-4 text-green-600"/> Publicar
-                                                    </Button>
-                                                )}
-                                                <Button variant="ghost" size="icon" disabled={isDeleting}>
-                                                    <UserRoundCog className="h-4 w-4 text-muted-foreground" />
-                                                </Button>
                                                 <Button variant="ghost" size="icon" onClick={() => handleDeleteBusiness(biz.id!)} disabled={isDeleting}>
                                                     <Trash2 className="h-4 w-4 text-destructive" />
                                                 </Button>
