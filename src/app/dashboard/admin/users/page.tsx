@@ -18,23 +18,6 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { setUserRoleAction } from '@/lib/user-actions';
 
 
-// This is a placeholder for the actual server action.
-async function getAllUsersAction(): Promise<{ users?: UserProfile[], error?: string }> {
-    try {
-        const response = await fetch('/api/users');
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error.message || 'Failed to fetch users');
-        }
-        const users = await response.json();
-        return { users };
-    } catch (error) {
-        console.error('Error fetching users:', error);
-        return { error: error instanceof Error ? error.message : 'An unknown error occurred' };
-    }
-}
-
-
 export default function AdminUsersPage() {
     const [users, setUsers] = useState<UserProfile[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -50,17 +33,33 @@ export default function AdminUsersPage() {
 
     useEffect(() => {
         const fetchUsers = async () => {
-            setIsLoading(true);
-            const result = await getAllUsersAction();
-            if (result.error) {
-                toast({ variant: 'destructive', title: 'Error', description: result.error });
-            } else if (result.users) {
-                setUsers(result.users);
+            if (!user) {
+                setIsLoading(false);
+                return;
             }
-            setIsLoading(false);
+            setIsLoading(true);
+            try {
+                const idToken = await user.getIdToken();
+                const response = await fetch('/api/users', {
+                    headers: {
+                        'Authorization': `Bearer ${idToken}`
+                    }
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error.message || 'Failed to fetch users');
+                }
+                const usersData = await response.json();
+                setUsers(usersData);
+            } catch (error) {
+                 toast({ variant: 'destructive', title: 'Error', description: error instanceof Error ? error.message : 'An unknown error occurred' });
+            } finally {
+                setIsLoading(false);
+            }
         };
         fetchUsers();
-    }, [toast]);
+    }, [toast, user]);
 
     const handleOpenRoleModal = (user: UserProfile) => {
         setSelectedUser(user);
