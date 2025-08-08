@@ -198,4 +198,39 @@ src/lib/
 2.  **ELIMINAR:** `src/lib/directory-actions.ts` y cualquier servicio relacionado obsoleto.
 
 ---
+
+## **Fase 4: Refactorización del Dominio del Blog y Contenido**
+
+**Objetivo:** Migrar toda la lógica del blog y la generación de contenido a la arquitectura hexagonal, desacoplando la lógica de negocio de Firebase y los flujos de IA.
+
+### **Paso 4.1: Definir el Dominio (`src/lib/blog/domain`)**
+
+*   **`blog-post.entity.ts`**: Definir la interfaz `BlogPost` con todas sus propiedades (título, contenido, estado, etc.).
+*   **`blog.repository.ts`**: Definir el puerto `BlogPostRepository` con los métodos CRUD (`create`, `findById`, `findAll`, `update`, `delete`).
+
+### **Paso 4.2: Crear los Casos de Uso (`src/lib/blog/application`)**
+
+*   **`create-blog-post.use-case.ts`**: Orquesta la creación, incluyendo la lógica para generar un `slug` a partir del título.
+*   **`get-blog-post.use-case.ts`**: Obtiene una publicación por ID o slug.
+*   **`get-all-blog-posts.use-case.ts`**: Obtiene todas las publicaciones, con posible filtrado por estado.
+*   **`update-blog-post.use-case.ts`**: Maneja la actualización de una publicación.
+*   **`generate-article.use-case.ts`**: Orquesta la llamada al adaptador de IA para generar el contenido, pero sin conocer los detalles de Genkit.
+
+### **Paso 4.3: Implementar la Infraestructura (`src/lib/blog/infrastructure`)**
+
+*   **`persistence/firestore-blog.repository.ts`**: Implementa `BlogPostRepository` usando Firestore Admin SDK.
+*   **`ai/genkit-article.adapter.ts`**: Implementa una interfaz `ArticleGeneratorAdapter`. Será el único lugar que importa y llama a los flujos de Genkit (`generateIntelligentArticleFlow`, etc.).
+*   **`api/blog.controller.ts`**: Crear un `BlogController` para manejar las peticiones HTTP (crear, editar, publicar).
+*   **`api/routes.ts`**: Crear los API Routes (`/api/blog`, `/api/blog/[id]`) que usarán el `BlogController`.
+*   **Actualizar `Server Actions`**: Modificar `src/lib/ai-actions.ts` y `src/lib/blog-actions.ts` para que, en lugar de contener lógica propia, llamen a los nuevos endpoints de la API del blog o directamente a los casos de uso.
+
+### **Paso 4.4: Actualizar la UI y Eliminar Código Antiguo**
+
+*   **Modificar `AdminContentSuitePage`**: Asegurarse de que llame a la nueva acción/endpoint para guardar el artículo generado.
+*   **Modificar `AdminBlogManagementPage`**: Actualizar para que liste, edite y elimine publicaciones a través del nuevo sistema.
+*   **ELIMINAR:** `src/services/blog.service.ts`.
+*   **ELIMINAR:** `src/app/api/posts/route.ts` (será reemplazado por la nueva API del blog).
+
+---
+
 Este plan nos proporciona una guía clara y estructurada para ejecutar una refactorización exitosa, sentando las bases para una aplicación mucho más robusta, escalable y fácil de mantener.
