@@ -9,7 +9,7 @@ import { calculateCost } from '@/lib/ai-costs';
 // Import the specific Genkit flows
 import { migrationChat } from '@/ai/migrationAgent/flows/migration-chat-flow';
 import { businessChat } from '@/ai/businessAgent/flows/business-chat-flow';
-import { getAgentConfig } from '@/services/agent.service';
+import { FirestoreUserRepository } from '@/lib/user/infrastructure/persistence/firestore-user.repository';
 import { getUserProfileByUid } from '@/services/admin.service';
 
 const DEFAULT_BUSINESS_PROMPT = `### CONTEXTO
@@ -45,6 +45,12 @@ En la conversación, pueden participar tres roles: 'user' (el cliente), 'model' 
  * It dynamically selects the appropriate agent (global vs. business) based on context.
  */
 export class GenkitAgentAdapter implements AgentAdapter {
+  private userRepository: FirestoreUserRepository;
+
+  constructor() {
+    this.userRepository = new FirestoreUserRepository();
+  }
+
   private async getBusinessAgentConfig(businessId: string): Promise<BusinessAgentConfig> {
     const defaultConfig: BusinessAgentConfig = {
       model: 'googleai/gemini-1.5-flash-latest',
@@ -95,7 +101,7 @@ export class GenkitAgentAdapter implements AgentAdapter {
 
     } else {
       // --- Global Migration Agent Logic ---
-      const agentConfig = await getAgentConfig();
+      const agentConfig = await this.userRepository.getGlobalAgentConfig();
       const aiResponse = await migrationChat({
         model: agentConfig.model,
         systemPrompt: agentConfig.systemPrompt,
