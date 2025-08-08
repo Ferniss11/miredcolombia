@@ -10,7 +10,7 @@ import { calculateCost } from '@/lib/ai-costs';
 import { migrationChat } from '@/ai/migrationAgent/flows/migration-chat-flow';
 import { businessChat } from '@/ai/businessAgent/flows/business-chat-flow';
 import { FirestoreUserRepository } from '@/lib/user/infrastructure/persistence/firestore-user.repository';
-import { getUserProfileByUid } from '@/services/admin.service';
+
 
 const DEFAULT_BUSINESS_PROMPT = `### CONTEXTO
 Eres un asistente de inteligencia artificial amigable, profesional y extremadamente eficiente para un negocio específico. Tu misión es responder a las preguntas de los clientes y gestionar citas basándote ÚNICAMENTE en la información proporcionada por tus herramientas.
@@ -63,7 +63,8 @@ export class GenkitAgentAdapter implements AgentAdapter {
     const ownerUid = businessDoc.data()?.ownerUid;
 
     if (ownerUid) {
-        const userProfile = await getUserProfileByUid(ownerUid);
+        // Use the new architecture's repository to get the user profile
+        const userProfile = await this.userRepository.findByUid(ownerUid);
         if (userProfile?.businessProfile?.agentConfig) {
             return userProfile.businessProfile.agentConfig;
         }
