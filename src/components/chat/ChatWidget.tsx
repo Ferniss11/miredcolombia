@@ -89,15 +89,32 @@ const WelcomeForm = ({ onSessionStarted, isBusinessChat, businessContext, sugges
         }
     };
     
-    const handleSuggestionClick = async (question: string) => {
+    const handleSuggestionClick = (question: string) => {
+        // Set an indicator that a suggestion was clicked, and the form can be auto-submitted.
         setInitialQuestion(question);
-        form.setValue('userName', 'Usuario');
-        form.setValue('userPhone', '000000000');
-        form.setValue('acceptTerms', true);
-        
-        const isValid = await form.trigger();
-        if (isValid) {
-            handleFormSubmit(form.getValues());
+        // The form submission will now be triggered by the main button's onClick or auto-submit logic
+        form.handleSubmit(handleFormSubmit)();
+    };
+    
+    // We override the default form submit to also pass the initial question if it exists.
+    const onFinalSubmit = async (values: z.infer<typeof formSchema>) => {
+        setIsPending(true);
+        setError(null);
+        try {
+            const response = await fetch('/api/chat/sessions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ...values, businessId: businessContext?.businessId })
+            });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.error?.message || 'Error en el servidor');
+            
+            onSessionStarted(result.sessionId, result.history, initialQuestion || undefined);
+        } catch (e) {
+            const errorMessage = e instanceof Error ? e.message : 'An unknown client error occurred.';
+            setError(`Error de cliente: ${errorMessage}`);
+        } finally {
+            setIsPending(false);
         }
     };
     
@@ -136,7 +153,7 @@ const WelcomeForm = ({ onSessionStarted, isBusinessChat, businessContext, sugges
             
             <div className="pt-6 border-t mt-6">
                 <Form {...form}>
-                    <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
+                    <form onSubmit={form.handleSubmit(onFinalSubmit)} className="space-y-4">
                         <FormField control={form.control} name="userName" render={({ field }) => (
                         <FormItem>
                             <FormLabel>Nombre</FormLabel>
