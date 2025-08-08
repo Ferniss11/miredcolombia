@@ -10,6 +10,8 @@ import { GetChatHistoryUseCase } from '../../application/get-chat-history.use-ca
 import { FindSessionByPhoneUseCase } from '../../application/find-session-by-phone.use-case';
 import { StartOrResumeChatUseCase } from '../../application/start-or-resume-chat.use-case';
 import { GetAllChatSessionsUseCase } from '../../application/get-all-chat-sessions.use-case';
+import { GetSessionByIdUseCase } from '../../application/get-session-by-id.use-case';
+import { GetChatSessionDetailsUseCase } from '../../application/get-chat-session-details.use-case';
 
 
 // --- Input Validation Schemas ---
@@ -30,6 +32,7 @@ export class ChatController {
   private startOrResumeChatUseCase: StartOrResumeChatUseCase;
   private postMessageUseCase: PostMessageUseCase;
   private getAllSessionsUseCase: GetAllChatSessionsUseCase;
+  private getSessionDetailsUseCase: GetChatSessionDetailsUseCase;
   
   constructor() {
     const chatRepository = new FirestoreChatRepository();
@@ -39,6 +42,7 @@ export class ChatController {
     const startChatSessionUseCase = new StartChatSessionUseCase(chatRepository);
     const findSessionByPhoneUseCase = new FindSessionByPhoneUseCase(chatRepository);
     const getChatHistoryUseCase = new GetChatHistoryUseCase(chatRepository);
+    const getSessionByIdUseCase = new GetSessionByIdUseCase(chatRepository);
 
     // Main use cases for the controller
     this.startOrResumeChatUseCase = new StartOrResumeChatUseCase(
@@ -48,6 +52,7 @@ export class ChatController {
     );
     this.postMessageUseCase = new PostMessageUseCase(chatRepository, agentAdapter);
     this.getAllSessionsUseCase = new GetAllChatSessionsUseCase(chatRepository);
+    this.getSessionDetailsUseCase = new GetChatSessionDetailsUseCase(getSessionByIdUseCase, getChatHistoryUseCase);
   }
 
   /**
@@ -96,5 +101,27 @@ export class ChatController {
   async getAllSessions(req: NextRequest): Promise<ApiResponse> {
     const sessions = await this.getAllSessionsUseCase.execute();
     return ApiResponse.success(sessions);
+  }
+
+  /**
+   * Handles retrieving a single chat session with its full message history.
+   * Linked to GET /api/chat/sessions/[sessionId]
+   */
+  async getSessionDetails(req: NextRequest, { params }: { params: { sessionId: string } }): Promise<ApiResponse> {
+      const { sessionId } = params;
+      const businessId = req.nextUrl.searchParams.get('businessId') || undefined;
+
+      const details = await this.getSessionDetailsUseCase.execute({ sessionId, businessId });
+
+      if (!details) {
+          return ApiResponse.notFound('Chat session not found.');
+      }
+      
+      const { session, messages } = details;
+
+      return ApiResponse.success({
+          session,
+          messages: messages.map(m => ({ ...m, timestamp: m.timestamp.toISOString() })),
+      });
   }
 }

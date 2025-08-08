@@ -1,4 +1,5 @@
 
+
 import { z } from 'zod';
 
 // Schema for Blog Content Generation
@@ -86,7 +87,7 @@ export const IntelligentArticleOutputSchema = z.object({
 export type IntelligentArticle = z.infer<typeof IntelligentArticleOutputSchema>;
 
 
-export type UserRole = 'Guest' | 'Advertiser' | 'Admin' | 'User';
+export type UserRole = 'Guest' | 'Advertiser' | 'Admin' | 'User' | 'SAdmin';
 
 // BusinessAgentConfig is now in chat-types.ts
 export type { BusinessAgentConfig } from './chat-types';
@@ -396,4 +397,5 @@ export const JobPostingFormSchema = z.object({
 
 export type JobPostingFormValues = z.infer<typeof JobPostingFormSchema>;
 
-    
+export type ChatSession = import('./chat-types').ChatSession;
+export type ChatMessage = import('./chat-types').ChatMessage;

@@ -14,6 +14,14 @@ export const TokenUsageSchema = z.object({
 });
 export type TokenUsage = z.infer<typeof TokenUsageSchema>;
 
+// --- Agent Configuration Schema ---
+
+export const AgentConfigSchema = z.object({
+  model: z.string().default('googleai/gemini-1.5-flash-latest'),
+  systemPrompt: z.string().default('You are a helpful assistant.'),
+});
+export type AgentConfig = z.infer<typeof AgentConfigSchema>;
+
 // --- Chat Message Schemas ---
 
 export const ChatMessageSchema = z.object({
@@ -45,6 +53,7 @@ export const ChatSessionSchema = z.object({
   totalInputTokens: z.number().optional(),
   totalOutputTokens: z.number().optional(),
   totalCost: z.number().optional(),
+  agentConfig: AgentConfigSchema.optional(), // Added agent config to session
 });
 export type ChatSession = z.infer<typeof ChatSessionSchema>;
 
@@ -59,14 +68,6 @@ export const ChatSessionWithTokensSchema = ChatSessionSchema.extend({
 });
 export type ChatSessionWithTokens = z.infer<typeof ChatSessionWithTokensSchema>;
 
-
-// --- Agent Configuration Schema ---
-
-export const AgentConfigSchema = z.object({
-  model: z.string().default('googleai/gemini-1.5-flash-latest'),
-  systemPrompt: z.string().default('You are a helpful assistant.'),
-});
-export type AgentConfig = z.infer<typeof AgentConfigSchema>;
 
 // Business Agent config is a specific type of AgentConfig
 export type BusinessAgentConfig = AgentConfig;
