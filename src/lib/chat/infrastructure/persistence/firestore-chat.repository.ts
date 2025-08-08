@@ -75,7 +75,8 @@ export class FirestoreChatRepository implements ChatRepository {
     
     await docRef.set(finalSessionData);
 
-    return { id: docRef.id, ...sessionData, createdAt: new Date() };
+    const newSessionDoc = await docRef.get();
+    return toChatSession(newSessionDoc);
   }
 
   /**
@@ -103,6 +104,9 @@ export class FirestoreChatRepository implements ChatRepository {
             sessionId: sessionId,
             timestamp: FieldValue.serverTimestamp(),
         };
+        if (businessId) {
+          finalMessageData.businessId = businessId;
+        }
         transaction.set(newMessageRef, finalMessageData);
 
         const sessionUpdate: { [key: string]: any } = {
@@ -125,6 +129,7 @@ export class FirestoreChatRepository implements ChatRepository {
     return {
         id: newMessageRef.id,
         sessionId: sessionId,
+        businessId: businessId,
         ...restOfMessage,
         timestamp: savedTimestamp,
     };
