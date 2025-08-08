@@ -7,8 +7,8 @@ import { GenkitAgentAdapter } from '../ai/genkit-agent.adapter';
 import { StartChatSessionUseCase } from '../../application/start-chat-session.use-case';
 import { PostMessageUseCase } from '../../application/post-message.use-case';
 import { GetChatHistoryUseCase } from '../../application/get-chat-history.use-case';
-import { GetAllChatSessionsUseCase } from '../../application/get-all-chat-sessions.use-case';
 import { FindSessionByPhoneUseCase } from '../../application/find-session-by-phone.use-case';
+import { StartOrResumeChatUseCase } from '../../application/start-or-resume-chat.use-case';
 
 // --- Input Validation Schemas ---
 const StartSessionSchema = z.object({
@@ -25,21 +25,25 @@ const PostMessageSchema = z.object({
 
 
 export class ChatController {
-  private startChatSessionUseCase: StartChatSessionUseCase;
+  private startOrResumeChatUseCase: StartOrResumeChatUseCase;
   private postMessageUseCase: PostMessageUseCase;
-  private getChatHistoryUseCase: GetChatHistoryUseCase;
-  private getAllChatSessionsUseCase: GetAllChatSessionsUseCase;
-  private findSessionByPhoneUseCase: FindSessionByPhoneUseCase;
-
+  
   constructor() {
     const chatRepository = new FirestoreChatRepository();
     const agentAdapter = new GenkitAgentAdapter();
     
-    this.startChatSessionUseCase = new StartChatSessionUseCase(chatRepository);
+    // Instantiate all necessary use cases
+    const startChatSessionUseCase = new StartChatSessionUseCase(chatRepository);
+    const findSessionByPhoneUseCase = new FindSessionByPhoneUseCase(chatRepository);
+    const getChatHistoryUseCase = new GetChatHistoryUseCase(chatRepository);
+
+    // Main use cases for the controller
+    this.startOrResumeChatUseCase = new StartOrResumeChatUseCase(
+        startChatSessionUseCase,
+        findSessionByPhoneUseCase,
+        getChatHistoryUseCase
+    );
     this.postMessageUseCase = new PostMessageUseCase(chatRepository, agentAdapter);
-    this.getChatHistoryUseCase = new GetChatHistoryUseCase(chatRepository);
-    this.getAllChatSessionsUseCase = new GetAllChatSessionsUseCase(chatRepository);
-    this.findSessionByPhoneUseCase = new FindSessionByPhoneUseCase(chatRepository);
   }
 
   /**
@@ -50,23 +54,12 @@ export class ChatController {
     const json = await req.json();
     const input = StartSessionSchema.parse(json);
 
-    const existingSession = await this.findSessionByPhoneUseCase.execute(input.userPhone);
-    
-    if (existingSession) {
-        const history = await this.getChatHistoryUseCase.execute({ sessionId: existingSession.id });
-        return ApiResponse.success({ 
-            sessionId: existingSession.id, 
-            history: history.map(m => ({...m, timestamp: m.timestamp.toISOString()})),
-            isResumed: true,
-        });
-    }
+    const { session, history, isResumed } = await this.startOrResumeChatUseCase.execute(input);
 
-    const { session, history } = await this.startChatSessionUseCase.execute(input);
-    
-    return ApiResponse.created({ 
+    return ApiResponse.success({
         sessionId: session.id,
-        history: history.map(m => ({...m, timestamp: m.timestamp.toISOString()})),
-        isResumed: false,
+        history: history.map(m => ({ ...m, timestamp: m.timestamp.toISOString() })),
+        isResumed,
     });
   }
   
@@ -80,7 +73,9 @@ export class ChatController {
     const { userMessage, businessId } = PostMessageSchema.parse(json);
 
     // We need the history to pass to the agent.
-    const chatHistory = await this.getChatHistoryUseCase.execute({ sessionId });
+    // This is now handled by a dedicated use case.
+    const getChatHistoryUseCase = new GetChatHistoryUseCase(new FirestoreChatRepository());
+    const chatHistory = await getChatHistoryUseCase.execute({ sessionId });
 
     const output = await this.postMessageUseCase.execute({
       sessionId,

@@ -18,6 +18,7 @@ export type StartChatSessionOutput = {
 /**
  * Use case for starting a new chat session.
  * It creates the session and generates an initial welcome message.
+ * This use case should only be called when it is confirmed that no session exists for the user.
  */
 export class StartChatSessionUseCase {
   constructor(private readonly chatRepository: ChatRepository) {}
