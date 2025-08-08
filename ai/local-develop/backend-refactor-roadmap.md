@@ -189,24 +189,37 @@ src/lib/
 
 ### **Paso 3.1: Definir el Dominio (`src/lib/directory/domain`) (✓ Completado)**
 
-*   **`business.entity.ts`**: Definir la interfaz `Business` (basada en la `PlaceDetails` actual). (✓)
+*   **`business.entity.ts`**: Definir la interfaz `Business` (basada en la `PlaceDetails` actual y enriquecida con datos de la API de Google). (✓)
 *   **`directory.repository.ts`**: Definir la interfaz `DirectoryRepository` con métodos para guardar, encontrar, eliminar y actualizar negocios. (✓)
 
 ### **Paso 3.2: Crear los Casos de Uso (`src/lib/directory/application`)**
 
-*   `add-business.use-case.ts`, `link-business-to-user.use-case.ts`, `approve-business.use-case.ts`, etc.
+*   **Objetivo:** Encapsular toda la lógica de negocio del directorio en clases o funciones aisladas y reutilizables.
+*   **Tareas:**
+    *   Crear `get-business-details.use-case.ts`: Orquesta la obtención de detalles desde la base de datos y la caché/API externa. (✓)
+    *   Crear `add-business.use-case.ts`: Lógica para añadir un nuevo negocio (llamado por un admin).
+    *   Crear `link-business-to-user.use-case.ts`: Lógica para el proceso de reclamación de un negocio por un anunciante.
+    *   Crear `approve-business-verification.use-case.ts`: Lógica para que un admin apruebe o rechace una reclamación.
+    *   Crear `delete-business.use-case.ts`: Lógica para eliminar un negocio del directorio.
 
 ### **Paso 3.3: Implementar la Infraestructura (`src/lib/directory/infrastructure`)**
 
-*   **`persistence/firestore-directory.repository.ts`**: Implementa `DirectoryRepository`.
-*   **`search/google-places.adapter.ts`**: Encapsula la llamada a la herramienta `googlePlacesSearch` o la API de Google Maps.
-*   **`api/directory.controller.ts`**: Crear un `DirectoryController` para manejar las peticiones HTTP del directorio.
-*   **`api/routes.ts`**: Crear los API Routes correspondientes que utilizarán el `DirectoryController` y el `apiHandler`.
+*   **Objetivo:** Crear los "enchufes" que conectan la lógica de negocio con el mundo real (base de datos, APIs externas, etc.).
+*   **Tareas:**
+    *   **`persistence/firestore-directory.repository.ts`**: Implementa `DirectoryRepository` usando Firestore Admin SDK. (✓)
+    *   **`search/google-places.adapter.ts`**: Encapsula las llamadas a la API de Google Places para obtener datos enriquecidos. (✓)
+    *   **`cache/firestore-cache.adapter.ts`**: Implementa una estrategia de caché en Firestore para reducir las llamadas a la API de Google. (✓)
+    *   **`api/directory.controller.ts`**: Crear un `DirectoryController` para manejar las peticiones HTTP del directorio.
+    *   **`api/routes.ts`**: Crear los API Routes correspondientes que utilizarán el `DirectoryController` y el `apiHandler`.
 
 ### **Paso 3.4: Actualizar la UI y Eliminar Código Antiguo**
 
-1.  Actualizar todas las páginas que gestionan o muestran el directorio para que usen los nuevos endpoints de la API REST.
-2.  **ELIMINAR:** `src/lib/directory-actions.ts` y cualquier servicio relacionado obsoleto.
+*   **Objetivo:** Conectar toda la interfaz de usuario que interactúa con el directorio a la nueva API y eliminar la lógica antigua.
+*   **Tareas:**
+    1.  Actualizar `/dashboard/admin/directory/page.tsx` para usar los nuevos endpoints de la API.
+    2.  Actualizar `/dashboard/advertiser/profile/page.tsx` para el proceso de vinculación.
+    3.  Actualizar `/directory/[slug]/page.tsx` y `/directory/page.tsx` para usar la nueva acción `getPublicBusinessDetailsAction`.
+    4.  **ELIMINAR:** `src/lib/directory-actions.ts` una vez que todas las dependencias se hayan migrado.
 
 ---
 
