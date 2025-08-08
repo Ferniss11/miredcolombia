@@ -21,8 +21,6 @@ import { Avatar, AvatarFallback } from '../ui/avatar';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '../ui/sheet';
 import { useChat } from '@/context/ChatContext';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
-import { startChatSessionAction, postMessageAction, getChatHistoryAction } from '@/lib/chat-actions';
-
 
 // --- Welcome Form Sub-component ---
 const formSchema = z.object({
@@ -66,21 +64,25 @@ const WelcomeForm = ({ onSessionStarted, isBusinessChat, businessContext, sugges
         setIsPending(true);
         setError(null);
         try {
-            const result = await startChatSessionAction({
-                ...values,
-                businessId: businessContext?.businessId
+            const response = await fetch('/api/chat/sessions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ...values, businessId: businessContext?.businessId }),
             });
-            
-            if (result.success) {
-                 onSessionStarted(result.sessionId, result.history);
-            } else {
-                 if (result.isIndexError) {
-                    sessionStorage.setItem('fullError', result.error!);
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                 if (result.error?.fullError) {
+                    sessionStorage.setItem('fullError', result.error.fullError);
                     router.push('/errors');
                     return;
                 }
-                throw new Error(result.error || 'Error desconocido al iniciar sesión.');
+                throw new Error(result.error?.message || 'Error desconocido al iniciar la sesión.');
             }
+            
+            onSessionStarted(result.sessionId, result.history);
+
         } catch (e) {
             const errorMessage = e instanceof Error ? e.message : 'An unknown client error occurred.';
             setError(`Error al iniciar chat: ${errorMessage}`);
@@ -235,17 +237,9 @@ export default function ChatWidget() {
   const storageKey = isBusinessChat ? `chatSessionId_${chatContext.businessId}` : 'globalChatSessionId';
 
   const fetchHistory = useCallback(async (sid: string) => {
-    try {
-        const result = await getChatHistoryAction({ sessionId: sid });
-        if (result.error) throw new Error(result.error);
-        setMessages(result.history || []);
-    } catch (error) {
-        console.error("Failed to fetch chat history:", error);
-        localStorage.removeItem(storageKey);
-        setSessionId(null);
-        setMessages([]);
-    }
-  }, [storageKey]);
+    // This function can be implemented if needed, but for now, 
+    // the welcome form handles resuming sessions by phone.
+  }, []);
 
   useEffect(() => {
     setIsMounted(true);
@@ -259,18 +253,12 @@ export default function ChatWidget() {
         window.addEventListener('click', handleFirstInteraction, true);
         window.addEventListener('keydown', handleFirstInteraction, true);
         
-        const storedSessionId = localStorage.getItem(storageKey);
-        if (storedSessionId) {
-            setSessionId(storedSessionId);
-            fetchHistory(storedSessionId);
-        }
-
         return () => {
             window.removeEventListener('click', handleFirstInteraction, true);
             window.removeEventListener('keydown', handleFirstInteraction, true);
         };
     }
-  }, [isBusinessChat, chatContext?.businessId, storageKey, fetchHistory]);
+  }, []);
 
   useEffect(() => {
       if (!isMounted || isChatOpen || proactiveClosed || showProactive) return;
@@ -320,24 +308,29 @@ export default function ChatWidget() {
     setMessages(newHistory);
     
     try {
-        const result = await postMessageAction({
-            sessionId,
-            message: messageText.trim(),
-            history: newHistory.map(m => ({ role: m.role, text: m.text })),
+        const response = await fetch(`/api/chat/sessions/${sessionId}/messages`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                userMessage: messageText.trim(),
+                businessId: chatContext?.businessId
+            }),
         });
+        
+        const result = await response.json();
 
-        if (result.success && result.response) {
-            const aiMessage: ChatMessage = {
-                id: `ai-${Date.now()}`,
-                role: 'model',
-                text: result.response,
-                timestamp: new Date().toISOString(),
-                replyTo: null,
-            };
-            setMessages(prev => [...prev, aiMessage]);
-        } else {
-             throw new Error(result.error || 'Error en el servidor');
+        if (!response.ok) {
+            throw new Error(result.error?.message || 'Error en el servidor');
         }
+
+        const aiMessage: ChatMessage = {
+            id: `ai-${Date.now()}`,
+            role: 'model',
+            text: result.aiResponse,
+            timestamp: new Date().toISOString(),
+            replyTo: null,
+        };
+        setMessages(prev => [...prev, aiMessage]);
 
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
@@ -350,7 +343,6 @@ export default function ChatWidget() {
   };
 
   const handleSessionStarted = (newSessionId: string, history: ChatMessage[]) => {
-    localStorage.setItem(storageKey, newSessionId);
     setSessionId(newSessionId);
     setMessages(history);
   };
@@ -367,7 +359,6 @@ export default function ChatWidget() {
   };
   
   const handleResetSession = () => {
-    localStorage.removeItem(storageKey);
     setSessionId(null);
     setMessages([]);
   }
