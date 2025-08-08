@@ -60,7 +60,7 @@ src/lib/
 
 ---
 
-## **Fase 1: Refactorización del Dominio de Usuario y Autenticación (Prioridad Alta)**
+## **Fase 1: Refactorización del Dominio de Usuario y Autenticación (✓ Completada)**
 
 **Objetivo:** Establecer una base sólida para toda la aplicación refactorizando la gestión de perfiles de usuario y la autenticación.
 
@@ -86,7 +86,7 @@ src/lib/
 *   **`auth/firebase-auth.adapter.ts`**: Implementa `AuthRepository` usando el SDK de cliente de Firebase Auth. (✓)
 *   **`storage/firebase-storage.adapter.ts`**: Crear una función genérica `uploadFile` para manejar la subida de archivos (ej. CVs). (✓)
 
-### **Paso 1.4: Implementar la Capa de Presentación (API REST) y Actualizar la UI**
+### **Paso 1.4: Implementar la Capa de Presentación (API REST) y Actualizar la UI (✓ Completado)**
 
 *   **Objetivo:** Exponer los casos de uso a través de una API REST segura y estandarizada, y conectar la UI a estos nuevos endpoints.
 
@@ -120,18 +120,19 @@ src/lib/
     *   **Modificar Formularios de Perfil (`.../advertiser/profile/page.tsx`, etc.)**:
         *   Actualizar para que llamen a los endpoints `PUT` de la API para guardar los cambios. (✓)
 
-*   **Paso 1.4.5: Eliminar Código Antiguo**
-    *   **ELIMINAR:** `src/lib/user-actions.ts` (reemplazado por los nuevos API endpoints).
-    *   **ELIMINAR:** `src/services/user.service.ts` (lógica movida al `FirestoreUserRepository` y a los `UseCases`).
-    *   **ELIMINAR:** `src/lib/firebase/auth.ts` (lógica movida al `FirebaseAuthAdapter` y a los `UseCases/Controllers` de autenticación).
+*   **Paso 1.4.5: Eliminar Código Antiguo (✓ Completado)**
+    *   **ELIMINAR:** `src/lib/user-actions.ts` (reemplazado por los nuevos API endpoints). (✓)
+    *   **ELIMINAR:** `src/services/user.service.ts` (lógica movida al `FirestoreUserRepository` y a los `UseCases`). (✓)
+    *   **ELIMINAR:** `src/lib/firebase/auth.ts` (lógica movida al `FirebaseAuthAdapter` y a los `UseCases/Controllers` de autenticación). (✓)
 
-### **Paso 1.5: Configuración de Seguridad de Roles (Custom Claims)**
+### **Paso 1.5: Configuración de Seguridad de Roles (Custom Claims) (✓ Completado)**
 
 *   **Objetivo:** Implementar un sistema de roles robusto y seguro utilizando Firebase Custom Claims.
 *   **Tareas:**
-    *   **Extender el `CreateUserProfileUseCase`:** Después de crear el documento de usuario en Firestore, este caso de uso también debe llamar al Admin SDK de Firebase Auth para establecer el `customClaim` de rol en el objeto de autenticación del usuario (`admin.auth().setCustomUserClaims(uid, { role: newUser.role })`).
-    *   **Crear un `SetUserRoleUseCase`:** Crear un nuevo caso de uso para que un administrador pueda cambiar el rol de otro usuario. Este caso de uso recibirá un `uid` y un `newRole`.
-    *   **Crear endpoint `POST /api/users/{uid}/role`:** Crear una nueva ruta y método en el `UserController` para exponer el `SetUserRoleUseCase`. Este endpoint debe estar protegido y ser accesible **solo por usuarios con rol 'Admin'**.
+    *   **Extender el `CreateUserProfileUseCase`:** Después de crear el documento de usuario en Firestore, este caso de uso también debe llamar al Admin SDK de Firebase Auth para establecer el `customClaim` de rol en el objeto de autenticación del usuario (`admin.auth().setCustomUserClaims(uid, { role: newUser.role })`). (✓)
+    *   **Crear un `SetUserRoleUseCase`:** Crear un nuevo caso de uso para que un administrador pueda cambiar el rol de otro usuario. Este caso de uso recibirá un `uid` y un `newRole`. (✓)
+    *   **Crear endpoint `POST /api/users/{uid}/role`:** Crear una nueva ruta y método en el `UserController` para exponer el `SetUserRoleUseCase`. Este endpoint debe estar protegido y ser accesible **solo por usuarios con rol 'SAdmin'**. (✓)
+    *   **Sincronizar Roles de Usuarios Antiguos:** Se implementó una lógica en `AuthContext` para detectar usuarios sin `claim` de rol al iniciar sesión y sincronizarlo desde Firestore de forma segura y única. (✓)
 
 ---
 
