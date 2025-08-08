@@ -51,6 +51,18 @@ export class FirestoreUserRepository implements UserRepository {
     return this.toUser(doc as QueryDocumentSnapshot);
   }
 
+  async findUserByBusinessId(businessId: string): Promise<User | null> {
+      if (!adminDb) throw new Error('Firestore not initialized');
+      const snapshot = await adminDb.collection(USERS_COLLECTION)
+          .where('businessProfile.placeId', '==', businessId)
+          .limit(1)
+          .get();
+      if (snapshot.empty) {
+          return null;
+      }
+      return this.toUser(snapshot.docs[0]);
+  }
+
   async findAll(): Promise<User[]> {
     if (!adminDb) throw new Error('Firestore not initialized');
     const snapshot = await adminDb.collection(USERS_COLLECTION).orderBy('createdAt', 'desc').get();

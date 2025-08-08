@@ -10,16 +10,20 @@ import { calculateCost } from '@/lib/ai-costs';
 import { migrationChat } from '@/ai/migrationAgent/flows/migration-chat-flow';
 import { businessChat } from '@/ai/businessAgent/flows/business-chat-flow';
 import { FirestoreUserRepository } from '@/lib/user/infrastructure/persistence/firestore-user.repository';
+import { GetBusinessDetailsUseCase } from '@/lib/directory/application/get-business-details.use-case';
+import { FirestoreDirectoryRepository } from '@/lib/directory/infrastructure/persistence/firestore-directory.repository';
+import { GooglePlacesAdapter } from '@/lib/directory/infrastructure/search/google-places.adapter';
+import { FirestoreCacheAdapter } from '@/lib/directory/infrastructure/cache/firestore-cache.adapter';
 
 
 const DEFAULT_BUSINESS_PROMPT = `### CONTEXTO
-Eres un asistente de inteligencia artificial amigable, profesional y extremadamente eficiente para un negocio específico. Tu misión es responder a las preguntas de los clientes y gestionar citas basándote ÚNICAMENTE en la información proporcionada por tus herramientas.
+Eres un asistente de inteligencia artificial amigable, profesional y extremadamente eficiente para un negocio específico. Tu misión es responder a las preguntas de los clientes y gestionar citas basándote ÚNICAMENTE en la información proporcionada por tus herramientas y el contexto del negocio que se te facilita.
 La fecha y hora actual es: {{currentDate}}. Úsala como referencia para interpretar las peticiones del usuario (ej. "mañana", "próximo lunes").
 En la conversación, pueden participar tres roles: 'user' (el cliente), 'model' (tú, el asistente IA) y 'admin' (un humano del negocio que puede intervenir). Trata los mensajes del 'admin' como una fuente de información verídica y autorizada.
 
 ### PROCESO DE RESPUESTA OBLIGATORIO Y SECUENCIAL
 1.  **IDENTIFICAR INTENCIÓN:** Analiza el mensaje del usuario.
-    - Si es una pregunta general (sobre horarios, servicios, etc.), usa la herramienta \`getBusinessInfoTool\`.
+    - Si es una pregunta general sobre el negocio (horarios, dirección, servicios), usa la información del bloque "INFORMACIÓN DEL NEGOCIO" para responder.
     - Si es sobre agendar o consultar citas, ve al paso 2.
 
 2.  **CONSULTAR DISPONIBILIDAD (SIEMPRE PRIMERO):**
@@ -46,9 +50,21 @@ En la conversación, pueden participar tres roles: 'user' (el cliente), 'model' 
  */
 export class GenkitAgentAdapter implements AgentAdapter {
   private userRepository: FirestoreUserRepository;
+  private getBusinessDetailsUseCase: GetBusinessDetailsUseCase;
 
   constructor() {
     this.userRepository = new FirestoreUserRepository();
+    
+    // Instantiate dependencies for the use case
+    const directoryRepository = new FirestoreDirectoryRepository();
+    const searchAdapter = new GooglePlacesAdapter();
+    const cacheAdapter = new FirestoreCacheAdapter();
+    
+    this.getBusinessDetailsUseCase = new GetBusinessDetailsUseCase(
+        directoryRepository,
+        searchAdapter,
+        cacheAdapter
+    );
   }
 
   private async getBusinessAgentConfig(businessId: string): Promise<BusinessAgentConfig> {
@@ -59,16 +75,12 @@ export class GenkitAgentAdapter implements AgentAdapter {
     
     if (!adminDb) return defaultConfig;
 
-    const businessDoc = await adminDb.collection('directory').doc(businessId).get();
-    const ownerUid = businessDoc.data()?.ownerUid;
-
-    if (ownerUid) {
-        // Use the new architecture's repository to get the user profile
-        const userProfile = await this.userRepository.findByUid(ownerUid);
-        if (userProfile?.businessProfile?.agentConfig) {
-            return userProfile.businessProfile.agentConfig;
-        }
+    // The owner's config is stored on the user profile now
+    const userProfile = await this.userRepository.findUserByBusinessId(businessId);
+    if (userProfile?.businessProfile?.agentConfig) {
+        return userProfile.businessProfile.agentConfig;
     }
+
     return defaultConfig;
   }
   
@@ -88,10 +100,17 @@ export class GenkitAgentAdapter implements AgentAdapter {
       const agentConfig = await this.getBusinessAgentConfig(input.businessId);
       const systemPrompt = agentConfig.systemPrompt.replace('{{currentDate}}', new Date().toISOString());
 
+      // Fetch business details to provide as context
+      const businessDetails = await this.getBusinessDetailsUseCase.execute(input.businessId);
+      const businessContext = businessDetails 
+        ? `Nombre: ${businessDetails.displayName}\nCategoría: ${businessDetails.category}\nDirección: ${businessDetails.formattedAddress}\nTeléfono: ${businessDetails.internationalPhoneNumber}\nDescripción: ${businessDetails.editorialSummary || ''}`
+        : "No se encontró información del negocio.";
+
       const aiResponse = await businessChat({
         businessId: input.businessId,
         chatHistory: chatHistoryForAI,
         currentMessage: input.currentMessage,
+        businessContext,
         agentConfig: { ...agentConfig, systemPrompt },
       });
       

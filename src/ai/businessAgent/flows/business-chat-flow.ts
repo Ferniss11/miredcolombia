@@ -10,11 +10,8 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import { getBusinessInfoTool } from '../tools/get-business-info-tool';
 import { getAvailableSlots, createAppointment } from '../tools/google-calendar-tools';
 import { ChatOutputSchema, ChatRoleSchema } from '@/lib/chat-types';
-import type { BusinessAgentConfig } from '@/lib/types';
-
 
 // Define the input schema for the business chat flow
 const BusinessChatFlowInputSchema = z.object({
@@ -24,6 +21,7 @@ const BusinessChatFlowInputSchema = z.object({
     text: z.string(),
   })).describe('The history of the conversation so far, including user, AI (model), and admin messages.'),
   currentMessage: z.string().describe("The user's latest message."),
+  businessContext: z.string().describe("A summary of the business's public information."),
   agentConfig: z.object({
     model: z.string(),
     systemPrompt: z.string(),
@@ -45,8 +43,15 @@ const prompt = ai.definePrompt({
     name: 'businessChatPrompt',
     input: { schema: BusinessChatFlowInputSchema },
     output: { schema: ChatOutputSchema },
-    tools: [getBusinessInfoTool, getAvailableSlots, createAppointment],
-    system: `{{agentConfig.systemPrompt}}`,
+    tools: [getAvailableSlots, createAppointment], // REMOVED getBusinessInfoTool
+    system: `{{agentConfig.systemPrompt}}
+
+### INFORMACIÓN DEL NEGOCIO (Contexto Principal)
+Esta es la información pública sobre el negocio con el que estás hablando. Úsala como tu fuente principal de verdad para responder a las preguntas del usuario sobre horarios, servicios, etc.
+
+{{{businessContext}}}
+---
+`,
     prompt: `
         Historial de la Conversación:
         {{#each chatHistory}}
