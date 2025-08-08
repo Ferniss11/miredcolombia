@@ -49,7 +49,8 @@ export async function getGoogleAuthClientForUser(uid: string) {
     }
 
     const userData = docSnap.data();
-    const tokens = userData?.gcalTokens as GoogleTokens | undefined;
+    // Tokens are now stored under businessProfile
+    const tokens = userData?.businessProfile?.gcalTokens as GoogleTokens | undefined;
 
     if (!tokens) {
         throw new Error('El usuario no ha conectado su cuenta de Google Calendar.');
@@ -68,8 +69,8 @@ export async function getGoogleAuthClientForUser(uid: string) {
         console.log(`Refrescando token para el usuario ${uid}`);
         const { credentials } = await client.refreshAccessToken();
         client.setCredentials(credentials);
-        // Persist the new tokens
-        await userRef.update({ 'gcalTokens': credentials });
+        // Persist the new tokens in the correct location
+        await userRef.update({ 'businessProfile.gcalTokens': credentials });
     }
 
     return client;

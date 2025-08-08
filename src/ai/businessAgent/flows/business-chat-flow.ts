@@ -15,7 +15,7 @@ import { ChatOutputSchema, ChatRoleSchema } from '@/lib/chat-types';
 
 // Define the input schema for the business chat flow
 const BusinessChatFlowInputSchema = z.object({
-  businessId: z.string().describe('The unique ID of the business.'),
+  ownerUid: z.string().describe("The UID of the business owner, required for calendar operations."),
   chatHistory: z.array(z.object({
     role: ChatRoleSchema,
     text: z.string(),
@@ -43,7 +43,7 @@ const prompt = ai.definePrompt({
     name: 'businessChatPrompt',
     input: { schema: BusinessChatFlowInputSchema },
     output: { schema: ChatOutputSchema },
-    tools: [getAvailableSlots, createAppointment], // REMOVED getBusinessInfoTool
+    tools: [getAvailableSlots, createAppointment],
     system: `{{agentConfig.systemPrompt}}
 
 ### INFORMACIÓN DEL NEGOCIO (Contexto Principal)
@@ -70,7 +70,13 @@ const businessChatFlow = ai.defineFlow(
         outputSchema: ChatOutputSchema,
     },
     async (input) => {
-        const { output, usage } = await prompt(input);
+        // Pass the ownerUid to all tool calls that require it
+        const { output, usage } = await prompt(input, {
+            tools: {
+                getAvailableSlots: { uid: input.ownerUid },
+                createAppointment: { uid: input.ownerUid },
+            }
+        });
 
         if (!output) {
             throw new Error('La respuesta de la IA fue vacía.');
