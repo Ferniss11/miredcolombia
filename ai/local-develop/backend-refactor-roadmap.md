@@ -153,14 +153,14 @@ src/lib/
 *   **`get-chat-history.use-case.ts`**: Obtiene el historial a través del `ChatRepository`. (✓)
 *   **`get-all-chat-sessions.use-case.ts`**: Obtiene todas las sesiones de chat para el panel de administración. (✓)
 
-### **Paso 2.3: Implementar la Infraestructura (`src/lib/chat/infrastructure`)**
+### **Paso 2.3: Implementar la Infraestructura (`src/lib/chat/infrastructure`) (✓ Completado)**
 
 *   **`persistence/firestore-chat.repository.ts`**: Implementa `ChatRepository` usando Firestore. (✓)
 *   **`ai/genkit-agent.adapter.ts`**:
     *   Implementa una interfaz `AgentAdapter`.
-    *   **Es el único lugar que importa y llama a los flujos de Genkit**. Adapta los datos del caso de uso al formato que el flujo de Genkit necesita.
-*   **`api/chat.controller.ts`**: Crear un `ChatController` que implemente la `BaseController` para manejar las peticiones HTTP del chat.
-*   **`api/routes.ts`**: Crear los API Routes correspondientes (`POST /api/chat/sessions`, `POST /api/chat/sessions/[id]/messages`) que utilizarán el `ChatController` y el `apiHandler`.
+    *   **Es el único lugar que importa y llama a los flujos de Genkit**. Adapta los datos del caso de uso al formato que el flujo de Genkit necesita. (✓)
+*   **`api/chat.controller.ts`**: Crear un `ChatController` que implemente la `BaseController` para manejar las peticiones HTTP del chat. (✓)
+*   **`api/routes.ts`**: Crear los API Routes correspondientes (`POST /api/chat/sessions`, `POST /api/chat/sessions/[id]/messages`) que utilizarán el `ChatController` y el `apiHandler`. (✓)
 
 ### **Paso 2.4: Actualizar la UI y Eliminar Código Antiguo**
 
