@@ -8,5 +8,5 @@ const userController = new UserController();
 // We need to bind the 'this' context to the controller instance
 export const POST = apiHandler((req) => userController.create(req));
 
-// Example of a protected route: Only Admins can get all users.
-export const GET = apiHandler((req) => userController.getAll(req), ['Admin']);
+// Only Admins and SAdmins can get all users.
+export const GET = apiHandler((req) => userController.getAll(req), ['Admin', 'SAdmin']);
