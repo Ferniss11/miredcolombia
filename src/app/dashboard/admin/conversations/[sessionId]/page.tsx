@@ -3,7 +3,6 @@
 
 import { useEffect, useState, useRef, FormEvent, KeyboardEvent } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { getChatSessionDetailsAction, postAdminMessageAction } from '@/lib/agent-actions';
 import type { ChatSessionWithTokens, ChatMessage, AgentConfig } from '@/lib/chat-types';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Bot, User, Send, UserCog, BrainCircuit, ChevronDown, Copy, Clock, Reply, X } from 'lucide-react';
@@ -22,7 +21,7 @@ function ChatConversationPage() {
     const { sessionId } = useParams();
     const router = useRouter();
     const { toast } = useToast();
-    const { userProfile } = useAuth();
+    const { userProfile, user } = useAuth();
     const [session, setSession] = useState<ChatSessionWithTokens | null>(null);
     const [agentConfig, setAgentConfig] = useState<AgentConfig | null>(null);
     const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -33,23 +32,34 @@ function ChatConversationPage() {
     const scrollAreaRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        if (typeof sessionId === 'string') {
+        if (typeof sessionId === 'string' && user) {
             const fetchDetails = async () => {
                 setIsLoading(true);
-                const result = await getChatSessionDetailsAction(sessionId);
-                if (result.error) {
-                    toast({ variant: 'destructive', title: 'Error', description: result.error });
-                    router.push('/dashboard/admin/conversations');
-                } else if (result.session && result.messages) {
-                    setSession(result.session);
-                    setMessages(result.messages);
-                    setAgentConfig(result.agentConfig || null);
+                try {
+                    const idToken = await user.getIdToken();
+                    // TODO: This should call a new endpoint like /api/chat/sessions/[sessionId]
+                    // For now, we simulate the fetch logic.
+                    // const result = await getChatSessionDetailsAction(sessionId);
+                    const result = { error: "Endpoint not implemented yet for admin session details." };
+
+                    if (result.error) {
+                        toast({ variant: 'destructive', title: 'Error', description: result.error });
+                        // router.push('/dashboard/admin/conversations');
+                    } else {
+                        // setSession(result.session);
+                        // setMessages(result.messages);
+                        // setAgentConfig(result.agentConfig || null);
+                    }
+                } catch(e) {
+                    toast({ variant: 'destructive', title: 'Error de Autenticación', description: 'No se pudo obtener el token.'});
+                } finally {
+                    setIsLoading(false);
                 }
-                setIsLoading(false);
             };
-            fetchDetails();
+            // fetchDetails(); // Re-enable when endpoint is ready
+            setIsLoading(false); // Temporary for now
         }
-    }, [sessionId, router, toast]);
+    }, [sessionId, router, toast, user]);
 
     useEffect(() => {
         if (scrollAreaRef.current) {
@@ -94,27 +104,27 @@ function ChatConversationPage() {
         setNewMessage('');
         setReplyTo(null);
         
-        const result = await postAdminMessageAction({
-            sessionId: session.id,
-            text: newMessage,
-            authorName: userProfile.name || 'Admin',
-            replyTo: replyTo ? {
-                messageId: replyTo.id,
-                text: replyTo.text,
-                author: replyTo.role === 'user' ? (session.userName || 'Usuario') : (replyTo.authorName || 'Agente')
-            } : undefined,
-        });
+        // const result = await postAdminMessageAction({
+        //     sessionId: session.id,
+        //     text: newMessage,
+        //     authorName: userProfile.name || 'Admin',
+        //     replyTo: replyTo ? {
+        //         messageId: replyTo.id,
+        //         text: replyTo.text,
+        //         author: replyTo.role === 'user' ? (session.userName || 'Usuario') : (replyTo.authorName || 'Agente')
+        //     } : undefined,
+        // });
         
-        if (result.error) {
-            toast({ variant: 'destructive', title: 'Error', description: result.error });
-            setMessages(prev => prev.filter(m => m.id !== tempId));
-        } else if (result.newMessage) {
-            if (typeof sessionId === 'string') {
-                const updatedSession = await getChatSessionDetailsAction(sessionId);
-                if (updatedSession.session) setSession(updatedSession.session);
-            }
-            setMessages(prev => prev.map(m => m.id === tempId ? { ...result.newMessage } as ChatMessage : m));
-        }
+        // if (result.error) {
+        //     toast({ variant: 'destructive', title: 'Error', description: result.error });
+        //     setMessages(prev => prev.filter(m => m.id !== tempId));
+        // } else if (result.newMessage) {
+        //     if (typeof sessionId === 'string') {
+        //         const updatedSession = await getChatSessionDetailsAction(sessionId);
+        //         if (updatedSession.session) setSession(updatedSession.session);
+        //     }
+        //     setMessages(prev => prev.map(m => m.id === tempId ? { ...result.newMessage } as ChatMessage : m));
+        // }
         setIsSending(false);
     };
 
@@ -178,7 +188,7 @@ function ChatConversationPage() {
         return <div className="p-4"><Skeleton className="h-full w-full" /></div>;
     }
     
-    if (!session) return <div>No se encontró la sesión.</div>;
+    if (!session) return <div>No se encontró la sesión. (Esta página necesita ser conectada a la nueva API)</div>;
 
     return (
         <div className="flex flex-col h-[calc(100vh-theme(space.24))] bg-background">

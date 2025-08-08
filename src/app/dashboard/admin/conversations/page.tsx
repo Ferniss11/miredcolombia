@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { MessageSquare, User, Clock, Search, Bot } from 'lucide-react';
-import { getChatSessionsAction } from '@/lib/agent-actions';
 import type { ChatSessionWithTokens } from '@/lib/chat-types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -27,7 +26,9 @@ export default function ConversationsPage() {
     useEffect(() => {
         const fetchSessions = async () => {
             setIsLoadingSessions(true);
-            const result = await getChatSessionsAction();
+            // TODO: This should call a new endpoint: GET /api/chat/sessions
+            // const result = await getChatSessionsAction();
+            const result = { error: null, sessions: [] }; // Mocked response
             if (result.error) {
                 toast({ variant: 'destructive', title: 'Error', description: result.error });
             } else if (result.sessions) {
@@ -135,5 +136,3 @@ export default function ConversationsPage() {
         </div>
     );
 }
-
-    

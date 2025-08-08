@@ -3,7 +3,6 @@
 
 import { useEffect, useState, useRef, FormEvent, KeyboardEvent } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { getBusinessChatSessionDetailsAction, postBusinessAdminMessageAction } from '@/lib/business-chat-actions';
 import type { ChatSessionWithTokens, ChatMessage } from '@/lib/chat-types';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Bot, User, Send, UserCog, BrainCircuit, ChevronDown, Copy, Clock, Reply, X } from 'lucide-react';
@@ -22,7 +21,7 @@ function BusinessChatConversationPage() {
     const { sessionId } = useParams();
     const router = useRouter();
     const { toast } = useToast();
-    const { userProfile, loading: authLoading } = useAuth();
+    const { user, userProfile, loading: authLoading } = useAuth();
     const [session, setSession] = useState<ChatSessionWithTokens | null>(null);
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -34,27 +33,29 @@ function BusinessChatConversationPage() {
     const businessId = userProfile?.businessProfile?.placeId;
 
     useEffect(() => {
-        if (typeof sessionId === 'string' && businessId) {
+        if (typeof sessionId === 'string' && businessId && user) {
             const fetchDetails = async () => {
                 setIsLoading(true);
-                const result = await getBusinessChatSessionDetailsAction(sessionId, businessId);
+                // TODO: This should call a new endpoint: GET /api/chat/sessions/[sessionId]?businessId=...
+                // const result = await getBusinessChatSessionDetailsAction(sessionId, businessId);
+                const result = { error: "Endpoint not implemented yet for business session details." };
                 if (result.error) {
                     toast({ variant: 'destructive', title: 'Error', description: result.error });
-                    router.push('/dashboard/advertiser/conversations');
-                } else if (result.session && result.messages) {
-                    setSession(result.session);
-                    setMessages(result.messages);
+                    // router.push('/dashboard/advertiser/conversations');
+                } else {
+                    // setSession(result.session);
+                    // setMessages(result.messages);
                 }
                 setIsLoading(false);
             };
-            fetchDetails();
+            // fetchDetails();
+            setIsLoading(false); // Temporary for now
         } else if (!authLoading && !businessId) {
-            // Handle case where user has no linked business
             toast({ variant: 'destructive', title: 'Error', description: 'No se encontró un negocio vinculado a tu perfil.' });
             router.push('/dashboard/advertiser/profile');
             setIsLoading(false);
         }
-    }, [sessionId, router, toast, businessId, authLoading]);
+    }, [sessionId, router, toast, businessId, authLoading, user]);
 
     useEffect(() => {
         if (scrollAreaRef.current) {
@@ -99,28 +100,28 @@ function BusinessChatConversationPage() {
         setNewMessage('');
         setReplyTo(null);
         
-        const result = await postBusinessAdminMessageAction({
-            sessionId: session.id,
-            businessId: businessId,
-            text: newMessage,
-            authorName: userProfile.name || 'Propietario',
-            replyTo: replyTo ? {
-                messageId: replyTo.id,
-                text: replyTo.text,
-                author: replyTo.role === 'user' ? (session.userName || 'Usuario') : (replyTo.authorName || 'Agente')
-            } : undefined,
-        });
+        // const result = await postBusinessAdminMessageAction({
+        //     sessionId: session.id,
+        //     businessId: businessId,
+        //     text: newMessage,
+        //     authorName: userProfile.name || 'Propietario',
+        //     replyTo: replyTo ? {
+        //         messageId: replyTo.id,
+        //         text: replyTo.text,
+        //         author: replyTo.role === 'user' ? (session.userName || 'Usuario') : (replyTo.authorName || 'Agente')
+        //     } : undefined,
+        // });
         
-        if (result.error) {
-            toast({ variant: 'destructive', title: 'Error', description: result.error });
-            setMessages(prev => prev.filter(m => m.id !== tempId));
-        } else if (result.newMessage) {
-            if (typeof sessionId === 'string') {
-                const updatedSession = await getBusinessChatSessionDetailsAction(sessionId, businessId);
-                if (updatedSession.session) setSession(updatedSession.session);
-            }
-            setMessages(prev => prev.map(m => m.id === tempId ? { ...result.newMessage } as ChatMessage : m));
-        }
+        // if (result.error) {
+        //     toast({ variant: 'destructive', title: 'Error', description: result.error });
+        //     setMessages(prev => prev.filter(m => m.id !== tempId));
+        // } else if (result.newMessage) {
+        //     if (typeof sessionId === 'string') {
+        //         const updatedSession = await getBusinessChatSessionDetailsAction(sessionId, businessId);
+        //         if (updatedSession.session) setSession(updatedSession.session);
+        //     }
+        //     setMessages(prev => prev.map(m => m.id === tempId ? { ...result.newMessage } as ChatMessage : m));
+        // }
         setIsSending(false);
     };
 
@@ -184,7 +185,7 @@ function BusinessChatConversationPage() {
         return <div className="p-4"><Skeleton className="h-full w-full" /></div>;
     }
     
-    if (!session) return <div>No se encontró la sesión.</div>;
+    if (!session) return <div>No se encontró la sesión. (Esta página necesita ser conectada a la nueva API)</div>;
 
     return (
         <div className="flex flex-col h-[calc(100vh-theme(space.24))] bg-background">
@@ -277,5 +278,3 @@ function BusinessChatConversationPage() {
 }
 
 export default BusinessChatConversationPage;
-
-    
