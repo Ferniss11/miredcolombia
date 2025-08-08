@@ -1,11 +1,12 @@
+
 'use client';
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+import Autoplay from "embla-carousel-autoplay";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Building, Globe, Phone, Clock, Star, Users, MapPin, ExternalLink } from "lucide-react";
+import { Building, Globe, Phone, Clock, Star, Users, MapPin, ExternalLink, Beer, Wine, VenetianMask, Euro, Info } from "lucide-react";
 import Image from "next/image";
-import Link from "next/link";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -25,9 +26,21 @@ const StarRating = ({ rating }: { rating: number }) => {
     );
 };
 
+const PriceLevel = ({ level }: { level: number }) => {
+    if (!level) return null;
+    return (
+        <div className="flex items-center">
+            {Array.from({ length: 4 }, (_, i) => (
+                <Euro key={i} className={cn("w-4 h-4", i < level ? 'text-foreground' : 'text-muted-foreground/30')} />
+            ))}
+        </div>
+    );
+}
+
 export default function BusinessProfileClientPage({ initialBusiness }: { initialBusiness: PlaceDetails }) {
   const { setChatContext, openChat, setChatVisible } = useChat();
   const business = initialBusiness;
+  const autoplayPlugin = useRef(Autoplay({ delay: 5000, stopOnInteraction: true }));
   
   useEffect(() => {
     if (business.id) {
@@ -102,13 +115,20 @@ export default function BusinessProfileClientPage({ initialBusiness }: { initial
                         {business.category}
                     </p>
                     
-                    {business.rating && (
-                        <div className="flex items-center gap-2 mt-2">
-                            <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 border-yellow-300 font-bold">{business.rating.toFixed(1)}</Badge>
-                            <StarRating rating={business.rating} />
-                            <span className="text-xs text-muted-foreground">({business.userRatingsTotal} reseñas)</span>
-                        </div>
-                    )}
+                     <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-2">
+                        {business.rating && (
+                            <div className="flex items-center gap-2">
+                                <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 border-yellow-300 font-bold">{business.rating.toFixed(1)}</Badge>
+                                <StarRating rating={business.rating} />
+                                <span className="text-xs text-muted-foreground">({business.userRatingsTotal} reseñas)</span>
+                            </div>
+                        )}
+                        {business.priceLevel && (
+                             <div className="flex items-center gap-2">
+                               <PriceLevel level={business.priceLevel}/>
+                            </div>
+                        )}
+                    </div>
                     
                     <Separator className="my-4"/>
 
@@ -173,7 +193,6 @@ export default function BusinessProfileClientPage({ initialBusiness }: { initial
                     </Card>
                 )}
 
-
                 {business.isOpenNow !== undefined && (
                     <Card>
                         <CardContent className="p-4">
@@ -204,6 +223,12 @@ export default function BusinessProfileClientPage({ initialBusiness }: { initial
                     </Card>
                 )}
 
+                 {business.editorialSummary && (
+                    <Card>
+                        <CardHeader><CardTitle className="flex items-center gap-2 text-xl font-headline"><Info className="w-5 h-5"/> Resumen</CardTitle></CardHeader>
+                        <CardContent><p className="text-muted-foreground italic">{business.editorialSummary}</p></CardContent>
+                    </Card>
+                )}
 
                 {business.openingHours && business.openingHours.length > 0 && (
                     <Card>
@@ -225,6 +250,16 @@ export default function BusinessProfileClientPage({ initialBusiness }: { initial
                     </Card>
                 )}
 
+                 <Card>
+                    <CardHeader><CardTitle className="flex items-center gap-2 text-xl font-headline"><VenetianMask className="w-5 h-5" /> Servicios y Comodidades</CardTitle></CardHeader>
+                    <CardContent className="flex flex-wrap gap-2">
+                        {business.servesBeer && <Badge variant="outline">Sirve cerveza</Badge>}
+                        {business.servesWine && <Badge variant="outline">Sirve vino</Badge>}
+                        {business.wheelchairAccessibleEntrance && <Badge variant="outline">Acceso para silla de ruedas</Badge>}
+                        {!business.servesBeer && !business.servesWine && !business.wheelchairAccessibleEntrance && <p className="text-sm text-muted-foreground">No hay información de servicios adicionales.</p>}
+                    </CardContent>
+                </Card>
+
                 {business.geometry && (
                     <Card>
                         <CardHeader><CardTitle className="text-xl font-headline">Ubicación</CardTitle></CardHeader>
@@ -243,34 +278,41 @@ export default function BusinessProfileClientPage({ initialBusiness }: { initial
                                 <Users className="w-5 h-5"/> Reseñas de Clientes
                             </CardTitle>
                         </CardHeader>
-                        <CardContent className="space-y-6">
-                           {business.reviews.map((review, i) => (
-                               <div key={i} className="flex gap-4">
-                                   <Avatar>
-                                       <AvatarImage src={review.profile_photo_url} alt={review.author_name} />
-                                       <AvatarFallback>{review.author_name.charAt(0)}</AvatarFallback>
-                                   </Avatar>
-                                   <div className="flex-1">
-                                       <div className="flex items-center justify-between">
-                                            <div>
-                                               <p className="font-semibold">{review.author_name}</p>
-                                               <p className="text-xs text-muted-foreground">{review.relative_time_description}</p>
-                                            </div>
-                                           <StarRating rating={review.rating} />
-                                       </div>
-                                       <p className="text-sm mt-2 text-muted-foreground">{review.text}</p>
-                                   </div>
-                               </div>
-                           ))}
+                        <CardContent>
+                           <Carousel 
+                             opts={{ loop: true, align: "start" }} 
+                             plugins={[autoplayPlugin.current]}
+                             className="w-full"
+                           >
+                            <CarouselContent>
+                                {business.reviews.map((review, i) => (
+                                    <CarouselItem key={i}>
+                                         <div className="p-1">
+                                             <Card className="h-full">
+                                                <CardContent className="flex flex-col items-center justify-center p-6 text-center space-y-4">
+                                                     <Avatar>
+                                                        <AvatarImage src={review.profile_photo_url} alt={review.author_name} />
+                                                        <AvatarFallback>{review.author_name.charAt(0)}</AvatarFallback>
+                                                    </Avatar>
+                                                    <div>
+                                                        <p className="font-semibold">{review.author_name}</p>
+                                                        <p className="text-xs text-muted-foreground">{review.relative_time_description}</p>
+                                                    </div>
+                                                    <StarRating rating={review.rating} />
+                                                    <p className="text-sm text-muted-foreground italic h-24 overflow-y-auto">"{review.text}"</p>
+                                                </CardContent>
+                                             </Card>
+                                         </div>
+                                    </CarouselItem>
+                                ))}
+                            </CarouselContent>
+                            <CarouselPrevious className="hidden sm:flex" />
+                            <CarouselNext className="hidden sm:flex" />
+                           </Carousel>
                         </CardContent>
                     </Card>
                  )}
 
-                <div className="pt-4">
-                    <Button asChild variant="outline">
-                        <Link href="/directory">← Volver al Directorio</Link>
-                    </Button>
-                </div>
             </div>
         </div>
         </div>
