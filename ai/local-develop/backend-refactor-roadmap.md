@@ -192,15 +192,15 @@ src/lib/
 *   **`business.entity.ts`**: Definir la interfaz `Business` (basada en la `PlaceDetails` actual y enriquecida con datos de la API de Google). (✓)
 *   **`directory.repository.ts`**: Definir la interfaz `DirectoryRepository` con métodos para guardar, encontrar, eliminar y actualizar negocios. (✓)
 
-### **Paso 3.2: Crear los Casos de Uso (`src/lib/directory/application`)**
+### **Paso 3.2: Crear los Casos de Uso (`src/lib/directory/application`) (✓ Completado)**
 
 *   **Objetivo:** Encapsular toda la lógica de negocio del directorio en clases o funciones aisladas y reutilizables.
 *   **Tareas:**
     *   Crear `get-business-details.use-case.ts`: Orquesta la obtención de detalles desde la base de datos y la caché/API externa. (✓)
-    *   Crear `add-business.use-case.ts`: Lógica para añadir un nuevo negocio (llamado por un admin).
-    *   Crear `link-business-to-user.use-case.ts`: Lógica para el proceso de reclamación de un negocio por un anunciante.
-    *   Crear `approve-business-verification.use-case.ts`: Lógica para que un admin apruebe o rechace una reclamación.
-    *   Crear `delete-business.use-case.ts`: Lógica para eliminar un negocio del directorio.
+    *   Crear `add-business.use-case.ts`: Lógica para añadir un nuevo negocio (llamado por un admin). (✓)
+    *   Crear `link-business-to-user.use-case.ts`: Lógica para el proceso de reclamación de un negocio por un anunciante. (✓)
+    *   Crear `approve-business-verification.use-case.ts`: Lógica para que un admin apruebe o rechace una reclamación. (✓)
+    *   Crear `delete-business.use-case.ts`: Lógica para eliminar un negocio del directorio. (✓)
 
 ### **Paso 3.3: Implementar la Infraestructura (`src/lib/directory/infrastructure`)**
 
