@@ -14,7 +14,7 @@ import { StartOrResumeChatUseCase } from '../../application/start-or-resume-chat
 const StartSessionSchema = z.object({
   userName: z.string().min(2),
   userPhone: z.string().min(7),
-  userEmail: z.string().email().optional(),
+  userEmail: z.string().email().optional().or(z.literal('')),
   businessId: z.string().optional(),
 });
 

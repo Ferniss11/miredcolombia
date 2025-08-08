@@ -52,10 +52,15 @@ const WelcomeForm = ({ onSessionStarted, isBusinessChat, businessContext }: Welc
         setIsPending(true);
         setError(null);
         try {
+            const payload = {
+                ...values,
+                ...(isBusinessChat && businessContext && { businessId: businessContext.businessId }),
+            };
+
             const response = await fetch('/api/chat/sessions', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ...values, businessId: businessContext?.businessId }),
+                body: JSON.stringify(payload),
             });
 
             const result = await response.json();
@@ -73,7 +78,7 @@ const WelcomeForm = ({ onSessionStarted, isBusinessChat, businessContext }: Welc
 
         } catch (e) {
             const errorMessage = e instanceof Error ? e.message : 'An unknown client error occurred.';
-            setError(`Error al iniciar chat: ${errorMessage}`);
+            setError(`${errorMessage}`);
         } finally {
             setIsPending(false);
         }
