@@ -72,10 +72,8 @@ export class ChatController {
     const json = await req.json();
     const { userMessage, businessId } = PostMessageSchema.parse(json);
 
-    // We need the history to pass to the agent.
-    // This is now handled by a dedicated use case.
     const getChatHistoryUseCase = new GetChatHistoryUseCase(new FirestoreChatRepository());
-    const chatHistory = await getChatHistoryUseCase.execute({ sessionId });
+    const chatHistory = await getChatHistoryUseCase.execute({ sessionId, businessId });
 
     const output = await this.postMessageUseCase.execute({
       sessionId,

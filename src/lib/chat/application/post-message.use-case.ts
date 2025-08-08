@@ -32,6 +32,7 @@ export class PostMessageUseCase {
     // 1. Persist the user's message
     const userMsgEntity: Omit<ChatMessage, 'id'> = {
       sessionId,
+      businessId,
       text: userMessage,
       role: 'user',
       timestamp: new Date(),
@@ -48,6 +49,7 @@ export class PostMessageUseCase {
     // 3. Persist the AI's response
     const aiMsgEntity: Omit<ChatMessage, 'id'> = {
       sessionId,
+      businessId,
       text: response,
       role: 'model',
       timestamp: new Date(),

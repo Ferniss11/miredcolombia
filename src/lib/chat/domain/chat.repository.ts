@@ -17,20 +17,21 @@ export interface ChatRepository {
   /**
    * Finds a chat session by its unique identifier.
    * @param sessionId - The ID of the session to find.
+   * @param businessId - Optional context for business chats.
    * @returns The ChatSession entity or null if not found.
    */
-  findSessionById(sessionId: string): Promise<ChatSession | null>;
+  findSessionById(sessionId: string, businessId?: string): Promise<ChatSession | null>;
   
   /**
    * Finds a chat session by the user's phone number.
    * @param phone - The phone number to search for.
+   * @param businessId - Optional context for business chats.
    * @returns The most recent ChatSession entity for that phone number, or null if not found.
    */
-  findSessionByPhone(phone: string): Promise<ChatSession | null>;
+  findSessionByPhone(phone: string, businessId?: string): Promise<ChatSession | null>;
 
   /**
    * Saves a new message to a specific chat session.
-   * @param sessionId - The ID of the session to add the message to.
    * @param message - The message entity to save.
    * @returns The saved message entity, possibly with a database-generated ID.
    */
@@ -39,9 +40,10 @@ export interface ChatRepository {
   /**
    * Retrieves the full message history for a given chat session.
    * @param sessionId - The ID of the session.
+   * @param businessId - Optional context for business chats.
    * @returns An array of ChatMessage entities, ordered by timestamp.
    */
-  getHistory(sessionId: string): Promise<ChatMessage[]>;
+  getHistory(sessionId: string, businessId?: string): Promise<ChatMessage[]>;
   
   /**
    * Retrieves all chat sessions, typically for an admin view.

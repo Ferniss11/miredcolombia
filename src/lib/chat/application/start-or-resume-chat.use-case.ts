@@ -23,12 +23,18 @@ export class StartOrResumeChatUseCase {
   ) {}
 
   async execute(input: StartChatSessionInput): Promise<StartOrResumeChatOutput> {
-    const existingSession = await this.findSessionByPhoneUseCase.execute(input.userPhone);
+    const existingSession = await this.findSessionByPhoneUseCase.execute({
+        phone: input.userPhone,
+        businessId: input.businessId,
+    });
 
     if (existingSession) {
       // Logic for user verification (e.g., SMS) will be added here in a future step.
       // For now, we simply resume the session.
-      const history = await this.getChatHistoryUseCase.execute({ sessionId: existingSession.id });
+      const history = await this.getChatHistoryUseCase.execute({ 
+          sessionId: existingSession.id,
+          businessId: input.businessId,
+      });
       return {
         session: existingSession,
         history,

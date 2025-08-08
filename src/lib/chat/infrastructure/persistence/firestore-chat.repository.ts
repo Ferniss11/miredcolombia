@@ -86,11 +86,13 @@ export class FirestoreChatRepository implements ChatRepository {
    */
   async saveMessage(messageData: Omit<ChatMessage, 'id' | 'timestamp'> & { timestamp?: Date }): Promise<ChatMessage> {
     const db = this.getDb();
-    const { sessionId, ...restOfMessage } = messageData;
+    const { sessionId, businessId, ...restOfMessage } = messageData as any;
     
-    // This logic needs to be improved. For now, it assumes global chat.
-    // A better approach would be to know the context (businessId) when calling.
-    const sessionRef = db.collection(GLOBAL_SESSIONS_COLLECTION).doc(sessionId);
+    const sessionCollectionPath = businessId
+        ? `directory/${businessId}/businessChatSessions`
+        : GLOBAL_SESSIONS_COLLECTION;
+
+    const sessionRef = db.collection(sessionCollectionPath).doc(sessionId);
     const messagesRef = sessionRef.collection('messages');
     
     const newMessageRef = messagesRef.doc();
@@ -119,7 +121,6 @@ export class FirestoreChatRepository implements ChatRepository {
         transaction.update(sessionRef, sessionUpdate);
     });
     
-    // Return a fully formed ChatMessage entity
     const savedTimestamp = messageData.timestamp || new Date();
     return {
         id: newMessageRef.id,
@@ -132,14 +133,16 @@ export class FirestoreChatRepository implements ChatRepository {
   /**
    * Retrieves the message history for a specific chat session.
    * @param sessionId - The ID of the session.
+   * @param businessId - Optional ID of the business for context.
    * @returns An array of ChatMessage entities.
    */
-  async getHistory(sessionId: string): Promise<ChatMessage[]> {
-    // Note: This implementation assumes we don't know if it's a global or business chat,
-    // which is not ideal. A real-world scenario might require passing the context (businessId).
-    // For now, we'll assume global chat.
+  async getHistory(sessionId: string, businessId?: string): Promise<ChatMessage[]> {
     const db = this.getDb();
-    const snapshot = await db.collection(GLOBAL_SESSIONS_COLLECTION).doc(sessionId)
+    const collectionPath = businessId
+        ? `directory/${businessId}/businessChatSessions`
+        : GLOBAL_SESSIONS_COLLECTION;
+
+    const snapshot = await db.collection(collectionPath).doc(sessionId)
       .collection('messages').orderBy('timestamp', 'asc').get();
       
     return snapshot.docs.map(toChatMessage);
@@ -148,21 +151,29 @@ export class FirestoreChatRepository implements ChatRepository {
   /**
    * Finds a session by its ID.
    * @param sessionId - The ID of the session.
+   * @param businessId - Optional ID of the business for context.
    * @returns The ChatSession entity or null.
    */
-  async findSessionById(sessionId: string): Promise<ChatSession | null> {
+  async findSessionById(sessionId: string, businessId?: string): Promise<ChatSession | null> {
     const db = this.getDb();
-    const doc = await db.collection(GLOBAL_SESSIONS_COLLECTION).doc(sessionId).get();
+     const collectionPath = businessId
+        ? `directory/${businessId}/businessChatSessions`
+        : GLOBAL_SESSIONS_COLLECTION;
+    
+    const doc = await db.collection(collectionPath).doc(sessionId).get();
     if (!doc.exists) {
       return null;
     }
     return toChatSession(doc);
   }
 
-  async findSessionByPhone(phone: string): Promise<ChatSession | null> {
+  async findSessionByPhone(phone: string, businessId?: string): Promise<ChatSession | null> {
     const db = this.getDb();
-    // For now, we only search in the global sessions. This can be expanded later.
-    const snapshot = await db.collection(GLOBAL_SESSIONS_COLLECTION)
+    const collectionPath = businessId
+        ? `directory/${businessId}/businessChatSessions`
+        : GLOBAL_SESSIONS_COLLECTION;
+
+    const snapshot = await db.collection(collectionPath)
         .where('userPhone', '==', phone)
         .orderBy('createdAt', 'desc')
         .limit(1)
@@ -176,6 +187,8 @@ export class FirestoreChatRepository implements ChatRepository {
   
   /**
    * Retrieves all global chat sessions.
+   * Note: This currently only gets global sessions. A more complex implementation
+   * would be needed to fetch sessions from all businesses.
    * @returns An array of ChatSession entities.
    */
   async findAllSessions(): Promise<ChatSession[]> {

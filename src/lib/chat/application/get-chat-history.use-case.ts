@@ -4,6 +4,7 @@ import type { ChatRepository } from '../domain/chat.repository';
 
 export type GetChatHistoryInput = {
   sessionId: string;
+  businessId?: string; // Optional context
 };
 
 /**
@@ -12,7 +13,7 @@ export type GetChatHistoryInput = {
 export class GetChatHistoryUseCase {
   constructor(private readonly chatRepository: ChatRepository) {}
 
-  async execute({ sessionId }: GetChatHistoryInput): Promise<ChatMessage[]> {
-    return this.chatRepository.getHistory(sessionId);
+  async execute({ sessionId, businessId }: GetChatHistoryInput): Promise<ChatMessage[]> {
+    return this.chatRepository.getHistory(sessionId, businessId);
   }
 }

@@ -9,6 +9,7 @@ export type ChatMessageRole = 'user' | 'model' | 'admin';
 export interface ChatMessage {
   id: string;
   sessionId: string;
+  businessId?: string; // Context for which business this message belongs to
   role: ChatMessageRole;
   text: string;
   timestamp: Date;
