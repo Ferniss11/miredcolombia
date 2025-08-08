@@ -166,20 +166,20 @@ src/lib/
 
 *   **Objetivo:** Conectar todos los componentes de frontend a los nuevos endpoints de la API de chat y luego eliminar las antiguas `Server Actions`.
 *   **Pasos:**
-    *   **Paso 2.4.1: Actualizar `ChatWidget.tsx`**: Modificar el widget de chat para que llame a `fetch` a los endpoints `/api/chat/sessions` (para iniciar y reanudar) y `/api/chat/sessions/[id]/messages` (para enviar mensajes). (✓)
-    *   **Paso 2.4.2: Actualizar Paneles de Conversaciones**: Modificar las páginas (`/dashboard/admin/conversations` y `/dashboard/advertiser/conversations`) para que usen los nuevos endpoints.
-    *   **Paso 2.4.3: Eliminación de Archivos Obsoletos**:
+    *   **Actualizar `ChatWidget.tsx`**: Modificar el widget de chat para que llame a `fetch` a los endpoints `/api/chat/sessions` (para iniciar y reanudar) y `/api/chat/sessions/[id]/messages` (para enviar mensajes). (✓)
+    *   **Actualizar Paneles de Conversaciones**: Modificar las páginas (`/dashboard/admin/conversations` y `/dashboard/advertiser/conversations`) para que usen los nuevos endpoints de la API. (✓)
+    *   **Actualizar Paneles de Configuración de Agentes**: Modificar las páginas (`/dashboard/admin/agent` y `/dashboard/advertiser/agent`) para usar endpoints de API en lugar de `server actions`. (✓)
+    *   **Eliminación de Archivos Obsoletos**:
         *   ELIMINAR: `src/lib/chat-actions.ts` (✓)
-        *   ELIMINAR: `src/lib/business-chat-actions.ts`
-        *   ELIMINAR: `src/services/chat.service.ts`
+        *   ELIMINAR: `src/lib/business-chat-actions.ts` (✓)
+        *   ELIMINAR: `src/services/chat.service.ts` (✓)
+        *   ELIMINAR: `src/lib/agent-actions.ts` (✓)
+        *   ELIMINAR: `src/services/agent.service.ts` (✓)
 
-### **Paso 2.5: Crear Flujo de Verificación de Usuario y Perfilado desde Chat**
+### **Paso 2.5: Crear Flujo de Verificación de Usuario y Perfilado desde Chat (Pausado)**
 
 *   **Objetivo:** Hacer el chat más robusto y seguro, convirtiendo a los usuarios anónimos en usuarios registrados de la plataforma.
-*   **Pasos:**
-    *   **Paso 2.5.1: Implementar Verificación de Contacto**: Introducir un mecanismo de verificación (ej. SMS con Firebase Auth, enlace mágico por email) que se active en la segunda interacción del usuario o cuando el agente detecte una intención de alto valor.
-    *   **Paso 2.5.2: Crear Perfil de Usuario Automáticamente**: Tras una verificación exitosa, crear una cuenta para el usuario en Firebase Authentication y un perfil en la base de datos de `users`.
-    *   **Paso 2.5.3: Vincular Sesión de Chat al Nuevo Perfil**: Asociar la sesión de chat anónima existente con el `uid` del nuevo perfil de usuario creado.
+*   **Estado:** En pausa. Se retomará después de completar la Fase 3 del directorio de negocios.
 
 ---
 

@@ -16,6 +16,7 @@ import { SoftDeleteUserUseCase } from '../../application/soft-delete-user.use-ca
 import { SetUserRoleUseCase } from '../../application/set-user-role.use-case';
 import type { BusinessProfile, CandidateProfile, User, UserRole } from '../../domain/user.entity';
 import { adminAuth } from '@/lib/firebase/admin-config';
+import { AgentConfigSchema } from '@/lib/chat-types';
 
 
 // Schema for validating the creation of a user
@@ -34,6 +35,11 @@ const UpdateUserSchema = z.object({
 const SetRoleSchema = z.object({
     role: z.enum(['Admin', 'Advertiser', 'User']),
 });
+
+const UpdateAgentStatusSchema = z.object({
+  isAgentEnabled: z.boolean(),
+});
+
 
 // Note: Schemas for BusinessProfile and CandidateProfile would also be defined here for validation.
 

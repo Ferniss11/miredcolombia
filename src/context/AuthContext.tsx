@@ -21,7 +21,7 @@ import {
 } from 'firebase/auth';
 import { getFirebaseServices } from '@/lib/firebase/config';
 import type { UserProfile, UserRole } from '@/lib/types';
-import { syncUserRoleAction } from '@/lib/user-actions';
+import { syncUserRoleAction } from '@/lib/user/infrastructure/nextjs/user.server-actions';
 
 
 // --- Helper function to create profile via API ---

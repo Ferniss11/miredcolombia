@@ -1,8 +1,9 @@
 // infrastructure/persistence/firestore-user.repository.ts
 import type { User } from '../../domain/user.entity';
 import type { UserRepository } from '../../domain/user.repository';
-import { adminDb } from '@/lib/firebase/admin-config';
+import { adminDb, adminInstance } from '@/lib/firebase/admin-config';
 import type { DocumentData, QueryDocumentSnapshot } from 'firebase-admin/firestore';
+import type { AgentConfig } from '@/lib/chat-types';
 
 const USERS_COLLECTION = 'users';
 
@@ -86,5 +87,38 @@ export class FirestoreUserRepository implements UserRepository {
       businessProfile: user.businessProfile, // Assuming this is public
       candidateProfile: user.candidateProfile ? { professionalTitle: user.candidateProfile.professionalTitle } : undefined,
     };
+  }
+
+  // Agent Specific Methods
+  async getGlobalAgentConfig(): Promise<AgentConfig> {
+    if (!adminDb) throw new Error('Firestore not initialized');
+    const doc = await adminDb.collection('agentConfig').doc('main').get();
+    if (!doc.exists) {
+        throw new Error("Global agent configuration not found.");
+    }
+    return doc.data() as AgentConfig;
+  }
+
+  async saveGlobalAgentConfig(config: AgentConfig): Promise<void> {
+    if (!adminDb) throw new Error('Firestore not initialized');
+    await adminDb.collection('agentConfig').doc('main').set(config, { merge: true });
+  }
+
+  async updateAgentStatus(uid: string, isAgentEnabled: boolean): Promise<void> {
+    if (!adminDb) throw new Error('Firestore not initialized');
+    const userRef = adminDb.collection('users').doc(uid);
+    await userRef.update({
+      'businessProfile.isAgentEnabled': isAgentEnabled,
+      'updatedAt': new Date(),
+    });
+  }
+
+  async updateAgentConfig(uid: string, agentConfig: AgentConfig): Promise<void> {
+    if (!adminDb) throw new Error('Firestore not initialized');
+    const userRef = adminDb.collection('users').doc(uid);
+    await userRef.update({
+      'businessProfile.agentConfig': agentConfig,
+      'updatedAt': new Date(),
+    });
   }
 }
