@@ -209,8 +209,8 @@ src/lib/
     *   **`persistence/firestore-directory.repository.ts`**: Implementa `DirectoryRepository` usando Firestore Admin SDK. (✓)
     *   **`search/google-places.adapter.ts`**: Encapsula las llamadas a la API de Google Places para obtener datos enriquecidos. (✓)
     *   **`cache/firestore-cache.adapter.ts`**: Implementa una estrategia de caché en Firestore para reducir las llamadas a la API de Google. (✓)
-    *   **`api/directory.controller.ts`**: Crear un `DirectoryController` para manejar las peticiones HTTP del directorio.
-    *   **`api/routes.ts`**: Crear los API Routes correspondientes que utilizarán el `DirectoryController` y el `apiHandler`.
+    *   **`api/directory.controller.ts`**: Crear un `DirectoryController` para manejar las peticiones HTTP del directorio. (✓)
+    *   **`api/routes.ts`**: Crear los API Routes correspondientes que utilizarán el `DirectoryController` y el `apiHandler`. (✓)
 
 ### **Paso 3.4: Actualizar la UI y Eliminar Código Antiguo**
 
