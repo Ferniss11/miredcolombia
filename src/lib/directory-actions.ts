@@ -8,9 +8,15 @@ import { revalidatePath } from "next/cache";
 import type { PlaceDetails, Photo, Review } from "./types";
 import { Client } from '@googlemaps/google-maps-services-js';
 
+// Importa los nuevos componentes de la arquitectura hexagonal
+import { GetBusinessDetailsUseCase } from './directory/application/get-business-details.use-case';
+import { FirestoreDirectoryRepository } from './directory/infrastructure/persistence/firestore-directory.repository';
+import { GooglePlacesAdapter } from './directory/infrastructure/search/google-places.adapter';
+import { FirestoreCacheAdapter } from './directory/infrastructure/cache/firestore-cache.adapter';
+
+
 const googleMapsClient = new Client({});
 const FieldValue = adminInstance?.firestore.FieldValue;
-const CACHE_DURATION_HOURS = 720; // 30 days
 
 
 function getDbInstance() {
@@ -65,13 +71,14 @@ export async function saveBusinessAction(placeId: string, category: string, admi
         }
 
         await businessRef.set({
-            placeId: placeId,
+            id: placeId, // Store id field as well
             category: category,
             subscriptionTier: 'Gratuito', // Default tier
             isFeatured: false,
             ownerUid: null,
             addedBy: adminUid,
             createdAt: FieldValue.serverTimestamp(),
+            updatedAt: FieldValue.serverTimestamp(),
             verificationStatus: 'unclaimed',
             isAgentEnabled: false,
         });
@@ -132,7 +139,7 @@ export async function getSavedBusinessesAction(forPublic: boolean = false): Prom
         
         const businessDetailsPromises = snapshot.docs.map(async (doc) => {
             const docData = doc.data();
-            const placeId = docData.placeId;
+            const placeId = doc.id;
 
             const fields = ['name', 'place_id', 'photos', 'rating', 'address_components'];
             const details = await getPlaceDetails(placeId, fields);
@@ -229,12 +236,13 @@ export async function verifyAndLinkBusinessAction(userId: string, placeId: strin
             if (!businessDoc.exists) {
                 // Add the business to the directory if it wasn't there
                 transaction.set(businessRef, {
-                    placeId: placeId,
+                    id: placeId,
                     category: 'Sin Categoría', // Admin can categorize later
                     subscriptionTier: 'Gratuito',
                     ownerUid: userId,
                     addedBy: 'self-claimed',
                     createdAt: FieldValue.serverTimestamp(),
+                    updatedAt: FieldValue.serverTimestamp(),
                     verificationStatus: 'pending',
                     isAgentEnabled: false,
                 });
@@ -242,7 +250,7 @@ export async function verifyAndLinkBusinessAction(userId: string, placeId: strin
                 if(businessDoc.data()?.ownerUid) {
                     throw new Error('Este negocio ya ha sido reclamado por otro usuario.');
                 }
-                transaction.update(businessRef, { ownerUid: userId, verificationStatus: 'pending' });
+                transaction.update(businessRef, { ownerUid: userId, verificationStatus: 'pending', updatedAt: FieldValue.serverTimestamp() });
             }
             
             transaction.update(userRef, {
@@ -361,106 +369,35 @@ export async function publishBusinessAction(placeId: string) {
     }
 }
 
-// --- Actions for Public Directory Pages ---
-
-async function fetchAndCacheBusinessDetails(placeId: string): Promise<PlaceDetails> {
-    const db = getDbInstance();
-    if (!FieldValue) throw new Error("Firebase Admin SDK is not fully initialized.");
-
-    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-    if (!apiKey) throw new Error("Google Maps API key is not configured.");
-
-    // Fetch details from Google
-    const fields = [
-        'name', 'formatted_address', 'place_id', 'international_phone_number',
-        'website', 'rating', 'user_ratings_total', 'photos', 'opening_hours',
-        'geometry', 'reviews'
-    ];
-    const details = await getPlaceDetails(placeId, fields);
-    if (!details) {
-        throw new Error('No se pudieron obtener los detalles del negocio desde Google.');
-    }
-
-    const photos: Photo[] = (details.photos || []).slice(0, 10).map((p: any) => ({
-        photo_reference: p.photo_reference,
-        height: p.height,
-        width: p.width,
-        html_attributions: p.html_attributions,
-        url: `https://maps.googleapis.com/maps/api/place/photo?maxwidth=1000&photoreference=${p.photo_reference}&key=${apiKey}`
-    }));
-
-    const businessData: PlaceDetails = {
-        id: details.place_id,
-        displayName: details.name,
-        formattedAddress: details.formatted_address,
-        internationalPhoneNumber: details.international_phone_number,
-        website: details.website || '', // <<<< FIX: Ensure website is never undefined
-        rating: details.rating,
-        userRatingsTotal: details.user_ratings_total,
-        openingHours: details.opening_hours?.weekday_text,
-        isOpenNow: details.opening_hours?.open_now,
-        photos: photos,
-        reviews: (details.reviews || []) as Review[],
-        geometry: details.geometry,
-        category: 'Sin Categoría' // This will be enriched later
-    };
-
-    // Asynchronously save to cache without waiting
-    db.collection('directoryCache').doc(placeId).set({
-        ...businessData,
-        cachedAt: FieldValue.serverTimestamp()
-    }).catch(cacheError => {
-        console.error(`Failed to update cache for placeId ${placeId}:`, cacheError);
-    });
-
-    return businessData;
-}
-
+// --- NEW ACTION USING HEXAGONAL ARCHITECTURE ---
 
 export async function getPublicBusinessDetailsAction(slug: string): Promise<{ business?: PlaceDetails, error?: string }> {
     try {
-        const db = getDbInstance();
+        // Instantiate the layers of our architecture
+        const directoryRepository = new FirestoreDirectoryRepository();
+        const searchAdapter = new GooglePlacesAdapter();
+        const cacheAdapter = new FirestoreCacheAdapter();
         
-        // 1. Get our internal directory data (like category)
-        const directoryDoc = await db.collection('directory').doc(slug).get();
-        if (!directoryDoc.exists) {
-            return { error: 'Este negocio no forma parte de nuestro directorio.' };
+        const getBusinessDetailsUseCase = new GetBusinessDetailsUseCase(
+            directoryRepository,
+            searchAdapter,
+            cacheAdapter
+        );
+        
+        const business = await getBusinessDetailsUseCase.execute(slug);
+
+        if (!business) {
+            return { error: 'Negocio no encontrado.' };
         }
-        const directoryData = directoryDoc.data()!;
 
-        // 2. Check for a valid cache entry
-        const cacheRef = db.collection('directoryCache').doc(slug);
-        const cacheDoc = await cacheRef.get();
+        // The UseCase returns the full Business entity, we adapt it to PlaceDetails for the client
+        const placeDetails: PlaceDetails = {
+            ...business,
+            city: business.city || 'Ciudad no disponible', // Ensure city is available
+        };
 
-        if (cacheDoc.exists) {
-            const cachedData = cacheDoc.data() as any;
-            const cacheTime = cachedData.cachedAt.toDate();
-            const now = new Date();
-            const hoursDiff = (now.getTime() - cacheTime.getTime()) / (1000 * 60 * 60);
-
-            if (hoursDiff < CACHE_DURATION_HOURS) {
-                console.log(`[Cache] HIT for placeId: ${slug}`);
-                // Return cached data, but enrich it with our internal category and agent status
-                const businessFromCache: PlaceDetails = {
-                    ...cachedData,
-                    cachedAt: cachedData.cachedAt.toDate().toISOString(), // Convert Timestamp to ISO string
-                    category: directoryData.category || 'Sin Categoría',
-                    isAgentEnabled: directoryData.isAgentEnabled || false,
-                };
-                return { business: businessFromCache };
-            }
-        }
+        return { business: placeDetails };
         
-        // 3. If no valid cache, fetch from Google API and update cache
-        console.log(`[Cache] MISS for placeId: ${slug}. Fetching from Google.`);
-        const businessFromApi = await fetchAndCacheBusinessDetails(slug);
-        
-        // Enrich with our internal category and agent status
-        businessFromApi.category = directoryData.category || 'Sin Categoría';
-        businessFromApi.isAgentEnabled = directoryData.isAgentEnabled || false;
-
-        return { business: businessFromApi };
-
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : "Unknown error";
         console.error(`Error in getPublicBusinessDetailsAction for ${slug}:`, errorMessage);

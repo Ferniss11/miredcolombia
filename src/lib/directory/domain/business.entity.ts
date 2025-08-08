@@ -19,6 +19,7 @@ export interface Business {
   city: string;
   internationalPhoneNumber?: string;
   website?: string;
+  url?: string; // The Google Maps URL for the place.
   geometry?: {
       location: {
           lat: number;
@@ -41,6 +42,11 @@ export interface Business {
   userRatingsTotal?: number;
   openingHours?: string[];
   isOpenNow?: boolean;
+  priceLevel?: number; // 0-4 price level from Google.
+  editorialSummary?: string;
+  servesBeer?: boolean;
+  servesWine?: boolean;
+  wheelchairAccessibleEntrance?: boolean;
   
   // Media and Reviews
   photoUrl?: string; // Main photo URL for list views.

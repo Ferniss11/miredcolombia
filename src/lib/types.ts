@@ -158,19 +158,6 @@ export type UserProfile = {
   candidateProfile?: CandidateProfile;
 };
 
-export type Business = {
-  id: string;
-  name: string;
-  slug: string;
-  category: string;
-  description: string;
-  longDescription: string;
-  imageUrl: string;
-  address: string;
-  phone: string;
-  website: string;
-};
-
 // Represents a blog post stored in the database
 export interface BlogPost {
   id: string; // Firestore document ID
@@ -281,6 +268,8 @@ export type Review = {
     text: string;
 };
 
+// This type is a legacy type for client-side rendering.
+// The canonical source of truth is now the Business entity.
 export type PlaceDetails = {
   id?: string; // The Google Place ID
   displayName: string;
@@ -288,6 +277,7 @@ export type PlaceDetails = {
   internationalPhoneNumber?: string;
   formattedPhoneNumber?: string;
   website?: string;
+  url?: string;
   category: string; // The category assigned in *our* system
   city: string; // The city of the business
   subscriptionTier?: string; // e.g., 'Gratuito', 'Premium'
@@ -307,6 +297,7 @@ export type PlaceDetails = {
           lng: number;
       }
   };
+  cachedAt?: string; // ISO string for when the data was cached
 };
 
 // Google Calendar
@@ -399,3 +390,4 @@ export type JobPostingFormValues = z.infer<typeof JobPostingFormSchema>;
 
 export type ChatSession = import('./chat-types').ChatSession;
 export type ChatMessage = import('./chat-types').ChatMessage;
+export type Business = import('./directory/domain/business.entity').Business;
