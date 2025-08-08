@@ -187,10 +187,10 @@ src/lib/
 
 **Objetivo:** Aplicar la arquitectura hexagonal al manejo de perfiles de negocio.
 
-### **Paso 3.1: Definir el Dominio (`src/lib/directory/domain`)**
+### **Paso 3.1: Definir el Dominio (`src/lib/directory/domain`) (✓ Completado)**
 
-*   **`business.entity.ts`**: Definir la interfaz `Business` (basada en la `PlaceDetails` actual).
-*   **`directory.repository.ts`**: Definir la interfaz `DirectoryRepository` con métodos para guardar, encontrar, eliminar y actualizar negocios.
+*   **`business.entity.ts`**: Definir la interfaz `Business` (basada en la `PlaceDetails` actual). (✓)
+*   **`directory.repository.ts`**: Definir la interfaz `DirectoryRepository` con métodos para guardar, encontrar, eliminar y actualizar negocios. (✓)
 
 ### **Paso 3.2: Crear los Casos de Uso (`src/lib/directory/application`)**
 
