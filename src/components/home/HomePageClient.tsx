@@ -17,14 +17,14 @@ import BlogSection from './BlogSection';
 import BusinessSection from './BusinessSection';
 import TestimonialsSection from './TestimonialsSection';
 import DirectorySection from './DirectorySection';
-import JobsSection from './JobsSection';
+import JobsCtaSection from './JobsCtaSection'; // Import the new dynamic component
 import { useChat } from '@/context/ChatContext';
 
 type HomePageClientProps = {
   initialPosts: BlogPost[];
   eurToCopRate: number;
   initialBusinesses: PlaceDetails[];
-  initialJobs: JobPosting[]; // Add jobs prop
+  initialJobs: JobPosting[];
 }
 
 export default function HomePageClient({ initialPosts, eurToCopRate, initialBusinesses, initialJobs }: HomePageClientProps) {
@@ -47,7 +47,8 @@ export default function HomePageClient({ initialPosts, eurToCopRate, initialBusi
         <AiAssistantSection onOpenChatModal={openChat} />
         <PackagesSection eurToCopRate={eurToCopRate} />
         <ServicesSection eurToCopRate={eurToCopRate} />
-        <JobsSection jobs={initialJobs} />
+        {/* Replace the static JobsSection with the new dynamic component */}
+        <JobsCtaSection jobs={initialJobs} />
         <DirectorySection businesses={initialBusinesses} />
         <BusinessSection />
         <BlogSection posts={initialPosts} />
