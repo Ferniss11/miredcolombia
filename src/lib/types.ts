@@ -158,38 +158,9 @@ export type UserProfile = {
   candidateProfile?: CandidateProfile;
 };
 
-// Represents a blog post stored in the database
-export interface BlogPost {
-  id: string; // Firestore document ID
-  slug: string;
-  title: string;
-  author: string;
-  authorId: string;
-  date: string; // Should be ISO string
-  createdAt: string; // ISO string
-  updatedAt: string; // ISO string
-  status: 'Published' | 'Draft' | 'In Review' | 'Archived';
-  category: string;
-  
-  // Rich content from AI
-  introduction: string;
-  conclusion: string;
-  sections: Array<{
-    heading: string;
-    content: string;
-    imageUrl?: string;
-    imageHint?: string;
-  }>;
-  featuredImageUrl?: string;
-  featuredImageHint?: string;
-  suggestedTags: string[];
-  generationCost?: number; // Cost in EUR for generating this post
+// Re-exporting from the new canonical location in the blog domain
+export type { BlogPost } from './blog/domain/blog-post.entity';
 
-  // Optional placeholder fields for simpler posts
-  excerpt?: string;
-  content?: string;
-  imageUrl?: string;
-}
 
 export type SubscriptionPlan = {
   id: string;
