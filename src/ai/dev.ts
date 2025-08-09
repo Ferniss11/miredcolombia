@@ -8,7 +8,7 @@ import '@/ai/tools/google-places-search.ts';
 
 // Business Agent
 import '@/ai/businessAgent/flows/business-chat-flow.ts';
-import '@/ai/businessAgent/tools/get-business-info-tool.ts';
+// import '@/ai/businessAgent/tools/get-business-info-tool.ts'; // This tool is now obsolete
 import '@/ai/businessAgent/tools/google-calendar-tools.ts';
 
 // Migration Agent

@@ -1,4 +1,5 @@
 
+
 import { z } from 'zod';
 
 // Schema for Blog Content Generation
@@ -86,13 +87,10 @@ export const IntelligentArticleOutputSchema = z.object({
 export type IntelligentArticle = z.infer<typeof IntelligentArticleOutputSchema>;
 
 
-export type UserRole = 'Guest' | 'Advertiser' | 'Admin' | 'User';
+export type UserRole = 'Guest' | 'Advertiser' | 'Admin' | 'User' | 'SAdmin';
 
-export const BusinessAgentConfigSchema = z.object({
-  model: z.string().default('googleai/gemini-1.5-flash-latest'),
-  systemPrompt: z.string().default('Eres un asistente amigable para mi negocio.'),
-});
-export type BusinessAgentConfig = z.infer<typeof BusinessAgentConfigSchema>;
+// BusinessAgentConfig is now in chat-types.ts
+export type { BusinessAgentConfig } from './chat-types';
 
 
 export type BusinessProfile = {
@@ -106,7 +104,7 @@ export type BusinessProfile = {
   verificationStatus?: 'pending' | 'approved' | 'rejected' | 'unclaimed';
   isAgentEnabled?: boolean;
   googleCalendarConnected?: boolean;
-  agentConfig?: BusinessAgentConfig;
+  agentConfig?: import('./chat-types').BusinessAgentConfig; // Use import() for type-only imports across modules
 };
 
 // --- Candidate Profile Schemas ---
@@ -140,14 +138,14 @@ export type CandidateProfile = {
     jobTitle: string;
     company: string;
     startDate: string;
-    endDate: string;
+    endDate?: string;
     description: string;
   }>;
   education?: Array<{
     institution: string;
     degree: string;
     startDate: string;
-    endDate: string;
+    endDate?: string;
   }>;
 };
 
@@ -156,55 +154,14 @@ export type UserProfile = {
   name: string | null;
   email: string | null;
   role: UserRole;
+  status: 'active' | 'deleted';
   businessProfile?: BusinessProfile;
   candidateProfile?: CandidateProfile;
 };
 
-export type Business = {
-  id: string;
-  name: string;
-  slug: string;
-  category: string;
-  description: string;
-  longDescription: string;
-  imageUrl: string;
-  address: string;
-  phone: string;
-  website: string;
-};
+// Re-exporting from the new canonical location in the blog domain
+export type { BlogPost } from './blog/domain/blog-post.entity';
 
-// Represents a blog post stored in the database
-export interface BlogPost {
-  id: string; // Firestore document ID
-  slug: string;
-  title: string;
-  author: string;
-  authorId: string;
-  date: string; // Should be ISO string
-  createdAt: string; // ISO string
-  updatedAt: string; // ISO string
-  status: 'Published' | 'Draft' | 'In Review' | 'Archived';
-  category: string;
-  
-  // Rich content from AI
-  introduction: string;
-  conclusion: string;
-  sections: Array<{
-    heading: string;
-    content: string;
-    imageUrl?: string;
-    imageHint?: string;
-  }>;
-  featuredImageUrl?: string;
-  featuredImageHint?: string;
-  suggestedTags: string[];
-  generationCost?: number; // Cost in EUR for generating this post
-
-  // Optional placeholder fields for simpler posts
-  excerpt?: string;
-  content?: string;
-  imageUrl?: string;
-}
 
 export type SubscriptionPlan = {
   id: string;
@@ -283,6 +240,8 @@ export type Review = {
     text: string;
 };
 
+// This type is a legacy type for client-side rendering.
+// The canonical source of truth is now the Business entity.
 export type PlaceDetails = {
   id?: string; // The Google Place ID
   displayName: string;
@@ -290,6 +249,7 @@ export type PlaceDetails = {
   internationalPhoneNumber?: string;
   formattedPhoneNumber?: string;
   website?: string;
+  url?: string;
   category: string; // The category assigned in *our* system
   city: string; // The city of the business
   subscriptionTier?: string; // e.g., 'Gratuito', 'Premium'
@@ -309,6 +269,7 @@ export type PlaceDetails = {
           lng: number;
       }
   };
+  cachedAt?: string; // ISO string for when the data was cached
 };
 
 // Google Calendar
@@ -342,40 +303,7 @@ export type BusinessAnalytics = {
     profitMargin: number;
 };
 
-
-// Chat Types Re-centralization
-export const ChatRoleSchema = z.enum(['user', 'model', 'admin']);
-export type ChatRole = z.infer<typeof ChatRoleSchema>;
-
-export type ChatMessage = {
-  id: string;
-  text: string;
-  role: ChatRole;
-  timestamp: string; // ISO string
-  authorName?: string;
-  replyTo: {
-    messageId: string;
-    text: string;
-    author: string;
-  } | null;
-};
-
-export type ChatSession = {
-  id: string;
-  userName: string;
-  userPhone: string;
-  userEmail?: string;
-  createdAt: string; // ISO string
-};
-
-export type ChatSessionWithTokens = ChatSession & {
-    messageCount: number;
-    totalTokens: number;
-    totalCost: number;
-    totalInputTokens: number;
-    totalOutputTokens: number;
-};
-
+// Job Posting related types
 export interface JobPosting {
   id: string;
   title: string;
@@ -396,8 +324,8 @@ export interface JobPosting {
   applicationDeadline?: string;
   requiredSkills?: string[];
   creatorId: string;
-  creatorRole: 'admin' | 'advertiser';
-  status: 'ACTIVE' | 'INACTIVE' | 'FILLED';
+  creatorRole: 'admin' | 'advertiser' | 'guest';
+  status: 'ACTIVE' | 'INACTIVE' | 'FILLED' | 'PENDING_REVIEW';
   createdAt: string; // Storing as ISO string for client-side compatibility
   updatedAt: string; // Storing as ISO string
 }
@@ -425,9 +353,13 @@ export const JobPostingFormSchema = z.object({
   applicationEmail: z.string().email("Email de aplicación inválido.").optional().or(z.literal('')),
   applicationDeadline: z.string().optional().or(z.literal('')), // Will be a string from date picker
   requiredSkills: z.array(z.string()).optional(), // Comma separated string to array
-  status: z.enum(['ACTIVE', 'INACTIVE', 'FILLED'], {
+  status: z.enum(['ACTIVE', 'INACTIVE', 'FILLED', 'PENDING_REVIEW'], {
     errorMap: () => ({ message: "Estado inválido." }),
   }).default('ACTIVE'),
 });
 
 export type JobPostingFormValues = z.infer<typeof JobPostingFormSchema>;
+
+export type ChatSession = import('./chat-types').ChatSession;
+export type ChatMessage = import('./chat-types').ChatMessage;
+export type Business = import('./directory/domain/business.entity').Business;

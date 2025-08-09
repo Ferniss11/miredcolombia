@@ -1,10 +1,12 @@
 
-import { getPublishedBlogPosts } from '@/services/blog.service';
+import { getPublishedBlogPosts } from '@/lib/blog-actions';
 import { getSavedBusinessesAction } from '@/lib/directory-actions';
+import { getPublicJobPostingsAction } from '@/lib/job-posting/infrastructure/nextjs/job-posting.server-actions';
+import { JobPosting } from '@/lib/types';
 
 const URL = 'https://www.miredcolombia.com';
 
-function generateSiteMap(posts: any[], businesses: any[]) {
+function generateSiteMap(posts: any[], businesses: any[], jobs: JobPosting[]) {
   const today = new Date().toISOString().split('T')[0];
 
   return `<?xml version="1.0" encoding="UTF-8"?>
@@ -13,17 +15,23 @@ function generateSiteMap(posts: any[], businesses: any[]) {
      <url>
        <loc>${URL}</loc>
        <lastmod>${today}</lastmod>
-       <changefreq>monthly</changefreq>
+       <changefreq>daily</changefreq>
        <priority>1.0</priority>
      </url>
      <url>
-       <loc>${URL}/blog</loc>
+       <loc>${URL}/directory</loc>
        <lastmod>${today}</lastmod>
        <changefreq>weekly</changefreq>
        <priority>0.8</priority>
      </url>
+      <url>
+       <loc>${URL}/jobs</loc>
+       <lastmod>${today}</lastmod>
+       <changefreq>daily</changefreq>
+       <priority>0.9</priority>
+     </url>
      <url>
-       <loc>${URL}/directory</loc>
+       <loc>${URL}/blog</loc>
        <lastmod>${today}</lastmod>
        <changefreq>weekly</changefreq>
        <priority>0.8</priority>
@@ -36,13 +44,13 @@ function generateSiteMap(posts: any[], businesses: any[]) {
      </url>
       <url>
        <loc>${URL}/legal/privacy</loc>
-       <lastmod>2024-01-01</lastmod>
+       <lastmod>2024-07-09</lastmod>
        <changefreq>yearly</changefreq>
        <priority>0.3</priority>
      </url>
      <url>
        <loc>${URL}/legal/terms</loc>
-       <lastmod>2024-01-01</lastmod>
+       <lastmod>2024-07-09</lastmod>
        <changefreq>yearly</changefreq>
        <priority>0.3</priority>
      </url>
@@ -55,7 +63,7 @@ function generateSiteMap(posts: any[], businesses: any[]) {
            <loc>${`${URL}/blog/${slug}`}</loc>
            <lastmod>${new Date(date).toISOString().split('T')[0]}</lastmod>
            <changefreq>never</changefreq>
-           <priority>0.9</priority>
+           <priority>0.7</priority>
        </url>
      `;
        })
@@ -74,17 +82,38 @@ function generateSiteMap(posts: any[], businesses: any[]) {
      `;
        })
        .join('')}
+       
+      <!-- Dynamic job pages -->
+     ${jobs
+       .map(({ id, updatedAt }) => {
+         return `
+       <url>
+           <loc>${`${URL}/jobs/${id}`}</loc>
+           <lastmod>${new Date(updatedAt).toISOString().split('T')[0]}</lastmod> 
+           <changefreq>weekly</changefreq>
+           <priority>0.8</priority>
+       </url>
+     `;
+       })
+       .join('')}
    </urlset>
  `;
 }
 
 export async function GET() {
-  // Fetch data
-  const { posts } = await getPublishedBlogPosts();
-  const { businesses } = await getSavedBusinessesAction(true);
+  // Fetch all data in parallel
+  const [
+    { posts }, 
+    { businesses }, 
+    { data: jobs }
+  ] = await Promise.all([
+    getPublishedBlogPosts(),
+    getSavedBusinessesAction(true),
+    getPublicJobPostingsAction()
+  ]);
 
   // Generate the sitemap
-  const body = generateSiteMap(posts || [], businesses || []);
+  const body = generateSiteMap(posts || [], businesses || [], jobs || []);
 
   return new Response(body, {
     status: 200,

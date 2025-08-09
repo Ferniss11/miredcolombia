@@ -1,4 +1,5 @@
 
+
 import { Star, MessageCircleQuote } from "lucide-react";
 import Image from "next/image";
 import { Card, CardContent } from "@/components/ui/card";
@@ -36,7 +37,7 @@ const testimonials = [
 
 export default function TestimonialsSection() {
     return (
-        <section className="w-full py-12 md:py-24 lg:py-32 bg-gray-50 dark:bg-gray-900/50">
+        <section className="w-full py-12 md:py-24 lg:py-32 bg-secondary dark:bg-card">
             <div className="container px-4 md:px-6">
                 <div className="flex flex-col items-center justify-center space-y-4 text-center mb-12">
                     <div className="inline-block rounded-lg bg-gray-100 px-3 py-1 text-sm dark:bg-gray-800">Lo que dicen de nosotros</div>

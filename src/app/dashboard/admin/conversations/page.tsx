@@ -7,40 +7,61 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { MessageSquare, User, Clock, Search, Bot } from 'lucide-react';
-import { getChatSessionsAction } from '@/lib/agent-actions';
-import type { ChatSessionWithTokens } from '@/lib/chat-types';
+import type { ChatSession } from '@/lib/chat/domain/chat-session.entity';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import Link from 'next/link';
 import { Input } from '@/components/ui/input';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Badge } from '@/components/ui/badge';
+import { useAuth } from '@/context/AuthContext';
+
 
 export default function ConversationsPage() {
-    const [sessions, setSessions] = useState<ChatSessionWithTokens[]>([]);
+    const [sessions, setSessions] = useState<ChatSession[]>([]);
     const [isLoadingSessions, setIsLoadingSessions] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [filter, setFilter] = useState('all');
     const { toast } = useToast();
     const router = useRouter();
+    const { user } = useAuth();
 
     useEffect(() => {
         const fetchSessions = async () => {
+            if (!user) return; // Wait for user to be available
+
             setIsLoadingSessions(true);
-            const result = await getChatSessionsAction();
-            if (result.error) {
-                toast({ variant: 'destructive', title: 'Error', description: result.error });
-            } else if (result.sessions) {
-                setSessions(result.sessions);
+            try {
+                const idToken = await user.getIdToken();
+                const response = await fetch('/api/chat/sessions', {
+                    headers: {
+                        'Authorization': `Bearer ${idToken}`
+                    }
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error.message || 'Failed to fetch sessions');
+                }
+                const sessionsData = await response.json();
+                setSessions(sessionsData);
+            } catch (error) {
+                const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+                toast({ variant: 'destructive', title: 'Error', description: errorMessage });
+            } finally {
+                setIsLoadingSessions(false);
             }
-            setIsLoadingSessions(false);
         };
 
         fetchSessions();
-    }, [toast]);
+    }, [toast, user]);
     
     const formatDate = (dateString: string) => {
-        return new Date(dateString).toLocaleString('es-ES', {
+        const date = new Date(dateString);
+        if (isNaN(date.getTime())) {
+            return 'Fecha inválida';
+        }
+        return date.toLocaleString('es-ES', {
             day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
         });
     };
@@ -111,7 +132,7 @@ export default function ConversationsPage() {
                                                 <div className="font-bold">{session.userName}</div>
                                                 <div className="text-xs text-muted-foreground flex items-center gap-1">
                                                     <Clock className="h-3 w-3"/>
-                                                    {formatDate(session.createdAt)}
+                                                    {formatDate(session.createdAt as any)}
                                                 </div>
                                             </div>
                                             <div className="flex justify-between items-end mt-1">

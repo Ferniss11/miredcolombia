@@ -1,3 +1,5 @@
+
+
 'use client';
 
 import { useAuth } from "@/context/AuthContext";
@@ -6,28 +8,33 @@ import { useEffect } from "react";
 import { Loader2 } from "lucide-react";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  const { userProfile, loading } = useAuth();
+  const { user, userProfile, loading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    // Si no está cargando y (no hay perfil o el rol no es Admin), redirige.
-    if (!loading && (!userProfile || userProfile.role !== 'Admin')) {
-      router.push('/dashboard');
+    if (!loading) {
+      // If loading is finished and there's no user, they shouldn't be here.
+      if (!user) {
+        router.replace('/login');
+      } 
+      // If there is a user, but their profile hasn't loaded or their role isn't Admin,
+      // send them to the main dashboard to be redirected appropriately.
+      else if (!userProfile || (userProfile.role !== 'Admin' && userProfile.role !== 'SAdmin')) {
+        router.replace('/dashboard');
+      }
     }
-  }, [userProfile, loading, router]);
+  }, [user, userProfile, loading, router]);
 
-  // Muestra el loader si:
-  // 1. El estado de autenticación general está cargando.
-  // 2. O si todavía no tenemos un userProfile (incluso si loading es false).
-  // 3. O si el rol del perfil todavía no es 'Admin'.
-  // Esto asegura que no mostramos el contenido de admin hasta que estemos 100% seguros.
-  if (loading || !userProfile || userProfile.role !== 'Admin') {
+  // Show a loader while authentication is in progress or if the user is not yet verified as an Admin.
+  // This prevents non-admins from even briefly seeing the admin layout.
+  if (loading || !userProfile || (userProfile.role !== 'Admin' && userProfile.role !== 'SAdmin')) {
     return (
-      <div className="flex items-center justify-center h-full min-h-screen">
+      <div className="flex items-center justify-center h-full min-h-[calc(100vh-4rem)]">
         <Loader2 className="h-16 w-16 animate-spin text-primary" />
       </div>
     );
   }
 
+  // If loading is done and the user is an admin, render the children.
   return <>{children}</>;
 }

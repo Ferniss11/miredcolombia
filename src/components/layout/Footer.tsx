@@ -1,6 +1,11 @@
+
+'use client';
+
 import { Instagram, Youtube } from "lucide-react";
 import Link from "next/link";
 import Image from 'next/image';
+import ChatWidget from "../chat/ChatWidget";
+import { useChat } from "@/context/ChatContext";
 
 const TikTokIcon = () => (
     <svg 
@@ -17,7 +22,10 @@ const TikTokIcon = () => (
 
 
 export default function Footer() {
+  const { chatContext, isChatOpen, setChatOpen } = useChat();
+  
   return (
+    <>
     <footer className="bg-white dark:bg-gray-900 border-t">
       <div className="container mx-auto py-12 px-4 sm:px-6 lg:px-8">
         <div className="xl:grid xl:grid-cols-3 xl:gap-8">
@@ -49,7 +57,9 @@ export default function Footer() {
               <div>
                 <h3 className="text-sm font-semibold text-gray-900 dark:text-white tracking-wider uppercase font-headline">Explorar</h3>
                 <ul className="mt-4 space-y-4">
-                  <li><Link href="/directory" className="text-base text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">Directorio</Link></li>
+                  <li><Link href="/directory" className="text-base text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">Negocios</Link></li>
+                  <li><Link href="/jobs" className="text-base text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">Empleo</Link></li>
+                  <li><Link href="/services" className="text-base text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">Servicios</Link></li>
                   <li><Link href="/blog" className="text-base text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">Blog</Link></li>
                   <li><Link href="/pricing" className="text-base text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">Precios</Link></li>
                 </ul>
@@ -69,5 +79,8 @@ export default function Footer() {
         </div>
       </div>
     </footer>
+    {/* The global chat widget is now rendered here and controlled by context */}
+    <ChatWidget />
+    </>
   );
 }

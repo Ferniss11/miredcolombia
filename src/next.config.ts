@@ -34,6 +34,12 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
+        hostname: 'storage.googleapis.com',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
         hostname: 'maps.googleapis.com',
         port: '',
         pathname: '/**',
@@ -46,7 +52,7 @@ const nextConfig: NextConfig = {
       }
     ],
   },
-  serverExternalPackages: ['firebase-admin'],
+  serverExternalPackages: ['firebase-admin', 'teeny-request', 'google-auth-library'],
 };
 
 export default nextConfig;

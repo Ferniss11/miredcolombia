@@ -1,11 +1,12 @@
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { useSearchParams, useRouter } from "next/navigation";
-import { useTransition } from "react";
-import { signUpWithEmail, signInWithGoogle } from "@/lib/firebase/auth";
+import { useTransition, useState } from "react";
+import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 
 import { Button } from "@/components/ui/button";
@@ -22,11 +23,15 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Loader2 } from "lucide-react";
 import type { UserRole } from "@/lib/types";
+import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
 
 const formSchema = z.object({
   name: z.string().min(2, { message: "El nombre debe tener al menos 2 caracteres." }),
   email: z.string().email({ message: "Dirección de correo electrónico inválida." }),
   password: z.string().min(6, { message: "La contraseña debe tener al menos 6 caracteres." }),
+  role: z.enum(["User", "Advertiser"], {
+    required_error: "Debes seleccionar un tipo de cuenta.",
+  }),
 });
 
 const GoogleIcon = () => (
@@ -42,7 +47,12 @@ export function SignUpForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
-  const [isPending, startTransition] = useTransition();
+  const { signUpWithEmail, loginWithGoogle } = useAuth();
+  const [isFormPending, startFormTransition] = useTransition();
+  const [isGooglePending, setIsGooglePending] = useState(false);
+
+
+  const preselectedRole = searchParams.get("role") === "advertiser" ? "Advertiser" : "User";
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -50,14 +60,13 @@ export function SignUpForm() {
       name: "",
       email: "",
       password: "",
+      role: preselectedRole,
     },
   });
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    startTransition(async () => {
-      const role = searchParams.get("role") === "advertiser" ? "Advertiser" : "User";
-      const { error } = await signUpWithEmail(values.name, values.email, values.password, role as UserRole);
-
+    startFormTransition(async () => {
+      const { error } = await signUpWithEmail(values.name, values.email, values.password, values.role);
       if (error) {
         toast({
           variant: "destructive",
@@ -65,32 +74,29 @@ export function SignUpForm() {
           description: "No se pudo crear la cuenta. El correo quizás ya esté en uso.",
         });
       } else {
-        toast({
+         toast({
           title: "¡Bienvenido!",
           description: "Tu cuenta ha sido creada exitosamente.",
         });
-        router.push("/dashboard");
+        // The redirection is handled by the page's useEffect now.
       }
     });
   }
 
-  function handleGoogleSignIn() {
-    startTransition(async () => {
-        const { error } = await signInWithGoogle();
-        if (error) {
-            toast({
-                variant: "destructive",
-                title: "Error de Inicio de Sesión",
-                description: error.message,
-            });
-        } else {
-            toast({
-                title: "¡Bienvenido!",
-                description: "Has iniciado sesión exitosamente.",
-            });
-            router.push('/dashboard');
-        }
-    });
+  async function handleGoogleSignIn() {
+    setIsGooglePending(true);
+    const role = form.getValues('role') as 'User' | 'Advertiser'; // Ensure role is not Guest
+    const { error } = await loginWithGoogle(role);
+    if (error) {
+        toast({
+            variant: "destructive",
+            title: "Error de Inicio de Sesión con Google",
+            description: error,
+        });
+    }
+    // No need to handle success here, as the page will redirect.
+    // The loading state will be set to false in any case.
+    setIsGooglePending(false);
   }
 
   return (
@@ -98,14 +104,48 @@ export function SignUpForm() {
       <CardContent className="pt-6">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+             <FormField
+                control={form.control}
+                name="role"
+                render={({ field }) => (
+                  <FormItem className="space-y-3">
+                    <FormLabel>Quiero registrarme como...</FormLabel>
+                    <FormControl>
+                      <RadioGroup
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                        className="flex flex-col space-y-1"
+                      >
+                        <FormItem className="flex items-center space-x-3 space-y-0">
+                          <FormControl>
+                            <RadioGroupItem value="User" />
+                          </FormControl>
+                          <FormLabel className="font-normal">
+                            Usuario (Para buscar empleo, servicios, etc.)
+                          </FormLabel>
+                        </FormItem>
+                        <FormItem className="flex items-center space-x-3 space-y-0">
+                          <FormControl>
+                            <RadioGroupItem value="Advertiser" />
+                          </FormControl>
+                          <FormLabel className="font-normal">
+                            Anunciante (Para promocionar mi negocio)
+                          </FormLabel>
+                        </FormItem>
+                      </RadioGroup>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             <FormField
                 control={form.control}
                 name="name"
                 render={({ field }) => (
                     <FormItem>
-                    <FormLabel>Nombre</FormLabel>
+                    <FormLabel>Nombre y Apellidos</FormLabel>
                     <FormControl>
-                        <Input placeholder="Tu Nombre" {...field} disabled={isPending} />
+                        <Input placeholder="Tu nombre completo" {...field} disabled={isFormPending || isGooglePending} />
                     </FormControl>
                     <FormMessage />
                     </FormItem>
@@ -118,7 +158,7 @@ export function SignUpForm() {
                 <FormItem>
                   <FormLabel>Correo Electrónico</FormLabel>
                   <FormControl>
-                    <Input placeholder="nombre@ejemplo.com" {...field} disabled={isPending} />
+                    <Input placeholder="nombre@ejemplo.com" {...field} disabled={isFormPending || isGooglePending} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -131,22 +171,22 @@ export function SignUpForm() {
                 <FormItem>
                   <FormLabel>Contraseña</FormLabel>
                   <FormControl>
-                    <Input type="password" placeholder="••••••••" {...field} disabled={isPending} />
+                    <Input type="password" placeholder="••••••••" {...field} disabled={isFormPending || isGooglePending} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            <Button type="submit" className="w-full" disabled={isPending}>
-              {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            <Button type="submit" className="w-full" disabled={isFormPending || isGooglePending}>
+              {isFormPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Crear Cuenta
             </Button>
           </form>
         </Form>
         <Separator className="my-6" />
-        <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isPending}>
-            {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <GoogleIcon />}
-            Registrarse con Google
+        <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isFormPending || isGooglePending}>
+            {isGooglePending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <GoogleIcon />}
+            Continuar con Google
         </Button>
       </CardContent>
     </Card>

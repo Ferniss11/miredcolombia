@@ -3,8 +3,7 @@
 
 import { useEffect, useState, useRef, FormEvent, KeyboardEvent } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { getChatSessionDetailsAction, postAdminMessageAction } from '@/lib/agent-actions';
-import type { ChatSessionWithTokens, ChatMessage, AgentConfig } from '@/lib/chat-types';
+import type { ChatSession, ChatMessage } from '@/lib/chat-types';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Bot, User, Send, UserCog, BrainCircuit, ChevronDown, Copy, Clock, Reply, X } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -22,9 +21,8 @@ function ChatConversationPage() {
     const { sessionId } = useParams();
     const router = useRouter();
     const { toast } = useToast();
-    const { userProfile } = useAuth();
-    const [session, setSession] = useState<ChatSessionWithTokens | null>(null);
-    const [agentConfig, setAgentConfig] = useState<AgentConfig | null>(null);
+    const { user, userProfile } = useAuth();
+    const [session, setSession] = useState<ChatSession | null>(null);
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [newMessage, setNewMessage] = useState('');
@@ -33,23 +31,38 @@ function ChatConversationPage() {
     const scrollAreaRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        if (typeof sessionId === 'string') {
+        if (typeof sessionId === 'string' && user) {
             const fetchDetails = async () => {
                 setIsLoading(true);
-                const result = await getChatSessionDetailsAction(sessionId);
-                if (result.error) {
-                    toast({ variant: 'destructive', title: 'Error', description: result.error });
-                    router.push('/dashboard/admin/conversations');
-                } else if (result.session && result.messages) {
+                try {
+                    const idToken = await user.getIdToken();
+                    const response = await fetch(`/api/chat/sessions/${sessionId}`, {
+                        headers: {
+                            'Authorization': `Bearer ${idToken}`,
+                        },
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.error.message || 'Failed to fetch session details');
+                    }
+                    
+                    const result = await response.json();
+                    
                     setSession(result.session);
                     setMessages(result.messages);
-                    setAgentConfig(result.agentConfig || null);
+                
+                } catch(e) {
+                     const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred';
+                    toast({ variant: 'destructive', title: 'Error', description: errorMessage});
+                    router.push('/dashboard/admin/conversations');
+                } finally {
+                    setIsLoading(false);
                 }
-                setIsLoading(false);
             };
             fetchDetails();
         }
-    }, [sessionId, router, toast]);
+    }, [sessionId, router, toast, user]);
 
     useEffect(() => {
         if (scrollAreaRef.current) {
@@ -57,7 +70,7 @@ function ChatConversationPage() {
         }
     }, [messages]);
     
-    const formatCost = (cost: number) => {
+    const formatCost = (cost: number = 0) => {
         if (cost === 0) return '€0.00';
         return `~${new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', minimumFractionDigits: 4 }).format(cost)}`;
     }
@@ -94,28 +107,11 @@ function ChatConversationPage() {
         setNewMessage('');
         setReplyTo(null);
         
-        const result = await postAdminMessageAction({
-            sessionId: session.id,
-            text: newMessage,
-            authorName: userProfile.name || 'Admin',
-            replyTo: replyTo ? {
-                messageId: replyTo.id,
-                text: replyTo.text,
-                author: replyTo.role === 'user' ? (session.userName || 'Usuario') : (replyTo.authorName || 'Agente')
-            } : undefined,
-        });
-        
-        if (result.error) {
-            toast({ variant: 'destructive', title: 'Error', description: result.error });
-            setMessages(prev => prev.filter(m => m.id !== tempId));
-        } else if (result.newMessage) {
-            if (typeof sessionId === 'string') {
-                const updatedSession = await getChatSessionDetailsAction(sessionId);
-                if (updatedSession.session) setSession(updatedSession.session);
-            }
-            setMessages(prev => prev.map(m => m.id === tempId ? { ...result.newMessage } as ChatMessage : m));
-        }
-        setIsSending(false);
+        // This should call the POST /api/chat/sessions/[sessionId]/messages endpoint with an `admin: true` flag or similar
+        // For now, this is just a client-side mock as the backend doesn't support admin replies yet.
+        console.log("Admin message sending not implemented on backend yet.");
+        setTimeout(() => setIsSending(false), 1000);
+
     };
 
     const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -157,7 +153,7 @@ function ChatConversationPage() {
                                 <p className="text-xs opacity-80 truncate">{msg.replyTo.text}</p>
                             </div>
                         )}
-                        <p className="text-sm whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: msg.text.replace(/\n/g, '<br />') }} />
+                        <p className="text-sm whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: msg.text.replace(/\\n/g, '<br />') }} />
                         <div className="absolute opacity-0 group-hover:opacity-100 transition-opacity top-0 -right-8">
                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setReplyTo(msg)}>
                                 <Reply className="h-4 w-4"/>
@@ -175,7 +171,17 @@ function ChatConversationPage() {
     };
 
     if (isLoading) {
-        return <div className="p-4"><Skeleton className="h-full w-full" /></div>;
+        return (
+             <div className="flex flex-col h-[calc(100vh-theme(space.24))]">
+                <div className="p-3 border-b"><Skeleton className="h-10 w-1/2" /></div>
+                <div className="flex-1 p-4 space-y-4">
+                    <Skeleton className="h-16 w-3/4" />
+                    <Skeleton className="h-16 w-3/4 ml-auto" />
+                    <Skeleton className="h-16 w-3/4" />
+                </div>
+                <div className="p-3 border-t"><Skeleton className="h-10 w-full" /></div>
+            </div>
+        );
     }
     
     if (!session) return <div>No se encontró la sesión.</div>;
@@ -216,7 +222,7 @@ function ChatConversationPage() {
                             <Separator />
                             <div className="flex justify-between items-center">
                                 <span className="text-muted-foreground">Modelo IA:</span>
-                                <span className="font-mono text-xs">{agentConfig?.model || 'N/A'}</span>
+                                <span className="font-mono text-xs">{session.agentConfig?.model || 'N/A'}</span>
                             </div>
                             <div className="flex justify-between items-center">
                                 <span className="text-muted-foreground">ID de Sesión:</span>
@@ -228,15 +234,15 @@ function ChatConversationPage() {
                             <Separator />
                              <div className="flex justify-between items-center">
                                 <span className="text-muted-foreground">Tokens Totales:</span>
-                                <span>{session.totalTokens.toLocaleString('es-ES')}</span>
+                                <span>{(session.totalTokens || 0).toLocaleString('es-ES')}</span>
                             </div>
                              <div className="flex justify-between items-center">
                                 <span className="text-muted-foreground">Tokens de Entrada (Input):</span>
-                                <span>{session.totalInputTokens.toLocaleString('es-ES')}</span>
+                                <span>{(session.totalInputTokens || 0).toLocaleString('es-ES')}</span>
                             </div>
                              <div className="flex justify-between items-center">
                                 <span className="text-muted-foreground">Tokens de Salida (Output):</span>
-                                <span>{session.totalOutputTokens.toLocaleString('es-ES')}</span>
+                                <span>{(session.totalOutputTokens || 0).toLocaleString('es-ES')}</span>
                             </div>
                         </div>
                     </CollapsibleContent>

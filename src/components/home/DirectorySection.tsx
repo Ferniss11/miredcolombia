@@ -1,4 +1,5 @@
 
+
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -15,7 +16,7 @@ export default function DirectorySection({ businesses }: { businesses: PlaceDeta
     }
 
     return (
-        <section className="w-full py-12 md:py-24 lg:py-32 bg-gray-50 dark:bg-gray-900/50">
+        <section className="w-full py-12 md:py-24 lg:py-32 bg-secondary dark:bg-card">
             <div className="container px-4 md:px-6">
                 <div className="flex flex-col items-center justify-center space-y-4 text-center">
                     <div className="space-y-2">
@@ -34,7 +35,7 @@ export default function DirectorySection({ businesses }: { businesses: PlaceDeta
                                 <CardHeader className="p-0 relative">
                                     <Image
                                         src={business.photoUrl || "https://placehold.co/400x250.png"}
-                                        alt={business.displayName}
+                                        alt={business.displayName || "Imagen del negocio"}
                                         width={400}
                                         height={250}
                                         data-ai-hint={`${business.category} storefront`}

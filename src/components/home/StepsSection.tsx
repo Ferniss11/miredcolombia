@@ -1,31 +1,42 @@
+
+
+'use client';
+
 import { cn } from "@/lib/utils";
 import { FileStack, PlaneLanding, Gavel, Home as HomeIcon, Handshake } from "lucide-react";
+import React, { useState } from 'react';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 const steps = [
     {
         Icon: FileStack,
         title: "Preparación en tu país",
         description: "Documentos, apostillas y requisitos previos",
+        details: "Asegúrate de tener tu pasaporte vigente, apostillar tus títulos académicos y antecedentes penales. Es crucial investigar los tipos de visado que aplican a tu caso (estudios, trabajo, etc.) y reunir toda la documentación con antelación. No olvides un seguro médico con cobertura internacional para los primeros días."
     },
     {
         Icon: PlaneLanding,
         title: "Llegada a España",
         description: "Recibimiento y primeros pasos",
+        details: "Al llegar, pasarás por inmigración donde te sellarán el pasaporte. Contrata un servicio de recogida para evitar estrés. Una vez instalado, consigue una tarjeta SIM española para tener comunicación local. Los primeros días son para adaptarte y ubicarte en tu nuevo entorno."
     },
     {
         Icon: Gavel,
         title: "Trámites legales",
         description: "NIE, TIE y documentación oficial",
+        details: "El primer trámite fundamental es el empadronamiento. Después, deberás solicitar tu Número de Identidad de Extranjero (NIE) y, si corresponde, tu Tarjeta de Identidad de Extranjero (TIE). Cada trámite requiere citas previas y formularios específicos. La organización es clave."
     },
     {
         Icon: HomeIcon,
         title: "Vivienda y alojamiento",
         description: "Encontrar tu hogar en España",
+        details: "La búsqueda de piso puede ser competitiva. Prepara un mes de fianza y el mes corriente. Portales como Idealista o Fotocasa son muy populares. Es recomendable visitar los pisos en persona y leer bien el contrato de alquiler antes de firmar. Considera la ubicación y el transporte público."
     },
     {
         Icon: Handshake,
         title: "Integración y comunidad",
         description: "Conectar con la comunidad colombiana",
+        details: "¡No estás solo! Participa en eventos, únete a grupos y visita negocios de la comunidad. Nuestra plataforma es un excelente punto de partida para conectar con otros colombianos que ya han pasado por lo mismo y pueden ofrecerte consejos valiosos y una red de apoyo."
     },
 ];
 
@@ -38,6 +49,14 @@ const stepColors = [
 ];
 
 export default function StepsSection() {
+    const [isModalOpen, setModalOpen] = useState(false);
+    const [selectedStep, setSelectedStep] = useState<(typeof steps)[0] | null>(null);
+
+    const handleStepClick = (step: typeof steps[0]) => {
+        setSelectedStep(step);
+        setModalOpen(true);
+    };
+
     return (
         <section id="paso-a-paso" className="w-full py-12 md:py-24 lg:py-32 bg-gray-50 dark:bg-gray-900/50">
             <div className="container px-4 md:px-6">
@@ -71,21 +90,38 @@ export default function StepsSection() {
                                 <div className="hidden md:block w-1/2"></div>
 
                                 {/* The circle on the timeline */}
-                                <div className={cn(
-                                    "absolute left-8 top-0 flex items-center justify-center w-20 h-20 rounded-full shadow-lg border-4 border-background md:left-1/2 md:-translate-x-1/2 -translate-x-1/2",
-                                    color.bg,
-                                    color.text
-                                )}>
+                                <button
+                                    onClick={() => handleStepClick(step)}
+                                    className={cn(
+                                        "absolute left-8 top-0 flex items-center justify-center w-20 h-20 rounded-full shadow-lg border-4 border-background md:left-1/2 md:-translate-x-1/2 -translate-x-1/2 cursor-pointer transition-transform hover:scale-110",
+                                        color.bg,
+                                        color.text
+                                    )}
+                                    aria-label={`Ver detalles para ${title}`}
+                                >
                                     <Icon className="w-10 h-10" />
                                     <div className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold border-2 border-background">
                                         {index + 1}
                                     </div>
-                                </div>
+                                </button>
                             </div>
                         )
                     })}
                 </div>
             </div>
+             <Dialog open={isModalOpen} onOpenChange={setModalOpen}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                    <DialogTitle>{selectedStep?.title}</DialogTitle>
+                    <DialogDescription>
+                       Información detallada sobre esta etapa del proceso.
+                    </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4 text-muted-foreground">
+                        <p>{selectedStep?.details}</p>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </section>
     );
 }

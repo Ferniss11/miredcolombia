@@ -17,6 +17,8 @@ export default function ErrorDisplayPage() {
     const storedError = sessionStorage.getItem('fullError');
     if (storedError) {
       setError(storedError);
+      // Opcional: limpiar el error después de mostrarlo
+      // sessionStorage.removeItem('fullError');
     }
   }, []);
 

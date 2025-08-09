@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import {
@@ -27,25 +28,24 @@ import {
   MessageSquare,
   Scale,
   Briefcase,
+  Users as UsersIcon, // Renamed to avoid conflict with User icon
 } from "lucide-react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { signOutUser } from "@/lib/firebase/auth";
 import { useToast } from "@/hooks/use-toast";
 import Image from 'next/image';
 import { ThemeToggle } from "../ui/theme-toggle";
 
 export function DashboardSidebar() {
   const pathname = usePathname();
-  const router = useRouter();
-  const { userProfile } = useAuth();
+  const { userProfile, logout } = useAuth();
   const { toast } = useToast();
   const { state } = useSidebar();
 
   const advertiserNav = [
     { href: "/dashboard/advertiser", label: "Resumen", icon: LayoutGrid },
-    { href: "/dashboard/jobs", label: "Empleos", icon: FileText }, // Added for Advertiser
+    { href: "/dashboard/jobs", label: "Empleos", icon: FileText }, 
     { href: "/dashboard/advertiser/agent", label: "Agente IA", icon: Bot },
     { href: "/dashboard/advertiser/conversations", label: "Conversaciones", icon: MessageSquare },
     { href: "/dashboard/advertiser/analytics", label: "Analíticas IA", icon: BarChart2 },
@@ -55,7 +55,8 @@ export function DashboardSidebar() {
 
   const adminNav = [
     { href: "/dashboard/admin", label: "Resumen", icon: LayoutGrid },
-    { href: "/dashboard/jobs", label: "Empleos", icon: FileText }, // Added for Admin
+    { href: "/dashboard/admin/users", label: "Usuarios", icon: UsersIcon },
+    { href: "/dashboard/jobs", label: "Empleos", icon: FileText },
     { href: "/dashboard/admin/blog", label: "Blog", icon: FileText },
     { href: "/dashboard/admin/content", label: "Contenido IA", icon: Sparkles },
     { href: "/dashboard/admin/agent", label: "Agente Global", icon: Bot },
@@ -70,15 +71,13 @@ export function DashboardSidebar() {
   ];
 
   const handleSignOut = async () => {
-    await signOutUser();
+    await logout();
     toast({ title: "Has cerrado sesión." });
-    router.push("/");
-    router.refresh();
   };
   
   const role = userProfile?.role;
   let navItems;
-  if (role === 'Admin') {
+  if (role === 'Admin' || role === 'SAdmin') {
     navItems = adminNav;
   } else if (role === 'Advertiser') {
     navItems = advertiserNav;
@@ -89,6 +88,7 @@ export function DashboardSidebar() {
   }
 
   const getRoleDisplayName = () => {
+    if (role === 'SAdmin') return 'Super Admin';
     if (role === 'Admin') return 'Administrador';
     if (role === 'Advertiser') return 'Anunciante';
     return 'Usuario';

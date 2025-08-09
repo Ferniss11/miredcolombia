@@ -129,11 +129,11 @@ export const migrationServices: MigrationService[] = [
         buttonColor: 'bg-indigo-600 hover:bg-indigo-700',
     },
     {
-        id: 'busqueda-vivienda',
-        title: 'Búsqueda de Vivienda',
-        description: 'Te ayudamos a encontrar el piso o habitación ideal según tus necesidades.',
-        price: 400,
-        icon: 'Home',
+        id: 'homologacion-licencia',
+        title: 'Homologación Licencia Conducción',
+        description: 'Gestionamos el canje de tu licencia de conducir colombiana por la española.',
+        price: 250,
+        icon: 'FileText', // You might want a better icon like Car
         buttonColor: 'bg-green-600 hover:bg-green-700',
     },
     {

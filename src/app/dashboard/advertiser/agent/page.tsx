@@ -4,7 +4,6 @@
 import { useAuth } from "@/context/AuthContext";
 import { useTransition, useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { updateBusinessAgentStatusAction, updateBusinessAgentConfigAction } from "@/lib/user-actions";
 import { getGoogleAuthUrlAction } from "@/lib/gcal-actions";
 import { useRouter } from "next/navigation";
 import * as z from 'zod';
@@ -19,7 +18,7 @@ import { cn } from "@/lib/utils";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { BusinessAgentConfig } from '@/lib/types';
+import type { BusinessAgentConfig, BusinessProfile } from '@/lib/types';
 
 
 import { SiGooglecalendar, SiWhatsapp, SiStripe, SiGoogleanalytics, SiGoogleads, SiGooglephotos } from "react-icons/si";
@@ -97,30 +96,47 @@ export default function AdvertiserAgentPage() {
             form.reset(userProfile.businessProfile.agentConfig);
         }
     }, [userProfile, form]);
+    
+    // Generic function to update parts of the business profile via API
+    const updateProfile = async (dataToUpdate: Partial<BusinessProfile>) => {
+        if (!user) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Debes iniciar sesión.' });
+            return { success: false };
+        }
+        try {
+            const idToken = await user.getIdToken();
+            const response = await fetch(`/api/users/${user.uid}/business-profile`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
+                body: JSON.stringify(dataToUpdate),
+            });
+            if (!response.ok) {
+                const apiError = await response.json();
+                throw new Error(apiError.error?.message || 'Error del servidor al actualizar.');
+            }
+            await refreshUserProfile();
+            return { success: true };
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Error al Actualizar', description: error.message });
+            return { success: false };
+        }
+    }
+
 
     const handleAgentToggle = async (isAgentEnabled: boolean) => {
-        if (!user) return;
-        
         startAgentToggleTransition(async () => {
-            const result = await updateBusinessAgentStatusAction(user.uid, isAgentEnabled);
-            if (result.error) {
-                toast({ variant: 'destructive', title: 'Error', description: result.error });
-            } else {
+            const result = await updateProfile({ isAgentEnabled });
+            if (result.success) {
                 toast({ title: 'Éxito', 'description': `Agente de IA ${isAgentEnabled ? 'activado' : 'desactivado'}.` });
-                await refreshUserProfile();
             }
         });
     };
 
     const handleSaveConfig = async (values: AgentConfigFormValues) => {
-        if (!user) return;
         startConfigSaveTransition(async () => {
-            const result = await updateBusinessAgentConfigAction(user.uid, values);
-            if (result.error) {
-                toast({ variant: 'destructive', title: 'Error al guardar', description: result.error });
-            } else {
+            const result = await updateProfile({ agentConfig: values });
+            if (result.success) {
                 toast({ title: 'Éxito', description: 'La configuración de tu agente ha sido guardada.' });
-                await refreshUserProfile();
             }
         });
     }

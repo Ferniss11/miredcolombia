@@ -1,7 +1,7 @@
 
 import HomePageClient from '@/components/home/HomePageClient';
 import { getEurToCopRate } from '@/lib/currency-actions';
-import { getPublishedBlogPosts } from '@/services/blog.service';
+import { getPublishedBlogPosts } from '@/lib/blog-actions';
 import { getSavedBusinessesAction } from '@/lib/directory-actions';
 import { getPublicJobPostingsAction } from '@/lib/job-posting/infrastructure/nextjs/job-posting.server-actions';
 

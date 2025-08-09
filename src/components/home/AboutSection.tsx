@@ -1,20 +1,21 @@
 
+
 'use client';
 
 import { Heart, Handshake, Users, PlayCircle, Scale } from "lucide-react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
+import React from 'react';
 
-type AboutSectionProps = {
-    handleVideoClick?: (url: string, title: string) => void;
-};
+type AboutSectionProps = {};
 
-export default function AboutSection({ handleVideoClick }: AboutSectionProps) {
+export default function AboutSection({}: AboutSectionProps) {
     const videoUrl = "https://firebasestorage.googleapis.com/v0/b/colombia-en-esp.firebasestorage.app/o/web%2FColombiasubir.mp4?alt=media&token=0158b045-9c77-4e91-958e-d17ba5b04068";
     const videoTitle = "Conoce mi historia de migración";
+    const [showVideo, setShowVideo] = React.useState(false);
 
     return (
-        <section id="quienes-somos" className="w-full py-12 md:py-24 lg:py-32 bg-gray-50 dark:bg-gray-900/50">
+        <section id="quienes-somos" className="w-full py-12 md:py-24 lg:py-32 bg-secondary dark:bg-card">
             <div className="container px-4 md:px-6">
                 <div className="flex flex-col items-center justify-center space-y-4 text-center mb-12">
                     <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl font-headline" style={{ color: '#003893' }}>Quiénes Somos</h2>
@@ -48,27 +49,40 @@ export default function AboutSection({ handleVideoClick }: AboutSectionProps) {
                             </div>
                         </div>
                     </div>
-                    <div className="flex items-center justify-end sm:justify-center">
-                         <button 
-                            onClick={() => handleVideoClick?.(videoUrl, videoTitle)}
-                            className="relative group w-full max-w-sm h-64 sm:h-80 rounded-xl shadow-lg overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-2xl hover:scale-105"
-                            aria-label="Play Jennifer's Video"
-                        >
-                            <Image 
-                                src="https://firebasestorage.googleapis.com/v0/b/colombia-en-esp.firebasestorage.app/o/web%2FImagen%20de%20WhatsApp%202025-07-16%20a%20las%2019.21.54_4f867863.jpg?alt=media&token=13812b89-71ac-42e1-8854-0a80f50339d2"
-                                alt="Jennifer Mendoza - Mi Red Colombia"
-                                layout="fill"
-                                objectFit="cover"
-                                className="transition-transform duration-500 group-hover:scale-110"
-                            />
-                            <div className="absolute inset-0 bg-black/30 group-hover:bg-black/50 transition-colors"></div>
-                            <div className="absolute inset-0 flex flex-col items-center justify-center text-white p-4">
-                                <PlayCircle className="w-24 h-24 text-white/80 drop-shadow-lg transition-transform group-hover:scale-110 group-hover:text-white" />
-                                <h3 className="text-xl sm:text-2xl font-bold mt-4 font-headline text-shadow" style={{textShadow: '1px 1px 3px rgba(0,0,0,0.7)'}}>
-                                    {videoTitle}
-                                </h3>
-                            </div>
-                        </button>
+                    <div className="flex items-center justify-center w-full">
+                        <div className="w-full max-w-lg aspect-video rounded-xl shadow-lg overflow-hidden transition-all duration-300">
+                           {showVideo ? (
+                                <video
+                                    className="w-full h-full object-cover"
+                                    controls
+                                    autoPlay
+                                    src={videoUrl}
+                                >
+                                    Tu navegador no soporta la etiqueta de video.
+                                </video>
+                           ) : (
+                             <button 
+                                onClick={() => setShowVideo(true)}
+                                className="w-full h-full relative group"
+                                aria-label="Play Jennifer's Video"
+                            >
+                                <Image 
+                                    src="https://firebasestorage.googleapis.com/v0/b/colombia-en-esp.firebasestorage.app/o/web%2FImagen%20de%20WhatsApp%202025-07-16%20a%20las%2019.21.54_4f867863.jpg?alt=media&token=13812b89-71ac-42e1-8854-0a80f50339d2"
+                                    alt="Jennifer Mendoza - Mi Red Colombia"
+                                    layout="fill"
+                                    objectFit="cover"
+                                    className="transition-transform duration-500 group-hover:scale-110"
+                                />
+                                <div className="absolute inset-0 bg-black/30 group-hover:bg-black/50 transition-colors"></div>
+                                <div className="absolute inset-0 flex flex-col items-center justify-center text-white p-4">
+                                    <PlayCircle className="w-24 h-24 text-white/80 drop-shadow-lg transition-transform group-hover:scale-110 group-hover:text-white" />
+                                    <h3 className="text-xl sm:text-2xl font-bold mt-4 font-headline" style={{textShadow: '1px 1px 3px rgba(0,0,0,0.7)'}}>
+                                        {videoTitle}
+                                    </h3>
+                                </div>
+                            </button>
+                           )}
+                        </div>
                     </div>
                 </div>
 
@@ -92,7 +106,7 @@ export default function AboutSection({ handleVideoClick }: AboutSectionProps) {
                             <div className="flex-grow text-center md:text-left">
                                 <p className="text-sm font-semibold text-primary">Colaboración Experta</p>
                                 <h3 className="inline-block rounded-lg bg-gray-200 px-4 py-2 text-md font-semibold text-gray-800">Karla Santofimio Salas</h3>
-                                <p className="max-w-lg mx-auto lg:mx-0 text-gray-600 md:text-xl/relaxed dark:text-gray-300 font-body max-w-lg">
+                                <p className="max-w-lg mx-auto lg:mx-0 text-gray-600 md:text-xl/relaxed dark:text-gray-300 font-body">
                                     Contamos con el respaldo y la experiencia de Karla, abogada especializada en extranjería, para ofrecerte la asesoría legal más completa y actualizada.
                                 </p>
                             </div>

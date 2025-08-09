@@ -2,11 +2,17 @@
 'use server';
 
 import { z } from 'zod';
-import { createBlogPost, getBlogPosts, getPublishedBlogPosts, getBlogPostBySlug, getBlogPostById as getBlogPostByIdService, updateBlogPost, deleteBlogPost } from '@/services/blog.service';
 import { revalidatePath } from 'next/cache';
 import type { BlogPost } from './types';
+import { cookies } from 'next/headers';
+import { GetBlogPostUseCase } from './blog/application/get-blog-post.use-case';
+import { FirestoreBlogPostRepository } from './blog/infrastructure/persistence/firestore-blog.repository';
+import { adminAuth } from './firebase/admin-config';
+import { CreateBlogPostUseCase } from './blog/application/create-blog-post.use-case';
+import { GetAllBlogPostsUseCase } from './blog/application/get-all-blog-posts.use-case';
+import { UpdateBlogPostUseCase } from './blog/application/update-blog-post.use-case';
+import { DeleteBlogPostUseCase } from './blog/application/delete-blog-post.use-case';
 
-// Zod schema to validate the incoming blog post data from the client
 const BlogPostActionSchema = z.object({
   title: z.string(),
   introduction: z.string(),
@@ -24,75 +30,37 @@ const BlogPostActionSchema = z.object({
   suggestedTags: z.array(z.string()),
   category: z.string(),
   status: z.enum(['Published', 'Draft', 'In Review', 'Archived']),
-  slug: z.string(),
+  slug: z.string().optional(),
   generationCost: z.number().optional(),
 });
 
 type BlogPostInput = z.infer<typeof BlogPostActionSchema>;
 
-/**
- * Creates a new blog post by calling a secure API route.
- * This is a server action called from the client.
- */
+
 export async function createBlogPostAction(input: Omit<BlogPostInput, 'slug'>, idToken: string) {
   try {
-    if (!idToken) {
-        throw new Error('El token de autenticación es obligatorio.');
-    }
+    const blogRepository = new FirestoreBlogPostRepository();
+    const createUseCase = new CreateBlogPostUseCase(blogRepository);
 
-    // Generate a slug from the title
-    const slug = input.title
-      .toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, '') // remove special characters
-      .replace(/\s+/g, '-') // replace spaces with hyphens
-      .replace(/-+/g, '-');
-      
-    const postDataWithSlug = {
-        ...input,
-        slug
-    };
-
-    // Use NEXT_PUBLIC_APP_URL for absolute URL, necessary for server-side fetch
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:9002';
-    const response = await fetch(`${appUrl}/api/posts`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${idToken}`,
-        },
-        body: JSON.stringify(postDataWithSlug),
-    });
-
-    const result = await response.json();
-
-    if (!response.ok) {
-        // The error from the API route's JSON response is now passed here
-        throw new Error(result.error || `Error en el servidor: ${response.status}`);
-    }
+    const { uid, name } = await adminAuth.verifyIdToken(idToken);
+    const newPost = await createUseCase.execute(input, uid, name || 'Admin');
     
     revalidatePath('/dashboard/admin/blog');
     revalidatePath('/blog');
 
-    return { success: true, postId: result.postId };
+    return { success: true, post: newPost };
   } catch (error) {
-    console.error('Error detallado en la acción del blog:', error);
-    
-    let errorMessage = 'Un error desconocido ocurrió.';
-    if (error instanceof Error) {
-        errorMessage = error.message;
-    }
-    
-    return {
-      success: false,
-      // This errorMessage will now contain the detailed error from the server
-      error: `No se pudo crear la entrada de blog: ${errorMessage}`,
-    };
+    console.error('Error in createBlogPostAction:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return { success: false, error: `Could not create blog post: ${errorMessage}` };
   }
 }
 
 export async function getBlogPostsAction(): Promise<{ posts?: BlogPost[], error?: string }> {
     try {
-        const posts = await getBlogPosts();
+        const blogRepository = new FirestoreBlogPostRepository();
+        const useCase = new GetAllBlogPostsUseCase(blogRepository);
+        const posts = await useCase.execute();
         return { posts };
     } catch (error) {
         console.error('Error fetching all blog posts:', error);
@@ -100,14 +68,40 @@ export async function getBlogPostsAction(): Promise<{ posts?: BlogPost[], error?
     }
 }
 
-export { getPublishedBlogPosts, getBlogPostBySlug };
+export async function getPublishedBlogPosts(): Promise<{ posts: BlogPost[], error?: string }> {
+    try {
+        const blogRepository = new FirestoreBlogPostRepository();
+        const useCase = new GetAllBlogPostsUseCase(blogRepository);
+        const posts = await useCase.execute(true); // Fetch only published posts
+        return { posts };
+    } catch (error) {
+        console.error('Error fetching published blog posts:', error);
+        return { posts: [], error: 'Could not fetch published posts.' };
+    }
+}
+
+
+export async function getBlogPostBySlug(slug: string): Promise<{ post: BlogPost | null, error?: string }> {
+    try {
+        const blogRepository = new FirestoreBlogPostRepository();
+        const useCase = new GetBlogPostUseCase(blogRepository);
+        const post = await useCase.executeBySlug(slug);
+        if (!post) return { post: null };
+        return { post };
+    } catch (error) {
+        console.error('Error fetching post by slug:', error);
+        const message = error instanceof Error ? error.message : "Unknown error";
+        return { post: null, error: message };
+    }
+}
+
 
 export async function getBlogPostByIdAction(id: string) {
     try {
-        const { post } = await getBlogPostByIdService(id);
-        if (!post) {
-            return { error: 'No se encontró la entrada.' };
-        }
+        const blogRepository = new FirestoreBlogPostRepository();
+        const useCase = new GetBlogPostUseCase(blogRepository);
+        const post = await useCase.executeById(id);
+        if (!post) return { error: 'No se encontró la entrada.' };
         return { post };
     } catch (error) {
         console.error('Error fetching post by ID:', error);
@@ -117,44 +111,41 @@ export async function getBlogPostByIdAction(id: string) {
 
 
 export async function updateBlogPostAction(id: string, data: Partial<BlogPost>) {
-    try {
-        await updateBlogPost(id, data);
+     try {
+        const blogRepository = new FirestoreBlogPostRepository();
+        const updateUseCase = new UpdateBlogPostUseCase(blogRepository);
+        await updateUseCase.execute(id, data);
+        
         revalidatePath('/dashboard/admin/blog');
-        revalidatePath(`/blog/${data.slug}`);
         revalidatePath(`/blog/preview/${id}`);
+        if (data.slug) {
+            revalidatePath(`/blog/${data.slug}`);
+        }
         return { success: true };
     } catch (error) {
         console.error('Error updating post:', error);
-        return { error: 'No se pudo actualizar la entrada.' };
+        const message = error instanceof Error ? error.message : 'No se pudo actualizar la entrada.';
+        return { success: false, error: message };
     }
 }
 
 
 export async function updateBlogPostStatusAction(id: string, status: 'Published' | 'Draft' | 'In Review' | 'Archived') {
-    try {
-        const { post } = await getBlogPostByIdService(id);
-        if (!post) {
-            return { error: "Post no encontrado" };
-        }
-        await updateBlogPost(id, { status });
-        revalidatePath('/dashboard/admin/blog');
-        revalidatePath('/blog');
-        revalidatePath(`/blog/${post.slug}`);
-        return { success: true };
-    } catch (error) {
-        console.error('Error updating post status:', error);
-        return { error: 'No se pudo actualizar el estado de la entrada.' };
-    }
+    return updateBlogPostAction(id, { status });
 }
 
 export async function deleteBlogPostAction(id: string) {
-    try {
-        await deleteBlogPost(id);
+     try {
+        const blogRepository = new FirestoreBlogPostRepository();
+        const deleteUseCase = new DeleteBlogPostUseCase(blogRepository);
+        await deleteUseCase.execute(id);
+
         revalidatePath('/dashboard/admin/blog');
         revalidatePath('/blog');
         return { success: true };
     } catch (error) {
         console.error('Error deleting post:', error);
-        return { error: 'No se pudo eliminar la entrada.' };
+        const message = error instanceof Error ? error.message : 'No se pudo eliminar la entrada.';
+        return { success: false, error: message };
     }
 }

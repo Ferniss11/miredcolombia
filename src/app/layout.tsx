@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import { AuthProvider } from '@/context/AuthContext';
 import LayoutProvider from '@/components/layout/LayoutProvider';
 import { ThemeProvider } from '@/components/ui/theme-provider';
+import { ChatProvider } from '@/context/ChatContext';
 
 
 export const metadata: Metadata = {
@@ -33,10 +34,12 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <AuthProvider>
-            <LayoutProvider>
-              {children}
-            </LayoutProvider>
-            <Toaster />
+            <ChatProvider>
+              <LayoutProvider>
+                {children}
+              </LayoutProvider>
+              <Toaster />
+            </ChatProvider>
           </AuthProvider>
         </ThemeProvider>
       </body>

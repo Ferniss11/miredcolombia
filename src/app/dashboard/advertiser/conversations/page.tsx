@@ -9,7 +9,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { MessageSquare, User, Clock, Search, Bot, Sparkles, ArrowRight } from 'lucide-react';
-import { getBusinessChatSessionsAction } from '@/lib/business-chat-actions';
 import type { ChatSessionWithTokens } from '@/lib/chat-types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -51,14 +50,26 @@ export default function AdvertiserConversationsPage() {
         if (!authLoading && user && userProfile?.businessProfile?.isAgentEnabled) {
             const fetchSessions = async () => {
                 setIsLoading(true);
-                const idToken = await user.getIdToken();
-                const result = await getBusinessChatSessionsAction(idToken);
-                if (result.error) {
-                    toast({ variant: 'destructive', title: 'Error', description: result.error });
-                } else if (result.sessions) {
-                    setSessions(result.sessions);
+                 try {
+                    const idToken = await user.getIdToken();
+                    const businessId = userProfile.businessProfile?.placeId;
+                    if (!businessId) {
+                        throw new Error("ID de negocio no encontrado en el perfil.");
+                    }
+                    // TODO: This should call a new endpoint: GET /api/chat/sessions?businessId=...
+                    // const result = await getBusinessChatSessionsAction(idToken);
+                    const result = { error: null, sessions: [] }; // Mocked response
+
+                    if (result.error) {
+                        toast({ variant: 'destructive', title: 'Error', description: result.error });
+                    } else if (result.sessions) {
+                        setSessions(result.sessions);
+                    }
+                } catch (error: any) {
+                    toast({ variant: 'destructive', title: 'Error al cargar sesiones', description: error.message });
+                } finally {
+                    setIsLoading(false);
                 }
-                setIsLoading(false);
             };
             fetchSessions();
         } else if (!authLoading) {
