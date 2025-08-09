@@ -61,8 +61,8 @@ export class GooglePlacesAdapter implements SearchAdapter {
         id: placeId,
         displayName: details.name,
         formattedAddress: details.formatted_address,
-        internationalPhoneNumber: details.international_phone_number,
-        website: details.website,
+        internationalPhoneNumber: details.international_phone_number || '',
+        website: details.website || '',
         url: details.url,
         rating: details.rating,
         userRatingsTotal: details.user_ratings_total,
@@ -75,7 +75,7 @@ export class GooglePlacesAdapter implements SearchAdapter {
         servesBeer: details.serves_beer,
         servesWine: details.serves_wine,
         wheelchairAccessibleEntrance: details.wheelchair_accessible_entrance,
-        editorialSummary: details.editorial_summary?.overview,
+        editorialSummary: details.editorial_summary?.overview || '',
         city: city,
       };
 
