@@ -54,10 +54,10 @@ export default function AiAssistantSection({ onOpenChatModal }: { onOpenChatModa
                             <Bot className="w-10 h-10 text-primary" />
                         </div>
                         <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl font-headline">
-                            ¿Tienes Preguntas? Nuestro Asistente IA Responde al Instante
+                            Conoce a Valeria, tu Asistente IA en Mi Red Colombia
                         </h2>
                         <p className="max-w-xl text-muted-foreground md:text-xl/relaxed font-body">
-                            No importa si en Colombia es de madrugada o en España es festivo. Nuestro asistente virtual está disponible 24/7 para resolver tus dudas sobre visados, trámites, vivienda y más.
+                            Disponible 24/7, Valeria es la inteligencia artificial de Mi Red Colombia lista para ayudarte en cualquier momento. Responde al instante tus dudas sobre visados, trámites, empleo, vivienda y mucho más, para que tu proceso de venir o vivir en España sea más fácil y rápido.
                         </p>
                         <Button size="lg" onClick={onOpenChatModal}>
                             <MessageCircle className="mr-2 h-5 w-5" />
