@@ -31,9 +31,9 @@ const JobsPublicPage = async () => {
     return (
         <div className="container mx-auto px-4 py-12 md:px-6">
             <div className="text-center mb-12">
-                <h1 className="text-4xl md:text-5xl font-bold font-headline">Portal de Empleo</h1>
+                <h1 className="text-4xl md:text-5xl font-bold font-headline">Oportunidades de Empleo y Trabajo</h1>
                 <p className="text-lg text-muted-foreground mt-2 font-body max-w-2xl mx-auto">
-                    Encuentra tu próxima oportunidad profesional en España.
+                    Encuentra tu próxima aventura profesional en España.
                 </p>
             </div>
 
