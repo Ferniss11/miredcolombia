@@ -1,5 +1,5 @@
 
-import { getPublishedBlogPosts } from '@/services/blog.service';
+import { getPublishedBlogPosts } from '@/lib/blog-actions';
 import { getSavedBusinessesAction } from '@/lib/directory-actions';
 
 const URL = 'https://www.miredcolombia.com';

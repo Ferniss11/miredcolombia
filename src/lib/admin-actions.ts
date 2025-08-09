@@ -2,7 +2,7 @@
 'use server';
 
 import { getTotalUserCount } from "@/services/admin.service";
-import { getPublishedBlogPosts } from "@/services/blog.service";
+import { getPublishedBlogPosts } from "@/lib/blog-actions";
 import { getSavedBusinessesAction } from "@/lib/directory-actions";
 
 export type AdminDashboardStats = {
