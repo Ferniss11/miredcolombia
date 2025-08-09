@@ -27,10 +27,23 @@ export interface BusinessProfile {
  * This is an optional part of a User entity.
  */
 export interface CandidateProfile {
-  professionalTitle: string;
-  summary: string;
-  skills: string[];
-  resumeUrl: string; // URL al PDF en Firebase Storage
+  professionalTitle?: string;
+  summary?: string;
+  skills?: string[];
+  resumeUrl?: string; // URL al PDF en Firebase Storage
+  experience?: Array<{
+    jobTitle: string;
+    company: string;
+    startDate: string;
+    endDate?: string;
+    description: string;
+  }>;
+  education?: Array<{
+    institution: string;
+    degree: string;
+    startDate: string;
+    endDate?: string;
+  }>;
 }
 
 /**

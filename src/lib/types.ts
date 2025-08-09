@@ -138,14 +138,14 @@ export type CandidateProfile = {
     jobTitle: string;
     company: string;
     startDate: string;
-    endDate: string;
+    endDate?: string;
     description: string;
   }>;
   education?: Array<{
     institution: string;
     degree: string;
     startDate: string;
-    endDate: string;
+    endDate?: string;
   }>;
 };
 

@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useAuth } from "@/context/AuthContext";
@@ -18,7 +19,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       } 
       // If there is a user, but their profile hasn't loaded or their role isn't Admin,
       // send them to the main dashboard to be redirected appropriately.
-      else if (!userProfile || userProfile.role !== 'Admin') {
+      else if (!userProfile || (userProfile.role !== 'Admin' && userProfile.role !== 'SAdmin')) {
         router.replace('/dashboard');
       }
     }
@@ -26,7 +27,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   // Show a loader while authentication is in progress or if the user is not yet verified as an Admin.
   // This prevents non-admins from even briefly seeing the admin layout.
-  if (loading || !userProfile || userProfile.role !== 'Admin') {
+  if (loading || !userProfile || (userProfile.role !== 'Admin' && userProfile.role !== 'SAdmin')) {
     return (
       <div className="flex items-center justify-center h-full min-h-[calc(100vh-4rem)]">
         <Loader2 className="h-16 w-16 animate-spin text-primary" />

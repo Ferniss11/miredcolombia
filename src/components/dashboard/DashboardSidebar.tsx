@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import {
@@ -76,7 +77,7 @@ export function DashboardSidebar() {
   
   const role = userProfile?.role;
   let navItems;
-  if (role === 'Admin') {
+  if (role === 'Admin' || role === 'SAdmin') {
     navItems = adminNav;
   } else if (role === 'Advertiser') {
     navItems = advertiserNav;
@@ -87,6 +88,7 @@ export function DashboardSidebar() {
   }
 
   const getRoleDisplayName = () => {
+    if (role === 'SAdmin') return 'Super Admin';
     if (role === 'Admin') return 'Administrador';
     if (role === 'Advertiser') return 'Anunciante';
     return 'Usuario';
