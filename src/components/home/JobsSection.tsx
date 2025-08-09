@@ -16,7 +16,7 @@ interface JobsSectionProps {
 
 const JobsSection: React.FC<JobsSectionProps> = ({ jobs }) => {
     return (
-        <section className="w-full py-12 md:py-24 lg:py-32 bg-gradient-to-tr from-secondary/30 via-background to-secondary/30">
+        <section className="w-full py-12 md:py-24 lg:py-32 bg-background">
             <div className="container px-4 md:px-6">
                 <div className="flex flex-col items-center justify-center space-y-4 text-center">
                     <div className="space-y-2">
