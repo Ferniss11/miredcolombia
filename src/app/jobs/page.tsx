@@ -4,14 +4,17 @@ import type { Metadata } from 'next';
 import { getPublicJobPostingsAction } from '@/lib/job-posting/infrastructure/nextjs/job-posting.server-actions';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Input } from '@/components/ui/input';
-import { Search, AlertCircle } from 'lucide-react';
+import { Search, AlertCircle, Upload, Building } from 'lucide-react';
 import JobCard from '@/components/jobs/JobCard';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import Link from 'next/link';
 
 export const metadata: Metadata = {
-    title: 'Portal de Empleo | Mi Red Colombia',
+    title: 'Oportunidades de Empleo y Trabajo | Mi Red Colombia',
     description: 'Encuentra tu próxima oportunidad profesional en España. Explora las últimas ofertas de empleo para colombianos.',
     openGraph: {
-        title: 'Portal de Empleo | Mi Red Colombia',
+        title: 'Oportunidades de Empleo y Trabajo | Mi Red Colombia',
         description: 'Encuentra tu próxima oportunidad profesional en España.',
         url: 'https://www.miredcolombia.com/jobs',
         images: [
@@ -46,6 +49,42 @@ const JobsPublicPage = async () => {
                     />
                 </div>
                 {/* Filter section will go here in a future phase */}
+            </div>
+
+            {/* CTA Section */}
+            <div className="py-12 grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+                <Card className="relative overflow-hidden bg-background shadow-lg text-center">
+                    <div className="absolute inset-0 bg-conic-glow opacity-20"></div>
+                    <CardContent className="p-8 flex flex-col items-center justify-center h-full relative">
+                        <div className="mx-auto p-4 bg-primary/20 rounded-full inline-flex mb-4">
+                            <Building className="w-8 h-8 text-primary" />
+                        </div>
+                        <h3 className="text-xl font-bold font-headline">¿Tienes una vacante?</h3>
+                        <p className="text-muted-foreground mt-2 mb-6 flex-grow">
+                            Publica tu oferta de empleo y llega a miles de profesionales colombianos cualificados en España.
+                        </p>
+                        <Button asChild>
+                            <Link href="/signup?role=advertiser">Publica tu oferta ahora</Link>
+                        </Button>
+                    </CardContent>
+                </Card>
+                <Card className="relative overflow-hidden bg-background shadow-lg text-center">
+                    <div className="absolute inset-0 bg-conic-glow opacity-20"></div>
+                    <CardContent className="p-8 flex flex-col items-center justify-center h-full relative">
+                        <div className="mx-auto p-4 bg-secondary/80 rounded-full inline-flex mb-4">
+                            <Upload className="w-8 h-8 text-secondary-foreground" />
+                        </div>
+                        <h3 className="text-xl font-bold font-headline">¿Buscas tu próxima oportunidad?</h3>
+                        <p className="text-muted-foreground mt-2 mb-6 flex-grow">
+                            Crea tu perfil de candidato, sube tu CV y deja que las oportunidades te encuentren.
+                        </p>
+                        <Button asChild variant="secondary">
+                            <Link href="/signup?role=user">
+                                Sube tu Hoja de Vida
+                            </Link>
+                        </Button>
+                    </CardContent>
+                </Card>
             </div>
 
             {error && (
