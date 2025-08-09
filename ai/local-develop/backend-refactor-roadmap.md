@@ -60,6 +60,35 @@ src/lib/
 
 ---
 
+## **Fase 0: Refactorización del Portal de Empleo (✓ Completada - Piloto)**
+
+**Objetivo:** Servir como proyecto piloto para establecer el patrón de arquitectura hexagonal en la aplicación, refactorizando el flujo completo de ofertas de empleo.
+
+### **Paso 0.1: Definir la Capa de Dominio (`src/lib/job-posting/domain`) (✓ Completado)**
+
+*   **`job-posting.entity.ts`**: Definida la interfaz `JobPosting`. (✓)
+*   **`job-posting.repository.ts`**: Definido el puerto `JobPostingRepository` para las operaciones CRUD. (✓)
+
+### **Paso 0.2: Crear los Casos de Uso (`src/lib/job-posting/application`) (✓ Completado)**
+
+*   **`create-job-posting.use-case.ts`**: Creado para manejar la lógica de creación. (✓)
+*   **`get-job-postings.use-case.ts`**: Creado para obtener las ofertas. (✓)
+*   **`update-job-posting.use-case.ts`**: Creado para manejar actualizaciones. (✓)
+*   **`delete-job-posting.use-case.ts`**: Creado para la eliminación. (✓)
+
+### **Paso 0.3: Implementar la Infraestructura (`src/lib/job-posting/infrastructure`) (✓ Completado)**
+
+*   **`persistence/firestore-job-posting.repository.ts`**: Implementa `JobPostingRepository` con Firestore Admin SDK. (✓)
+*   **`storage/firebase-storage.adapter.ts`**: Creado para manejar la subida de imágenes a Firebase Storage. (✓)
+*   **`nextjs/job-posting.server-actions.ts`**: Implementadas las Server Actions como adaptadores de presentación para la UI, llamando a los casos de uso. (✓)
+
+### **Paso 0.4: Actualizar la UI y Eliminar Código Antiguo (✓ Completado)**
+
+*   **Actualizar `src/app/dashboard/jobs/page.tsx`**: El componente de cliente ahora interactúa con las nuevas Server Actions. (✓)
+*   **Eliminación de Código Obsoleto**: El `src/services/job.service.ts` original y otras lógicas monolíticas fueron eliminadas. (✓)
+
+---
+
 ## **Fase 1: Refactorización del Dominio de Usuario y Autenticación (✓ Completada)**
 
 **Objetivo:** Establecer una base sólida para toda la aplicación refactorizando la gestión de perfiles de usuario y la autenticación.
