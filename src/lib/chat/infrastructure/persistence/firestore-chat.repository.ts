@@ -71,19 +71,25 @@ export class FirestoreChatRepository implements ChatRepository {
     const sessionRef = db.collection(collectionPath).doc();
     const messageRef = sessionRef.collection('messages').doc();
 
-    const finalSessionData = {
+    const finalSessionData: any = {
       ...sessionData,
       createdAt: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),
     };
 
-    const initialMessageData = {
+    const initialMessageData: any = {
       sessionId: sessionRef.id,
-      businessId: sessionData.businessId,
       text: initialMessageText,
       role: 'model' as const,
       timestamp: FieldValue.serverTimestamp(),
     };
+
+    // Sanitize data: Ensure `businessId` is not undefined when saving.
+    if (sessionData.businessId) {
+        initialMessageData.businessId = sessionData.businessId;
+    } else {
+        delete finalSessionData.businessId; // Remove undefined property for global chats
+    }
 
     // Run as a transaction to ensure both documents are created atomically
     await db.runTransaction(async (transaction) => {
@@ -122,7 +128,7 @@ export class FirestoreChatRepository implements ChatRepository {
     const newMessageRef = messagesRef.doc();
 
     await db.runTransaction(async (transaction) => {
-        const finalMessageData = {
+        const finalMessageData: any = {
             ...restOfMessage,
             sessionId: sessionId,
             timestamp: FieldValue.serverTimestamp(),
@@ -140,9 +146,9 @@ export class FirestoreChatRepository implements ChatRepository {
             sessionUpdate.totalCost = FieldValue.increment(messageData.cost);
         }
         if (messageData.usage) {
-            sessionUpdate.totalInputTokens = FieldValue.increment(messageData.usage.inputTokens);
-            sessionUpdate.totalOutputTokens = FieldValue.increment(messageData.usage.outputTokens);
-            sessionUpdate.totalTokens = FieldValue.increment(messageData.usage.totalTokens);
+            sessionUpdate.totalInputTokens = FieldValue.increment(messageData.usage.inputTokens || 0);
+            sessionUpdate.totalOutputTokens = FieldValue.increment(messageData.usage.outputTokens || 0);
+            sessionUpdate.totalTokens = FieldValue.increment(messageData.usage.totalTokens || 0);
         }
 
         // Perform the update on the correctly referenced session document.
