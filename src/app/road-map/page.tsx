@@ -4,6 +4,8 @@ import { Badge } from '@/components/ui/badge';
 import type { Metadata } from 'next';
 import fs from 'fs/promises';
 import path from 'path';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Card, CardHeader } from '@/components/ui/card';
 
 export const metadata: Metadata = {
   title: 'Hoja de Ruta del Proyecto | Mi Red Colombia',
@@ -49,13 +51,14 @@ async function parseRoadmap(): Promise<Phase[]> {
   };
 
   for (const line of lines) {
-    const phaseMatch = line.match(/^## \*\*(Fase \d+): (.*?)\((.*?)\)\*\*/);
+    const phaseMatch = line.match(/^## \*\*(Fase \d+): (.*?)\s?\((.*?)\)\*\*/);
     if (phaseMatch) {
       if (currentPhase) {
         phases.push(currentPhase);
       }
-      const phaseKey = phaseMatch[1].split(':')[0];
-      const statusText = phaseMatch[2].trim();
+      const phaseKey = `Fase ${phaseMatch[1].match(/\d+/)?.[0]}`;
+      const titleText = phaseMatch[2].trim();
+      const statusText = phaseMatch[3].trim();
       
       let status: PhaseStatus = 'En Progreso';
       if (statusText === '✓ Completada') status = 'Completada';
@@ -63,9 +66,8 @@ async function parseRoadmap(): Promise<Phase[]> {
       else if (statusText === 'En Progreso') status = 'En Progreso';
       else if (statusText === 'Próximos Pasos') status = 'Próximos Pasos';
 
-
       currentPhase = {
-        title: `Fase ${phaseKey}: ${phaseMatch[2].replace(/\(.*\)/, '').trim()}`,
+        title: `${phaseKey}: ${titleText}`,
         status,
         description: '',
         steps: [],
@@ -75,7 +77,7 @@ async function parseRoadmap(): Promise<Phase[]> {
     }
 
     if (currentPhase) {
-        const stepMatch = line.match(/^\*   \*\*(.*?)\*\*: (.*?)(\(✓ Completado\))?$/);
+        const stepMatch = line.match(/^\s*\*   \*\*(.*?):\*\* (.*?)(\(✓ Completado\))?$/);
         if (stepMatch) {
             currentPhase.steps.push({
                 text: `${stepMatch[1]}: ${stepMatch[2]}`,
@@ -123,32 +125,38 @@ const PhaseCard = ({ phase, index }: { phase: Phase, index: number }) => (
       {getIconForPhase(phase.title)}
     </div>
     
-    <div className="rounded-lg border bg-card text-card-foreground shadow-sm ml-4">
-        <div className="p-6">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                <h3 className="text-xl font-bold font-headline">{phase.title}</h3>
-                <StatusBadge status={phase.status} />
+    <Collapsible>
+      <Card className="ml-4 overflow-hidden">
+        <CollapsibleTrigger className="w-full">
+            <div className="p-6 text-left">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                    <h3 className="text-xl font-bold font-headline">{phase.title}</h3>
+                    <StatusBadge status={phase.status} />
+                </div>
+                <p className="mt-2 text-muted-foreground">{phase.description}</p>
+                 <div className="text-xs text-muted-foreground mt-2 flex items-center gap-2">
+                    <Clock className="h-3 w-3" />
+                    <span>Estimación: {phase.estimatedHours} horas</span>
+                </div>
             </div>
-            <p className="mt-2 text-muted-foreground">{phase.description}</p>
-             <div className="text-xs text-muted-foreground mt-2 flex items-center gap-2">
-                <Clock className="h-3 w-3" />
-                <span>Estimación: {phase.estimatedHours} horas</span>
-            </div>
-        </div>
+        </CollapsibleTrigger>
 
-        <div className="border-t">
-            <ul className="divide-y">
-                {phase.steps.map((step, i) => (
-                    <li key={i} className="px-6 py-3 flex items-start gap-4">
-                        <CheckCircle className={`h-5 w-5 mt-0.5 flex-shrink-0 ${step.isCompleted ? 'text-green-500' : 'text-muted-foreground/30'}`} />
-                        <span className={`text-sm ${step.isCompleted ? 'text-foreground' : 'text-muted-foreground'}`}>
-                            {step.text}
-                        </span>
-                    </li>
-                ))}
-            </ul>
-        </div>
-    </div>
+        <CollapsibleContent>
+            <div className="border-t bg-secondary/30 dark:bg-card/50">
+                <ul className="divide-y">
+                    {phase.steps.map((step, i) => (
+                        <li key={i} className="px-6 py-3 flex items-start gap-4">
+                            <CheckCircle className={`h-5 w-5 mt-0.5 flex-shrink-0 ${step.isCompleted ? 'text-green-500' : 'text-muted-foreground/30'}`} />
+                            <span className={`text-sm ${step.isCompleted ? 'text-foreground' : 'text-muted-foreground'}`}>
+                                {step.text}
+                            </span>
+                        </li>
+                    ))}
+                </ul>
+            </div>
+        </CollapsibleContent>
+      </Card>
+    </Collapsible>
   </div>
 );
 
