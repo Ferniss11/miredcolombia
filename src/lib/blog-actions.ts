@@ -4,10 +4,7 @@
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import type { BlogPost } from './types';
-
-// The actions in this file now act as simple, unauthenticated clients for the API routes.
-// The authentication and authorization logic is fully handled by the `apiHandler`
-// which checks for the user's session cookie.
+import { cookies } from 'next/headers';
 
 const BlogPostActionSchema = z.object({
   title: z.string(),
@@ -35,16 +32,13 @@ type BlogPostInput = z.infer<typeof BlogPostActionSchema>;
 
 export async function createBlogPostAction(input: Omit<BlogPostInput, 'slug'>, idToken: string) {
   try {
-    if (!idToken) {
-        throw new Error('El token de autenticación es obligatorio.');
-    }
-
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:9002';
     const response = await fetch(`${appUrl}/api/blog`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${idToken}`,
+             Cookie: cookies().toString(),
         },
         body: JSON.stringify(input),
         cache: 'no-store', 
@@ -78,7 +72,12 @@ export async function createBlogPostAction(input: Omit<BlogPostInput, 'slug'>, i
 export async function getBlogPostsAction(): Promise<{ posts?: BlogPost[], error?: string }> {
     try {
         const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:9002';
-        const response = await fetch(`${appUrl}/api/blog`, { cache: 'no-store' });
+        const response = await fetch(`${appUrl}/api/blog`, { 
+            cache: 'no-store',
+            headers: {
+                Cookie: cookies().toString(),
+            },
+        });
         if (!response.ok) throw new Error('Failed to fetch posts from API.');
         const posts = await response.json();
         return { posts };
@@ -138,7 +137,10 @@ export async function updateBlogPostAction(id: string, data: Partial<BlogPost>) 
         const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:9002';
         const response = await fetch(`${appUrl}/api/blog/${id}`, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+                Cookie: cookies().toString(),
+            },
             body: JSON.stringify(data),
             cache: 'no-store',
         });
@@ -172,6 +174,9 @@ export async function deleteBlogPostAction(id: string) {
         const response = await fetch(`${appUrl}/api/blog/${id}`, {
             method: 'DELETE',
             cache: 'no-store',
+            headers: {
+                Cookie: cookies().toString(),
+            },
         });
         
         if (!response.ok) {

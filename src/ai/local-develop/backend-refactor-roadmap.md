@@ -223,7 +223,7 @@ src/lib/
 
 ---
 
-## **Fase 4: Refactorización del Dominio del Blog y Contenido**
+## **Fase 4: Refactorización del Dominio del Blog y Contenido (✓ Completada)**
 
 **Objetivo:** Migrar toda la lógica del blog y la generación de contenido a la arquitectura hexagonal, desacoplando la lógica de negocio de Firebase y los flujos de IA.
 
@@ -243,17 +243,17 @@ src/lib/
 ### **Paso 4.3: Implementar la Infraestructura (`src/lib/blog/infrastructure`) (✓ Completado)**
 
 *   **`persistence/firestore-blog.repository.ts`**: Implementa `BlogPostRepository` usando Firestore Admin SDK. (✓)
+*   **`ai/genkit-article.adapter.ts`**: Implementa una interfaz `ArticleGeneratorAdapter`. Será el único lugar que importa y llama a los flujos de Genkit (`generateIntelligentArticleFlow`, etc.). (✓)
 *   **`api/blog.controller.ts`**: Crear un `BlogController` para manejar las peticiones HTTP (crear, editar, publicar). (✓)
 *   **`api/routes.ts`**: Crear los API Routes (`/api/blog`, `/api/blog/[id]`) que usarán el `BlogController`. (✓)
-*   **`ai/genkit-article.adapter.ts`**: Implementa una interfaz `ArticleGeneratorAdapter`. Será el único lugar que importa y llama a los flujos de Genkit (`generateIntelligentArticleFlow`, etc.).
 *   **Actualizar `Server Actions`**: Modificar `src/lib/ai-actions.ts` y `src/lib/blog-actions.ts` para que, en lugar de contener lógica propia, llamen a los nuevos endpoints de la API del blog. (✓)
 
-### **Paso 4.4: Actualizar la UI y Eliminar Código Antiguo**
+### **Paso 4.4: Actualizar la UI y Eliminar Código Antiguo (✓ Completado)**
 
-*   **Modificar `AdminContentSuitePage`**: Asegurarse de que llame a la nueva acción/endpoint para guardar el artículo generado.
-*   **Modificar `AdminBlogManagementPage`**: Actualizar para que liste, edite y elimine publicaciones a través del nuevo sistema.
-*   **ELIMINAR:** `src/services/blog.service.ts`.
-*   **ELIMINAR:** `src/app/api/posts/route.ts` (será reemplazado por la nueva API del blog).
+*   **Modificar `AdminContentSuitePage`**: Asegurarse de que llame a la nueva acción/endpoint para guardar el artículo generado. (✓)
+*   **Modificar `AdminBlogManagementPage`**: Actualizar para que liste, edite y elimine publicaciones a través del nuevo sistema. (✓)
+*   **ELIMINAR:** `src/services/blog.service.ts` (✓)
+*   **ELIMINAR:** `src/app/api/posts/route.ts` (reemplazado por la nueva API del blog). (✓)
 
 ---
 
