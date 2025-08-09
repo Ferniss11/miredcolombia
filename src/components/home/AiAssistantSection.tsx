@@ -61,7 +61,7 @@ export default function AiAssistantSection({ onOpenChatModal }: { onOpenChatModa
                         </p>
                         <Button size="lg" onClick={onOpenChatModal}>
                             <MessageCircle className="mr-2 h-5 w-5" />
-                            Chatea con el Asistente Ahora
+                            Chatea con Valeria Ahora
                         </Button>
                     </div>
 
