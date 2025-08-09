@@ -20,7 +20,6 @@ const navLinks = [
   { href: "/jobs", label: "Empleo" },
   { href: "/blog", label: "Blog" },
   { href: "/pricing", label: "Precios" },
-  { href: "/road-map", label: "Roadmap" },
 ];
 
 export default function Header() {
