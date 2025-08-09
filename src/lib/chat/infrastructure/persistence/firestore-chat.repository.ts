@@ -140,11 +140,10 @@ export class FirestoreChatRepository implements ChatRepository {
   async getHistory(sessionId: string, businessId?: string): Promise<ChatMessage[]> {
     const db = this.getDb();
     const collectionPath = businessId
-        ? `directory/${businessId}/businessChatSessions`
-        : GLOBAL_SESSIONS_COLLECTION;
+        ? `directory/${businessId}/businessChatSessions/${sessionId}/messages`
+        : `${GLOBAL_SESSIONS_COLLECTION}/${sessionId}/messages`;
 
-    const snapshot = await db.collection(collectionPath).doc(sessionId)
-      .collection('messages').orderBy('timestamp', 'asc').get();
+    const snapshot = await db.collection(collectionPath).orderBy('timestamp', 'asc').get();
       
     return snapshot.docs.map(toChatMessage);
   }
