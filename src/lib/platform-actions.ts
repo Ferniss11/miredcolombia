@@ -18,10 +18,12 @@ export async function getPlatformAiCostsAction() {
 export async function getPlatformConfigAction() {
     try {
         const config = await getPlatformConfig();
-        return { config };
+        // Return a plain object, not { config: config }
+        return config;
     } catch (error) {
         console.error("Error getting platform config:", error);
-        return { error: 'No se pudo obtener la configuración de la plataforma.' };
+        // Return a default object on error to prevent crashes
+        return { profitMarginPercentage: 0 };
     }
 }
 
@@ -33,6 +35,7 @@ export async function savePlatformConfigAction(config: PlatformConfig) {
         return { success: true };
     } catch (error) {
         console.error("Error saving platform config:", error);
-        return { error: 'No se pudo guardar la configuración.' };
+        const message = error instanceof Error ? error.message : "An unknown error occurred.";
+        return { error: message };
     }
 }

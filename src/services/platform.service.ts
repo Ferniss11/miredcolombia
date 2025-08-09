@@ -4,7 +4,7 @@
 import { adminDb } from "@/lib/firebase/admin-config";
 import type { PlatformConfig, PlatformCosts } from "@/lib/types";
 
-const PLATFORM_CONFIG_DOC_ID = 'main';
+const PLATFORM_CONFIG_DOC_ID = 'platformConfig'; // The collection is platformConfig
 
 /**
  * Retrieves the main platform configuration from Firestore.
@@ -14,11 +14,10 @@ export async function getPlatformConfig(): Promise<PlatformConfig> {
     console.warn("Platform config using default because Firebase Admin SDK is not initialized.");
     return {
       profitMarginPercentage: 0,
-      agentConfig: { model: 'googleai/gemini-1.5-flash-latest', systemPrompt: '' },
     };
   }
 
-  const docRef = adminDb.collection("platformConfig").doc(PLATFORM_CONFIG_DOC_ID);
+  const docRef = adminDb.collection(PLATFORM_CONFIG_DOC_ID).doc('main');
   const docSnap = await docRef.get();
 
   if (docSnap.exists) {
@@ -28,7 +27,6 @@ export async function getPlatformConfig(): Promise<PlatformConfig> {
   // Return a default configuration if none is found
   return {
     profitMarginPercentage: 0,
-    agentConfig: { model: 'googleai/gemini-1.5-flash-latest', systemPrompt: '' },
   };
 }
 
@@ -39,7 +37,7 @@ export async function savePlatformConfig(config: PlatformConfig): Promise<void> 
   if (!adminDb) {
       throw new Error("Firebase Admin SDK is not initialized. Cannot save platform config.");
   }
-  const docRef = adminDb.collection("platformConfig").doc(PLATFORM_CONFIG_DOC_ID);
+  const docRef = adminDb.collection(PLATFORM_CONFIG_DOC_ID).doc('main');
   await docRef.set(config, { merge: true });
 }
 

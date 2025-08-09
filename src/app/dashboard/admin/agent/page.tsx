@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useTransition } from 'react';
@@ -9,11 +8,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Save, Bot, TestTube, Power, PowerOff, Sparkles, Search, Book } from 'lucide-react';
-import { getPlatformConfigAction, savePlatformConfigAction } from '@/lib/platform-actions';
-import type { AgentConfig, PlatformConfig } from '@/lib/types';
+import type { AgentConfig } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { MdPlace } from "react-icons/md";
+import { getGlobalAgentConfigAction, saveGlobalAgentConfigAction } from '@/lib/user-actions-legacy';
 
 // Reusable ToolCard Component
 type ToolCardProps = {
@@ -61,7 +60,7 @@ const ToolCard = ({ icon, title, description, isConnected, onConnect, onDisconne
 
 
 export default function AgentManagementPage() {
-    const [config, setConfig] = useState<PlatformConfig | null>(null);
+    const [agentConfig, setAgentConfig] = useState<AgentConfig | null>(null);
     const [isLoadingConfig, setIsLoadingConfig] = useState(true);
     const [isSaving, startTransition] = useTransition();
     const { toast } = useToast();
@@ -69,11 +68,11 @@ export default function AgentManagementPage() {
     useEffect(() => {
         const fetchConfig = async () => {
             setIsLoadingConfig(true);
-            const result = await getPlatformConfigAction();
+            const result = await getGlobalAgentConfigAction();
             if (result.error) {
                 toast({ variant: 'destructive', title: 'Error', description: result.error });
             } else if (result.config) {
-                setConfig(result.config);
+                setAgentConfig(result.config);
             }
             setIsLoadingConfig(false);
         };
@@ -82,22 +81,19 @@ export default function AgentManagementPage() {
     }, [toast]);
 
     const handleAgentConfigChange = <K extends keyof AgentConfig>(key: K, value: AgentConfig[K]) => {
-        setConfig(prev => {
+        setAgentConfig(prev => {
             if (!prev) return null;
             return {
                 ...prev,
-                agentConfig: {
-                    ...prev.agentConfig,
-                    [key]: value,
-                }
+                [key]: value,
             };
         });
     };
 
     const handleSave = () => {
-        if (!config) return;
+        if (!agentConfig) return;
         startTransition(async () => {
-            const result = await savePlatformConfigAction(config);
+            const result = await saveGlobalAgentConfigAction(agentConfig);
             if (result.error) {
                 toast({ variant: 'destructive', title: 'Error al Guardar', description: result.error });
             } else {
@@ -105,8 +101,6 @@ export default function AgentManagementPage() {
             }
         });
     };
-
-    const agentConfig = config?.agentConfig;
 
     return (
         <div className="space-y-6">

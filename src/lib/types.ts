@@ -133,7 +133,7 @@ export type CandidateProfile = {
   professionalTitle?: string;
   summary?: string;
   skills?: string[];
-  resumeUrl?: string;
+  resumeUrl?: string; // URL al PDF en Firebase Storage
   experience?: Array<{
     jobTitle: string;
     company: string;
@@ -284,7 +284,6 @@ export type GoogleTokens = {
 // Platform Economics
 export type PlatformConfig = {
     profitMarginPercentage: number;
-    agentConfig?: import('./chat-types').AgentConfig;
 };
 
 export type PlatformCosts = {
