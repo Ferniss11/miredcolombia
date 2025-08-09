@@ -8,6 +8,7 @@ import { UpdateJobPostingUseCase } from "../../application/update-job-posting.us
 import { FirestoreJobPostingRepository } from "../persistence/firestore-job-posting.repository";
 import { JobPosting } from "../../domain/job-posting.entity";
 import { uploadImageToStorage } from "../storage/firebase-storage.adapter";
+import { getJobPostingByIdAction as getJobPostingByIdActionInternal } from "./job-posting.server-actions";
 
 const jobPostingRepository = new FirestoreJobPostingRepository();
 
