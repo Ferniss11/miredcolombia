@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Search, Plus, Building, Trash2, AlertCircle, UserCheck, UserX, UserRoundCog, CheckCircle, ChevronDown, Copy } from 'lucide-react';
+import { Loader2, Search, Plus, Building, Trash2, AlertCircle, UserCheck, UserX, CheckCircle, ChevronDown, Copy, MoreVertical } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -20,6 +20,7 @@ import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/component
 import { cn } from '@/lib/utils';
 import { getSavedBusinessesAction } from '@/lib/directory-actions';
 import { googlePlacesSearch } from '@/ai/tools/google-places-search';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 type Place = {
     id: string;
@@ -291,20 +292,41 @@ export default function AdminDirectoryPage() {
                                                 {biz.subscriptionTier && <Badge variant="outline" className="mt-1">{biz.subscriptionTier}</Badge>}
                                             </TableCell>
                                             <TableCell className="text-xs text-muted-foreground">{biz.formattedAddress}</TableCell>
-                                            <TableCell className="text-right space-x-1">
-                                                {biz.verificationStatus === 'pending' && biz.ownerUid && (
-                                                    <>
-                                                        <Button variant="ghost" size="icon" className='text-green-600 hover:text-green-700' onClick={() => handleVerificationUpdate(biz.id!, biz.ownerUid!, 'approved')} disabled={isUpdatingStatus}>
-                                                            <UserCheck className="h-4 w-4" />
+                                            <TableCell className="text-right">
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                                                            <MoreVertical className="h-4 w-4" />
                                                         </Button>
-                                                        <Button variant="ghost" size="icon" className='text-red-600 hover:text-red-700' onClick={() => handleVerificationUpdate(biz.id!, biz.ownerUid!, 'rejected')} disabled={isUpdatingStatus}>
-                                                            <UserX className="h-4 w-4" />
-                                                        </Button>
-                                                    </>
-                                                )}
-                                                <Button variant="ghost" size="icon" onClick={() => handleDeleteBusiness(biz.id!)} disabled={isDeleting}>
-                                                    <Trash2 className="h-4 w-4 text-destructive" />
-                                                </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="end">
+                                                        {biz.verificationStatus === 'pending' && biz.ownerUid && (
+                                                            <>
+                                                                <DropdownMenuItem
+                                                                    className="text-green-600 focus:text-green-700"
+                                                                    onClick={() => handleVerificationUpdate(biz.id!, biz.ownerUid!, 'approved')}
+                                                                    disabled={isUpdatingStatus}
+                                                                >
+                                                                    <UserCheck className="mr-2 h-4 w-4" /> Aprobar y Publicar
+                                                                </DropdownMenuItem>
+                                                                <DropdownMenuItem
+                                                                    className="text-red-600 focus:text-red-700"
+                                                                    onClick={() => handleVerificationUpdate(biz.id!, biz.ownerUid!, 'rejected')}
+                                                                    disabled={isUpdatingStatus}
+                                                                >
+                                                                    <UserX className="mr-2 h-4 w-4" /> Rechazar
+                                                                </DropdownMenuItem>
+                                                            </>
+                                                        )}
+                                                        <DropdownMenuItem
+                                                            className="text-red-600 focus:text-red-700"
+                                                            onClick={() => handleDeleteBusiness(biz.id!)}
+                                                            disabled={isDeleting}
+                                                        >
+                                                            <Trash2 className="mr-2 h-4 w-4" /> Eliminar
+                                                        </DropdownMenuItem>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
                                             </TableCell>
                                         </TableRow>
                                     ))
@@ -323,3 +345,4 @@ export default function AdminDirectoryPage() {
         </div>
     );
 }
+
