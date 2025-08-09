@@ -1,9 +1,11 @@
 
-import { CheckCircle, Clock, Loader, PauseCircle } from 'lucide-react';
+import { CheckCircle, Clock, Loader, PauseCircle, Rocket, Layers, Home } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import type { Metadata } from 'next';
 import fs from 'fs/promises';
 import path from 'path';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Card } from '@/components/ui/card';
 
 export const metadata: Metadata = {
   title: 'Hoja de Ruta del Proyecto | Mi Red Colombia',
@@ -16,9 +18,11 @@ type Step = {
   isCompleted: boolean;
 };
 
+type PhaseStatus = 'Completada' | 'En Pausa' | 'En Progreso' | 'Próximos Pasos';
+
 type Phase = {
   title: string;
-  status: 'Completada' | 'En Pausa' | 'En Progreso';
+  status: PhaseStatus;
   description: string;
   steps: Step[];
   estimatedHours: number;
@@ -32,6 +36,7 @@ async function parseRoadmap(): Promise<Phase[]> {
   const lines = content.split('\n');
 
   let currentPhase: Phase | null = null;
+  let readingSteps = false;
 
   const hoursMap: { [key: string]: number } = {
       'Fase 0': 12,
@@ -41,34 +46,59 @@ async function parseRoadmap(): Promise<Phase[]> {
       'Fase 4': 14,
       'Fase 5': 24,
       'Fase 6': 10,
+      'Fase 7': 8,
+      'Fase 8': 30,
+      'Fase 9': 40,
   };
 
   for (const line of lines) {
-    const phaseMatch = line.match(/^## \*\*(Fase \d+): (.*?)\((✓ Completada|Pausado)\)\*\*/);
+    const phaseMatch = line.match(/^## \*\*(Fase \d+): (.*?)\s?\((.*?)\)\*\*/);
     if (phaseMatch) {
       if (currentPhase) {
         phases.push(currentPhase);
       }
-      const phaseTitle = `Fase ${phaseMatch[1].split(':')[0]}: ${phaseMatch[2].trim()}`;
+      readingSteps = false;
+      const phaseKey = `Fase ${phaseMatch[1].match(/\d+/)?.[0]}`;
+      const titleText = phaseMatch[2].trim();
+      const statusText = phaseMatch[3].trim();
+      
+      let status: PhaseStatus = 'En Progreso';
+      if (statusText === '✓ Completada') status = 'Completada';
+      else if (statusText === 'Pausado') status = 'En Pausa';
+      else if (statusText === 'En Progreso') status = 'En Progreso';
+      else if (statusText === 'Próximos Pasos') status = 'Próximos Pasos';
+
       currentPhase = {
-        title: phaseTitle,
-        status: phaseMatch[3] === '✓ Completada' ? 'Completada' : 'En Pausa',
+        title: `${phaseKey}: ${titleText}`,
+        status,
         description: '',
         steps: [],
-        estimatedHours: hoursMap[phaseMatch[1].split(':')[0]] || 8,
+        estimatedHours: hoursMap[phaseKey] || 8,
       };
       continue;
     }
 
     if (currentPhase) {
-        const stepMatch = line.match(/^\*   \*\*(.*?)\*\*: (.*?)(\(✓ Completado\))?$/);
-        if (stepMatch) {
-            currentPhase.steps.push({
-                text: `${stepMatch[1]}: ${stepMatch[2]}`,
-                isCompleted: !!stepMatch[3],
-            });
-        } else if (line.startsWith('*   **Objetivo:**')) {
-            currentPhase.description = line.replace('*   **Objetivo:**', '').trim();
+        if (line.trim() === '*   **Pasos:**') {
+            readingSteps = true;
+            continue;
+        }
+
+        const objectiveMatch = line.match(/^\*   \*\*Objetivo:\*\* (.*)/);
+        if (objectiveMatch) {
+            currentPhase.description = objectiveMatch[1].trim();
+            readingSteps = false; // Stop reading steps if we find an objective
+            continue;
+        }
+
+        if (readingSteps) {
+             const stepMatch = line.match(/^\s*\*\s*(.*?)\s*(\(✓ Completado\))?$/);
+             if (stepMatch) {
+                currentPhase.steps.push({
+                    text: stepMatch[1].trim(),
+                    isCompleted: !!stepMatch[2],
+                });
+             }
         }
     }
   }
@@ -89,42 +119,67 @@ const StatusBadge = ({ status }: { status: Phase['status'] }) => {
   if (status === 'En Pausa') {
     return <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300 hover:bg-yellow-100"><PauseCircle className="h-4 w-4 mr-2"/> {status}</Badge>;
   }
-  return <Badge variant="outline"><Loader className="h-4 w-4 mr-2 animate-spin"/> {status}</Badge>;
+  if (status === 'En Progreso') {
+    return <Badge variant="outline" className="text-blue-600 border-blue-400"><Loader className="h-4 w-4 mr-2 animate-spin"/> {status}</Badge>;
+  }
+  return <Badge variant="secondary"><Rocket className="h-4 w-4 mr-2"/> {status}</Badge>;
 };
+
+const getIconForPhase = (title: string): React.ReactNode => {
+    if (title.toLowerCase().includes('plataforma')) return <Layers className="w-5 h-5"/>;
+    if (title.toLowerCase().includes('vectorización')) return <Rocket className="w-5 h-5"/>;
+    if (title.toLowerCase().includes('inmobiliario')) return <Home className="w-5 h-5"/>;
+    return <span className="font-bold">{title.match(/\d+/)?.[0]}</span>;
+}
 
 const PhaseCard = ({ phase, index }: { phase: Phase, index: number }) => (
   <div className="relative pl-8 sm:pl-12">
-    {/* Timeline Dot */}
     <div className="absolute left-0 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground">
-      <span className="font-bold">{index + 1}</span>
+      {getIconForPhase(phase.title)}
     </div>
     
-    <div className="rounded-lg border bg-card text-card-foreground shadow-sm ml-4">
-        <div className="p-6">
+    <Collapsible>
+      <Card className="ml-4 overflow-hidden">
+        <CollapsibleTrigger className="w-full text-left p-6 hover:bg-muted/50 transition-colors">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                 <h3 className="text-xl font-bold font-headline">{phase.title}</h3>
                 <StatusBadge status={phase.status} />
             </div>
-            <p className="mt-2 text-muted-foreground">{phase.description}</p>
-             <div className="text-xs text-muted-foreground mt-2 flex items-center gap-2">
+            <div className="text-xs text-muted-foreground mt-2 flex items-center gap-2">
                 <Clock className="h-3 w-3" />
                 <span>Estimación: {phase.estimatedHours} horas</span>
             </div>
-        </div>
+        </CollapsibleTrigger>
 
-        <div className="border-t">
-            <ul className="divide-y">
-                {phase.steps.map((step, i) => (
-                    <li key={i} className="px-6 py-3 flex items-start gap-4">
-                        <CheckCircle className={`h-5 w-5 mt-0.5 flex-shrink-0 ${step.isCompleted ? 'text-green-500' : 'text-muted-foreground/30'}`} />
-                        <span className={`text-sm ${step.isCompleted ? 'text-foreground' : 'text-muted-foreground'}`}>
-                            {step.text}
-                        </span>
-                    </li>
-                ))}
-            </ul>
-        </div>
-    </div>
+        <CollapsibleContent>
+            <div className="border-t bg-secondary/30 dark:bg-card/50 p-6">
+                <div className="space-y-4">
+                    {phase.description && (
+                        <div className="flex items-start gap-4 p-4 rounded-md bg-background/50">
+                            <CheckCircle className="h-5 w-5 mt-0.5 flex-shrink-0 text-primary/80" />
+                            <div>
+                                <h4 className="font-semibold">Objetivo Principal</h4>
+                                <p className="text-sm text-muted-foreground">{phase.description}</p>
+                            </div>
+                        </div>
+                    )}
+                    {phase.steps.length > 0 && (
+                        <ul className="space-y-3 pl-4">
+                            {phase.steps.map((step, i) => (
+                                <li key={i} className="flex items-start gap-3">
+                                    <CheckCircle className={`h-5 w-5 mt-0.5 flex-shrink-0 ${step.isCompleted ? 'text-green-500' : 'text-muted-foreground/30'}`} />
+                                    <span className={`text-sm ${step.isCompleted ? 'text-foreground' : 'text-muted-foreground'}`}>
+                                        {step.text}
+                                    </span>
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                </div>
+            </div>
+        </CollapsibleContent>
+      </Card>
+    </Collapsible>
   </div>
 );
 
@@ -144,7 +199,6 @@ export default async function RoadmapPage() {
         </div>
 
         <div className="relative space-y-12">
-            {/* Timeline Line */}
             <div className="absolute left-4 top-4 h-full w-0.5 bg-border -translate-x-1/2"></div>
             
             {roadmapPhases.map((phase, index) => (

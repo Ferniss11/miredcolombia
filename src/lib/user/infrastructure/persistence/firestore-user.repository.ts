@@ -106,7 +106,11 @@ export class FirestoreUserRepository implements UserRepository {
     if (!adminDb) throw new Error('Firestore not initialized');
     const doc = await adminDb.collection('agentConfig').doc('main').get();
     if (!doc.exists) {
-        throw new Error("Global agent configuration not found.");
+        // Return a default config if none exists, to avoid crashing the UI
+        return {
+            model: 'googleai/gemini-1.5-flash-latest',
+            systemPrompt: 'Eres un asistente de IA para Mi Red Colombia. Ayuda a los usuarios con sus preguntas sobre inmigración y servicios.'
+        };
     }
     return doc.data() as AgentConfig;
   }

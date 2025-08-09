@@ -133,7 +133,7 @@ export type CandidateProfile = {
   professionalTitle?: string;
   summary?: string;
   skills?: string[];
-  resumeUrl?: string;
+  resumeUrl?: string; // URL al PDF en Firebase Storage
   experience?: Array<{
     jobTitle: string;
     company: string;
@@ -363,3 +363,4 @@ export type JobPostingFormValues = z.infer<typeof JobPostingFormSchema>;
 export type ChatSession = import('./chat-types').ChatSession;
 export type ChatMessage = import('./chat-types').ChatMessage;
 export type Business = import('./directory/domain/business.entity').Business;
+export type AgentConfig = import('./chat-types').AgentConfig;
