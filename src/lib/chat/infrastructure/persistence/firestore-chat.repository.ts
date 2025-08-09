@@ -89,11 +89,12 @@ export class FirestoreChatRepository implements ChatRepository {
     const db = this.getDb();
     const { sessionId, businessId, ...restOfMessage } = messageData as any;
     
-    const sessionCollectionPath = businessId
-        ? `directory/${businessId}/businessChatSessions`
-        : GLOBAL_SESSIONS_COLLECTION;
-
-    const sessionRef = db.collection(sessionCollectionPath).doc(sessionId);
+    // Correctly build the path to the session document, whether it's global or nested.
+    const sessionDocPath = businessId
+        ? `directory/${businessId}/businessChatSessions/${sessionId}`
+        : `${GLOBAL_SESSIONS_COLLECTION}/${sessionId}`;
+        
+    const sessionRef = db.doc(sessionDocPath);
     const messagesRef = sessionRef.collection('messages');
     
     const newMessageRef = messagesRef.doc();
@@ -122,6 +123,7 @@ export class FirestoreChatRepository implements ChatRepository {
             sessionUpdate.totalTokens = FieldValue.increment(messageData.usage.totalTokens);
         }
 
+        // Perform the update on the correctly referenced session document.
         transaction.update(sessionRef, sessionUpdate);
     });
     
