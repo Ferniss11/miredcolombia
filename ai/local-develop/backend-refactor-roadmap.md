@@ -322,7 +322,7 @@ src/lib/
 
 ---
 
-## **Fase 6: Mejoras de Interfaz, Contenido y SEO**
+## **Fase 6: Mejoras de Interfaz, Contenido y SEO (✓ Completada)**
 
 **Objetivo:** Refinar la experiencia de usuario en todo el sitio, mejorar el posicionamiento en buscadores y actualizar el contenido visual y textual para ser más dinámico y atractivo.
 
@@ -343,9 +343,9 @@ src/lib/
 
 *   **Componente `StepsSection`:** Convertir cada "globo" de paso en un botón interactivo. Al hacer clic, se abrirá un modal (`Dialog`) que contendrá información mucho más detallada sobre esa etapa del proceso migratorio, incluyendo listas de verificación, consejos y enlaces (CTAs) a servicios relevantes. (✓)
 
-### **Paso 6.5: Actualización de Contenido en "Servicios"**
+### **Paso 6.5: Actualización de Contenido en "Servicios" (✓ Completado)**
 
-*   **Componente `ServicesSection`:** Localizar la tarjeta de servicio "Búsqueda de Vivienda" y reemplazar su contenido (icono, título, descripción, etc.) por el nuevo servicio: "Homologación de licencias de conducción".
+*   **Componente `ServicesSection`:** Localizar la tarjeta de servicio "Búsqueda de Vivienda" y reemplazar su contenido (icono, título, descripción, etc.) por el nuevo servicio: "Homologación de licencias de conducción". (✓)
 
 ---
 
