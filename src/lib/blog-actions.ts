@@ -50,6 +50,7 @@ export async function createBlogPostAction(input: Omit<BlogPostInput, 'slug'>, i
             'Authorization': `Bearer ${idToken}`,
         },
         body: JSON.stringify(input),
+        cache: 'no-store', // Disable caching for this API call
     });
 
     const result = await response.json();
@@ -87,7 +88,7 @@ const getAuthToken = async (): Promise<string> => {
 export async function getBlogPostsAction(): Promise<{ posts?: BlogPost[], error?: string }> {
     try {
         const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:9002';
-        const response = await fetch(`${appUrl}/api/blog`, { next: { tags: ['posts'] }});
+        const response = await fetch(`${appUrl}/api/blog`, { cache: 'no-store', next: { tags: ['posts'] }});
         if (!response.ok) throw new Error("Failed to fetch posts.");
         const posts = await response.json();
         return { posts };
@@ -102,7 +103,7 @@ export async function getPublishedBlogPosts(): Promise<{ posts: BlogPost[], erro
         const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:9002';
         // This could be a separate endpoint GET /api/blog?status=published
         // For now, we fetch all and filter client-side for simplicity, but a dedicated endpoint is better.
-        const response = await fetch(`${appUrl}/api/blog`, { next: { tags: ['posts'] }});
+        const response = await fetch(`${appUrl}/api/blog`, { cache: 'no-store', next: { tags: ['posts'] }});
         if (!response.ok) throw new Error("Failed to fetch posts.");
         const allPosts = await response.json();
         const publishedPosts = allPosts.filter((p: BlogPost) => p.status === 'Published');
@@ -119,7 +120,7 @@ export async function getBlogPostBySlug(slug: string): Promise<{ post: BlogPost 
         const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:9002';
         // We'll need a new endpoint for this: GET /api/blog/slug/[slug]
         // For now, fetching all and filtering is a temporary workaround.
-        const response = await fetch(`${appUrl}/api/blog`, { next: { tags: ['posts', `post-slug-${slug}`] }});
+        const response = await fetch(`${appUrl}/api/blog`, { cache: 'no-store', next: { tags: ['posts', `post-slug-${slug}`] }});
          if (!response.ok) throw new Error("Failed to fetch posts.");
         const allPosts = await response.json();
         const post = allPosts.find((p: BlogPost) => p.slug === slug);
@@ -134,7 +135,7 @@ export async function getBlogPostBySlug(slug: string): Promise<{ post: BlogPost 
 export async function getBlogPostByIdAction(id: string) {
     try {
         const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:9002';
-        const response = await fetch(`${appUrl}/api/blog/${id}`, { next: { tags: [`post-${id}`] }});
+        const response = await fetch(`${appUrl}/api/blog/${id}`, { cache: 'no-store', next: { tags: [`post-${id}`] }});
         if (!response.ok) {
             if (response.status === 404) return { error: 'No se encontró la entrada.' };
             throw new Error("Failed to fetch post.");
@@ -155,7 +156,8 @@ export async function updateBlogPostAction(id: string, data: Partial<BlogPost>) 
         const response = await fetch(`${appUrl}/api/blog/${id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
-            body: JSON.stringify(data)
+            body: JSON.stringify(data),
+            cache: 'no-store',
         });
         if (!response.ok) {
             const result = await response.json();
@@ -184,7 +186,8 @@ export async function deleteBlogPostAction(id: string) {
         const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:9002';
         const response = await fetch(`${appUrl}/api/blog/${id}`, {
             method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${idToken}` }
+            headers: { 'Authorization': `Bearer ${idToken}` },
+            cache: 'no-store',
         });
 
         if (!response.ok) {
