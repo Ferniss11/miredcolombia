@@ -125,14 +125,8 @@ export class FirestoreChatRepository implements ChatRepository {
         transaction.update(sessionRef, sessionUpdate);
     });
     
-    const savedTimestamp = messageData.timestamp || new Date();
-    return {
-        id: newMessageRef.id,
-        sessionId: sessionId,
-        businessId: businessId,
-        ...restOfMessage,
-        timestamp: savedTimestamp,
-    };
+    const savedDoc = await newMessageRef.get();
+    return toChatMessage(savedDoc);
   }
 
   /**
