@@ -11,14 +11,13 @@ import {
     Building, 
     CheckSquare, 
     Calendar,
-    Mail,
-    Globe
 } from 'lucide-react';
 import Image from 'next/image';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import ApplyButton from './ApplyButton';
 
 type Props = {
   params: { id: string }
@@ -172,20 +171,7 @@ const JobDetailsPage = async ({ params }: { params: { id: string } }) => {
                                     </>
                                 )}
                                 <div className="pt-4 flex flex-col gap-2">
-                                    {job.applicationUrl && (
-                                        <Button asChild>
-                                            <a href={job.applicationUrl} target="_blank" rel="noopener noreferrer">
-                                                <Globe className="mr-2 h-4 w-4" /> Aplicar en Sitio Web
-                                            </a>
-                                        </Button>
-                                    )}
-                                     {job.applicationEmail && (
-                                        <Button asChild variant="secondary">
-                                            <a href={`mailto:${job.applicationEmail}?subject=Aplicación para ${job.title}`}>
-                                                <Mail className="mr-2 h-4 w-4" /> Aplicar por Email
-                                            </a>
-                                        </Button>
-                                    )}
+                                   <ApplyButton jobId={job.id} jobTitle={job.title} />
                                 </div>
                             </CardContent>
                         </Card>
