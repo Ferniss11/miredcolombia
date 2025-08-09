@@ -5,6 +5,13 @@ import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import type { BlogPost } from './types';
 import { cookies } from 'next/headers';
+import { GetBlogPostUseCase } from './blog/application/get-blog-post.use-case';
+import { FirestoreBlogPostRepository } from './blog/infrastructure/persistence/firestore-blog.repository';
+import { adminAuth } from './firebase/admin-config';
+import { CreateBlogPostUseCase } from './blog/application/create-blog-post.use-case';
+import { GetAllBlogPostsUseCase } from './blog/application/get-all-blog-posts.use-case';
+import { UpdateBlogPostUseCase } from './blog/application/update-blog-post.use-case';
+import { DeleteBlogPostUseCase } from './blog/application/delete-blog-post.use-case';
 
 const BlogPostActionSchema = z.object({
   title: z.string(),
@@ -32,54 +39,28 @@ type BlogPostInput = z.infer<typeof BlogPostActionSchema>;
 
 export async function createBlogPostAction(input: Omit<BlogPostInput, 'slug'>, idToken: string) {
   try {
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:9002';
-    const response = await fetch(`${appUrl}/api/blog`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${idToken}`,
-             Cookie: cookies().toString(),
-        },
-        body: JSON.stringify(input),
-        cache: 'no-store', 
-    });
+    const blogRepository = new FirestoreBlogPostRepository();
+    const createUseCase = new CreateBlogPostUseCase(blogRepository);
 
-    const result = await response.json();
-
-    if (!response.ok) {
-        throw new Error(result.error?.message || `Error en el servidor: ${response.status}`);
-    }
+    const { uid, name } = await adminAuth.verifyIdToken(idToken);
+    const newPost = await createUseCase.execute(input, uid, name || 'Admin');
     
     revalidatePath('/dashboard/admin/blog');
     revalidatePath('/blog');
 
-    return { success: true, post: result };
+    return { success: true, post: newPost };
   } catch (error) {
-    console.error('Error detallado en la acción del blog:', error);
-    
-    let errorMessage = 'Un error desconocido ocurrió.';
-    if (error instanceof Error) {
-        errorMessage = error.message;
-    }
-    
-    return {
-      success: false,
-      error: `No se pudo crear la entrada de blog: ${errorMessage}`,
-    };
+    console.error('Error in createBlogPostAction:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return { success: false, error: `Could not create blog post: ${errorMessage}` };
   }
 }
 
 export async function getBlogPostsAction(): Promise<{ posts?: BlogPost[], error?: string }> {
     try {
-        const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:9002';
-        const response = await fetch(`${appUrl}/api/blog`, { 
-            cache: 'no-store',
-            headers: {
-                Cookie: cookies().toString(),
-            },
-        });
-        if (!response.ok) throw new Error('Failed to fetch posts from API.');
-        const posts = await response.json();
+        const blogRepository = new FirestoreBlogPostRepository();
+        const useCase = new GetAllBlogPostsUseCase(blogRepository);
+        const posts = await useCase.execute();
         return { posts };
     } catch (error) {
         console.error('Error fetching all blog posts:', error);
@@ -89,41 +70,38 @@ export async function getBlogPostsAction(): Promise<{ posts?: BlogPost[], error?
 
 export async function getPublishedBlogPosts(): Promise<{ posts: BlogPost[], error?: string }> {
     try {
-        const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:9002';
-        const response = await fetch(`${appUrl}/api/blog`, { cache: 'no-store' });
-         if (!response.ok) throw new Error('Failed to fetch posts from API.');
-        const allPosts = await response.json();
-        const posts = allPosts.filter((p: BlogPost) => p.status === 'Published');
+        const blogRepository = new FirestoreBlogPostRepository();
+        const useCase = new GetAllBlogPostsUseCase(blogRepository);
+        const posts = await useCase.execute(true); // Fetch only published posts
         return { posts };
     } catch (error) {
         console.error('Error fetching published blog posts:', error);
-        return { posts: [] };
+        return { posts: [], error: 'Could not fetch published posts.' };
     }
 }
 
 
 export async function getBlogPostBySlug(slug: string): Promise<{ post: BlogPost | null, error?: string }> {
-     try {
-        const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:9002';
-        const response = await fetch(`${appUrl}/api/blog/slug/${slug}`, { cache: 'no-store' });
-        if (response.status === 404) return { post: null };
-        if (!response.ok) throw new Error('Failed to fetch post from API.');
-        const post = await response.json();
+    try {
+        const blogRepository = new FirestoreBlogPostRepository();
+        const useCase = new GetBlogPostUseCase(blogRepository);
+        const post = await useCase.executeBySlug(slug);
+        if (!post) return { post: null };
         return { post };
     } catch (error) {
         console.error('Error fetching post by slug:', error);
-        return { post: null };
+        const message = error instanceof Error ? error.message : "Unknown error";
+        return { post: null, error: message };
     }
 }
 
 
 export async function getBlogPostByIdAction(id: string) {
     try {
-        const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:9002';
-        const response = await fetch(`${appUrl}/api/blog/${id}`, { cache: 'no-store' });
-        if (response.status === 404) return { error: 'No se encontró la entrada.' };
-        if (!response.ok) throw new Error('Failed to fetch post from API.');
-        const post = await response.json();
+        const blogRepository = new FirestoreBlogPostRepository();
+        const useCase = new GetBlogPostUseCase(blogRepository);
+        const post = await useCase.executeById(id);
+        if (!post) return { error: 'No se encontró la entrada.' };
         return { post };
     } catch (error) {
         console.error('Error fetching post by ID:', error);
@@ -133,33 +111,21 @@ export async function getBlogPostByIdAction(id: string) {
 
 
 export async function updateBlogPostAction(id: string, data: Partial<BlogPost>) {
-    try {
-        const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:9002';
-        const response = await fetch(`${appUrl}/api/blog/${id}`, {
-            method: 'PUT',
-            headers: { 
-                'Content-Type': 'application/json',
-                Cookie: cookies().toString(),
-            },
-            body: JSON.stringify(data),
-            cache: 'no-store',
-        });
+     try {
+        const blogRepository = new FirestoreBlogPostRepository();
+        const updateUseCase = new UpdateBlogPostUseCase(blogRepository);
+        await updateUseCase.execute(id, data);
         
-        if (!response.ok) {
-            const result = await response.json();
-            throw new Error(result.error?.message || 'Failed to update post via API.');
-        }
-
         revalidatePath('/dashboard/admin/blog');
+        revalidatePath(`/blog/preview/${id}`);
         if (data.slug) {
             revalidatePath(`/blog/${data.slug}`);
         }
-        revalidatePath(`/blog/preview/${id}`);
         return { success: true };
     } catch (error) {
         console.error('Error updating post:', error);
         const message = error instanceof Error ? error.message : 'No se pudo actualizar la entrada.';
-        return { error: message };
+        return { success: false, error: message };
     }
 }
 
@@ -169,20 +135,10 @@ export async function updateBlogPostStatusAction(id: string, status: 'Published'
 }
 
 export async function deleteBlogPostAction(id: string) {
-    try {
-        const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:9002';
-        const response = await fetch(`${appUrl}/api/blog/${id}`, {
-            method: 'DELETE',
-            cache: 'no-store',
-            headers: {
-                Cookie: cookies().toString(),
-            },
-        });
-        
-        if (!response.ok) {
-            const result = await response.json();
-            throw new Error(result.error?.message || 'Failed to delete post via API.');
-        }
+     try {
+        const blogRepository = new FirestoreBlogPostRepository();
+        const deleteUseCase = new DeleteBlogPostUseCase(blogRepository);
+        await deleteUseCase.execute(id);
 
         revalidatePath('/dashboard/admin/blog');
         revalidatePath('/blog');
@@ -190,6 +146,6 @@ export async function deleteBlogPostAction(id: string) {
     } catch (error) {
         console.error('Error deleting post:', error);
         const message = error instanceof Error ? error.message : 'No se pudo eliminar la entrada.';
-        return { error: message };
+        return { success: false, error: message };
     }
 }

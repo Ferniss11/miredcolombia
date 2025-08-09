@@ -22,39 +22,26 @@ export function apiHandler(handler: Handler<any>, allowedRoles?: UserRole[]) {
   return async (req: NextRequest, params: { params: any }): Promise<NextResponse> => {
     try {
       if (allowedRoles && allowedRoles.length > 0) {
-        // --- Authentication & Authorization ---
-        let idToken: string | undefined = req.headers.get('Authorization')?.split('Bearer ')[1];
-        
         if (!adminAuth) {
           return ApiResponse.error('Authentication service not configured.', 503);
         }
 
-        // If no Bearer token, try to authenticate using the session cookie
-        if (!idToken) {
-            const sessionCookie = cookies().get('session')?.value;
-            if (sessionCookie) {
-                const decodedTokenFromCookie = await adminAuth.verifySessionCookie(sessionCookie, true);
-                // We use the UID to get a fresh token if needed, but for roles, this is enough
-                const userRoles = (decodedTokenFromCookie.roles || []) as UserRole[];
-                const isAuthorized = userRoles.some(role => allowedRoles.includes(role));
-                if (!isAuthorized) {
-                     return ApiResponse.forbidden('You do not have permission to access this resource.');
-                }
-                // If authorized, proceed to the handler without needing to pass a token
-                return await handler(req, params);
-            }
-        }
-        
-        if (!idToken) {
-            return ApiResponse.unauthorized('No authentication token or session cookie provided.');
+        // --- Authentication & Authorization ---
+        const sessionCookie = cookies().get('session')?.value;
+        let idToken: string | undefined = req.headers.get('Authorization')?.split('Bearer ')[1];
+        let decodedToken;
+
+        if (idToken) {
+          decodedToken = await adminAuth.verifyIdToken(idToken);
+        } else if (sessionCookie) {
+          decodedToken = await adminAuth.verifySessionCookie(sessionCookie, true);
+        } else {
+          return ApiResponse.unauthorized('No authentication token or session cookie provided.');
         }
 
-        const decodedToken = await adminAuth.verifyIdToken(idToken);
-        const userRoles = (decodedToken.roles || []) as UserRole[]; 
-
-        // Check if the user has at least one of the allowed roles.
+        const userRoles = (decodedToken.roles || []) as UserRole[];
         const isAuthorized = userRoles.some(role => allowedRoles.includes(role));
-
+        
         if (!isAuthorized) {
           return ApiResponse.forbidden('You do not have permission to access this resource.');
         }

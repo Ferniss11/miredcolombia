@@ -41,12 +41,14 @@ export class FirestoreBlogPostRepository implements BlogPostRepository {
         } as BlogPost;
     }
 
-    async create(postData: Omit<BlogPost, 'id' | 'createdAt' | 'updatedAt'>): Promise<BlogPost> {
+    async create(postData: Omit<BlogPost, 'id' | 'createdAt' | 'updatedAt'>, authorId: string, authorName: string): Promise<BlogPost> {
         const db = this.getDb();
         const docRef = db.collection(POSTS_COLLECTION).doc();
         
         const dataToSave = {
             ...postData,
+            authorId,
+            author: authorName,
             createdAt: adminInstance.firestore.FieldValue.serverTimestamp(),
             updatedAt: adminInstance.firestore.FieldValue.serverTimestamp(),
         };
