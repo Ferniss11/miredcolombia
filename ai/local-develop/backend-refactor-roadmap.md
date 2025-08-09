@@ -227,18 +227,18 @@ src/lib/
 
 **Objetivo:** Migrar toda la lógica del blog y la generación de contenido a la arquitectura hexagonal, desacoplando la lógica de negocio de Firebase y los flujos de IA.
 
-### **Paso 4.1: Definir el Dominio (`src/lib/blog/domain`)**
+### **Paso 4.1: Definir el Dominio (`src/lib/blog/domain`) (✓ Completado)**
 
-*   **`blog-post.entity.ts`**: Definir la interfaz `BlogPost` con todas sus propiedades (título, contenido, estado, etc.).
-*   **`blog.repository.ts`**: Definir el puerto `BlogPostRepository` con los métodos CRUD (`create`, `findById`, `findAll`, `update`, `delete`).
+*   **`blog-post.entity.ts`**: Definir la interfaz `BlogPost` con todas sus propiedades (título, contenido, estado, etc.). (✓)
+*   **`blog.repository.ts`**: Definir el puerto `BlogPostRepository` con los métodos CRUD (`create`, `findById`, `findAll`, `update`, `delete`). (✓)
 
-### **Paso 4.2: Crear los Casos de Uso (`src/lib/blog/application`)**
+### **Paso 4.2: Crear los Casos de Uso (`src/lib/blog/application`) (✓ Completado)**
 
-*   **`create-blog-post.use-case.ts`**: Orquesta la creación, incluyendo la lógica para generar un `slug` a partir del título.
-*   **`get-blog-post.use-case.ts`**: Obtiene una publicación por ID o slug.
-*   **`get-all-blog-posts.use-case.ts`**: Obtiene todas las publicaciones, con posible filtrado por estado.
-*   **`update-blog-post.use-case.ts`**: Maneja la actualización de una publicación.
-*   **`generate-article.use-case.ts`**: Orquesta la llamada al adaptador de IA para generar el contenido, pero sin conocer los detalles de Genkit.
+*   **`create-blog-post.use-case.ts`**: Orquesta la creación, incluyendo la lógica para generar un `slug` a partir del título. (✓)
+*   **`get-blog-post.use-case.ts`**: Obtiene una publicación por ID o slug. (✓)
+*   **`get-all-blog-posts.use-case.ts`**: Obtiene todas las publicaciones, con posible filtrado por estado. (✓)
+*   **`update-blog-post.use-case.ts`**: Maneja la actualización de una publicación. (✓)
+*   **`delete-blog-post.use-case.ts`**: Maneja la eliminación de una publicación. (✓)
 
 ### **Paso 4.3: Implementar la Infraestructura (`src/lib/blog/infrastructure`)**
 
