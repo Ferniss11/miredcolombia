@@ -1,5 +1,5 @@
 
-import { CheckCircle, Clock, Loader, PauseCircle } from 'lucide-react';
+import { CheckCircle, Clock, Loader, PauseCircle, Rocket, Layers, Home } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import type { Metadata } from 'next';
 import fs from 'fs/promises';
@@ -16,9 +16,11 @@ type Step = {
   isCompleted: boolean;
 };
 
+type PhaseStatus = 'Completada' | 'En Pausa' | 'En Progreso' | 'Próximos Pasos';
+
 type Phase = {
   title: string;
-  status: 'Completada' | 'En Pausa' | 'En Progreso';
+  status: PhaseStatus;
   description: string;
   steps: Step[];
   estimatedHours: number;
@@ -41,21 +43,33 @@ async function parseRoadmap(): Promise<Phase[]> {
       'Fase 4': 14,
       'Fase 5': 24,
       'Fase 6': 10,
+      'Fase 7': 8,  // Refactor Platform
+      'Fase 8': 30, // Vectorization
+      'Fase 9': 40, // Real Estate Portal
   };
 
   for (const line of lines) {
-    const phaseMatch = line.match(/^## \*\*(Fase \d+): (.*?)\((✓ Completada|Pausado)\)\*\*/);
+    const phaseMatch = line.match(/^## \*\*(Fase \d+): (.*?)\((.*?)\)\*\*/);
     if (phaseMatch) {
       if (currentPhase) {
         phases.push(currentPhase);
       }
-      const phaseTitle = `Fase ${phaseMatch[1].split(':')[0]}: ${phaseMatch[2].trim()}`;
+      const phaseKey = phaseMatch[1].split(':')[0];
+      const statusText = phaseMatch[2].trim();
+      
+      let status: PhaseStatus = 'En Progreso';
+      if (statusText === '✓ Completada') status = 'Completada';
+      else if (statusText === 'Pausado') status = 'En Pausa';
+      else if (statusText === 'En Progreso') status = 'En Progreso';
+      else if (statusText === 'Próximos Pasos') status = 'Próximos Pasos';
+
+
       currentPhase = {
-        title: phaseTitle,
-        status: phaseMatch[3] === '✓ Completada' ? 'Completada' : 'En Pausa',
+        title: `Fase ${phaseKey}: ${phaseMatch[2].replace(/\(.*\)/, '').trim()}`,
+        status,
         description: '',
         steps: [],
-        estimatedHours: hoursMap[phaseMatch[1].split(':')[0]] || 8,
+        estimatedHours: hoursMap[phaseKey] || 8,
       };
       continue;
     }
@@ -89,14 +103,24 @@ const StatusBadge = ({ status }: { status: Phase['status'] }) => {
   if (status === 'En Pausa') {
     return <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300 hover:bg-yellow-100"><PauseCircle className="h-4 w-4 mr-2"/> {status}</Badge>;
   }
-  return <Badge variant="outline"><Loader className="h-4 w-4 mr-2 animate-spin"/> {status}</Badge>;
+  if (status === 'En Progreso') {
+    return <Badge variant="outline" className="text-blue-600 border-blue-400"><Loader className="h-4 w-4 mr-2 animate-spin"/> {status}</Badge>;
+  }
+  return <Badge variant="secondary"><Rocket className="h-4 w-4 mr-2"/> {status}</Badge>;
 };
+
+const getIconForPhase = (title: string): React.ReactNode => {
+    if (title.toLowerCase().includes('plataforma')) return <Layers className="w-5 h-5"/>;
+    if (title.toLowerCase().includes('vectorización')) return <Rocket className="w-5 h-5"/>;
+    if (title.toLowerCase().includes('inmobiliario')) return <Home className="w-5 h-5"/>;
+    return <span className="font-bold">{title.match(/\d+/)?.[0]}</span>;
+}
 
 const PhaseCard = ({ phase, index }: { phase: Phase, index: number }) => (
   <div className="relative pl-8 sm:pl-12">
     {/* Timeline Dot */}
     <div className="absolute left-0 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground">
-      <span className="font-bold">{index + 1}</span>
+      {getIconForPhase(phase.title)}
     </div>
     
     <div className="rounded-lg border bg-card text-card-foreground shadow-sm ml-4">
