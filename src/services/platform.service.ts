@@ -12,7 +12,10 @@ const PLATFORM_CONFIG_DOC_ID = 'main';
 export async function getPlatformConfig(): Promise<PlatformConfig> {
   if (!adminDb) {
     console.warn("Platform config using default because Firebase Admin SDK is not initialized.");
-    return { profitMarginPercentage: 0 };
+    return {
+      profitMarginPercentage: 0,
+      agentConfig: { model: 'googleai/gemini-1.5-flash-latest', systemPrompt: '' },
+    };
   }
 
   const docRef = adminDb.collection("platformConfig").doc(PLATFORM_CONFIG_DOC_ID);
@@ -23,7 +26,10 @@ export async function getPlatformConfig(): Promise<PlatformConfig> {
   }
 
   // Return a default configuration if none is found
-  return { profitMarginPercentage: 0 };
+  return {
+    profitMarginPercentage: 0,
+    agentConfig: { model: 'googleai/gemini-1.5-flash-latest', systemPrompt: '' },
+  };
 }
 
 /**

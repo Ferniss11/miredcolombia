@@ -18,10 +18,10 @@ export async function getPlatformAiCostsAction() {
 export async function getPlatformConfigAction() {
     try {
         const config = await getPlatformConfig();
-        return config;
+        return { config };
     } catch (error) {
         console.error("Error getting platform config:", error);
-        return { profitMarginPercentage: 0 };
+        return { error: 'No se pudo obtener la configuración de la plataforma.' };
     }
 }
 
@@ -29,6 +29,7 @@ export async function savePlatformConfigAction(config: PlatformConfig) {
     try {
         await savePlatformConfig(config);
         revalidatePath('/dashboard/admin/economics');
+        revalidatePath('/dashboard/admin/agent');
         return { success: true };
     } catch (error) {
         console.error("Error saving platform config:", error);

@@ -9,8 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Save, Bot, TestTube, Power, PowerOff, Sparkles, Search, Book } from 'lucide-react';
-import { getAgentConfigAction, saveAgentConfigAction } from '@/lib/agent-actions';
-import type { AgentConfig } from '@/lib/chat-types';
+import { getPlatformConfigAction, savePlatformConfigAction } from '@/lib/platform-actions';
+import type { AgentConfig, PlatformConfig } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { MdPlace } from "react-icons/md";
@@ -61,7 +61,7 @@ const ToolCard = ({ icon, title, description, isConnected, onConnect, onDisconne
 
 
 export default function AgentManagementPage() {
-    const [config, setConfig] = useState<AgentConfig>({ model: 'googleai/gemini-1.5-flash-latest', systemPrompt: '' });
+    const [config, setConfig] = useState<PlatformConfig | null>(null);
     const [isLoadingConfig, setIsLoadingConfig] = useState(true);
     const [isSaving, startTransition] = useTransition();
     const { toast } = useToast();
@@ -69,7 +69,7 @@ export default function AgentManagementPage() {
     useEffect(() => {
         const fetchConfig = async () => {
             setIsLoadingConfig(true);
-            const result = await getAgentConfigAction();
+            const result = await getPlatformConfigAction();
             if (result.error) {
                 toast({ variant: 'destructive', title: 'Error', description: result.error });
             } else if (result.config) {
@@ -81,9 +81,23 @@ export default function AgentManagementPage() {
         fetchConfig();
     }, [toast]);
 
+    const handleAgentConfigChange = <K extends keyof AgentConfig>(key: K, value: AgentConfig[K]) => {
+        setConfig(prev => {
+            if (!prev) return null;
+            return {
+                ...prev,
+                agentConfig: {
+                    ...prev.agentConfig,
+                    [key]: value,
+                }
+            };
+        });
+    };
+
     const handleSave = () => {
+        if (!config) return;
         startTransition(async () => {
-            const result = await saveAgentConfigAction(config);
+            const result = await savePlatformConfigAction(config);
             if (result.error) {
                 toast({ variant: 'destructive', title: 'Error al Guardar', description: result.error });
             } else {
@@ -91,6 +105,8 @@ export default function AgentManagementPage() {
             }
         });
     };
+
+    const agentConfig = config?.agentConfig;
 
     return (
         <div className="space-y-6">
@@ -105,7 +121,7 @@ export default function AgentManagementPage() {
                     <CardDescription>Define la personalidad y el motor de tu asistente de IA.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                    {isLoadingConfig ? (
+                    {isLoadingConfig || !agentConfig ? (
                         <div className="space-y-4">
                             <Skeleton className="h-4 w-24" />
                             <Skeleton className="h-24 w-full" />
@@ -119,8 +135,8 @@ export default function AgentManagementPage() {
                                 <Textarea
                                     id="system-prompt"
                                     placeholder="Eres un asistente amigable..."
-                                    value={config.systemPrompt}
-                                    onChange={(e) => setConfig({ ...config, systemPrompt: e.target.value })}
+                                    value={agentConfig.systemPrompt}
+                                    onChange={(e) => handleAgentConfigChange('systemPrompt', e.target.value)}
                                     rows={15}
                                     className="font-mono text-sm"
                                 />
@@ -128,8 +144,8 @@ export default function AgentManagementPage() {
                             <div className="space-y-2">
                                 <Label htmlFor="model">Modelo de IA</Label>
                                 <Select
-                                    value={config.model}
-                                    onValueChange={(value) => setConfig({ ...config, model: value })}
+                                    value={agentConfig.model}
+                                    onValueChange={(value) => handleAgentConfigChange('model', value)}
                                 >
                                     <SelectTrigger id="model" className="w-full md:w-1/2">
                                         <SelectValue placeholder="Selecciona un modelo" />
@@ -189,5 +205,3 @@ export default function AgentManagementPage() {
         </div>
     );
 }
-
-    
