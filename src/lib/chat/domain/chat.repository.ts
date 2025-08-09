@@ -8,11 +8,15 @@ import type { ChatSession } from './chat-session.entity';
  */
 export interface ChatRepository {
   /**
-   * Creates a new chat session.
+   * Creates a new chat session and its initial message in a single atomic transaction.
    * @param sessionData - The initial data for the session.
-   * @returns The newly created ChatSession entity.
+   * @param initialMessageText - The text for the first message (e.g., a welcome message).
+   * @returns A promise that resolves with the newly created session and message.
    */
-  createSession(sessionData: Omit<ChatSession, 'id'>): Promise<ChatSession>;
+  createSessionWithInitialMessage(
+    sessionData: Omit<ChatSession, 'id'>,
+    initialMessageText: string
+  ): Promise<{ session: ChatSession; message: ChatMessage }>;
 
   /**
    * Finds a chat session by its unique identifier.

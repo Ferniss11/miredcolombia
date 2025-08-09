@@ -52,31 +52,53 @@ export class FirestoreChatRepository implements ChatRepository {
     }
     return adminDb;
   }
-
+  
   /**
-   * Creates a new chat session document in Firestore.
-   * Handles both global and business-specific sessions.
-   * @param sessionData - The data for the new session.
-   * @returns The created ChatSession entity.
+   * Creates a new chat session and its initial message in a single atomic transaction.
+   * @param sessionData - The initial data for the session.
+   * @param initialMessageText - The text for the first message (usually a welcome message).
+   * @returns The newly created ChatSession and the initial ChatMessage.
    */
-  async createSession(sessionData: Omit<ChatSession, 'id' | 'createdAt'> & { createdAt?: Date }): Promise<ChatSession> {
+  async createSessionWithInitialMessage(
+    sessionData: Omit<ChatSession, 'id'>,
+    initialMessageText: string
+  ): Promise<{ session: ChatSession; message: ChatMessage }> {
     const db = this.getDb();
     const collectionPath = sessionData.businessId
       ? `directory/${sessionData.businessId}/businessChatSessions`
       : GLOBAL_SESSIONS_COLLECTION;
-      
-    const docRef = db.collection(collectionPath).doc();
-    
-    const finalSessionData = {
-        ...sessionData,
-        createdAt: FieldValue.serverTimestamp(),
-        updatedAt: FieldValue.serverTimestamp(),
-    };
-    
-    await docRef.set(finalSessionData);
 
-    const newSessionDoc = await docRef.get();
-    return toChatSession(newSessionDoc);
+    const sessionRef = db.collection(collectionPath).doc();
+    const messageRef = sessionRef.collection('messages').doc();
+
+    const finalSessionData = {
+      ...sessionData,
+      createdAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    };
+
+    const initialMessageData = {
+      sessionId: sessionRef.id,
+      businessId: sessionData.businessId,
+      text: initialMessageText,
+      role: 'model' as const,
+      timestamp: FieldValue.serverTimestamp(),
+    };
+
+    // Run as a transaction to ensure both documents are created atomically
+    await db.runTransaction(async (transaction) => {
+      transaction.set(sessionRef, finalSessionData);
+      transaction.set(messageRef, initialMessageData);
+    });
+    
+    // Get the created documents to return them
+    const newSessionDoc = await sessionRef.get();
+    const newMessageDoc = await messageRef.get();
+
+    return {
+      session: toChatSession(newSessionDoc),
+      message: toChatMessage(newMessageDoc),
+    };
   }
 
   /**

@@ -17,8 +17,7 @@ export type StartChatSessionOutput = {
 
 /**
  * Use case for starting a new chat session.
- * It creates the session and generates an initial welcome message.
- * This use case should only be called when it is confirmed that no session exists for the user.
+ * It creates the session and the initial welcome message atomically.
  */
 export class StartChatSessionUseCase {
   constructor(private readonly chatRepository: ChatRepository) {}
@@ -33,18 +32,13 @@ export class StartChatSessionUseCase {
       totalCost: 0,
     };
     
-    const session = await this.chatRepository.createSession(sessionData);
+    const welcomeMessageText = `¡Hola, ${input.userName}! Soy tu asistente virtual. ¿Cómo puedo ayudarte hoy?`;
     
-    const welcomeMessage = `¡Hola, ${input.userName}! Soy tu asistente virtual. ¿Cómo puedo ayudarte hoy?`;
-    
-    // Persist the initial welcome message
-    const initialMessage = await this.chatRepository.saveMessage({
-      sessionId: session.id,
-      text: welcomeMessage,
-      role: 'model',
-      timestamp: new Date(),
-    });
+    const { session, message } = await this.chatRepository.createSessionWithInitialMessage(
+      sessionData,
+      welcomeMessageText
+    );
 
-    return { session, history: [initialMessage] };
+    return { session, history: [message] };
   }
 }
