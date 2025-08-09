@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import type { BlogPost } from './types';
 import { adminAuth } from './firebase/admin-config';
+import { auth } from './firebase/config';
 
 const BlogPostActionSchema = z.object({
   title: z.string(),
@@ -78,7 +79,6 @@ export async function createBlogPostAction(input: Omit<BlogPostInput, 'slug'>, i
 
 // Helper to get token for client-side actions that need it
 const getAuthToken = async (): Promise<string> => {
-    const { auth } = await import('@/lib/firebase/config'); // Client-side auth
     const currentUser = auth.currentUser;
     if (!currentUser) throw new Error("User not authenticated.");
     return currentUser.getIdToken();

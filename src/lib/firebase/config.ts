@@ -13,19 +13,26 @@ const firebaseConfig = {
 };
 
 // This function ensures a single instance of Firebase is used client-side.
-const getFirebaseServices = () => {
-    let app: FirebaseApp;
+const initializeAppClient = () => {
     if (getApps().length === 0) {
         if (!firebaseConfig.projectId) {
             throw new Error("Missing Firebase config variables");
         }
-        app = initializeApp(firebaseConfig);
+        return initializeApp(firebaseConfig);
     } else {
-        app = getApp();
+        return getApp();
     }
-    const auth = getAuth(app);
-    const db = getFirestore(app);
+}
+
+const app: FirebaseApp = initializeAppClient();
+const auth: Auth = getAuth(app);
+const db: Firestore = getFirestore(app);
+
+
+// Also export the original function for any parts of the app that might still use it.
+const getFirebaseServices = () => {
     return { app, auth, db };
 }
 
-export { getFirebaseServices };
+
+export { getFirebaseServices, app, auth, db };
