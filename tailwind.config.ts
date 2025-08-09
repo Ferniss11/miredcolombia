@@ -17,6 +17,9 @@ export default {
       },
     },
     extend: {
+      backgroundImage: {
+        'conic-glow': 'radial-gradient(ellipse at top, transparent 20%, hsl(var(--primary) / 0.15))',
+      },
       fontFamily: {
         body: ['"PT Sans"', 'sans-serif'],
         headline: ['"Lora"', 'serif'],

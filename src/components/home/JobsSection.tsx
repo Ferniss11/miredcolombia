@@ -46,8 +46,9 @@ const JobsSection: React.FC<JobsSectionProps> = ({ jobs }) => {
                     </>
                 ) : (
                      <div className="py-12 grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-                        <Card className="bg-gradient-to-br from-primary/10 via-background to-background shadow-lg text-center">
-                           <CardContent className="p-8 flex flex-col items-center justify-center h-full">
+                        <Card className="relative overflow-hidden bg-background shadow-lg text-center">
+                            <div className="absolute inset-0 bg-conic-glow opacity-20"></div>
+                           <CardContent className="p-8 flex flex-col items-center justify-center h-full relative">
                                <div className="mx-auto p-4 bg-primary/20 rounded-full inline-flex mb-4">
                                    <Building className="w-8 h-8 text-primary" />
                                </div>
@@ -60,8 +61,9 @@ const JobsSection: React.FC<JobsSectionProps> = ({ jobs }) => {
                                </Button>
                            </CardContent>
                         </Card>
-                         <Card className="bg-gradient-to-br from-secondary to-background shadow-lg text-center">
-                           <CardContent className="p-8 flex flex-col items-center justify-center h-full">
+                         <Card className="relative overflow-hidden bg-background shadow-lg text-center">
+                            <div className="absolute inset-0 bg-conic-glow opacity-20"></div>
+                           <CardContent className="p-8 flex flex-col items-center justify-center h-full relative">
                                <div className="mx-auto p-4 bg-secondary/80 rounded-full inline-flex mb-4">
                                    <Briefcase className="w-8 h-8 text-secondary-foreground" />
                                </div>
