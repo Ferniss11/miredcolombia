@@ -15,7 +15,7 @@ export default function AboutSection({}: AboutSectionProps) {
     const [showVideo, setShowVideo] = React.useState(false);
 
     return (
-        <section id="quienes-somos" className="w-full py-12 md:py-24 lg:py-32 bg-gradient-to-br from-gray-50 via-white to-gray-50 dark:from-gray-900/50 dark:via-gray-950 dark:to-black">
+        <section id="quienes-somos" className="w-full py-12 md:py-24 lg:py-32 bg-gray-50 dark:bg-gray-900/50">
             <div className="container px-4 md:px-6">
                 <div className="flex flex-col items-center justify-center space-y-4 text-center mb-12">
                     <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl font-headline" style={{ color: '#003893' }}>Quiénes Somos</h2>

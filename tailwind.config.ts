@@ -18,7 +18,7 @@ export default {
     },
     extend: {
       backgroundImage: {
-        'conic-glow': 'radial-gradient(ellipse at top, transparent 20%, hsl(var(--primary) / 0.15))',
+        'conic-glow': 'radial-gradient(ellipse at top, hsl(var(--primary) / 0.15), transparent 70%)',
       },
       fontFamily: {
         body: ['"PT Sans"', 'sans-serif'],
