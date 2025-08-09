@@ -1,5 +1,11 @@
+
+
+'use client';
+
 import { cn } from "@/lib/utils";
 import { FileStack, PlaneLanding, Gavel, Home as HomeIcon, Handshake } from "lucide-react";
+import React, { useState } from 'react';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 const steps = [
     {
@@ -38,6 +44,14 @@ const stepColors = [
 ];
 
 export default function StepsSection() {
+    const [isModalOpen, setModalOpen] = useState(false);
+    const [selectedStep, setSelectedStep] = useState(steps[0]);
+
+    const handleStepClick = (step: typeof steps[0]) => {
+        setSelectedStep(step);
+        setModalOpen(true);
+    };
+
     return (
         <section id="paso-a-paso" className="w-full py-12 md:py-24 lg:py-32 bg-gray-50 dark:bg-gray-900/50">
             <div className="container px-4 md:px-6">
@@ -71,21 +85,39 @@ export default function StepsSection() {
                                 <div className="hidden md:block w-1/2"></div>
 
                                 {/* The circle on the timeline */}
-                                <div className={cn(
-                                    "absolute left-8 top-0 flex items-center justify-center w-20 h-20 rounded-full shadow-lg border-4 border-background md:left-1/2 md:-translate-x-1/2 -translate-x-1/2",
-                                    color.bg,
-                                    color.text
-                                )}>
+                                <button
+                                    onClick={() => handleStepClick(step)}
+                                    className={cn(
+                                        "absolute left-8 top-0 flex items-center justify-center w-20 h-20 rounded-full shadow-lg border-4 border-background md:left-1/2 md:-translate-x-1/2 -translate-x-1/2 cursor-pointer transition-transform hover:scale-110",
+                                        color.bg,
+                                        color.text
+                                    )}
+                                    aria-label={`Ver detalles para ${title}`}
+                                >
                                     <Icon className="w-10 h-10" />
                                     <div className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold border-2 border-background">
                                         {index + 1}
                                     </div>
-                                </div>
+                                </button>
                             </div>
                         )
                     })}
                 </div>
             </div>
+             <Dialog open={isModalOpen} onOpenChange={setModalOpen}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                    <DialogTitle>{selectedStep.title}</DialogTitle>
+                    <DialogDescription>
+                       Información detallada sobre esta etapa del proceso.
+                    </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4">
+                        {/* Aquí iría el contenido detallado del paso */}
+                        <p>Contenido ampliado para "{selectedStep.description}"...</p>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </section>
     );
 }

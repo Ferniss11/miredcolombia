@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState } from "react";
@@ -43,7 +44,7 @@ export default function AiAssistantSection({ onOpenChatModal }: { onOpenChatModa
     }, []);
 
     return (
-        <section id="asistente-ia" className="w-full py-12 md:py-24 lg:py-32 bg-secondary/50">
+        <section id="asistente-ia" className="w-full py-12 md:py-24 lg:py-32 bg-gradient-to-tr from-secondary/30 via-background to-secondary/30">
             <div className="container px-4 md:px-6">
                 <div className="grid lg:grid-cols-2 gap-12 items-center">
                     {/* Left Side: Main CTA and Text */}

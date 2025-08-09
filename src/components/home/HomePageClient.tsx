@@ -1,10 +1,10 @@
+
 'use client';
 
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import StripeCheckoutForm from "@/components/checkout/StripeCheckoutForm";
 import type { MigrationPackage, MigrationService, PurchaseableItem, BlogPost, PlaceDetails, JobPosting } from '@/lib/types';
-import VideoModal from '@/components/ui/video-modal';
 
 // Import sections directly
 import HeroSection from './HeroSection';
@@ -30,10 +30,6 @@ type HomePageClientProps = {
 export default function HomePageClient({ initialPosts, eurToCopRate, initialBusinesses, initialJobs }: HomePageClientProps) {
   const [isCheckoutOpen, setCheckoutOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<PurchaseableItem | null>(null);
-
-  const [isVideoOpen, setVideoOpen] = useState(false);
-  const [videoUrl, setVideoUrl] = useState('');
-  const [videoTitle, setVideoTitle] = useState('');
   
   const { openChat } = useChat();
 
@@ -42,18 +38,12 @@ export default function HomePageClient({ initialPosts, eurToCopRate, initialBusi
     setCheckoutOpen(true);
   };
 
-  const handleVideoClick = (url: string, title: string) => {
-    setVideoUrl(url);
-    setVideoTitle(title);
-    setVideoOpen(true);
-  }
-
   return (
     <div className="flex flex-col min-h-[100dvh]">
       <main className="flex-1">
         <HeroSection />
         <StepsSection />
-        <AboutSection handleVideoClick={handleVideoClick} />
+        <AboutSection />
         <AiAssistantSection onOpenChatModal={openChat} />
         <PackagesSection eurToCopRate={eurToCopRate} />
         <ServicesSection eurToCopRate={eurToCopRate} />
@@ -79,13 +69,6 @@ export default function HomePageClient({ initialPosts, eurToCopRate, initialBusi
           )}
         </DialogContent>
       </Dialog>
-
-      <VideoModal 
-        isOpen={isVideoOpen} 
-        setIsOpen={setVideoOpen} 
-        videoUrl={videoUrl} 
-        title={videoTitle} 
-      />
     </div>
   );
 }
