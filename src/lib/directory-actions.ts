@@ -7,6 +7,7 @@ import { GetBusinessDetailsUseCase } from './directory/application/get-business-
 import { FirestoreDirectoryRepository } from './directory/infrastructure/persistence/firestore-directory.repository';
 import { GooglePlacesAdapter } from './directory/infrastructure/search/google-places.adapter';
 import { FirestoreCacheAdapter } from './directory/infrastructure/cache/firestore-cache.adapter';
+import { revalidatePath } from "next/cache";
 
 
 // Helper to serialize Date objects to ISO strings for client components
@@ -119,5 +120,17 @@ export async function getPublicBusinessDetailsAction(slug: string): Promise<{ bu
         const errorMessage = error instanceof Error ? error.message : "Unknown error";
         console.error(`Error in getPublicBusinessDetailsAction for ${slug}:`, errorMessage);
         return { error: 'Ocurrió un error al cargar los detalles del negocio.' };
+    }
+}
+
+export async function updateBusinessStatusAction(placeId: string, status: 'approved' | 'unclaimed'): Promise<{ success: boolean; error?: string }> {
+    try {
+        const directoryRepository = new FirestoreDirectoryRepository();
+        await directoryRepository.update(placeId, { verificationStatus: status });
+        revalidatePath('/dashboard/admin/directory');
+        return { success: true };
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : "Unknown error";
+        return { success: false, error: errorMessage };
     }
 }

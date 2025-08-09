@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Search, Plus, Building, Trash2, AlertCircle, UserCheck, UserX, CheckCircle, ChevronDown, Copy, MoreVertical } from 'lucide-react';
+import { Loader2, Search, Plus, Building, Trash2, AlertCircle, UserCheck, UserX, CheckCircle, ChevronDown, Copy, MoreVertical, Eye, EyeOff } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -18,9 +18,9 @@ import { useAuth } from '@/context/AuthContext';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
-import { getSavedBusinessesAction } from '@/lib/directory-actions';
+import { getSavedBusinessesAction, updateBusinessStatusAction } from '@/lib/directory-actions';
 import { googlePlacesSearch } from '@/ai/tools/google-places-search';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 type Place = {
     id: string;
@@ -125,18 +125,11 @@ export default function AdminDirectoryPage() {
         });
     };
     
-    const handleVerificationUpdate = (placeId: string, ownerUid: string, status: 'approved' | 'rejected') => {
-        if (!user) return;
+    const handleStatusUpdate = (placeId: string, newStatus: 'approved' | 'unclaimed') => {
         startUpdatingStatusTransition(async () => {
-            const idToken = await user.getIdToken();
-            const response = await fetch('/api/directory/approve', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
-                body: JSON.stringify({ placeId, ownerUid, status }),
-            });
-            if (!response.ok) {
-                const result = await response.json();
-                toast({ variant: 'destructive', title: 'Error', description: result.error.message });
+            const result = await updateBusinessStatusAction(placeId, newStatus);
+            if (!result.success) {
+                toast({ variant: 'destructive', title: 'Error', description: result.error });
             } else {
                 toast({ title: 'Éxito', description: `El estado del negocio ha sido actualizado.` });
                 fetchSavedBusinesses();
@@ -150,13 +143,13 @@ export default function AdminDirectoryPage() {
     };
 
     const getStatusBadge = (biz: PlaceDetails) => {
-        if (biz.verificationStatus === 'pending') {
-            return <Badge variant="destructive" className="bg-orange-500/80">Pendiente</Badge>;
-        }
         if (biz.verificationStatus === 'approved') {
-            return <Badge className="bg-green-500/80">Publicado</Badge>;
+            return <Badge className="bg-green-500/80 hover:bg-green-500/90">Publicado</Badge>;
         }
-        return <Badge variant="secondary">No Reclamado</Badge>;
+        if (biz.verificationStatus === 'pending') {
+            return <Badge variant="destructive" className="bg-orange-500/80 hover:bg-orange-500/90">Pendiente de Verificación</Badge>;
+        }
+        return <Badge variant="secondary">No Publicado</Badge>;
     };
 
     return (
@@ -269,7 +262,7 @@ export default function AdminDirectoryPage() {
                                     <TableHead>Nombre del Negocio</TableHead>
                                     <TableHead>Categoría</TableHead>
                                     <TableHead>Estado</TableHead>
-                                    <TableHead>Dirección</TableHead>
+                                    <TableHead>Propietario</TableHead>
                                     <TableHead className="text-right">Acciones</TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -284,14 +277,9 @@ export default function AdminDirectoryPage() {
                                     savedBusinesses.map(biz => (
                                         <TableRow key={biz.id}>
                                             <TableCell className="font-medium">{biz.displayName}</TableCell>
-                                            <TableCell><Badge variant="secondary">{biz.category}</Badge></TableCell>
-                                            <TableCell>
-                                                <div className="flex items-center gap-2">
-                                                    {getStatusBadge(biz)}
-                                                </div>
-                                                {biz.subscriptionTier && <Badge variant="outline" className="mt-1">{biz.subscriptionTier}</Badge>}
-                                            </TableCell>
-                                            <TableCell className="text-xs text-muted-foreground">{biz.formattedAddress}</TableCell>
+                                            <TableCell><Badge variant="outline">{biz.category}</Badge></TableCell>
+                                            <TableCell>{getStatusBadge(biz)}</TableCell>
+                                            <TableCell className="text-xs text-muted-foreground">{biz.ownerUid || 'No reclamado'}</TableCell>
                                             <TableCell className="text-right">
                                                 <DropdownMenu>
                                                     <DropdownMenuTrigger asChild>
@@ -304,20 +292,40 @@ export default function AdminDirectoryPage() {
                                                             <>
                                                                 <DropdownMenuItem
                                                                     className="text-green-600 focus:text-green-700"
-                                                                    onClick={() => handleVerificationUpdate(biz.id!, biz.ownerUid!, 'approved')}
+                                                                    onClick={() => handleStatusUpdate(biz.id!, 'approved')}
                                                                     disabled={isUpdatingStatus}
                                                                 >
-                                                                    <UserCheck className="mr-2 h-4 w-4" /> Aprobar y Publicar
+                                                                    <UserCheck className="mr-2 h-4 w-4" /> Aprobar Reclamación
                                                                 </DropdownMenuItem>
                                                                 <DropdownMenuItem
-                                                                    className="text-red-600 focus:text-red-700"
-                                                                    onClick={() => handleVerificationUpdate(biz.id!, biz.ownerUid!, 'rejected')}
+                                                                    className="text-orange-600 focus:text-orange-700"
+                                                                    onClick={() => handleStatusUpdate(biz.id!, 'unclaimed')}
                                                                     disabled={isUpdatingStatus}
                                                                 >
-                                                                    <UserX className="mr-2 h-4 w-4" /> Rechazar
+                                                                    <UserX className="mr-2 h-4 w-4" /> Rechazar Reclamación
                                                                 </DropdownMenuItem>
+                                                                <DropdownMenuSeparator />
                                                             </>
                                                         )}
+                                                         {biz.verificationStatus !== 'approved' && biz.verificationStatus !== 'pending' && (
+                                                            <DropdownMenuItem
+                                                                className="text-green-600 focus:text-green-700"
+                                                                onClick={() => handleStatusUpdate(biz.id!, 'approved')}
+                                                                disabled={isUpdatingStatus}
+                                                            >
+                                                                <Eye className="mr-2 h-4 w-4" /> Publicar
+                                                            </DropdownMenuItem>
+                                                        )}
+                                                        {biz.verificationStatus === 'approved' && (
+                                                            <DropdownMenuItem
+                                                                className="text-orange-600 focus:text-orange-700"
+                                                                onClick={() => handleStatusUpdate(biz.id!, 'unclaimed')}
+                                                                disabled={isUpdatingStatus}
+                                                            >
+                                                                <EyeOff className="mr-2 h-4 w-4" /> Revocar Publicación
+                                                            </DropdownMenuItem>
+                                                        )}
+                                                        <DropdownMenuSeparator />
                                                         <DropdownMenuItem
                                                             className="text-red-600 focus:text-red-700"
                                                             onClick={() => handleDeleteBusiness(biz.id!)}
@@ -345,4 +353,3 @@ export default function AdminDirectoryPage() {
         </div>
     );
 }
-
