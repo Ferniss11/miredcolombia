@@ -3,7 +3,7 @@
 
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Briefcase, Building, Upload } from "lucide-react";
+import { ArrowRight, Briefcase, Building } from "lucide-react";
 import Link from "next/link";
 import { JobPosting } from '@/lib/types';
 import JobCard from '@/components/jobs/JobCard';
@@ -34,21 +34,11 @@ const JobsCtaSection: React.FC<JobsCtaSectionProps> = ({ jobs }) => {
                 </div>
 
                 {jobs && jobs.length > 0 ? (
-                    <>
-                        <div className="mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 py-12">
-                            {jobs.map((job) => (
-                                <JobCard key={job.id} job={job} />
-                            ))}
-                        </div>
-
-                        <div className="flex justify-center">
-                            <Button asChild>
-                                <Link href="/jobs">
-                                    Ver Todas las Ofertas <ArrowRight className="ml-2 h-4 w-4" />
-                                </Link>
-                            </Button>
-                        </div>
-                    </>
+                    <div className="mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 py-12">
+                        {jobs.map((job) => (
+                            <JobCard key={job.id} job={job} />
+                        ))}
+                    </div>
                 ) : (
                     <div className="py-12 grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
                         <Card className="relative overflow-hidden bg-background shadow-lg text-center">
@@ -70,7 +60,7 @@ const JobsCtaSection: React.FC<JobsCtaSectionProps> = ({ jobs }) => {
                              <div className="absolute inset-0 bg-conic-glow opacity-20"></div>
                             <CardContent className="p-8 flex flex-col items-center justify-center h-full relative">
                                 <div className="mx-auto p-4 bg-secondary rounded-full inline-flex mb-4">
-                                    <Upload className="w-8 h-8 text-secondary-foreground" />
+                                    <Briefcase className="w-8 h-8 text-secondary-foreground" />
                                 </div>
                                 <h3 className="text-xl font-bold font-headline">¿Buscas tu próxima oportunidad?</h3>
                                 <p className="text-muted-foreground mt-2 mb-6 flex-grow">
@@ -85,6 +75,13 @@ const JobsCtaSection: React.FC<JobsCtaSectionProps> = ({ jobs }) => {
                         </Card>
                     </div>
                 )}
+                 <div className="flex justify-center mt-8">
+                    <Button asChild>
+                        <Link href="/jobs">
+                            Ver Todas las Ofertas <ArrowRight className="ml-2 h-4 w-4" />
+                        </Link>
+                    </Button>
+                </div>
             </div>
         </section>
     );
