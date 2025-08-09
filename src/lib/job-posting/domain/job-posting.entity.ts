@@ -27,9 +27,9 @@ export interface JobPosting {
   requiredSkills?: string[]; // E.g., ['React', 'Node.js', 'TypeScript']
 
   // Metadatos de la publicación
-  creatorId: string;
-  creatorRole: 'admin' | 'advertiser';
-  status: 'ACTIVE' | 'INACTIVE' | 'FILLED'; // Estado de la oferta
+  creatorId: string; // Can be a UID or a guest identifier like an email
+  creatorRole: 'admin' | 'advertiser' | 'guest';
+  status: 'ACTIVE' | 'INACTIVE' | 'FILLED' | 'PENDING_REVIEW'; // Estado de la oferta
   createdAt: Date;
   updatedAt: Date;
 }

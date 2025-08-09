@@ -1,6 +1,6 @@
 // Defines the core shapes of user-related data (entities).
 
-export type UserRole = 'Admin' | 'Advertiser' | 'User' | 'SAdmin';
+export type UserRole = 'Admin' | 'Advertiser' | 'User' | 'SAdmin' | 'Guest';
 
 /**
  * Represents the profile data specific to a business advertiser.

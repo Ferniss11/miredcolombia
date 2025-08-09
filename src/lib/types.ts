@@ -154,6 +154,7 @@ export type UserProfile = {
   name: string | null;
   email: string | null;
   role: UserRole;
+  status: 'active' | 'deleted';
   businessProfile?: BusinessProfile;
   candidateProfile?: CandidateProfile;
 };
@@ -323,8 +324,8 @@ export interface JobPosting {
   applicationDeadline?: string;
   requiredSkills?: string[];
   creatorId: string;
-  creatorRole: 'admin' | 'advertiser';
-  status: 'ACTIVE' | 'INACTIVE' | 'FILLED';
+  creatorRole: 'admin' | 'advertiser' | 'guest';
+  status: 'ACTIVE' | 'INACTIVE' | 'FILLED' | 'PENDING_REVIEW';
   createdAt: string; // Storing as ISO string for client-side compatibility
   updatedAt: string; // Storing as ISO string
 }
@@ -352,7 +353,7 @@ export const JobPostingFormSchema = z.object({
   applicationEmail: z.string().email("Email de aplicación inválido.").optional().or(z.literal('')),
   applicationDeadline: z.string().optional().or(z.literal('')), // Will be a string from date picker
   requiredSkills: z.array(z.string()).optional(), // Comma separated string to array
-  status: z.enum(['ACTIVE', 'INACTIVE', 'FILLED'], {
+  status: z.enum(['ACTIVE', 'INACTIVE', 'FILLED', 'PENDING_REVIEW'], {
     errorMap: () => ({ message: "Estado inválido." }),
   }).default('ACTIVE'),
 });

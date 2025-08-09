@@ -22,25 +22,39 @@ const serializeJobPosting = (job: JobPosting): any => ({
 type CreateJobPostingClientData = Omit<JobPosting, 'id' | 'createdAt' | 'updatedAt' | 'imageUrl' | 'companyLogoUrl'>;
 
 export async function createJobPostingAction(
-  jobData: CreateJobPostingClientData,
+  jobData: Partial<CreateJobPostingClientData>, // Make it partial to accommodate guest posts
   imageFile?: File,
   companyLogoFile?: File
 ) {
   try {
+    const isGuestPost = !jobData.creatorId;
+
     const completeJobData: Omit<JobPosting, 'id' | 'imageUrl' | 'companyLogoUrl'> = {
       ...jobData,
+      title: jobData.title!,
+      description: jobData.description!,
+      companyName: jobData.companyName!,
+      location: jobData.location!,
+      locationType: jobData.locationType!,
+      jobType: jobData.jobType!,
+      creatorId: isGuestPost ? jobData.applicationEmail! : jobData.creatorId!,
+      creatorRole: isGuestPost ? 'guest' : jobData.creatorRole!,
+      status: isGuestPost ? 'PENDING_REVIEW' : jobData.status || 'ACTIVE',
       createdAt: new Date(),
       updatedAt: new Date(),
     };
+    
+
+    const uploadPathId = isGuestPost ? `guest-${Date.now()}` : jobData.creatorId!;
 
     if (imageFile) {
       const buffer = Buffer.from(await imageFile.arrayBuffer());
-      completeJobData.imageUrl = await uploadImageToStorage(buffer, `job-postings/${jobData.creatorId}/${Date.now()}-${imageFile.name}`, imageFile.type);
+      completeJobData.imageUrl = await uploadImageToStorage(buffer, `job-postings/${uploadPathId}/${Date.now()}-${imageFile.name}`, imageFile.type);
     }
 
     if (companyLogoFile) {
       const buffer = Buffer.from(await companyLogoFile.arrayBuffer());
-      completeJobData.companyLogoUrl = await uploadImageToStorage(buffer, `job-postings/${jobData.creatorId}/${Date.now()}-logo-${companyLogoFile.name}`, companyLogoFile.type);
+      completeJobData.companyLogoUrl = await uploadImageToStorage(buffer, `job-postings/${uploadPathId}/${Date.now()}-logo-${companyLogoFile.name}`, companyLogoFile.type);
     }
 
     const createUseCase = new CreateJobPostingUseCase(jobPostingRepository);

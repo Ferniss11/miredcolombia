@@ -7,7 +7,7 @@ export type CreateUserInput = {
   uid: string;
   name: string;
   email: string;
-  role: UserRole;
+  role: Exclude<UserRole, 'Guest'>; // Guests don't have profiles
 };
 
 export class CreateUserProfileUseCase {

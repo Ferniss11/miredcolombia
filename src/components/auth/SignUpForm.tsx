@@ -85,7 +85,7 @@ export function SignUpForm() {
 
   async function handleGoogleSignIn() {
     setIsGooglePending(true);
-    const role = form.getValues('role') as UserRole;
+    const role = form.getValues('role') as 'User' | 'Advertiser'; // Ensure role is not Guest
     const { error } = await loginWithGoogle(role);
     if (error) {
         toast({
