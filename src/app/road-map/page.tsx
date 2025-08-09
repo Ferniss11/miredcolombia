@@ -1,0 +1,157 @@
+
+import { CheckCircle, Clock, Loader, PauseCircle } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import type { Metadata } from 'next';
+import fs from 'fs/promises';
+import path from 'path';
+
+export const metadata: Metadata = {
+  title: 'Hoja de Ruta del Proyecto | Mi Red Colombia',
+  description: 'Sigue el progreso y la evolución de nuestra plataforma, desde la refactorización del backend hasta las nuevas funcionalidades.',
+}
+
+// --- Data Fetching and Parsing ---
+type Step = {
+  text: string;
+  isCompleted: boolean;
+};
+
+type Phase = {
+  title: string;
+  status: 'Completada' | 'En Pausa' | 'En Progreso';
+  description: string;
+  steps: Step[];
+  estimatedHours: number;
+};
+
+async function parseRoadmap(): Promise<Phase[]> {
+  const filePath = path.join(process.cwd(), 'ai/local-develop/backend-refactor-roadmap.md');
+  const content = await fs.readFile(filePath, 'utf-8');
+  
+  const phases: Phase[] = [];
+  const lines = content.split('\n');
+
+  let currentPhase: Phase | null = null;
+
+  const hoursMap: { [key: string]: number } = {
+      'Fase 0': 12,
+      'Fase 1': 20,
+      'Fase 2': 18,
+      'Fase 3': 16,
+      'Fase 4': 14,
+      'Fase 5': 24,
+      'Fase 6': 10,
+  };
+
+  for (const line of lines) {
+    const phaseMatch = line.match(/^## \*\*(Fase \d+): (.*?)\((✓ Completada|Pausado)\)\*\*/);
+    if (phaseMatch) {
+      if (currentPhase) {
+        phases.push(currentPhase);
+      }
+      const phaseTitle = `Fase ${phaseMatch[1].split(':')[0]}: ${phaseMatch[2].trim()}`;
+      currentPhase = {
+        title: phaseTitle,
+        status: phaseMatch[3] === '✓ Completada' ? 'Completada' : 'En Pausa',
+        description: '',
+        steps: [],
+        estimatedHours: hoursMap[phaseMatch[1].split(':')[0]] || 8,
+      };
+      continue;
+    }
+
+    if (currentPhase) {
+        const stepMatch = line.match(/^\*   \*\*(.*?)\*\*: (.*?)(\(✓ Completado\))?$/);
+        if (stepMatch) {
+            currentPhase.steps.push({
+                text: `${stepMatch[1]}: ${stepMatch[2]}`,
+                isCompleted: !!stepMatch[3],
+            });
+        } else if (line.startsWith('*   **Objetivo:**')) {
+            currentPhase.description = line.replace('*   **Objetivo:**', '').trim();
+        }
+    }
+  }
+
+  if (currentPhase) {
+    phases.push(currentPhase);
+  }
+
+  return phases;
+}
+
+
+// --- Components ---
+const StatusBadge = ({ status }: { status: Phase['status'] }) => {
+  if (status === 'Completada') {
+    return <Badge className="bg-green-100 text-green-800 border-green-300 hover:bg-green-100"><CheckCircle className="h-4 w-4 mr-2"/> {status}</Badge>;
+  }
+  if (status === 'En Pausa') {
+    return <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300 hover:bg-yellow-100"><PauseCircle className="h-4 w-4 mr-2"/> {status}</Badge>;
+  }
+  return <Badge variant="outline"><Loader className="h-4 w-4 mr-2 animate-spin"/> {status}</Badge>;
+};
+
+const PhaseCard = ({ phase, index }: { phase: Phase, index: number }) => (
+  <div className="relative pl-8 sm:pl-12">
+    {/* Timeline Dot */}
+    <div className="absolute left-0 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground">
+      <span className="font-bold">{index + 1}</span>
+    </div>
+    
+    <div className="rounded-lg border bg-card text-card-foreground shadow-sm ml-4">
+        <div className="p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <h3 className="text-xl font-bold font-headline">{phase.title}</h3>
+                <StatusBadge status={phase.status} />
+            </div>
+            <p className="mt-2 text-muted-foreground">{phase.description}</p>
+             <div className="text-xs text-muted-foreground mt-2 flex items-center gap-2">
+                <Clock className="h-3 w-3" />
+                <span>Estimación: {phase.estimatedHours} horas</span>
+            </div>
+        </div>
+
+        <div className="border-t">
+            <ul className="divide-y">
+                {phase.steps.map((step, i) => (
+                    <li key={i} className="px-6 py-3 flex items-start gap-4">
+                        <CheckCircle className={`h-5 w-5 mt-0.5 flex-shrink-0 ${step.isCompleted ? 'text-green-500' : 'text-muted-foreground/30'}`} />
+                        <span className={`text-sm ${step.isCompleted ? 'text-foreground' : 'text-muted-foreground'}`}>
+                            {step.text}
+                        </span>
+                    </li>
+                ))}
+            </ul>
+        </div>
+    </div>
+  </div>
+);
+
+
+// --- Page Component ---
+export default async function RoadmapPage() {
+  const roadmapPhases = await parseRoadmap();
+
+  return (
+    <div className="bg-secondary dark:bg-card">
+        <div className="container mx-auto max-w-4xl px-4 py-12 md:px-6 md:py-20 lg:py-24">
+        <div className="text-center mb-12">
+            <h1 className="text-4xl md:text-5xl font-bold font-headline">Hoja de Ruta del Proyecto</h1>
+            <p className="text-lg text-muted-foreground mt-2 font-body max-w-2xl mx-auto">
+            Un vistazo transparente a nuestro proceso de desarrollo, desde la arquitectura hasta la implementación de funcionalidades.
+            </p>
+        </div>
+
+        <div className="relative space-y-12">
+            {/* Timeline Line */}
+            <div className="absolute left-4 top-4 h-full w-0.5 bg-border -translate-x-1/2"></div>
+            
+            {roadmapPhases.map((phase, index) => (
+                <PhaseCard key={index} phase={phase} index={index} />
+            ))}
+        </div>
+        </div>
+    </div>
+  );
+}
