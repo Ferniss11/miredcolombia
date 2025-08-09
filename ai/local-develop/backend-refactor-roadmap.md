@@ -179,11 +179,11 @@ src/lib/
 ### **Paso 2.5: Crear Flujo de Verificación de Usuario y Perfilado desde Chat (Pausado)**
 
 *   **Objetivo:** Hacer el chat más robusto y seguro, convirtiendo a los usuarios anónimos en usuarios registrados de la plataforma.
-*   **Estado:** En pausa. Se retomará después de completar la Fase 3 del directorio de negocios.
+*   **Estado:** En pausa. Se retomará después de completar la Fase 4 del directorio de negocios.
 
 ---
 
-## **Fase 3: Refactorización del Directorio y Negocios**
+## **Fase 3: Refactorización del Directorio y Negocios (✓ Completada)**
 
 **Objetivo:** Aplicar la arquitectura hexagonal al manejo de perfiles de negocio.
 
@@ -202,7 +202,7 @@ src/lib/
     *   Crear `approve-business-verification.use-case.ts`: Lógica para que un admin apruebe o rechace una reclamación. (✓)
     *   Crear `delete-business.use-case.ts`: Lógica para eliminar un negocio del directorio. (✓)
 
-### **Paso 3.3: Implementar la Infraestructura (`src/lib/directory/infrastructure`)**
+### **Paso 3.3: Implementar la Infraestructura (`src/lib/directory/infrastructure`) (✓ Completado)**
 
 *   **Objetivo:** Crear los "enchufes" que conectan la lógica de negocio con el mundo real (base de datos, APIs externas, etc.).
 *   **Tareas:**
@@ -212,14 +212,14 @@ src/lib/
     *   **`api/directory.controller.ts`**: Crear un `DirectoryController` para manejar las peticiones HTTP del directorio. (✓)
     *   **`api/routes.ts`**: Crear los API Routes correspondientes que utilizarán el `DirectoryController` y el `apiHandler`. (✓)
 
-### **Paso 3.4: Actualizar la UI y Eliminar Código Antiguo**
+### **Paso 3.4: Actualizar la UI y Eliminar Código Antiguo (✓ Completado)**
 
 *   **Objetivo:** Conectar toda la interfaz de usuario que interactúa con el directorio a la nueva API y eliminar la lógica antigua.
 *   **Tareas:**
-    1.  Actualizar `/dashboard/admin/directory/page.tsx` para usar los nuevos endpoints de la API.
-    2.  Actualizar `/dashboard/advertiser/profile/page.tsx` para el proceso de vinculación.
-    3.  Actualizar `/directory/[slug]/page.tsx` y `/directory/page.tsx` para usar la nueva acción `getPublicBusinessDetailsAction`.
-    4.  **ELIMINAR:** `src/lib/directory-actions.ts` una vez que todas las dependencias se hayan migrado.
+    1.  Actualizar `/dashboard/admin/directory/page.tsx` para usar los nuevos endpoints de la API. (✓)
+    2.  Actualizar `/dashboard/advertiser/profile/page.tsx` para el proceso de vinculación. (✓)
+    3.  Actualizar `/directory/[slug]/page.tsx` y `/directory/page.tsx` para usar la nueva acción `getPublicBusinessDetailsAction`. (✓)
+    4.  **ELIMINAR:** `src/lib/directory-actions.ts` una vez que todas las dependencias se hayan migrado. (✓)
 
 ---
 
