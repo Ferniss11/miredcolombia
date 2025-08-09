@@ -339,9 +339,9 @@ src/lib/
 
 *   **Sección "Quiénes Somos":** Modificar el componente para que, en lugar de abrir un modal, el video de Jennifer se inserte y se pueda reproducir directamente en la página. Esto permite que los bots de Google lo indexen como contenido multimedia, mejorando el SEO. (✓)
 
-### **Paso 6.4: Interactividad en la Sección "Paso a Paso"**
+### **Paso 6.4: Interactividad en la Sección "Paso a Paso" (✓ Completado)**
 
-*   **Componente `StepsSection`:** Convertir cada "globo" de paso en un botón interactivo. Al hacer clic, se abrirá un modal (`Dialog`) que contendrá información mucho más detallada sobre esa etapa del proceso migratorio, incluyendo listas de verificación, consejos y enlaces (CTAs) a servicios relevantes.
+*   **Componente `StepsSection`:** Convertir cada "globo" de paso en un botón interactivo. Al hacer clic, se abrirá un modal (`Dialog`) que contendrá información mucho más detallada sobre esa etapa del proceso migratorio, incluyendo listas de verificación, consejos y enlaces (CTAs) a servicios relevantes. (✓)
 
 ### **Paso 6.5: Actualización de Contenido en "Servicios"**
 
