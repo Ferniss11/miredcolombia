@@ -71,7 +71,7 @@ const JobsPublicPage = async () => {
                 <Card className="relative overflow-hidden bg-background shadow-lg text-center">
                     <div className="absolute inset-0 bg-conic-glow opacity-20"></div>
                     <CardContent className="p-8 flex flex-col items-center justify-center h-full relative">
-                        <div className="mx-auto p-4 bg-secondary/80 rounded-full inline-flex mb-4">
+                        <div className="mx-auto p-4 bg-secondary rounded-full inline-flex mb-4">
                             <Upload className="w-8 h-8 text-secondary-foreground" />
                         </div>
                         <h3 className="text-xl font-bold font-headline">¿Buscas tu próxima oportunidad?</h3>

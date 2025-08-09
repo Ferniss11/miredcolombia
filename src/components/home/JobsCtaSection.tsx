@@ -15,6 +15,10 @@ interface JobsCtaSectionProps {
 }
 
 const JobsCtaSection: React.FC<JobsCtaSectionProps> = ({ jobs }) => {
+    const { user } = useAuth();
+
+    const advertiserHref = user ? '/dashboard/jobs' : '/signup?role=advertiser';
+    const candidateHref = user ? '/dashboard/candidate-profile' : '/signup?role=user';
     
     return (
         <section className="w-full py-12 md:py-24 lg:py-32 bg-background">
@@ -46,14 +50,39 @@ const JobsCtaSection: React.FC<JobsCtaSectionProps> = ({ jobs }) => {
                         </div>
                     </>
                 ) : (
-                    // This part remains empty as the CTA cards are now on the main /jobs page.
-                    // We can add a simple message here if needed in the future.
-                    <div className="text-center py-12">
-                         <Button asChild>
-                            <Link href="/jobs">
-                                Explorar Portal de Empleo <ArrowRight className="ml-2 h-4 w-4" />
-                            </Link>
-                        </Button>
+                    <div className="py-12 grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+                        <Card className="relative overflow-hidden bg-background shadow-lg text-center">
+                            <div className="absolute inset-0 bg-conic-glow opacity-20"></div>
+                            <CardContent className="p-8 flex flex-col items-center justify-center h-full relative">
+                                <div className="mx-auto p-4 bg-primary/20 rounded-full inline-flex mb-4">
+                                    <Building className="w-8 h-8 text-primary" />
+                                </div>
+                                <h3 className="text-xl font-bold font-headline">¿Tienes una vacante?</h3>
+                                <p className="text-muted-foreground mt-2 mb-6 flex-grow">
+                                    Publica tu oferta de empleo y llega a miles de profesionales colombianos cualificados en España.
+                                </p>
+                                <Button asChild>
+                                    <Link href={advertiserHref}>Publica tu oferta ahora</Link>
+                                </Button>
+                            </CardContent>
+                        </Card>
+                        <Card className="relative overflow-hidden bg-background shadow-lg text-center">
+                             <div className="absolute inset-0 bg-conic-glow opacity-20"></div>
+                            <CardContent className="p-8 flex flex-col items-center justify-center h-full relative">
+                                <div className="mx-auto p-4 bg-secondary rounded-full inline-flex mb-4">
+                                    <Upload className="w-8 h-8 text-secondary-foreground" />
+                                </div>
+                                <h3 className="text-xl font-bold font-headline">¿Buscas tu próxima oportunidad?</h3>
+                                <p className="text-muted-foreground mt-2 mb-6 flex-grow">
+                                    Crea tu perfil de candidato, sube tu CV y deja que las oportunidades te encuentren.
+                                </p>
+                                <Button asChild variant="secondary">
+                                    <Link href={candidateHref}>
+                                        Sube tu Hoja de Vida
+                                    </Link>
+                                </Button>
+                            </CardContent>
+                        </Card>
                     </div>
                 )}
             </div>
