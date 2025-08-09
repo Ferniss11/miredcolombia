@@ -9,6 +9,7 @@ export interface JobPosting {
 
   // Detalles de la ubicación
   location: string; // E.g., "Madrid, España"
+  city: string; // E.g., "Madrid"
   locationType: 'ON_SITE' | 'REMOTE' | 'HYBRID';
 
   // Detalles del salario

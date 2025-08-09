@@ -243,10 +243,9 @@ src/lib/
 ### **Paso 4.3: Implementar la Infraestructura (`src/lib/blog/infrastructure`) (✓ Completado)**
 
 *   **`persistence/firestore-blog.repository.ts`**: Implementa `BlogPostRepository` usando Firestore Admin SDK. (✓)
-*   **`ai/genkit-article.adapter.ts`**: Implementa una interfaz `ArticleGeneratorAdapter`. Será el único lugar que importa y llama a los flujos de Genkit (`generateIntelligentArticleFlow`, etc.). (✓)
 *   **`api/blog.controller.ts`**: Crear un `BlogController` para manejar las peticiones HTTP (crear, editar, publicar). (✓)
 *   **`api/routes.ts`**: Crear los API Routes (`/api/blog`, `/api/blog/[id]`) que usarán el `BlogController`. (✓)
-*   **Actualizar `Server Actions`**: Modificar `src/lib/ai-actions.ts` y `src/lib/blog-actions.ts` para que, en lugar de contener lógica propia, llamen a los nuevos endpoints de la API del blog. (✓)
+*   **Actualizar `Server Actions`**: Modificar `src/lib/blog-actions.ts` para que, en lugar de contener lógica propia, llamen a los nuevos endpoints de la API del blog, pasando las cookies de sesión para la autenticación. (✓)
 
 ### **Paso 4.4: Actualizar la UI y Eliminar Código Antiguo (✓ Completado)**
 
@@ -254,6 +253,70 @@ src/lib/
 *   **Modificar `AdminBlogManagementPage`**: Actualizar para que liste, edite y elimine publicaciones a través del nuevo sistema. (✓)
 *   **ELIMINAR:** `src/services/blog.service.ts` (✓)
 *   **ELIMINAR:** `src/app/api/posts/route.ts` (reemplazado por la nueva API del blog). (✓)
+
+---
+
+## **Fase 5: Evolución del Portal de Empleo y Servicios**
+
+**Objetivo:** Convertir el portal de empleo en un ecosistema laboral completo, añadiendo perfiles de candidato, un sistema de aplicación interno y un portal de servicios para autónomos.
+
+### **Paso 5.1: Perfiles de Candidato Profesionales**
+
+*   **Dominio (`user.entity.ts`):** Extender `UserProfile` con un objeto `candidateProfile` que incluya: `professionalTitle`, `summary`, `skills: string[]`, `resumeUrl`, `experience: object[]`, `education: object[]`.
+*   **UI (`/dashboard/candidate-profile`):** Crear una nueva página en el dashboard del usuario para que pueda crear y editar su perfil profesional completo, incluyendo la subida de su CV en PDF.
+*   **Infraestructura (`api/users/[uid]/candidate-profile`):** Crear un nuevo endpoint `PUT` para manejar la actualización de estos datos y la subida del CV a Firebase Storage.
+
+### **Paso 5.2: Sistema de Aplicación Interno**
+
+*   **Dominio:** Crear una nueva entidad `JobApplication` (`id`, `jobId`, `candidateId`, `advertiserId`, `applicationDate`, `status`, `profileSnapshot`). Crear su repositorio y casos de uso.
+*   **Infraestructura:** Crear los endpoints `/api/jobs/[id]/apply` (POST) para que los candidatos apliquen y `/api/jobs/[id]/applicants` (GET) para que los anunciantes vean a los candidatos.
+*   **UI (Pública):** En `/jobs/[id]`, cambiar el botón "Aplicar" para que inicie este flujo si el usuario está logueado.
+*   **UI (Dashboard Anunciante):** Crear la página `/dashboard/jobs/[id]/applicants` para que el anunciante vea el listado de candidatos, pueda revisar sus perfiles y cambiar el estado de la aplicación.
+
+### **Paso 5.3: Portal "Ofrezco mis Servicios"**
+
+*   **Dominio:** Crear una nueva entidad `ServiceListing` (`id`, `userId`, `title`, `description`, `category`, `city`, etc.). Crear su repositorio y casos de uso.
+*   **Infraestructura:** Crear los endpoints `/api/services` para el CRUD de los anuncios de servicios.
+*   **UI (Pública):** Crear la página `/services` que muestre los anuncios en un formato de tarjetas con filtros y buscador.
+*   **UI (Dashboard):** Permitir a cualquier usuario (`User` o `Advertiser`) crear y gestionar sus anuncios de servicios desde una nueva sección en su panel.
+
+### **Paso 5.4: Ofertas de Empleo para Invitados ("Guest")**
+
+*   **Concepto:** Permitir que usuarios no registrados publiquen una oferta de empleo.
+*   **Flujo:**
+    1.  Un formulario público permite al invitado rellenar los datos de la oferta.
+    2.  Al enviar, se crea una cuenta de usuario temporal o se le asigna un rol `Guest`.
+    3.  La oferta de empleo se guarda con un estado `pending_payment` o `pending_review`.
+    4.  Se podría enviar un enlace mágico al email del invitado para que pueda gestionar/pagar su publicación.
+    5.  Una vez revisada o pagada, la oferta pasa a estado `ACTIVE`.
+*   **Reto:** Gestión de la autenticación y autorización para estos usuarios temporales.
+
+---
+
+## **Fase 6: Mejoras de Interfaz, Contenido y SEO**
+
+**Objetivo:** Refinar la experiencia de usuario en todo el sitio, mejorar el posicionamiento en buscadores y actualizar el contenido visual y textual para ser más dinámico y atractivo.
+
+### **Paso 6.1: Actualización de Textos y CTA (Call to Action)**
+
+*   **Sección de Empleo:** Cambiar el título principal a "Oportunidades de Empleo y Trabajo". Quitar "oportunidades" del subtítulo. Añadir un CTA claro para que los candidatos suban su CV.
+*   **Header Público:** Renombrar los enlaces del menú de navegación. `Directorio` -> `Negocios`, `Empleo` -> `Empleo`, etc.
+
+### **Paso 6.2: Dinamismo Visual**
+
+*   **Fondos de Sección:** Aplicar degradados sutiles o imágenes de fondo de baja opacidad en las secciones del Home para romper la monotonía de los colores sólidos y crear un ambiente más profesional y dinámico.
+
+### **Paso 6.3: Optimización SEO del Video**
+
+*   **Sección "Quiénes Somos":** Modificar el componente para que, en lugar de abrir un modal, el video de Jennifer se inserte y se pueda reproducir directamente en la página. Esto permite que los bots de Google lo indexen como contenido multimedia, mejorando el SEO.
+
+### **Paso 6.4: Interactividad en la Sección "Paso a Paso"**
+
+*   **Componente `StepsSection`:** Convertir cada "globo" de paso en un botón interactivo. Al hacer clic, se abrirá un modal (`Dialog`) que contendrá información mucho más detallada sobre esa etapa del proceso migratorio, incluyendo listas de verificación, consejos y enlaces (CTAs) a servicios relevantes.
+
+### **Paso 6.5: Actualización de Contenido en "Servicios"**
+
+*   **Componente `ServicesSection`:** Localizar la tarjeta de servicio "Búsqueda de Vivienda" y reemplazar su contenido (icono, título, descripción, etc.) por el nuevo servicio: "Homologación de licencias de conducción".
 
 ---
 
