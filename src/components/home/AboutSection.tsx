@@ -48,8 +48,8 @@ export default function AboutSection({}: AboutSectionProps) {
                             </div>
                         </div>
                     </div>
-                    <div className="flex items-center justify-center">
-                        <div className="relative group w-full max-w-sm h-64 sm:h-80 rounded-xl shadow-lg overflow-hidden transition-all duration-300">
+                    <div className="flex items-center justify-center w-full">
+                        <div className="w-full max-w-lg aspect-video rounded-xl shadow-lg overflow-hidden transition-all duration-300">
                            {showVideo ? (
                                 <video
                                     className="w-full h-full object-cover"
@@ -62,7 +62,7 @@ export default function AboutSection({}: AboutSectionProps) {
                            ) : (
                              <button 
                                 onClick={() => setShowVideo(true)}
-                                className="w-full h-full"
+                                className="w-full h-full relative group"
                                 aria-label="Play Jennifer's Video"
                             >
                                 <Image 
@@ -75,7 +75,7 @@ export default function AboutSection({}: AboutSectionProps) {
                                 <div className="absolute inset-0 bg-black/30 group-hover:bg-black/50 transition-colors"></div>
                                 <div className="absolute inset-0 flex flex-col items-center justify-center text-white p-4">
                                     <PlayCircle className="w-24 h-24 text-white/80 drop-shadow-lg transition-transform group-hover:scale-110 group-hover:text-white" />
-                                    <h3 className="text-xl sm:text-2xl font-bold mt-4 font-headline text-shadow" style={{textShadow: '1px 1px 3px rgba(0,0,0,0.7)'}}>
+                                    <h3 className="text-xl sm:text-2xl font-bold mt-4 font-headline" style={{textShadow: '1px 1px 3px rgba(0,0,0,0.7)'}}>
                                         {videoTitle}
                                     </h3>
                                 </div>
@@ -105,7 +105,7 @@ export default function AboutSection({}: AboutSectionProps) {
                             <div className="flex-grow text-center md:text-left">
                                 <p className="text-sm font-semibold text-primary">Colaboración Experta</p>
                                 <h3 className="inline-block rounded-lg bg-gray-200 px-4 py-2 text-md font-semibold text-gray-800">Karla Santofimio Salas</h3>
-                                <p className="max-w-lg mx-auto lg:mx-0 text-gray-600 md:text-xl/relaxed dark:text-gray-300 font-body max-w-lg">
+                                <p className="max-w-lg mx-auto lg:mx-0 text-gray-600 md:text-xl/relaxed dark:text-gray-300 font-body">
                                     Contamos con el respaldo y la experiencia de Karla, abogada especializada en extranjería, para ofrecerte la asesoría legal más completa y actualizada.
                                 </p>
                             </div>
