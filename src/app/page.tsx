@@ -18,6 +18,6 @@ export default async function HomePage() {
             eurToCopRate={eurToCopRate} 
             initialBusinesses={businesses?.slice(0, 4) || []}
             initialJobs={jobs?.slice(0, 4) || []}
-            initialPosts={posts?.slice(0, 6) || []}
+            initialPosts={posts?.slice(0, 5) || []}
          />;
 }

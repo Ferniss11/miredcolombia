@@ -61,7 +61,7 @@ export default function BlogSection({ posts }: { posts: BlogPost[] }) {
                                             <p className="text-muted-foreground line-clamp-3">{post.introduction}</p>
                                         </CardContent>
                                         <CardFooter>
-                                            <Button asChild variant="link" className="text-accent-foreground p-0 h-auto font-semibold">
+                                            <Button asChild variant="link" className="text-foreground p-0 h-auto font-semibold">
                                                 <Link href={`/blog/${post.slug}`}>
                                                     Leer Más <ArrowRight className="ml-2 h-4 w-4" />
                                                 </Link>
