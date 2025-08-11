@@ -209,7 +209,7 @@ export default function AdminDirectoryPage() {
                                     <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{place.formattedAddress}</p>
                                 </CardContent>
                                 <CardFooter className="p-4 pt-0">
-                                    <Button size="sm" className="w-full" onClick={() => handleAddBusiness(place.id)} disabled={isSaving || !selectedCategory}>
+                                    <Button size="sm" className="w-full" onClick={() => handleAddBusiness(place.id)} disabled={isSaving}>
                                         {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />} Añadir
                                     </Button>
                                 </CardFooter>
