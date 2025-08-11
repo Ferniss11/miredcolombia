@@ -129,10 +129,10 @@ export default function StepsSection() {
                        Información detallada sobre esta etapa del proceso.
                     </DialogDescription>
                     </DialogHeader>
-                    <div className="py-4 text-muted-foreground">
+                    <div className="py-6 text-muted-foreground">
                         <p>{selectedStep?.details}</p>
                     </div>
-                     <DialogFooter className="sm:justify-start gap-2 pt-4 border-t">
+                     <DialogFooter className="flex-col sm:flex-col sm:space-x-0 gap-2 pt-4 border-t">
                         <Button asChild>
                             <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
                                 <MessageCircle className="mr-2 h-4 w-4" /> Hablar por WhatsApp
