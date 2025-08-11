@@ -48,8 +48,8 @@ export default function HomePageClient({ eurToCopRate, initialBusinesses, initia
         <PackagesSection eurToCopRate={eurToCopRate} />
         <ServicesSection eurToCopRate={eurToCopRate} />
         <JobsCtaSection jobs={initialJobs} />
-        <DirectorySection businesses={initialBusinesses} />
-        <BusinessSection />
+        <DirectorySection businesses={initialBusinesses.slice(0, 4)} />
+        <BusinessSection businesses={initialBusinesses} />
         <BlogSection posts={initialPosts} />
         <TestimonialsSection />
       </main>

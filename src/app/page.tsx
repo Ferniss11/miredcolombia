@@ -16,7 +16,7 @@ export default async function HomePage() {
 
   return <HomePageClient 
             eurToCopRate={eurToCopRate} 
-            initialBusinesses={businesses?.slice(0, 4) || []}
+            initialBusinesses={businesses || []}
             initialJobs={jobs?.slice(0, 4) || []}
             initialPosts={posts?.slice(0, 5) || []}
          />;
