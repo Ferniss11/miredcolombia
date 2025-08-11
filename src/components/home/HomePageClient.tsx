@@ -4,7 +4,7 @@
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import StripeCheckoutForm from "@/components/checkout/StripeCheckoutForm";
-import type { MigrationPackage, MigrationService, PurchaseableItem, BlogPost, PlaceDetails, JobPosting } from '@/lib/types';
+import type { MigrationPackage, MigrationService, PurchaseableItem, PlaceDetails, JobPosting, BlogPost } from '@/lib/types';
 
 // Import sections directly
 import HeroSection from './HeroSection';
@@ -21,13 +21,13 @@ import JobsCtaSection from './JobsCtaSection';
 import { useChat } from '@/context/ChatContext';
 
 type HomePageClientProps = {
-  initialPosts: BlogPost[];
   eurToCopRate: number;
   initialBusinesses: PlaceDetails[];
   initialJobs: JobPosting[];
+  initialPosts: BlogPost[];
 }
 
-export default function HomePageClient({ initialPosts, eurToCopRate, initialBusinesses, initialJobs }: HomePageClientProps) {
+export default function HomePageClient({ eurToCopRate, initialBusinesses, initialJobs, initialPosts }: HomePageClientProps) {
   const [isCheckoutOpen, setCheckoutOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<PurchaseableItem | null>(null);
   
@@ -48,8 +48,8 @@ export default function HomePageClient({ initialPosts, eurToCopRate, initialBusi
         <PackagesSection eurToCopRate={eurToCopRate} />
         <ServicesSection eurToCopRate={eurToCopRate} />
         <JobsCtaSection jobs={initialJobs} />
-        <DirectorySection businesses={initialBusinesses} />
-        <BusinessSection />
+        <DirectorySection businesses={initialBusinesses.slice(0, 4)} />
+        <BusinessSection businesses={initialBusinesses} />
         <BlogSection posts={initialPosts} />
         <TestimonialsSection />
       </main>

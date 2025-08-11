@@ -47,6 +47,7 @@ export async function createBlogPostAction(input: Omit<BlogPostInput, 'slug'>, i
     
     revalidatePath('/dashboard/admin/blog');
     revalidatePath('/blog');
+    revalidatePath('/'); // Revalidate home page as well
 
     return { success: true, post: newPost };
   } catch (error) {
@@ -118,6 +119,7 @@ export async function updateBlogPostAction(id: string, data: Partial<BlogPost>) 
         
         revalidatePath('/dashboard/admin/blog');
         revalidatePath(`/blog/preview/${id}`);
+        revalidatePath('/'); // Revalidate home page
         if (data.slug) {
             revalidatePath(`/blog/${data.slug}`);
         }
@@ -142,6 +144,7 @@ export async function deleteBlogPostAction(id: string) {
 
         revalidatePath('/dashboard/admin/blog');
         revalidatePath('/blog');
+        revalidatePath('/'); // Revalidate home page
         return { success: true };
     } catch (error) {
         console.error('Error deleting post:', error);

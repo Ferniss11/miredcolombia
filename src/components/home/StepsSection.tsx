@@ -3,9 +3,11 @@
 'use client';
 
 import { cn } from "@/lib/utils";
-import { FileStack, PlaneLanding, Gavel, Home as HomeIcon, Handshake } from "lucide-react";
+import { FileStack, PlaneLanding, Gavel, Home as HomeIcon, Handshake, MessageCircle, Bot } from "lucide-react";
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from "../ui/button";
+import { useChat } from "@/context/ChatContext";
 
 const steps = [
     {
@@ -51,11 +53,21 @@ const stepColors = [
 export default function StepsSection() {
     const [isModalOpen, setModalOpen] = useState(false);
     const [selectedStep, setSelectedStep] = useState<(typeof steps)[0] | null>(null);
+    const { openChat } = useChat();
+
+    const phoneNumber = "34653863675";
+    const whatsappMessage = selectedStep ? encodeURIComponent(`Hola, tengo una pregunta sobre el paso: "${selectedStep.title}"`) : '';
+    const whatsappUrl = `https://wa.me/${phoneNumber}?text=${whatsappMessage}`;
 
     const handleStepClick = (step: typeof steps[0]) => {
         setSelectedStep(step);
         setModalOpen(true);
     };
+
+    const handleOpenChatAssistant = () => {
+        setModalOpen(false);
+        openChat();
+    }
 
     return (
         <section id="paso-a-paso" className="w-full py-12 md:py-24 lg:py-32 bg-gray-50 dark:bg-gray-900/50">
@@ -117,9 +129,19 @@ export default function StepsSection() {
                        Información detallada sobre esta etapa del proceso.
                     </DialogDescription>
                     </DialogHeader>
-                    <div className="py-4 text-muted-foreground">
+                    <div className="py-6 text-muted-foreground">
                         <p>{selectedStep?.details}</p>
                     </div>
+                     <DialogFooter className="flex-col sm:flex-col sm:space-x-0 gap-2 pt-4 border-t">
+                        <Button asChild variant="outline" className="hover:bg-green-600 hover:text-white">
+                            <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
+                                <MessageCircle className="mr-2 h-4 w-4" /> Hablar por WhatsApp
+                            </a>
+                        </Button>
+                        <Button onClick={handleOpenChatAssistant}>
+                            <Bot className="mr-2 h-4 w-4" /> Preguntar al Asistente IA
+                        </Button>
+                    </DialogFooter>
                 </DialogContent>
             </Dialog>
         </section>

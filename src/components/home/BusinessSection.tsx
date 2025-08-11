@@ -1,34 +1,82 @@
-import { Button } from "@/components/ui/button";
-import { Building, Users, TrendingUp, Star, ArrowRight } from "lucide-react";
-import Link from "next/link";
 
-export default function BusinessSection() {
+'use client';
+
+import React from 'react';
+import { Button } from "@/components/ui/button";
+import { Building, ArrowRight, CheckCircle } from "lucide-react";
+import Link from "next/link";
+import { Card, CardContent, CardFooter, CardHeader } from '../ui/card';
+import { Carousel, CarouselContent, CarouselItem } from '../ui/carousel';
+import Autoplay from "embla-carousel-autoplay";
+import type { PlaceDetails } from '@/lib/types';
+import Image from 'next/image';
+import { StarRating } from './StarRating';
+
+
+const PlaceholderCard = () => (
+    <Card className="overflow-hidden shadow-lg border-2 border-dashed bg-primary/10 border-primary/30 h-full flex flex-col justify-center items-center text-center p-6">
+        <div className="mx-auto p-4 bg-primary/20 rounded-full inline-flex mb-4">
+            <Building className="w-8 h-8 text-primary" />
+        </div>
+        <h3 className="text-xl font-bold font-headline">Tu Negocio Aquí</h3>
+        <p className="text-muted-foreground mt-2 mb-6 flex-grow">
+           ¿Quieres que miles de colombianos te encuentren?
+        </p>
+        <Button asChild className="w-full">
+            <Link href="/signup?role=advertiser">
+                Registrarme Ahora
+            </Link>
+        </Button>
+    </Card>
+);
+
+export default function BusinessSection({ businesses }: { businesses: PlaceDetails[] }) {
+    const carouselItems = React.useMemo(() => {
+        // The businesses are already shuffled on the server.
+        const items: (PlaceDetails | { type: 'placeholder' })[] = [...businesses];
+        
+        // Insert placeholder card strategically
+        if (items.length > 1) {
+            items.splice(2, 0, { type: 'placeholder' });
+        } else {
+            items.push({ type: 'placeholder' });
+        }
+        items.unshift({ type: 'placeholder' });
+
+        return items;
+    }, [businesses]);
+
     return (
-        <section className="w-full py-12 md:py-24 lg:py-32 bg-gray-50 dark:bg-gray-900/50">
-            <div className="container px-4 md:px-6">
-                <div className="bg-white dark:bg-card rounded-xl shadow-lg p-8 md:p-12">
-                    <div className="grid md:grid-cols-2 gap-12 items-center">
+        <section className="w-full py-12 md:py-24 lg:py-32 bg-secondary/50">
+             <div className="container px-4 md:px-6">
+                <div className="relative bg-card rounded-xl shadow-lg p-8 md:p-12 overflow-hidden">
+                    <div className="absolute inset-0 bg-conic-glow opacity-20 z-0"></div>
+                    <div className="relative z-10 grid md:grid-cols-2 gap-12 items-center">
                         <div className="space-y-6">
-                            <div className="flex items-center gap-2 text-primary">
-                                <Building className="h-6 w-6" />
-                                <span className="font-semibold">Para Negocios</span>
+                             <div className="inline-flex items-center gap-2 text-sm font-semibold text-primary bg-primary/10 px-3 py-1 rounded-full">
+                                <Building className="h-5 w-5" />
+                                <span>Para Negocios</span>
                             </div>
                             <h2 className="text-3xl md:text-4xl font-bold font-headline">¿Tienes un negocio en España?</h2>
                             <p className="text-muted-foreground text-lg">
                                 Conecta con miles de colombianos que necesitan tus servicios. Promociona tu negocio en la plataforma líder de migración.
                             </p>
-                            <div className="flex flex-col sm:flex-row gap-6 text-sm">
-                                <div className="flex items-center gap-2">
-                                    <Users className="h-5 w-5 text-primary" />
-                                    <span className="font-medium">+10,000 usuarios</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <TrendingUp className="h-5 w-5 text-green-500" />
-                                    <span className="font-medium">95% satisfacción</span>
-                                </div>
-                            </div>
+                             <ul className="space-y-4 text-muted-foreground">
+                                <li className="flex items-start gap-3">
+                                    <CheckCircle className="h-5 w-5 mt-1 text-green-500 flex-shrink-0"/>
+                                    <span><strong>Asistente IA:</strong> Activa un asistente en tu perfil para responder clientes 24/7.</span>
+                                </li>
+                                <li className="flex items-start gap-3">
+                                    <CheckCircle className="h-5 w-5 mt-1 text-green-500 flex-shrink-0"/>
+                                    <span><strong>Visibilidad SEO:</strong> Mejora tu posicionamiento local con perfiles optimizados por IA.</span>
+                                </li>
+                                 <li className="flex items-start gap-3">
+                                    <CheckCircle className="h-5 w-5 mt-1 text-green-500 flex-shrink-0"/>
+                                    <span><strong>Gestión Simplificada:</strong> Publica ofertas de empleo y gestiona tu perfil fácilmente.</span>
+                                </li>
+                            </ul>
                             <div className="flex flex-col sm:flex-row gap-4 pt-4">
-                                <Button asChild size="lg">
+                                <Button asChild size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground">
                                     <Link href="/signup?role=advertiser">
                                         Registrar mi negocio
                                         <ArrowRight className="ml-2 h-5 w-5" />
@@ -42,26 +90,53 @@ export default function BusinessSection() {
                             </div>
                         </div>
 
-                        <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-6 shadow-inner">
-                            <div className="flex flex-col items-center text-center">
-                                <div className="p-4 bg-primary rounded-full mb-4">
-                                    <Building className="h-8 w-8 text-primary-foreground" />
-                                </div>
-                                <h3 className="font-bold font-headline text-xl">Tu Negocio Aquí</h3>
-                                <div className="flex gap-1 text-yellow-400 my-2">
-                                    <Star className="h-5 w-5 fill-current" />
-                                    <Star className="h-5 w-5 fill-current" />
-                                    <Star className="h-5 w-5 fill-current" />
-                                    <Star className="h-5 w-5 fill-current" />
-                                    <Star className="h-5 w-5 fill-current" />
-                                </div>
-                                <p className="text-muted-foreground text-sm italic">"Excelente servicio para la comunidad colombiana"</p>
-                                <div className="flex gap-4 mt-4 w-full">
-                                    <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded w-1/3 animate-pulse"></div>
-                                    <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded w-1/3 animate-pulse"></div>
-                                    <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded w-1/3 animate-pulse"></div>
-                                </div>
-                            </div>
+                        <div className="min-h-[400px] flex items-center justify-center">
+                             {businesses.length > 0 ? (
+                                <Carousel
+                                    opts={{ loop: true, align: "start" }}
+                                    plugins={[Autoplay({ delay: 4000, stopOnInteraction: true })]}
+                                    className="w-full max-w-sm"
+                                >
+                                    <CarouselContent>
+                                        {carouselItems.map((item, index) => (
+                                            <CarouselItem key={index}>
+                                                {'type' in item && item.type === 'placeholder' ? (
+                                                    <PlaceholderCard />
+                                                ) : (
+                                                    <Card className="overflow-hidden shadow-lg border h-full">
+                                                        <CardHeader className="p-0 relative">
+                                                            <Image 
+                                                                src={(item as PlaceDetails).photoUrl || "https://placehold.co/400x250.png"} 
+                                                                alt={(item as PlaceDetails).displayName || "Negocio destacado"}
+                                                                width={400}
+                                                                height={250}
+                                                                data-ai-hint={`${(item as PlaceDetails).category} storefront`}
+                                                                className="w-full h-48 object-cover"
+                                                            />
+                                                        </CardHeader>
+                                                        <CardContent className="p-4 space-y-2">
+                                                            <h3 className="font-bold font-headline text-lg line-clamp-2">{(item as PlaceDetails).displayName}</h3>
+                                                            <p className="text-sm text-muted-foreground flex items-center gap-2">
+                                                                <Building className="h-4 w-4" /> {(item as PlaceDetails).category}
+                                                            </p>
+                                                            <StarRating rating={(item as PlaceDetails).rating} count={(item as PlaceDetails).userRatingsTotal} />
+                                                        </CardContent>
+                                                        <CardFooter className="p-2 border-t bg-muted/50">
+                                                            <Button asChild className="w-full" variant="outline">
+                                                                <Link href={`/directory/${(item as PlaceDetails).id}`}>
+                                                                    Ver Perfil
+                                                                </Link>
+                                                            </Button>
+                                                        </CardFooter>
+                                                    </Card>
+                                                )}
+                                            </CarouselItem>
+                                        ))}
+                                    </CarouselContent>
+                                </Carousel>
+                            ) : (
+                                <PlaceholderCard />
+                            )}
                         </div>
                     </div>
                 </div>
