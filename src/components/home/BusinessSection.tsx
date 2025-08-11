@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { Button } from "@/components/ui/button";
 import { Building, Users, TrendingUp, Star, ArrowRight, MapPin, Bot, Search, CheckCircle } from "lucide-react";
 import Link from "next/link";
@@ -28,20 +28,43 @@ const StarRating = ({ rating, count }: { rating: number, count: number }) => {
     );
 };
 
+const PlaceholderCard = () => (
+    <Card className="overflow-hidden shadow-lg border-2 border-dashed bg-primary/10 border-primary/30 h-full flex flex-col justify-center items-center text-center p-6">
+        <div className="mx-auto p-4 bg-primary/20 rounded-full inline-flex mb-4">
+            <Building className="w-8 h-8 text-primary" />
+        </div>
+        <h3 className="text-xl font-bold font-headline">Tu Negocio Aquí</h3>
+        <p className="text-muted-foreground mt-2 mb-6 flex-grow">
+           ¿Quieres que miles de colombianos te encuentren?
+        </p>
+        <Button asChild className="w-full">
+            <Link href="/signup?role=advertiser">
+                Registrarme Ahora
+            </Link>
+        </Button>
+    </Card>
+);
 
 export default function BusinessSection({ businesses }: BusinessSectionProps) {
-    const [randomBusinesses, setRandomBusinesses] = useState<PlaceDetails[]>([]);
+    const carouselItems = useMemo(() => {
+        const shuffled = [...businesses].sort(() => 0.5 - Math.random()).slice(0, 5);
+        const items: (PlaceDetails | { type: 'placeholder' })[] = [...shuffled];
+        
+        // Insert placeholder card
+        if (items.length > 1) {
+            items.splice(2, 0, { type: 'placeholder' });
+        } else {
+            items.push({ type: 'placeholder' });
+        }
+        items.unshift({ type: 'placeholder' });
 
-    useEffect(() => {
-        const shuffled = [...businesses].sort(() => 0.5 - Math.random());
-        setRandomBusinesses(shuffled.slice(0, 5));
+        return items;
     }, [businesses]);
 
     return (
-        <section className="w-full py-12 md:py-24 lg:py-32 bg-secondary/50">
+        <section className="w-full py-12 md:py-24 lg:py-32 bg-primary/10">
              <div className="container px-4 md:px-6">
                 <div className="relative bg-card rounded-xl shadow-lg p-8 md:p-12 overflow-hidden">
-                    <div className="absolute inset-0 bg-conic-glow opacity-20 z-0"></div>
                     <div className="relative z-10 grid md:grid-cols-2 gap-12 items-center">
                         <div className="space-y-6">
                              <div className="inline-flex items-center gap-2 text-sm font-semibold text-primary bg-primary/10 px-3 py-1 rounded-full">
@@ -82,50 +105,54 @@ export default function BusinessSection({ businesses }: BusinessSectionProps) {
                         </div>
 
                         <div className="min-h-[400px] flex items-center justify-center">
-                             {randomBusinesses.length > 0 ? (
+                             {businesses.length > 0 ? (
                                 <Carousel
                                     opts={{ loop: true, align: "start" }}
                                     plugins={[Autoplay({ delay: 4000, stopOnInteraction: true })]}
                                     className="w-full max-w-sm"
                                 >
                                     <CarouselContent>
-                                        {randomBusinesses.map((biz) => (
-                                            <CarouselItem key={biz.id}>
-                                                <Card className="overflow-hidden shadow-lg border">
-                                                    <CardHeader className="p-0 relative">
-                                                        <Image 
-                                                            src={biz.photoUrl || "https://placehold.co/400x250.png"} 
-                                                            alt={biz.displayName || "Negocio destacado"}
-                                                            width={400}
-                                                            height={250}
-                                                            data-ai-hint={`${biz.category} storefront`}
-                                                            className="w-full h-48 object-cover"
-                                                        />
-                                                    </CardHeader>
-                                                    <CardContent className="p-4 space-y-2">
-                                                        <h3 className="font-bold font-headline text-lg line-clamp-2">{biz.displayName}</h3>
-                                                        <p className="text-sm text-muted-foreground flex items-center gap-2">
-                                                            <Building className="h-4 w-4" /> {biz.category}
-                                                        </p>
-                                                         <p className="text-sm text-muted-foreground flex items-center gap-2">
-                                                            <MapPin className="h-4 w-4" /> {biz.city}
-                                                        </p>
-                                                        <StarRating rating={biz.rating!} count={biz.userRatingsTotal!} />
-                                                    </CardContent>
-                                                    <CardFooter className="p-2 border-t bg-muted/50">
-                                                        <Button asChild className="w-full" variant="outline">
-                                                            <Link href={`/directory/${biz.id}`}>
-                                                                Ver Perfil
-                                                            </Link>
-                                                        </Button>
-                                                    </CardFooter>
-                                                </Card>
+                                        {carouselItems.map((item, index) => (
+                                            <CarouselItem key={index}>
+                                                {'type' in item && item.type === 'placeholder' ? (
+                                                    <PlaceholderCard />
+                                                ) : (
+                                                    <Card className="overflow-hidden shadow-lg border">
+                                                        <CardHeader className="p-0 relative">
+                                                            <Image 
+                                                                src={(item as PlaceDetails).photoUrl || "https://placehold.co/400x250.png"} 
+                                                                alt={(item as PlaceDetails).displayName || "Negocio destacado"}
+                                                                width={400}
+                                                                height={250}
+                                                                data-ai-hint={`${(item as PlaceDetails).category} storefront`}
+                                                                className="w-full h-48 object-cover"
+                                                            />
+                                                        </CardHeader>
+                                                        <CardContent className="p-4 space-y-2">
+                                                            <h3 className="font-bold font-headline text-lg line-clamp-2">{(item as PlaceDetails).displayName}</h3>
+                                                            <p className="text-sm text-muted-foreground flex items-center gap-2">
+                                                                <Building className="h-4 w-4" /> {(item as PlaceDetails).category}
+                                                            </p>
+                                                             <p className="text-sm text-muted-foreground flex items-center gap-2">
+                                                                <MapPin className="h-4 w-4" /> {(item as PlaceDetails).city}
+                                                            </p>
+                                                            <StarRating rating={(item as PlaceDetails).rating!} count={(item as PlaceDetails).userRatingsTotal!} />
+                                                        </CardContent>
+                                                        <CardFooter className="p-2 border-t bg-muted/50">
+                                                            <Button asChild className="w-full" variant="outline">
+                                                                <Link href={`/directory/${(item as PlaceDetails).id}`}>
+                                                                    Ver Perfil
+                                                                </Link>
+                                                            </Button>
+                                                        </CardFooter>
+                                                    </Card>
+                                                )}
                                             </CarouselItem>
                                         ))}
                                     </CarouselContent>
                                 </Carousel>
                             ) : (
-                                <p className="text-muted-foreground">Cargando negocios...</p>
+                                <PlaceholderCard />
                             )}
                         </div>
                     </div>
