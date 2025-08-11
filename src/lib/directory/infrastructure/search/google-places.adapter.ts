@@ -56,7 +56,7 @@ export class GooglePlacesAdapter implements SearchAdapter {
       const cityComponent = details.address_components?.find((c: any) => c.types.includes('locality'));
       const city = cityComponent ? cityComponent.long_name : 'Ciudad no disponible';
 
-      // Map API response to our Business entity
+      // Map API response to our Business entity, ensuring no 'undefined' values are passed.
       const businessData: Partial<Business> = {
         id: placeId,
         displayName: details.name,
@@ -67,14 +67,14 @@ export class GooglePlacesAdapter implements SearchAdapter {
         rating: details.rating,
         userRatingsTotal: details.user_ratings_total,
         openingHours: details.opening_hours?.weekday_text,
-        isOpenNow: details.opening_hours?.open_now,
+        isOpenNow: details.opening_hours?.open_now ?? undefined, // isOpenNow can be undefined
         photos,
         reviews: details.reviews as Review[],
         geometry: details.geometry,
-        priceLevel: details.price_level,
-        servesBeer: details.serves_beer,
-        servesWine: details.serves_wine,
-        wheelchairAccessibleEntrance: details.wheelchair_accessible_entrance,
+        priceLevel: details.price_level ?? null, // Convert undefined to null
+        servesBeer: details.serves_beer ?? false, // Convert undefined to false
+        servesWine: details.serves_wine ?? false, // Convert undefined to false
+        wheelchairAccessibleEntrance: details.wheelchair_accessible_entrance ?? false, // Convert undefined to false
         editorialSummary: details.editorial_summary?.overview || '',
         city: city,
       };

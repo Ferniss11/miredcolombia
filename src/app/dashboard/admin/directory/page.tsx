@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useTransition, useEffect } from 'react';
+import { useState, useTransition, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -21,6 +21,8 @@ import { cn } from '@/lib/utils';
 import { getSavedBusinessesAction, updateBusinessStatusAction } from '@/lib/directory-actions';
 import { googlePlacesSearch } from '@/ai/tools/google-places-search';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+
 
 type Place = {
     id: string;
@@ -50,8 +52,28 @@ export default function AdminDirectoryPage() {
 
     const [savedBusinesses, setSavedBusinesses] = useState<PlaceDetails[]>([]);
     const [isLoadingSaved, setIsLoadingSaved] = useState(true);
+    const [businessToDelete, setBusinessToDelete] = useState<PlaceDetails | null>(null);
 
-    const fetchSavedBusinesses = async () => {
+
+    // Load search results from localStorage on initial render
+    useEffect(() => {
+        try {
+            const storedResults = localStorage.getItem('directorySearchResults');
+            if (storedResults) {
+                setSearchResults(JSON.parse(storedResults));
+            }
+            const storedRawResponse = localStorage.getItem('directorySearchRawResponse');
+            if (storedRawResponse) {
+                setRawApiResponse(JSON.parse(storedRawResponse));
+            }
+        } catch (error) {
+            console.error("Failed to parse search results from localStorage", error);
+            localStorage.removeItem('directorySearchResults');
+            localStorage.removeItem('directorySearchRawResponse');
+        }
+    }, []);
+
+    const fetchSavedBusinesses = useCallback(async () => {
         setIsLoadingSaved(true);
         const result = await getSavedBusinessesAction();
         if (result.error) {
@@ -60,11 +82,11 @@ export default function AdminDirectoryPage() {
             setSavedBusinesses(result.businesses);
         }
         setIsLoadingSaved(false);
-    };
+    }, [toast]);
 
     useEffect(() => {
         fetchSavedBusinesses();
-    }, []);
+    }, [fetchSavedBusinesses]);
 
     const handleSearch = () => {
         if (!query) return;
@@ -72,12 +94,19 @@ export default function AdminDirectoryPage() {
             setSearchResults(null);
             setSearchError(null);
             setRawApiResponse(null);
+            localStorage.removeItem('directorySearchResults');
+            localStorage.removeItem('directorySearchRawResponse');
+
             const result = await googlePlacesSearch({ query });
+            
             setRawApiResponse(result.rawResponse || { error: "No raw response" });
-            if ('error' in result) {
-                setSearchError(String(result.error));
+            localStorage.setItem('directorySearchRawResponse', JSON.stringify(result.rawResponse || null));
+
+            if ('error' in result.rawResponse) {
+                setSearchError(String(result.rawResponse.error));
             } else {
                 setSearchResults(result.places as Place[]);
+                localStorage.setItem('directorySearchResults', JSON.stringify(result.places as Place[]));
             }
         });
     };
@@ -100,14 +129,18 @@ export default function AdminDirectoryPage() {
                 toast({ variant: 'destructive', title: 'Error al Guardar', description: result.error.message });
             } else {
                 toast({ title: 'Éxito', description: "Negocio añadido al directorio." });
-                setSearchResults(prev => prev ? prev.filter(p => p.id !== placeId) : null);
+                setSearchResults(prev => {
+                    const newResults = prev ? prev.filter(p => p.id !== placeId) : null;
+                    localStorage.setItem('directorySearchResults', JSON.stringify(newResults));
+                    return newResults;
+                });
                 fetchSavedBusinesses();
             }
         });
     };
 
-    const handleDeleteBusiness = (placeId: string) => {
-        if (!confirm('¿Estás seguro de que quieres eliminar este negocio del directorio?')) return;
+    const handleDeleteBusiness = (placeId: string | undefined) => {
+        if (!placeId) return;
         if (!user) return;
         startDeletingTransition(async () => {
             const idToken = await user.getIdToken();
@@ -122,6 +155,7 @@ export default function AdminDirectoryPage() {
                 toast({ title: 'Éxito', description: 'El negocio ha sido eliminado.' });
                 fetchSavedBusinesses();
             }
+            setBusinessToDelete(null);
         });
     };
     
@@ -153,6 +187,7 @@ export default function AdminDirectoryPage() {
     };
 
     return (
+        <>
         <div className="space-y-6">
             <Card>
                 <CardHeader>
@@ -209,7 +244,7 @@ export default function AdminDirectoryPage() {
                                     <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{place.formattedAddress}</p>
                                 </CardContent>
                                 <CardFooter className="p-4 pt-0">
-                                    <Button size="sm" className="w-full" onClick={() => handleAddBusiness(place.id)} disabled={isSaving || !selectedCategory}>
+                                    <Button size="sm" className="w-full" onClick={() => handleAddBusiness(place.id)} disabled={isSaving}>
                                         {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />} Añadir
                                     </Button>
                                 </CardFooter>
@@ -326,11 +361,7 @@ export default function AdminDirectoryPage() {
                                                             </DropdownMenuItem>
                                                         )}
                                                         <DropdownMenuSeparator />
-                                                        <DropdownMenuItem
-                                                            className="text-red-600 focus:text-red-700"
-                                                            onClick={() => handleDeleteBusiness(biz.id!)}
-                                                            disabled={isDeleting}
-                                                        >
+                                                        <DropdownMenuItem onClick={() => setBusinessToDelete(biz)} className="text-red-600 focus:text-red-700" disabled={isDeleting}>
                                                             <Trash2 className="mr-2 h-4 w-4" /> Eliminar
                                                         </DropdownMenuItem>
                                                     </DropdownMenuContent>
@@ -351,5 +382,30 @@ export default function AdminDirectoryPage() {
                 </CardContent>
             </Card>
         </div>
+        <AlertDialog open={!!businessToDelete} onOpenChange={(open) => !open && setBusinessToDelete(null)}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        Esta acción no se puede deshacer. Esto eliminará permanentemente el negocio
+                        <strong className="px-1">{businessToDelete?.displayName}</strong>
+                        del directorio.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction
+                        onClick={() => handleDeleteBusiness(businessToDelete?.id)}
+                        disabled={isDeleting}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                        {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                        Sí, eliminar negocio
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+        </>
     );
 }
+
