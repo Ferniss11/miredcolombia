@@ -69,6 +69,8 @@ export async function getBlogPostsAction(): Promise<{ posts?: BlogPost[], error?
     }
 }
 
+// This function is now obsolete for the homepage, but might be used elsewhere.
+// It's kept for now to avoid breaking other parts of the app, but new code should use the use case directly.
 export async function getPublishedBlogPosts(): Promise<{ posts: BlogPost[], error?: string }> {
     try {
         const blogRepository = new FirestoreBlogPostRepository();
