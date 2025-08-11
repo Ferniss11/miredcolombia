@@ -3,9 +3,9 @@
 
 import React, { useEffect, useState } from 'react';
 import { Button } from "@/components/ui/button";
-import { Building, Users, TrendingUp, Star, ArrowRight, MapPin } from "lucide-react";
+import { Building, Users, TrendingUp, Star, ArrowRight, MapPin, Bot, Search, CheckCircle } from "lucide-react";
 import Link from "next/link";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '../ui/card';
+import { Card, CardContent, CardFooter, CardHeader } from '../ui/card';
 import { Carousel, CarouselContent, CarouselItem } from '../ui/carousel';
 import Autoplay from "embla-carousel-autoplay";
 import type { PlaceDetails } from '@/lib/types';
@@ -52,16 +52,20 @@ export default function BusinessSection({ businesses }: BusinessSectionProps) {
                             <p className="text-muted-foreground text-lg">
                                 Conecta con miles de colombianos que necesitan tus servicios. Promociona tu negocio en la plataforma líder de migración.
                             </p>
-                            <div className="flex flex-col sm:flex-row gap-6 text-sm">
-                                <div className="flex items-center gap-2">
-                                    <Users className="h-5 w-5 text-primary" />
-                                    <span className="font-medium">+10,000 usuarios</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <TrendingUp className="h-5 w-5 text-green-500" />
-                                    <span className="font-medium">95% satisfacción</span>
-                                </div>
-                            </div>
+                             <ul className="space-y-4 text-muted-foreground">
+                                <li className="flex items-start gap-3">
+                                    <CheckCircle className="h-5 w-5 mt-1 text-green-500 flex-shrink-0"/>
+                                    <span><strong>Asistente IA:</strong> Activa un asistente en tu perfil para responder clientes 24/7.</span>
+                                </li>
+                                <li className="flex items-start gap-3">
+                                    <CheckCircle className="h-5 w-5 mt-1 text-green-500 flex-shrink-0"/>
+                                    <span><strong>Visibilidad SEO:</strong> Mejora tu posicionamiento local con perfiles optimizados por IA.</span>
+                                </li>
+                                 <li className="flex items-start gap-3">
+                                    <CheckCircle className="h-5 w-5 mt-1 text-green-500 flex-shrink-0"/>
+                                    <span><strong>Gestión Simplificada:</strong> Publica ofertas de empleo y gestiona tu perfil fácilmente.</span>
+                                </li>
+                            </ul>
                             <div className="flex flex-col sm:flex-row gap-4 pt-4">
                                 <Button asChild size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground">
                                     <Link href="/signup?role=advertiser">
