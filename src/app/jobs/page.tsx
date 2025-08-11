@@ -3,12 +3,11 @@ import React from 'react';
 import type { Metadata } from 'next';
 import { getPublicJobPostingsAction } from '@/lib/job-posting/infrastructure/nextjs/job-posting.server-actions';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Input } from '@/components/ui/input';
-import { Search, AlertCircle, Upload, Building } from 'lucide-react';
-import JobCard from '@/components/jobs/JobCard';
+import { AlertCircle, Upload, Building } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import JobsList from '@/components/jobs/JobsList';
 
 export const metadata: Metadata = {
     title: 'Oportunidades de Empleo y Trabajo | Mi Red Colombia',
@@ -40,16 +39,15 @@ const JobsPublicPage = async () => {
                 </p>
             </div>
 
-            <div className="max-w-2xl mx-auto mb-12">
-                <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                    <Input
-                        placeholder="Buscar por puesto, empresa o habilidad..."
-                        className="w-full pl-10 py-3 text-base"
-                    />
-                </div>
-                {/* Filter section will go here in a future phase */}
-            </div>
+            {error && (
+                <Alert variant="destructive" className="max-w-4xl mx-auto">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Error al Cargar Ofertas</AlertTitle>
+                    <AlertDescription>{error}</AlertDescription>
+                </Alert>
+            )}
+
+            <JobsList initialJobs={jobs || []} />
 
             {/* CTA Section */}
             <div className="py-12 grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
@@ -86,27 +84,6 @@ const JobsPublicPage = async () => {
                     </CardContent>
                 </Card>
             </div>
-
-            {error && (
-                <Alert variant="destructive" className="max-w-4xl mx-auto">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertTitle>Error al Cargar Ofertas</AlertTitle>
-                    <AlertDescription>{error}</AlertDescription>
-                </Alert>
-            )}
-
-            {!error && jobs && jobs.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-                    {jobs.map((job) => (
-                        <JobCard key={job.id} job={job} />
-                    ))}
-                </div>
-            ) : !error && (
-                <div className="text-center py-16 text-muted-foreground">
-                    <h2 className="text-2xl font-semibold">No hay ofertas disponibles</h2>
-                    <p>Actualmente no hay ofertas de empleo publicadas. ¡Vuelve pronto!</p>
-                </div>
-            )}
         </div>
     );
 };
