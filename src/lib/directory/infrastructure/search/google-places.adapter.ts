@@ -71,7 +71,7 @@ export class GooglePlacesAdapter implements SearchAdapter {
         photos,
         reviews: details.reviews as Review[],
         geometry: details.geometry,
-        priceLevel: details.price_level,
+        priceLevel: details.price_level === undefined ? null : details.price_level, // Convert undefined to null
         servesBeer: details.serves_beer,
         servesWine: details.serves_wine,
         wheelchairAccessibleEntrance: details.wheelchair_accessible_entrance,

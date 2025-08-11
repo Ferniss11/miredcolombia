@@ -123,6 +123,8 @@ export async function getPublicBusinessDetailsAction(slug: string): Promise<{ bu
     }
 }
 
+// NOTE: This function remains as a server action because it's only called from the admin dashboard
+// and doesn't need a full API route. It modifies state and revalidates the path.
 export async function updateBusinessStatusAction(placeId: string, status: 'approved' | 'unclaimed'): Promise<{ success: boolean; error?: string }> {
     try {
         const directoryRepository = new FirestoreDirectoryRepository();

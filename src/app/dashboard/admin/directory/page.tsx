@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useTransition, useEffect } from 'react';
+import { useState, useTransition, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -51,7 +51,7 @@ export default function AdminDirectoryPage() {
     const [savedBusinesses, setSavedBusinesses] = useState<PlaceDetails[]>([]);
     const [isLoadingSaved, setIsLoadingSaved] = useState(true);
 
-    const fetchSavedBusinesses = async () => {
+    const fetchSavedBusinesses = useCallback(async () => {
         setIsLoadingSaved(true);
         const result = await getSavedBusinessesAction();
         if (result.error) {
@@ -60,11 +60,11 @@ export default function AdminDirectoryPage() {
             setSavedBusinesses(result.businesses);
         }
         setIsLoadingSaved(false);
-    };
+    }, [toast]);
 
     useEffect(() => {
         fetchSavedBusinesses();
-    }, []);
+    }, [fetchSavedBusinesses]);
 
     const handleSearch = () => {
         if (!query) return;
@@ -74,8 +74,8 @@ export default function AdminDirectoryPage() {
             setRawApiResponse(null);
             const result = await googlePlacesSearch({ query });
             setRawApiResponse(result.rawResponse || { error: "No raw response" });
-            if ('error' in result) {
-                setSearchError(String(result.error));
+            if ('error' in result.rawResponse) {
+                setSearchError(String(result.rawResponse.error));
             } else {
                 setSearchResults(result.places as Place[]);
             }
