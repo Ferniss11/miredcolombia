@@ -140,18 +140,45 @@ src/lib/
 
 ---
 
-## **Fase 7: Refactorización del Dominio de Plataforma (En Progreso)**
-*   **Objetivo:** Migrar la gestión de la configuración global (márgenes de beneficio, configuración del agente global) a su propio dominio hexagonal para mantener la coherencia arquitectónica.
+## **Fase 7: Desarrollo del Portal "Ofrezco mis Servicios" (En Progreso)**
+*   **Objetivo:** Crear una nueva funcionalidad para que cualquier usuario registrado (tanto `User` como `Advertiser`) pueda publicar sus servicios profesionales, creando un mercado interno y una nueva vía de oportunidades para la comunidad.
 *   **Pasos:**
-    *   **Definir el Dominio (`src/lib/platform/domain`):** Crear `platform.entity.ts` y `platform.repository.ts`.
-    *   **Crear Casos de Uso (`src/lib/platform/application`):** Crear `get-platform-config.use-case.ts` y `save-platform-config.use-case.ts`.
-    *   **Implementar Infraestructura (`src/lib/platform/infrastructure`):** Crear `persistence/firestore-platform.repository.ts` y exponer los casos de uso.
-    *   **Refactorizar UI:** Actualizar las páginas (`/dashboard/admin/agent`, `/dashboard/admin/economics`) para que usen la nueva arquitectura.
-    *   **Eliminar Código Antiguo:** `src/services/platform.service.ts` y `src/lib/platform-actions.ts`.
+    *   **Definir el Dominio (`src/lib/service-listing/domain`):**
+        *   Crear `service-listing.entity.ts` con campos como `title`, `description`, `category`, `userId`, `price`, `priceType` ('por hora', 'fijo'), `city`, `contactInfo`.
+        *   Crear el puerto `service-listing.repository.ts`.
+    *   **Crear los Casos de Uso (`src/lib/service-listing/application`):**
+        *   `create-service-listing.use-case.ts`.
+        *   `update-service-listing.use-case.ts`.
+        *   `get-all-service-listings.use-case.ts`.
+        *   `delete-service-listing.use-case.ts`.
+    *   **Implementar la Infraestructura (`src/lib/service-listing/infrastructure`):**
+        *   `persistence/firestore-service-listing.repository.ts`.
+        *   `api/service-listing.controller.ts` para exponer los casos de uso.
+        *   Crear las rutas de API correspondientes (`/api/services`, `/api/services/[id]`).
+    *   **Desarrollar UI de Gestión (Dashboard):**
+        *   Crear una nueva página en el dashboard (`/dashboard/my-services`) donde los usuarios puedan crear, ver, editar y eliminar sus servicios ofrecidos.
+        *   Permitir el acceso a esta página a los roles `User`, `Advertiser`, `Admin` y `SAdmin`.
+    *   **Desarrollar UI Pública:**
+        *   Crear una nueva página pública `/services` que liste todos los servicios disponibles, con capacidades de búsqueda y filtrado por categoría y ciudad.
+    *   **Actualizar UI del Home:**
+        *   Modificar la tarjeta CTA "¿Buscas tu próxima oportunidad?" en la sección de empleos para que se convierta en "Ofrece tus Servicios Profesionales", enlazando a la nueva página `/services` o al dashboard.
+    *   **(Futuro) Integración de Pagos:**
+        *   Integrar Stripe para permitir a los usuarios destacar sus anuncios de servicios por una tarifa, creando una nueva vía de monetización.
 
 ---
 
-## **Fase 8: Vectorización y Base de Conocimiento (RAG) (Próximos Pasos)**
+## **Fase 8: Portal Inmobiliario (Próximos Pasos)**
+*   **Objetivo:** Desarrollar un portal completo para la búsqueda de vivienda (alquiler y venta), aplicando la arquitectura hexagonal desde el principio.
+*   **Pasos:**
+    *   **Definir Dominio Inmobiliario (`src/lib/real-estate/domain`):** Crear `property.entity.ts`, `real-estate.repository.ts`.
+    *   **Crear Casos de Uso:** `create-property-listing.use-case.ts`, `search-properties.use-case.ts`, etc.
+    *   **Implementar Infraestructura:** `firestore-real-estate.repository.ts`, `api/real-estate.controller.ts` y las rutas de API correspondientes.
+    *   **Desarrollar UI Pública:** Crear las páginas `/properties` (listado) y `/properties/[id]` (detalle).
+    *   **Desarrollar UI de Gestión:** Permitir a los usuarios (y agencias) publicar y gestionar sus propiedades desde el dashboard.
+
+---
+
+## **Fase 9: Vectorización y Base de Conocimiento (RAG) (Próximos Pasos)**
 *   **Objetivo:** Implementar un sistema de búsqueda vectorial (RAG) para que los agentes de IA puedan consultar una base de conocimiento interna y dar respuestas más precisas y basadas en nuestros propios datos.
 *   **Pasos:**
     *   **Configurar Vector Store:** Elegir e implementar una solución de base de datos vectorial (ej. la extensión de Firestore, Pinecone, etc.).
@@ -161,13 +188,14 @@ src/lib/
 
 ---
 
-## **Fase 9: Portal Inmobiliario (Próximos Pasos)**
-*   **Objetivo:** Desarrollar un portal completo para la búsqueda de vivienda (alquiler y venta), aplicando la arquitectura hexagonal desde el principio.
+## **Fase 10: Refactorización del Dominio de Plataforma (Próximos Pasos)**
+*   **Objetivo:** Migrar la gestión de la configuración global (márgenes de beneficio, configuración del agente global) a su propio dominio hexagonal para mantener la coherencia arquitectónica.
 *   **Pasos:**
-    *   **Definir Dominio Inmobiliario (`src/lib/real-estate/domain`):** Crear `property.entity.ts`, `real-estate.repository.ts`.
-    *   **Crear Casos de Uso:** `create-property-listing.use-case.ts`, `search-properties.use-case.ts`, etc.
-    *   **Implementar Infraestructura:** `firestore-real-estate.repository.ts`, `api/real-estate.controller.ts` y las rutas de API correspondientes.
-    *   **Desarrollar UI Pública:** Crear las páginas `/properties` (listado) y `/properties/[id]` (detalle).
-    *   **Desarrollar UI de Gestión:** Permitir a los usuarios (y agencias) publicar y gestionar sus propiedades desde el dashboard.
+    *   **Definir el Dominio (`src/lib/platform/domain`):** Crear `platform.entity.ts` y `platform.repository.ts`.
+    *   **Crear Casos de Uso (`src/lib/platform/application`):** Crear `get-platform-config.use-case.ts` y `save-platform-config.use-case.ts`.
+    *   **Implementar Infraestructura (`src/lib/platform/infrastructure`):** Crear `persistence/firestore-platform.repository.ts` y exponer los casos de uso.
+    *   **Refactorizar UI:** Actualizar las páginas (`/dashboard/admin/agent`, `/dashboard/admin/economics`) para que usen la nueva arquitectura.
+    *   **Eliminar Código Antiguo:** `src/services/platform.service.ts` y `src/lib/platform-actions.ts`.
+
 
 Este plan nos proporciona una guía clara y estructurada para ejecutar una refactorización exitosa, sentando las bases para una aplicación mucho más robusta, escalable y fácil de mantener.

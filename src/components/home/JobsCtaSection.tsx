@@ -5,20 +5,16 @@ import React from 'react';
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Briefcase, Building, Upload } from "lucide-react";
 import Link from "next/link";
-import { JobPosting } from '@/lib/types';
+import { JobsCtaSectionProps } from '@/lib/types';
 import JobCard from '@/components/jobs/JobCard';
 import { Card, CardContent } from '../ui/card';
 import { useAuth } from '@/context/AuthContext';
-
-interface JobsCtaSectionProps {
-    jobs: JobPosting[];
-}
 
 const JobsCtaSection: React.FC<JobsCtaSectionProps> = ({ jobs }) => {
     const { user } = useAuth();
 
     const advertiserHref = user ? '/dashboard/jobs' : '/signup?role=advertiser';
-    const candidateHref = user ? '/dashboard/candidate-profile' : '/signup?role=user';
+    const candidateHref = user ? '/services' : '/signup?role=user';
     
     return (
         <section className="w-full py-12 md:py-24 lg:py-32 bg-background">
@@ -67,13 +63,13 @@ const JobsCtaSection: React.FC<JobsCtaSectionProps> = ({ jobs }) => {
                             <div className="mx-auto p-4 bg-secondary rounded-full inline-flex mb-4">
                                 <Upload className="w-8 h-8 text-secondary-foreground" />
                             </div>
-                            <h3 className="text-xl font-bold font-headline">¿Buscas tu próxima oportunidad?</h3>
+                            <h3 className="text-xl font-bold font-headline">Ofrece tus Servicios Profesionales</h3>
                             <p className="text-muted-foreground mt-2 mb-6 flex-grow">
-                                Crea tu perfil de candidato, sube tu CV y deja que las oportunidades te encuentren.
+                                ¿Eres un profesional autónomo? Publica tus servicios y encuentra clientes dentro de la comunidad.
                             </p>
                             <Button asChild variant="secondary">
                                 <Link href={candidateHref}>
-                                    Sube tu Hoja de Vida
+                                    Ofrecer mis servicios
                                 </Link>
                             </Button>
                         </CardContent>

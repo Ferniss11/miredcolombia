@@ -364,3 +364,5 @@ export type ChatSession = import('./chat-types').ChatSession;
 export type ChatMessage = import('./chat-types').ChatMessage;
 export type Business = import('./directory/domain/business.entity').Business;
 export type AgentConfig = import('./chat-types').AgentConfig;
+export type JobsCtaSectionProps = { jobs: JobPosting[]; };
+

@@ -46,9 +46,10 @@ async function parseRoadmap(): Promise<Phase[]> {
       'Fase 4': 14,
       'Fase 5': 24,
       'Fase 6': 10,
-      'Fase 7': 8,
-      'Fase 8': 30,
-      'Fase 9': 40,
+      'Fase 7': 22, // Service Portal
+      'Fase 8': 40, // Real Estate
+      'Fase 9': 30, // RAG
+      'Fase 10': 8, // Platform Refactor
   };
 
   for (const line of lines) {
