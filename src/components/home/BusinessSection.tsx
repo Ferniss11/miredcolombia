@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React from 'react';
@@ -47,7 +48,7 @@ export default function BusinessSection({ businesses }: { businesses: PlaceDetai
     }, [businesses]);
 
     return (
-        <section className="w-full py-12 md:py-24 lg:py-32 bg-secondary/50">
+        <section className="w-full py-12 md:py-24 lg:py-32 bg-primary/10">
              <div className="container px-4 md:px-6">
                 <div className="relative bg-card rounded-xl shadow-lg p-8 md:p-12 overflow-hidden">
                     <div className="absolute inset-0 bg-conic-glow opacity-20 z-0"></div>
@@ -68,7 +69,7 @@ export default function BusinessSection({ businesses }: { businesses: PlaceDetai
                                 </li>
                                 <li className="flex items-start gap-3">
                                     <CheckCircle className="h-5 w-5 mt-1 text-green-500 flex-shrink-0"/>
-                                    <span><strong>Visibilidad SEO:</strong> Mejora tu posicionamiento local con perfiles optimizados por IA.</span>
+                                    <span><strong>Posicionamiento SEO:</strong> Mejora tu SEO local con perfiles optimizados por IA.</span>
                                 </li>
                                  <li className="flex items-start gap-3">
                                     <CheckCircle className="h-5 w-5 mt-1 text-green-500 flex-shrink-0"/>
@@ -83,7 +84,7 @@ export default function BusinessSection({ businesses }: { businesses: PlaceDetai
                                     </Link>
                                 </Button>
                                 <Button asChild size="lg" variant="outline">
-                                    <Link href="/pricing">
+                                    <Link href="/precios">
                                         Ver planes y precios
                                     </Link>
                                 </Button>
@@ -123,7 +124,7 @@ export default function BusinessSection({ businesses }: { businesses: PlaceDetai
                                                         </CardContent>
                                                         <CardFooter className="p-2 border-t bg-muted/50">
                                                             <Button asChild className="w-full" variant="outline">
-                                                                <Link href={`/directory/${(item as PlaceDetails).id}`}>
+                                                                <Link href={`/directorio/${(item as PlaceDetails).id}`}>
                                                                     Ver Perfil
                                                                 </Link>
                                                             </Button>
