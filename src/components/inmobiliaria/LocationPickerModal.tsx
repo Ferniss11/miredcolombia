@@ -47,7 +47,12 @@ const LocationPickerModal: React.FC<LocationPickerModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[625px]">
+      <DialogContent 
+        className="sm:max-w-[625px]"
+        onInteractOutside={(e) => {
+          e.preventDefault();
+        }}
+      >
         <DialogHeader>
           <DialogTitle>Seleccionar Ubicación</DialogTitle>
         </DialogHeader>
