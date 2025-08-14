@@ -51,10 +51,11 @@ const AddressAutocompleteInput: React.FC<AddressAutocompleteInputProps> = ({ onA
     return () => {
       if (autocompleteRef.current) {
         window.google.maps.event.clearInstanceListeners(autocompleteRef.current);
-        autocompleteRef.current = null;
       }
     };
-  }, [isLoaded, onAddressSelect, onChange]);
+  // We only want this effect to run once when the component is loaded.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoaded]);
 
   if (!isLoaded) return <Input disabled placeholder="Cargando mapa..." />;
 
