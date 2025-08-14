@@ -2,7 +2,7 @@
 'use client';
 
 import React from 'react';
-import { GoogleMap, useJsApiLoader, MarkerF } from '@react-google-maps/api';
+import { GoogleMap, MarkerF } from '@react-google-maps/api';
 import type { Property } from '@/lib/real-estate/domain/property.entity';
 
 const containerStyle = {
@@ -10,27 +10,26 @@ const containerStyle = {
   height: '100%'
 };
 
-const libraries = ['places', 'maps'] as any;
-
 interface PropertiesMapProps {
     properties: Property[];
     highlightedPropertyId: string | null;
     onMarkerHover: (propertyId: string | null) => void;
+    isMapsApiLoaded: boolean; // Receive loader status as a prop
 }
 
-const PropertiesMap = ({ properties, highlightedPropertyId, onMarkerHover }: PropertiesMapProps) => {
-    const { isLoaded } = useJsApiLoader({
-        id: 'google-map-script', // Use a consistent ID
-        googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!,
-        libraries
-    });
+const PropertiesMap = ({ properties, highlightedPropertyId, onMarkerHover, isMapsApiLoaded }: PropertiesMapProps) => {
+    // We no longer need useJsApiLoader here, as it's centralized.
 
     // Default center to Madrid if no properties are available
     const mapCenter = properties.length > 0
         ? properties[0].location
         : { lat: 40.416775, lng: -3.703790 };
 
-    return isLoaded ? (
+    if (!isMapsApiLoaded) {
+        return <div className="w-full h-full bg-muted animate-pulse" />;
+    }
+
+    return (
         <GoogleMap
             mapContainerStyle={containerStyle}
             center={mapCenter}
@@ -47,7 +46,7 @@ const PropertiesMap = ({ properties, highlightedPropertyId, onMarkerHover }: Pro
                 />
             ))}
         </GoogleMap>
-    ) : <div className="w-full h-full bg-muted animate-pulse" />;
+    );
 };
 
 export default React.memo(PropertiesMap);

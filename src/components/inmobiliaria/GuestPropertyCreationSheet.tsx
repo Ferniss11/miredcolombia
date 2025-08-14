@@ -17,6 +17,7 @@ import PropertyForm from './PropertyForm';
 type GuestPropertyCreationSheetProps = {
     isOpen: boolean;
     onOpenChange: (open: boolean) => void;
+    isMapsApiLoaded: boolean; // Receive loader status as a prop
 };
 
 const SignUpSchema = z.object({
@@ -27,7 +28,7 @@ const SignUpSchema = z.object({
 
 type SignUpFormValues = z.infer<typeof SignUpSchema>;
 
-export default function GuestPropertyCreationSheet({ isOpen, onOpenChange }: GuestPropertyCreationSheetProps) {
+export default function GuestPropertyCreationSheet({ isOpen, onOpenChange, isMapsApiLoaded }: GuestPropertyCreationSheetProps) {
     const [step, setStep] = useState(1);
     const { signUpWithEmail, user } = useAuth();
     const { toast } = useToast();
@@ -40,7 +41,6 @@ export default function GuestPropertyCreationSheet({ isOpen, onOpenChange }: Gue
 
     const handleSignUp = async (values: SignUpFormValues) => {
         startTransition(async () => {
-            // Registering as a 'User' by default, can be Advertiser too
             const { error } = await signUpWithEmail(values.name, values.email, values.password, 'User');
             if (error) {
                 toast({ variant: 'destructive', title: 'Error de Registro', description: error });
@@ -89,7 +89,10 @@ export default function GuestPropertyCreationSheet({ isOpen, onOpenChange }: Gue
                             <SheetTitle>Paso 2: Describe tu propiedad</SheetTitle>
                             <SheetDescription>¡Ya casi! Completa los detalles para que los interesados puedan encontrar tu anuncio.</SheetDescription>
                         </SheetHeader>
-                        <PropertyForm onFormSubmit={handleSuccess} />
+                        <PropertyForm 
+                            onFormSubmit={handleSuccess}
+                            isMapsApiLoaded={isMapsApiLoaded} 
+                        />
                     </>
                 )}
             </SheetContent>

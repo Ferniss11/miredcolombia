@@ -2,29 +2,26 @@
 'use client';
 
 import React, { useRef, useEffect } from 'react';
-import { useJsApiLoader } from '@react-google-maps/api';
 import { Input } from '@/components/ui/input';
-
-const libraries = ['places', 'maps'] as any;
 
 interface AddressAutocompleteInputProps {
   onAddressSelect: (address: string, location: { lat: number; lng: number; }) => void;
   value: string;
   onChange: (value: string) => void;
+  isMapsApiLoaded: boolean; // Receive loader status as a prop
 }
 
-const AddressAutocompleteInput: React.FC<AddressAutocompleteInputProps> = ({ onAddressSelect, value, onChange }) => {
-  const { isLoaded } = useJsApiLoader({
-    id: 'google-map-script',
-    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!,
-    libraries,
-  });
-
+const AddressAutocompleteInput: React.FC<AddressAutocompleteInputProps> = ({ 
+  onAddressSelect, 
+  value, 
+  onChange,
+  isMapsApiLoaded 
+}) => {
   const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (isLoaded && inputRef.current && !autocompleteRef.current) {
+    if (isMapsApiLoaded && inputRef.current && !autocompleteRef.current) {
       autocompleteRef.current = new window.google.maps.places.Autocomplete(
         inputRef.current,
         {
@@ -50,21 +47,22 @@ const AddressAutocompleteInput: React.FC<AddressAutocompleteInputProps> = ({ onA
     // Cleanup listener on unmount
     return () => {
       if (autocompleteRef.current) {
-        window.google.maps.event.clearInstanceListeners(autocompleteRef.current);
+        // Using a check to prevent errors if the google object is not available during cleanup
+        if (window.google && window.google.maps && window.google.maps.event) {
+          window.google.maps.event.clearInstanceListeners(autocompleteRef.current);
+        }
       }
     };
-  // We only want this effect to run once when the component is loaded.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLoaded]);
+  }, [isMapsApiLoaded, onChange, onAddressSelect]);
 
-  if (!isLoaded) return <Input disabled placeholder="Cargando mapa..." />;
+  if (!isMapsApiLoaded) return <Input disabled placeholder="Cargando mapa..." />;
 
   return (
     <Input
         ref={inputRef}
         placeholder="Empieza a escribir la dirección..."
-        value={value || ''} // Ensure value is always a string
-        onChange={(e) => onChange(e.target.value)} // Directly call onChange from props
+        value={value || ''}
+        onChange={(e) => onChange(e.target.value)}
     />
   );
 };

@@ -53,9 +53,10 @@ type PropertyFormValues = z.infer<typeof PropertyFormSchema>;
 type PropertyFormProps = {
     propertyToEdit?: Property | null;
     onFormSubmit: () => void;
+    isMapsApiLoaded: boolean; // Receive loader status as a prop
 };
 
-export default function PropertyForm({ propertyToEdit, onFormSubmit }: PropertyFormProps) {
+export default function PropertyForm({ propertyToEdit, onFormSubmit, isMapsApiLoaded }: PropertyFormProps) {
     const { user } = useAuth();
     const { toast } = useToast();
     const [isPending, startTransition] = useTransition();
@@ -151,6 +152,7 @@ export default function PropertyForm({ propertyToEdit, onFormSubmit }: PropertyF
                                                 onAddressSelect={handleAddressSelect}
                                                 value={field.value}
                                                 onChange={field.onChange}
+                                                isMapsApiLoaded={isMapsApiLoaded}
                                             />
                                         </FormControl>
                                         <FormMessage />

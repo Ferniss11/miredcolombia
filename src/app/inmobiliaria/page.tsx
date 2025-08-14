@@ -1,4 +1,3 @@
-
 // src/app/inmobiliaria/page.tsx
 'use client';
 
@@ -12,6 +11,9 @@ import GuestPropertyCreationSheet from "@/components/inmobiliaria/GuestPropertyC
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import type { Property } from '@/lib/real-estate/domain/property.entity';
+import { useJsApiLoader } from '@react-google-maps/api';
+
+const libraries = ['places', 'maps'] as any;
 
 // This is now a client component to handle interaction logic
 export default function InmobiliariaPage() {
@@ -20,12 +22,20 @@ export default function InmobiliariaPage() {
   const [error, setError] = useState<string | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
 
+  // Centralize the Google Maps API loader here
+  const { isLoaded } = useJsApiLoader({
+    id: 'google-map-script-main', // Use a single, consistent ID
+    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!,
+    libraries,
+  });
+
+
   useEffect(() => {
     getPublicPropertiesAction().then(({ properties, error }) => {
       if (error) setError(error);
       if (properties) setProperties(properties);
     });
-  }, []); // Empty dependency array ensures this runs only once on mount
+  }, []);
 
   const renderCallToActionButton = () => {
     if (user) {
@@ -64,9 +74,16 @@ export default function InmobiliariaPage() {
             </div>
         )}
 
-        <PropertyListings initialProperties={properties || []} />
+        <PropertyListings 
+            initialProperties={properties || []} 
+            isMapsApiLoaded={isLoaded}
+        />
         
-        <GuestPropertyCreationSheet isOpen={isSheetOpen} onOpenChange={setIsSheetOpen} />
+        <GuestPropertyCreationSheet 
+            isOpen={isSheetOpen} 
+            onOpenChange={setIsSheetOpen} 
+            isMapsApiLoaded={isLoaded}
+        />
     </div>
   );
 }
