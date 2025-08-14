@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Bot, MessageCircle, Lightbulb } from "lucide-react";
 import RealTimeClocks from "@/components/layout/RealTimeClocks";
 import { cn } from "@/lib/utils";
+import Image from 'next/image';
 
 const migrationTips = [
     "Recuerda apostillar todos tus documentos oficiales en Colombia antes de viajar.",
@@ -50,8 +51,14 @@ export default function AiAssistantSection({ onOpenChatModal }: { onOpenChatModa
                 <div className="grid lg:grid-cols-2 gap-12 items-center">
                     {/* Left Side: Main CTA and Text */}
                     <div className="flex flex-col items-start space-y-6">
-                        <div className="p-4 bg-primary/10 rounded-full inline-flex">
-                            <Bot className="w-10 h-10 text-primary" />
+                        <div className="w-20 h-20 rounded-full overflow-hidden p-1 bg-primary/20 inline-flex ring-4 ring-primary/30">
+                           <Image 
+                             src="https://firebasestorage.googleapis.com/v0/b/colombia-en-esp.firebasestorage.app/o/web%2FImagen%20de%20WhatsApp%202025-08-09%20a%20las%2018.20.39_3c2b6161.jpg?alt=media&token=41ebe34a-f846-41fc-937f-4141f1240ee8"
+                             alt="Avatar de Valeria, la asistente IA"
+                             width={80}
+                             height={80}
+                             className="rounded-full object-cover"
+                           />
                         </div>
                         <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl font-headline">
                             Conoce a Valeria, tu Asistente IA en Mi Red Colombia
