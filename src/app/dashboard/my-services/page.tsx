@@ -27,6 +27,73 @@ const formatPriceType = (priceType: 'per_hour' | 'fixed' | 'per_project') => {
     }
 };
 
+
+const ServiceListingCard = ({ listing, onEdit, onDelete, onUpdateStatus, isProcessing, isAdmin }: { listing: ServiceListing, onEdit: (l: ServiceListing) => void, onDelete: (id: string) => void, onUpdateStatus: (id: string, s: 'published' | 'rejected') => void, isProcessing: boolean, isAdmin: boolean }) => {
+    const [isExpanded, setIsExpanded] = useState(false);
+    const descriptionTooLong = listing.description.length > 100;
+
+    const getStatusBadge = (status: ServiceListing['status']) => {
+        switch (status) {
+            case 'published': return <Badge className="bg-green-100 text-green-800 border-green-300">Publicado</Badge>;
+            case 'pending_review': return <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300">Pendiente</Badge>;
+            case 'rejected': return <Badge variant="destructive">Rechazado</Badge>;
+            default: return <Badge variant="secondary">{status}</Badge>;
+        }
+    };
+
+    return (
+        <Collapsible open={isExpanded} onOpenChange={setIsExpanded} asChild>
+            <Card className="flex flex-col overflow-hidden">
+                 {listing.imageUrl && <Image src={listing.imageUrl} alt={listing.title} width={400} height={200} className="w-full h-40 object-cover" />}
+                 <CardHeader className="flex flex-row items-start justify-between p-4">
+                    <div className="flex-grow">
+                        <h3 className="font-bold font-headline text-lg leading-snug line-clamp-2">{listing.title}</h3>
+                        <p className="text-xs text-muted-foreground">{listing.category}</p>
+                    </div>
+                     <DropdownMenu>
+                        <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => onEdit(listing)}><Edit className="mr-2 h-4 w-4" /> Editar</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => onDelete(listing.id)} disabled={isProcessing} className="text-red-600"><Trash2 className="mr-2 h-4 w-4" /> Eliminar</DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                 </CardHeader>
+                 <CardContent className="p-4 pt-0 text-sm text-muted-foreground flex-grow">
+                     <div className="flex items-center gap-2 mb-2">
+                        <Tag className="h-4 w-4 flex-shrink-0" />
+                        <span className="font-semibold text-foreground">€{listing.price}</span>
+                        <span className="text-xs">{formatPriceType(listing.priceType)}</span>
+                     </div>
+                     <p className={!isExpanded && descriptionTooLong ? "line-clamp-3" : ""}>
+                        {listing.description}
+                     </p>
+                     {descriptionTooLong && (
+                        <CollapsibleTrigger asChild>
+                            <Button variant="link" className="p-0 h-auto text-xs">
+                                {isExpanded ? 'Ver menos' : 'Ver más'}
+                            </Button>
+                        </CollapsibleTrigger>
+                     )}
+                 </CardContent>
+                 <CardFooter className="p-2 border-t mt-auto flex items-center justify-between">
+                    {getStatusBadge(listing.status)}
+                    {isAdmin && listing.status === 'pending_review' && (
+                        <div className="flex gap-2">
+                            <Button size="sm" variant="outline" className="h-8 px-2 text-red-600 hover:bg-red-50 hover:text-red-700" onClick={() => onUpdateStatus(listing.id, 'rejected')} disabled={isProcessing}>
+                                <X className="h-4 w-4" />
+                            </Button>
+                             <Button size="sm" className="h-8 px-2 bg-green-600 hover:bg-green-700" onClick={() => onUpdateStatus(listing.id, 'published')} disabled={isProcessing}>
+                                <Check className="h-4 w-4" />
+                            </Button>
+                        </div>
+                    )}
+                 </CardFooter>
+            </Card>
+        </Collapsible>
+    )
+}
+
+
 export default function MyServicesPage() {
     const { user, userProfile, loading: authLoading } = useAuth();
     const { toast } = useToast();
@@ -50,7 +117,6 @@ export default function MyServicesPage() {
             
             const allListings: ServiceListing[] = await response.json();
             
-            // Admins see all posts, users only see their own.
             if (userProfile?.role === 'Admin' || userProfile?.role === 'SAdmin') {
                 setListings(allListings);
             } else {
@@ -133,15 +199,6 @@ export default function MyServicesPage() {
         });
     }
     
-     const getStatusBadge = (status: ServiceListing['status']) => {
-        switch (status) {
-            case 'published': return <Badge className="bg-green-100 text-green-800 border-green-300">Publicado</Badge>;
-            case 'pending_review': return <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300">Pendiente</Badge>;
-            case 'rejected': return <Badge variant="destructive">Rechazado</Badge>;
-            default: return <Badge variant="secondary">{status}</Badge>;
-        }
-    };
-
     const isAdmin = userProfile?.role === 'Admin' || userProfile?.role === 'SAdmin';
 
     return (
@@ -169,53 +226,15 @@ export default function MyServicesPage() {
             ) : (
                  <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                      {listings.map(listing => (
-                        <Collapsible key={listing.id} asChild>
-                             <Card className="flex flex-col overflow-hidden">
-                                 {listing.imageUrl && <Image src={listing.imageUrl} alt={listing.title} width={400} height={200} className="w-full h-40 object-cover" />}
-                                 <CardHeader className="flex flex-row items-start justify-between p-4">
-                                    <div className="flex-grow">
-                                        <h3 className="font-bold font-headline text-lg leading-snug line-clamp-2">{listing.title}</h3>
-                                        <p className="text-xs text-muted-foreground">{listing.category}</p>
-                                    </div>
-                                     <DropdownMenu>
-                                        <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end">
-                                            <DropdownMenuItem onClick={() => handleOpenSheetForEdit(listing)}><Edit className="mr-2 h-4 w-4" /> Editar</DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => setDeletingListingId(listing.id)} disabled={isPending} className="text-red-600"><Trash2 className="mr-2 h-4 w-4" /> Eliminar</DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                 </CardHeader>
-                                 <CardContent className="p-4 pt-0 text-sm text-muted-foreground flex-grow">
-                                     <div className="flex items-center gap-2 mb-2">
-                                        <Tag className="h-4 w-4 flex-shrink-0" />
-                                        <span className="font-semibold text-foreground">€{listing.price}</span>
-                                        <span className="text-xs">{formatPriceType(listing.priceType)}</span>
-                                     </div>
-                                     <p className="line-clamp-3">{listing.description}</p>
-                                      {listing.description.length > 100 && (
-                                        <CollapsibleTrigger asChild>
-                                            <Button variant="link" className="p-0 h-auto text-xs">Ver más</Button>
-                                        </CollapsibleTrigger>
-                                      )}
-                                      <CollapsibleContent>
-                                        <p className="mt-2 text-sm">{listing.description}</p>
-                                      </CollapsibleContent>
-                                 </CardContent>
-                                 <CardFooter className="p-2 border-t mt-auto flex items-center justify-between">
-                                    {getStatusBadge(listing.status)}
-                                    {isAdmin && listing.status === 'pending_review' && (
-                                        <div className="flex gap-2">
-                                            <Button size="sm" variant="outline" className="h-8 px-2 text-red-600 hover:bg-red-50 hover:text-red-700" onClick={() => handleUpdateStatus(listing.id, 'rejected')} disabled={isPending}>
-                                                <X className="h-4 w-4" />
-                                            </Button>
-                                             <Button size="sm" className="h-8 px-2 bg-green-600 hover:bg-green-700" onClick={() => handleUpdateStatus(listing.id, 'published')} disabled={isPending}>
-                                                <Check className="h-4 w-4" />
-                                            </Button>
-                                        </div>
-                                    )}
-                                 </CardFooter>
-                            </Card>
-                        </Collapsible>
+                        <ServiceListingCard
+                            key={listing.id}
+                            listing={listing}
+                            onEdit={handleOpenSheetForEdit}
+                            onDelete={() => setDeletingListingId(listing.id)}
+                            onUpdateStatus={handleUpdateStatus}
+                            isProcessing={isPending}
+                            isAdmin={isAdmin}
+                        />
                      ))}
                  </div>
             )}
