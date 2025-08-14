@@ -1,7 +1,7 @@
 // src/components/inmobiliaria/AddressAutocompleteInput.tsx
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { useJsApiLoader } from '@react-google-maps/api';
 import { Input } from '@/components/ui/input';
 
@@ -20,17 +20,8 @@ const AddressAutocompleteInput: React.FC<AddressAutocompleteInputProps> = ({ onA
     libraries,
   });
 
-  const [inputValue, setInputValue] = useState(value || '');
   const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  
-  // Sync internal state with form value from react-hook-form
-  useEffect(() => {
-    // Only update if the parent form value is different to prevent loops
-    if (value !== inputValue) {
-        setInputValue(value || '');
-    }
-  }, [value, inputValue]);
 
   useEffect(() => {
     if (isLoaded && inputRef.current && !autocompleteRef.current) {
@@ -50,25 +41,20 @@ const AddressAutocompleteInput: React.FC<AddressAutocompleteInputProps> = ({ onA
             lat: place.geometry.location.lat(),
             lng: place.geometry.location.lng(),
           };
-          // Update both the visual input and the form state
-          setInputValue(place.formatted_address);
-          onChange(place.formatted_address); // Update react-hook-form
-          onAddressSelect(place.formatted_address, location); // Update coordinates
+          onChange(place.formatted_address); // Update react-hook-form's value
+          onAddressSelect(place.formatted_address, location); // Update coordinates in form
         }
       });
     }
-    // Clean up the event listener when the component unmounts
+    
+    // Cleanup listener on unmount
     return () => {
-        if (autocompleteRef.current) {
-            window.google.maps.event.clearInstanceListeners(autocompleteRef.current);
-        }
-    }
+      if (autocompleteRef.current) {
+        window.google.maps.event.clearInstanceListeners(autocompleteRef.current);
+        autocompleteRef.current = null;
+      }
+    };
   }, [isLoaded, onAddressSelect, onChange]);
-  
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setInputValue(e.target.value);
-    onChange(e.target.value); // Propagate change to react-hook-form
-  }
 
   if (!isLoaded) return <Input disabled placeholder="Cargando mapa..." />;
 
@@ -76,8 +62,8 @@ const AddressAutocompleteInput: React.FC<AddressAutocompleteInputProps> = ({ onA
     <Input
         ref={inputRef}
         placeholder="Empieza a escribir la dirección..."
-        value={inputValue}
-        onChange={handleInputChange}
+        value={value || ''} // Ensure value is always a string
+        onChange={(e) => onChange(e.target.value)} // Directly call onChange from props
     />
   );
 };
