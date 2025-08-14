@@ -49,7 +49,7 @@ const JobsCtaSection: React.FC<JobsCtaSectionProps> = ({ jobs }) => {
                             <div className="absolute inset-0 bg-conic-glow opacity-20"></div>
                             <CardContent className="p-8 flex flex-col items-center justify-center h-full relative">
                                 <div className="mx-auto p-4 bg-primary/20 rounded-full inline-flex mb-4">
-                                    <Building className="w-8 h-8 text-primary" />
+                                    <Briefcase className="w-8 h-8 text-primary" />
                                 </div>
                                 <h3 className="text-xl font-bold font-headline">¿Tienes una vacante?</h3>
                                 <p className="text-muted-foreground mt-2 mb-6 flex-grow">
