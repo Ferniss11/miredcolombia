@@ -13,7 +13,7 @@ export const GET = apiHandler((req: NextRequest, { params }: RouteContext) =>
 );
 
 // Only the owner of the service or an admin can update it
-export const PUT = apiHandler((req: NextRequest, { params }: RouteContext) =>
+export const POST = apiHandler((req: NextRequest, { params }: RouteContext) =>
   serviceListingController.update(req, { params: { id: params.id } })
 , ['User', 'Admin', 'SAdmin', 'Advertiser']);
 
