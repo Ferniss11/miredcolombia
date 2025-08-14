@@ -47,7 +47,7 @@ export function DashboardSidebar() {
 
   const advertiserNav = [
     { href: "/dashboard/advertiser", label: "Resumen", icon: LayoutGrid },
-    { href: "/dashboard/jobs", label: "Empleos", icon: FileText },
+    { href: "/dashboard/jobs", label: "Empleos", icon: Briefcase },
     { href: "/dashboard/my-properties", label: "Mis Propiedades", icon: HomeIcon },
     { href: "/dashboard/my-services", label: "Mis Servicios", icon: Handshake }, 
     { href: "/dashboard/advertiser/agent", label: "Agente IA", icon: Bot },
@@ -60,7 +60,7 @@ export function DashboardSidebar() {
   const adminNav = [
     { href: "/dashboard/admin", label: "Resumen", icon: LayoutGrid },
     { href: "/dashboard/admin/users", label: "Usuarios", icon: UsersIcon },
-    { href: "/dashboard/jobs", label: "Empleos", icon: FileText },
+    { href: "/dashboard/jobs", label: "Empleos", icon: Briefcase },
     { href: "/dashboard/my-properties", label: "Propiedades", icon: HomeIcon },
     { href: "/dashboard/my-services", label: "Servicios", icon: Handshake },
     { href: "/dashboard/admin/blog", label: "Blog", icon: FileText },

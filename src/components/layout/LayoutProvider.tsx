@@ -15,7 +15,7 @@ export default function LayoutProvider({ children }: { children: React.ReactNode
     return (
         <div className="relative flex min-h-screen flex-col">
             <Header />
-            <main className="flex-1">{children}</main>
+            {children}
             <Footer />
         </div>
     );

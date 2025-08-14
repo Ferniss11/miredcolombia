@@ -27,9 +27,9 @@ El backend y la lógica de negocio ya existen gracias a la arquitectura hexagona
 
 Con los datos accesibles, podemos construir las páginas que los usuarios verán.
 
-### Tarea 2.1: Página de Detalles de la Oferta (`/jobs/[id]`) (✓)
+### Tarea 2.1: Página de Detalles de la Oferta (`/empleos/[id]`) (✓)
 
-*   **Ruta:** `src/app/jobs/[id]/page.tsx`
+*   **Ruta:** `src/app/empleos/[id]/page.tsx`
 *   **Componente:** `JobDetailsPage`
 *   **Funcionalidad:**
     *   Será un Server Component que recibe el `id` de la oferta desde los `params`. (✓)
@@ -42,9 +42,9 @@ Con los datos accesibles, podemos construir las páginas que los usuarios verán
         *   Una barra lateral o tarjeta con información clave: salario (si está disponible), habilidades requeridas, tipo de jornada. (✓)
         *   Un botón claro de "Aplicar Ahora" que redirija a `applicationUrl` o abra un `mailto:` a `applicationEmail`. (✓)
 
-### Tarea 2.2: Página de Listado de Ofertas (`/jobs`) (✓)
+### Tarea 2.2: Página de Listado de Ofertas (`/empleos`) (✓)
 
-*   **Ruta:** `src/app/jobs/page.tsx`
+*   **Ruta:** `src/app/empleos/page.tsx`
 *   **Componente:** `JobsPublicPage`
 *   **Funcionalidad:**
     *   Será un Server Component que llama a `getPublicJobPostingsAction()` para obtener todas las ofertas activas. (✓)
@@ -53,7 +53,7 @@ Con los datos accesibles, podemos construir las páginas que los usuarios verán
         *   Un área de filtros en una barra lateral (por tipo de contrato, ubicación, etc. - a implementar después). (✓)
         *   El listado principal mostrará cada oferta en una `Card` individual. (✓)
         *   Cada `Card` mostrará: logo de la empresa, título del puesto, nombre de la empresa, ubicación y salario (resumido). (✓)
-        *   Cada `Card` será un `Link` que llevará a la página de detalles `/jobs/[id]`. (✓)
+        *   Cada `Card` será un `Link` que llevará a la página de detalles `/empleos/[id]`. (✓)
 
 ### Tarea 2.3: Sección de Empleos en la Página de Inicio (✓)
 
@@ -65,7 +65,7 @@ Con los datos accesibles, podemos construir las páginas que los usuarios verán
     *   **Diseño de `JobsSection`:**
         *   Un título claro como "Últimas Ofertas de Empleo". (✓)
         *   Mostrará 3 o 4 ofertas en formato de `Card`, similar al de la página `/jobs` pero quizás un poco más compacto. (✓)
-        *   Incluirá un botón visible de "Ver Todas las Ofertas" que enlace a la página `/jobs`. (✓)
+        *   Incluirá un botón visible de "Ver Todas las Ofertas" que enlace a la página `/empleos`. (✓)
 
 ---
 
@@ -74,11 +74,11 @@ Con los datos accesibles, podemos construir las páginas que los usuarios verán
 ### Tarea 3.1: Actualizar la Navegación (✓)
 
 *   **Archivo:** `src/components/layout/Header.tsx`
-*   **Acción:** Añadir un nuevo enlace "Empleo" en la barra de navegación principal que apunte a `/jobs`.
+*   **Acción:** Añadir un nuevo enlace "Empleo" en la barra de navegación principal que apunte a `/empleos`.
 
 ### Tarea 3.2: SEO y Metadatos (✓)
 
-*   **Archivos:** `src/app/jobs/page.tsx` y `src/app/jobs/[id]/page.tsx`
+*   **Archivos:** `src/app/empleos/page.tsx` y `src/app/empleos/[id]/page.tsx`
 *   **Acción:** Implementar las funciones `generateMetadata` en ambas páginas para asegurar que cada página de oferta y el listado general tengan títulos y descripciones SEO-friendly. Para la página de detalles, el título debe incluir el nombre del puesto y la empresa.
 
 ---

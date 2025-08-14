@@ -14,7 +14,7 @@ interface JobCardProps {
 const JobCard: React.FC<JobCardProps> = ({ job }) => {
     return (
         <Card className="flex flex-col overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 h-full group">
-            <Link href={`/jobs/${job.id}`} className="flex flex-col flex-grow">
+            <Link href={`/empleos/${job.id}`} className="flex flex-col flex-grow">
                 <CardHeader className="p-4">
                     <div className="flex items-start gap-4">
                         {job.companyLogoUrl ? (
