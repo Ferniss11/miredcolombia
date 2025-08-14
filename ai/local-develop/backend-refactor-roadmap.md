@@ -167,15 +167,15 @@ src/lib/
 ## **Fase 8: Portal Inmobiliario con Mapa Interactivo (En Progreso)**
 *   **Objetivo:** Desarrollar un portal completo para la búsqueda de vivienda (alquiler y venta), con una interfaz moderna que combine un listado de propiedades con un mapa interactivo.
 *   **Pasos:**
-    *   **Definir Dominio Inmobiliario (`src/lib/real-estate`):**
+    *   **Definir Dominio Inmobiliario (`src/lib/real-estate`) (✓ Completado):**
         *   Crear `property.entity.ts` con una estructura robusta:
-            *   **Información Principal:** `title`, `description`, `listingType` ('rent', 'sale'), `propertyType` ('apartment', 'house', 'room'), `price`, `area`, `images` (array de URLs), `address`, `location` (coordenadas), `status` ('available', 'rented', 'sold', 'pending_review').
-            *   **Detalles de la Propiedad:** `bedrooms`, `bathrooms`, `totalRoomsInFlat` (para pisos compartidos), `amenities` (['wifi', 'heating', 'ac', 'kitchen', 'washing_machine']).
-            *   **Detalles de la Habitación (si `propertyType` es 'room'):** `roomDetails: { bedType: 'single' | 'double', hasBalcony: boolean, isVerified: boolean }`.
+            *   **Información Principal:** `title`, `description`, `listingType` ('rent', 'sale'), `propertyType` ('apartment', 'house', 'room'), `price`, `area`, `images` (array de URLs), `address`, `location` (coordenadas), `status` ('available', 'rented', 'sold', 'pending_review', 'rejected').
+            *   **Detalles de la Propiedad:** `bedrooms`, `bathrooms`, `amenities` (['wifi', 'heating', 'ac', 'kitchen', 'washing_machine', 'balcony', 'pool', 'gym']).
+            *   **Detalles de la Habitación (si `propertyType` es 'room'):** `roomDetails: { bedType: 'single' | 'double', isVerified: boolean }`, `totalRoomsInFlat`.
             *   **Compañeros de Piso (si aplica):** `flatmates: { gender: 'female_only' | 'male_only' | 'mixed', studentOnly: boolean, ageRange: [number, number] }`.
             *   **Reglas y Contrato:** `rules: { petsAllowed: boolean, smokingAllowed: boolean }, contract: { minStayNights: number, maxStayNights: number | null }`.
             *   **Disponibilidad:** `availability: [{ month: 'YYYY-MM', price: number, status: 'available' | 'occupied' }]`.
-            *   **Propietario:** `owner: { name: string, isTrusted: boolean, responseRate: number, avgResponseTimeHours: number, joinedAt: Date }`.
+            *   **Propietario:** `owner: { userId: string, name: string, isTrusted: boolean, responseRate?: number, avgResponseTimeHours?: number, joinedAt: Date }`.
         *   Definir el puerto `property.repository.ts`.
     *   **Crear Casos de Uso:** `create-property.use-case.ts`, `search-properties.use-case.ts`, `update-property-status.use-case.ts`, etc.
     *   **Implementar Infraestructura:** `firestore-property.repository.ts`, `api/property.controller.ts` y las rutas de API correspondientes.
