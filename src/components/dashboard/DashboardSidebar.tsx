@@ -30,6 +30,7 @@ import {
   Briefcase,
   Users as UsersIcon, // Renamed to avoid conflict with User icon
   Handshake,
+  HomeIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -47,6 +48,7 @@ export function DashboardSidebar() {
   const advertiserNav = [
     { href: "/dashboard/advertiser", label: "Resumen", icon: LayoutGrid },
     { href: "/dashboard/jobs", label: "Empleos", icon: FileText },
+    { href: "/dashboard/my-properties", label: "Mis Propiedades", icon: HomeIcon },
     { href: "/dashboard/my-services", label: "Mis Servicios", icon: Handshake }, 
     { href: "/dashboard/advertiser/agent", label: "Agente IA", icon: Bot },
     { href: "/dashboard/advertiser/conversations", label: "Conversaciones", icon: MessageSquare },
@@ -59,6 +61,7 @@ export function DashboardSidebar() {
     { href: "/dashboard/admin", label: "Resumen", icon: LayoutGrid },
     { href: "/dashboard/admin/users", label: "Usuarios", icon: UsersIcon },
     { href: "/dashboard/jobs", label: "Empleos", icon: FileText },
+    { href: "/dashboard/my-properties", label: "Propiedades", icon: HomeIcon },
     { href: "/dashboard/my-services", label: "Servicios", icon: Handshake },
     { href: "/dashboard/admin/blog", label: "Blog", icon: FileText },
     { href: "/dashboard/admin/content", label: "Contenido IA", icon: Sparkles },
@@ -71,6 +74,7 @@ export function DashboardSidebar() {
 
   const userNav = [
     { href: "/dashboard/candidate-profile", label: "Mi Perfil", icon: Briefcase },
+    { href: "/dashboard/my-properties", label: "Mis Propiedades", icon: HomeIcon },
     { href: "/dashboard/my-services", label: "Mis Servicios", icon: Handshake },
   ];
 
