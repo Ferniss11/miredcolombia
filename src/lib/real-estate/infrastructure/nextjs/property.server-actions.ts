@@ -3,6 +3,7 @@
 
 import type { Property } from '../../domain/property.entity';
 import { GetAllPropertiesUseCase } from '../../application/get-all-properties.use-case';
+import { GetPropertyUseCase } from '../../application/get-property.use-case';
 import { FirestorePropertyRepository } from '../persistence/firestore-property.repository';
 
 // Helper to serialize Date objects to ISO strings for client components
@@ -37,6 +38,24 @@ export async function getPublicPropertiesAction(): Promise<{ properties?: Proper
         return { properties: serializedProperties };
     } catch (error) {
         console.error("Error fetching published properties:", error);
+        const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
+        return { error: errorMessage };
+    }
+}
+
+export async function getPublicPropertyByIdAction(id: string): Promise<{ property?: Property, error?: string }> {
+    try {
+        const repository = new FirestorePropertyRepository();
+        const useCase = new GetPropertyUseCase(repository);
+        const property = await useCase.execute(id);
+
+        if (!property || property.status !== 'available') {
+            return { error: 'Property not found or is not available.' };
+        }
+        
+        return { property: serializeProperty(property) as Property };
+    } catch (error) {
+        console.error("Error fetching public property by ID:", error);
         const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
         return { error: errorMessage };
     }
