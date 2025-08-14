@@ -50,7 +50,7 @@ export default function BusinessSection({ businesses }: { businesses: PlaceDetai
     return (
         <section className="w-full py-12 md:py-24 lg:py-32 bg-primary/10">
              <div className="container px-4 md:px-6">
-                <div className="relative bg-card rounded-xl shadow-lg p-8 md:p-12 overflow-hidden">
+                <div className="relative bg-card rounded-xl shadow-lg p-6 md:p-8 lg:p-12">
                     <div className="absolute inset-0 bg-conic-glow opacity-20 z-0"></div>
                     <div className="relative z-10 grid md:grid-cols-2 gap-12 items-center">
                         <div className="space-y-6">
