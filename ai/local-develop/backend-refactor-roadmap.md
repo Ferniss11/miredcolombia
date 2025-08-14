@@ -140,18 +140,58 @@ src/lib/
 
 ---
 
-## **Fase 7: Refactorización del Dominio de Plataforma (En Progreso)**
-*   **Objetivo:** Migrar la gestión de la configuración global (márgenes de beneficio, configuración del agente global) a su propio dominio hexagonal para mantener la coherencia arquitectónica.
+## **Fase 7: Desarrollo del Portal "Ofrezco mis Servicios" (✓ Completada)**
+*   **Objetivo:** Crear una nueva funcionalidad para que cualquier usuario registrado (tanto `User` como `Advertiser`) pueda publicar sus servicios profesionales, creando un mercado interno y una nueva vía de oportunidades para la comunidad.
 *   **Pasos:**
-    *   **Definir el Dominio (`src/lib/platform/domain`):** Crear `platform.entity.ts` y `platform.repository.ts`.
-    *   **Crear Casos de Uso (`src/lib/platform/application`):** Crear `get-platform-config.use-case.ts` y `save-platform-config.use-case.ts`.
-    *   **Implementar Infraestructura (`src/lib/platform/infrastructure`):** Crear `persistence/firestore-platform.repository.ts` y exponer los casos de uso.
-    *   **Refactorizar UI:** Actualizar las páginas (`/dashboard/admin/agent`, `/dashboard/admin/economics`) para que usen la nueva arquitectura.
-    *   **Eliminar Código Antiguo:** `src/services/platform.service.ts` y `src/lib/platform-actions.ts`.
+    *   **Definir el Dominio y Casos de Uso (`src/lib/service-listing`) (✓ Completado):**
+        *   Crear `service-listing.entity.ts` con campos como `title`, `description`, `category`, `price`, `status`, `imageUrl`, etc. (✓)
+        *   Crear el puerto `service-listing.repository.ts`. (✓)
+        *   Crear los casos de uso (`create`, `update`, `get`, `delete`, etc.). (✓)
+    *   **Implementar la Infraestructura (`src/lib/service-listing/infrastructure`) (✓ Completado):**
+        *   `persistence/firestore-service-listing.repository.ts`. (✓)
+        *   `api/service-listing.controller.ts` para exponer los casos de uso. (✓)
+        *   Crear las rutas de API correspondientes (`/api/services`, `/api/services/[id]`, `/api/services/[id]/status`). (✓)
+    *   **Desarrollar UI de Gestión (Dashboard) (✓ Completado):**
+        *   Crear página `/dashboard/my-services` donde usuarios gestionan sus servicios. (✓)
+        *   Implementar vista de moderación para `Admin` donde pueden aprobar/rechazar. (✓)
+    *   **Desarrollar UI Pública (✓ Completado):**
+        *   Crear página pública `/services` que lista los servicios aprobados. (✓)
+        *   Implementar búsqueda y filtrado. (✓)
+    *   **Implementar Flujo de Creación para Invitados (✓ Completado):**
+        *   Diseñar un modal de dos pasos en la página pública `/services`: (✓)
+            *   Paso 1: Formulario de registro rápido. (✓)
+            *   Paso 2: Formulario para crear el servicio. (✓)
 
 ---
 
-## **Fase 8: Vectorización y Base de Conocimiento (RAG) (Próximos Pasos)**
+## **Fase 8: Portal Inmobiliario con Mapa Interactivo (✓ Completada)**
+*   **Objetivo:** Desarrollar un portal completo para la búsqueda de vivienda (alquiler y venta), con una interfaz moderna que combine un listado de propiedades con un mapa interactivo.
+*   **Pasos:**
+    *   **Definir Dominio Inmobiliario (`src/lib/real-estate`) (✓ Completado):**
+        *   Crear `property.entity.ts` con una estructura robusta: (✓)
+        *   Definir el puerto `property.repository.ts`. (✓)
+    *   **Crear Casos de Uso (✓ Completado):** `create-property.use-case.ts`, `search-properties.use-case.ts`, `update-property-status.use-case.ts`, etc. (✓)
+    *   **Implementar Infraestructura (`src/lib/real-estate/infrastructure`) (✓ Completado):** `firestore-property.repository.ts`, `api/property.controller.ts` y las rutas de API correspondientes. (✓)
+    *   **Desarrollar UI Pública - Página de Búsqueda (`/inmobiliaria`) (✓ Completado):**
+        *   Implementar el diseño de dos columnas: listado de propiedades a la izquierda y mapa interactivo a la derecha. (✓)
+        *   Utilizar la API de Google Maps para mostrar un mapa customizado. (✓)
+        *   Renderizar marcadores de precios en el mapa para cada propiedad. (✓)
+        *   Implementar la interactividad: al pasar el cursor sobre un marcador, se debe resaltar la tarjeta correspondiente en el listado (y viceversa). (✓)
+        *   Crear tarjetas de propiedad con carrusel de imágenes, precio y detalles clave. (✓)
+        *   Implementar filtros avanzados (precio, tipo, habitaciones, etc.) que actualicen tanto el listado como el mapa. (✓)
+    *   **Desarrollar UI Pública - Página de Detalles (`/inmobiliaria/[id]`) (✓ Completado):**
+        *   Crear una página de aterrizaje para cada propiedad con una galería de fotos completa, descripción detallada, servicios, ubicación en el mapa y formulario de contacto. (✓)
+    *   **Desarrollar UI de Gestión (Dashboard) (✓ Completado):**
+        *   Permitir a los usuarios (agentes inmobiliarios o particulares) publicar y gestionar sus propiedades desde `/dashboard/my-properties`. (✓)
+        *   Implementar sistema de aprobación de propiedades por parte de administradores. (✓)
+    *   **Implementar Flujo de Creación para Invitados (✓ Completado):**
+        *   Utilizar el mismo patrón de modal de dos pasos que en "Servicios" para que agentes inmobiliarios o propietarios se registren y publiquen su primera propiedad fácilmente desde la página `/inmobiliaria`. (✓)
+        *   El formulario de creación de propiedad deberá incluir un campo de búsqueda de direcciones con autocompletado de Google Maps para seleccionar la ubicación y obtener las coordenadas de forma precisa. (✓)
+
+
+---
+
+## **Fase 9: Vectorización y Base de Conocimiento (RAG) (Próximos Pasos)**
 *   **Objetivo:** Implementar un sistema de búsqueda vectorial (RAG) para que los agentes de IA puedan consultar una base de conocimiento interna y dar respuestas más precisas y basadas en nuestros propios datos.
 *   **Pasos:**
     *   **Configurar Vector Store:** Elegir e implementar una solución de base de datos vectorial (ej. la extensión de Firestore, Pinecone, etc.).
@@ -161,13 +201,16 @@ src/lib/
 
 ---
 
-## **Fase 9: Portal Inmobiliario (Próximos Pasos)**
-*   **Objetivo:** Desarrollar un portal completo para la búsqueda de vivienda (alquiler y venta), aplicando la arquitectura hexagonal desde el principio.
+## **Fase 10: Refactorización del Dominio de Plataforma (Próximos Pasos)**
+*   **Objetivo:** Migrar la gestión de la configuración global (márgenes de beneficio, configuración del agente global) a su propio dominio hexagonal para mantener la coherencia arquitectónica.
 *   **Pasos:**
-    *   **Definir Dominio Inmobiliario (`src/lib/real-estate/domain`):** Crear `property.entity.ts`, `real-estate.repository.ts`.
-    *   **Crear Casos de Uso:** `create-property-listing.use-case.ts`, `search-properties.use-case.ts`, etc.
-    *   **Implementar Infraestructura:** `firestore-real-estate.repository.ts`, `api/real-estate.controller.ts` y las rutas de API correspondientes.
-    *   **Desarrollar UI Pública:** Crear las páginas `/properties` (listado) y `/properties/[id]` (detalle).
-    *   **Desarrollar UI de Gestión:** Permitir a los usuarios (y agencias) publicar y gestionar sus propiedades desde el dashboard.
+    *   **Definir el Dominio (`src/lib/platform/domain`):** Crear `platform.entity.ts` y `platform.repository.ts`.
+    *   **Crear Casos de Uso (`src/lib/platform/application`):** Crear `get-platform-config.use-case.ts` y `save-platform-config.use-case.ts`.
+    *   **Implementar Infraestructura (`src/lib/platform/infrastructure`):** Crear `persistence/firestore-platform.repository.ts` y exponer los casos de uso.
+    *   **Refactorizar UI:** Actualizar las páginas (`/dashboard/admin/agent`, `/dashboard/admin/economics`) para que usen la nueva arquitectura.
+    *   **Eliminar Código Antiguo:** `src/services/platform.service.ts` y `src/lib/platform-actions.ts`.
+
 
 Este plan nos proporciona una guía clara y estructurada para ejecutar una refactorización exitosa, sentando las bases para una aplicación mucho más robusta, escalable y fácil de mantener.
+
+    

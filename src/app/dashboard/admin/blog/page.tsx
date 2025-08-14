@@ -304,7 +304,7 @@ export default function AdminBlogManagementPage() {
                     </DropdownMenuItem>
                     {post.status !== 'Published' && (
                         <DropdownMenuItem asChild>
-                             <Link href={`/blog/preview/${post.id}`} target="_blank">
+                             <Link href={`/blog/previsualizar/${post.id}`} target="_blank">
                                 <Eye className="mr-2 h-4 w-4" /> Previsualizar
                             </Link>
                         </DropdownMenuItem>

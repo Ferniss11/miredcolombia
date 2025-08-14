@@ -4,14 +4,10 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  font-family: 'PT Sans', sans-serif;
+/* When Google Places Autocomplete is visible, allow clicks outside the Sheet */
+body.pac-container-visible [data-radix-dialog-overlay] {
+    pointer-events: none;
 }
-
-h1, h2, h3, h4, h5, h6 {
-  font-family: 'Lora', serif;
-}
-
 
 @layer base {
   :root {

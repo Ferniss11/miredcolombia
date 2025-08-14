@@ -44,6 +44,15 @@ export class FirestoreServiceListingRepository implements ServiceListingReposito
         const snapshot = await db.collection(SERVICES_COLLECTION).orderBy('createdAt', 'desc').get();
         return snapshot.docs.map(doc => toServiceListing(doc));
     }
+    
+    async findPublished(): Promise<ServiceListing[]> {
+        const db = this.getDb();
+        const snapshot = await db.collection(SERVICES_COLLECTION)
+            .where('status', '==', 'published')
+            .orderBy('createdAt', 'desc')
+            .get();
+        return snapshot.docs.map(doc => toServiceListing(doc));
+    }
 
     async findByUserId(userId: string): Promise<ServiceListing[]> {
         const db = this.getDb();

@@ -363,4 +363,7 @@ export type JobPostingFormValues = z.infer<typeof JobPostingFormSchema>;
 export type ChatSession = import('./chat-types').ChatSession;
 export type ChatMessage = import('./chat-types').ChatMessage;
 export type Business = import('./directory/domain/business.entity').Business;
+export type ServiceListing = import('./service-listing/domain/service-listing.entity').ServiceListing;
 export type AgentConfig = import('./chat-types').AgentConfig;
+export type JobsCtaSectionProps = { jobs: JobPosting[]; };
+

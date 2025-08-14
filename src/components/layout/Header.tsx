@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import Link from "next/link";
@@ -15,11 +16,12 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Image from 'next/image';
 
 const navLinks = [
-  { href: "/", label: "Inicio" },
-  { href: "/directory", label: "Negocios" },
-  { href: "/jobs", label: "Empleo" },
+  { href: "/directorio", label: "Negocios" },
+  { href: "/inmobiliaria", label: "Inmobiliaria" },
+  { href: "/empleos", label: "Empleo" },
+  { href: "/servicios", label: "Servicios" },
   { href: "/blog", label: "Blog" },
-  { href: "/pricing", label: "Precios" },
+  { href: "/precios", label: "Precios" },
 ];
 
 export default function Header() {

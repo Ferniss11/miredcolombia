@@ -31,7 +31,7 @@ export default function DirectorySection({ businesses }: { businesses: PlaceDeta
                 <div className="mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 py-12">
                     {businesses.map((business) => (
                          <Card key={business.id} className="overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 flex flex-col group">
-                            <Link href={`/directory/${business.id}`} className="block">
+                            <Link href={`/directorio/${business.id}`} className="block">
                                 <CardHeader className="p-0 relative">
                                     <Image
                                         src={business.photoUrl || "https://placehold.co/400x250.png"}
@@ -61,7 +61,7 @@ export default function DirectorySection({ businesses }: { businesses: PlaceDeta
                             </CardContent>
                             <CardFooter className="p-4 pt-0 mt-auto">
                                 <Button asChild variant="link" className="text-primary p-0 h-auto font-semibold">
-                                <Link href={`/directory/${business.id}`}>
+                                <Link href={`/directorio/${business.id}`}>
                                     Ver Perfil <ArrowRight className="ml-2 h-4 w-4" />
                                 </Link>
                                 </Button>
@@ -72,7 +72,7 @@ export default function DirectorySection({ businesses }: { businesses: PlaceDeta
                 
                 <div className="flex justify-center">
                     <Button asChild>
-                        <Link href="/directory">
+                        <Link href="/directorio">
                             Ver Directorio Completo <Map className="ml-2 h-4 w-4" />
                         </Link>
                     </Button>

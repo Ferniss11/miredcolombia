@@ -9,6 +9,7 @@ export interface ServiceListingRepository {
   findById(id: string): Promise<ServiceListing | null>;
   findAll(): Promise<ServiceListing[]>;
   findByUserId(userId: string): Promise<ServiceListing[]>;
+  findPublished(): Promise<ServiceListing[]>;
   update(id: string, data: Partial<ServiceListing>): Promise<ServiceListing>;
   delete(id: string): Promise<void>;
 }

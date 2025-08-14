@@ -1,9 +1,11 @@
 
+
 import HomePageClient from '@/components/home/HomePageClient';
 import { getEurToCopRate } from '@/lib/currency-actions';
 import { getSavedBusinessesAction } from '@/lib/directory-actions';
 import { getPublicJobPostingsAction } from '@/lib/job-posting/infrastructure/nextjs/job-posting.server-actions';
-import type { PlaceDetails, BlogPost } from '@/lib/types';
+import type { PlaceDetails, BlogPost, JobsCtaSectionProps } from '@/lib/types';
+import { ChatProvider } from '@/context/ChatContext';
 
 // Correctly import the Use Case and Repository from the hexagonal architecture
 import { GetAllBlogPostsUseCase } from '@/lib/blog/application/get-all-blog-posts.use-case';
@@ -49,10 +51,14 @@ export default async function HomePage() {
   const randomBusinesses = shuffleArray([...allBusinesses]).slice(0, 5);
 
 
-  return <HomePageClient 
+  return (
+    <ChatProvider>
+        <HomePageClient
             eurToCopRate={eurToCopRate} 
             initialBusinesses={randomBusinesses}
             initialJobs={jobs?.slice(0, 4) || []}
             initialPosts={latestPosts}
-         />;
+         />
+    </ChatProvider>
+  );
 }

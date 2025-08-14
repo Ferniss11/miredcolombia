@@ -61,6 +61,14 @@ const SheetContent = React.forwardRef<
     <SheetOverlay />
     <SheetPrimitive.Content
       ref={ref}
+      onInteractOutside={(e) => {
+          // This is the key fix: It prevents the dialog from closing or stealing focus
+          // when clicking on the Google Maps autocomplete suggestions, which are
+          // rendered outside of the dialog's DOM tree.
+          if ((e.target as HTMLElement).closest('.pac-container')) {
+            e.preventDefault();
+          }
+        }}
       className={cn(sheetVariants({ side }), className)}
       {...props}
     >

@@ -135,11 +135,11 @@ export default function StepsSection() {
                      <DialogFooter className="flex-col sm:flex-col sm:space-x-0 gap-2 pt-4 border-t">
                         <Button asChild variant="outline" className="hover:bg-green-600 hover:text-white">
                             <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
-                                <MessageCircle className="mr-2 h-4 w-4" /> Hablar por WhatsApp
+                                <MessageCircle className="mr-2 h-4 w-4" /> ¿Hablamos por WhatsApp?
                             </a>
                         </Button>
                         <Button onClick={handleOpenChatAssistant}>
-                            <Bot className="mr-2 h-4 w-4" /> Preguntar al Asistente IA
+                            <Bot className="mr-2 h-4 w-4" /> Pregúntale a Valeria
                         </Button>
                     </DialogFooter>
                 </DialogContent>

@@ -46,9 +46,10 @@ async function parseRoadmap(): Promise<Phase[]> {
       'Fase 4': 14,
       'Fase 5': 24,
       'Fase 6': 10,
-      'Fase 7': 8,
-      'Fase 8': 30,
-      'Fase 9': 40,
+      'Fase 7': 22, // Service Portal
+      'Fase 8': 40, // Real Estate
+      'Fase 9': 30, // RAG
+      'Fase 10': 8, // Platform Refactor
   };
 
   for (const line of lines) {
@@ -63,10 +64,10 @@ async function parseRoadmap(): Promise<Phase[]> {
       const statusText = phaseMatch[3].trim();
       
       let status: PhaseStatus = 'En Progreso';
-      if (statusText === '✓ Completada') status = 'Completada';
-      else if (statusText === 'Pausado') status = 'En Pausa';
-      else if (statusText === 'En Progreso') status = 'En Progreso';
-      else if (statusText === 'Próximos Pasos') status = 'Próximos Pasos';
+      if (statusText.includes('Completada')) status = 'Completada';
+      else if (statusText.includes('Pausado')) status = 'En Pausa';
+      else if (statusText.includes('En Progreso')) status = 'En Progreso';
+      else if (statusText.includes('Próximos Pasos')) status = 'Próximos Pasos';
 
       currentPhase = {
         title: `${phaseKey}: ${titleText}`,
@@ -79,8 +80,34 @@ async function parseRoadmap(): Promise<Phase[]> {
     }
 
     if (currentPhase) {
-        if (line.trim() === '*   **Pasos:**') {
+        const stepSectionMatch = line.match(/^\s*\*\s*\*\*(.*?):\*\*\s*(.*)/);
+        if (stepSectionMatch) {
+            const stepTitle = stepSectionMatch[1].trim();
+            const stepDescription = stepSectionMatch[2].trim();
+             const isCompleted = stepDescription.toLowerCase().includes('(✓');
+             const cleanDescription = stepDescription.replace(/\(✓.*?\)/i, '').trim();
+
+            if(currentPhase.steps.find(s => s.text.startsWith(stepTitle))) {
+                 // It's a sub-step, append it
+                let lastStep = currentPhase.steps[currentPhase.steps.length - 1];
+                lastStep.text += `\n- ${cleanDescription}`;
+            } else {
+                 currentPhase.steps.push({
+                    text: `${stepTitle}: ${cleanDescription}`,
+                    isCompleted: isCompleted,
+                });
+            }
             readingSteps = true;
+            continue;
+        }
+
+        const subStepMatch = line.match(/^\s*\*\s*-\s*(.*)/);
+        if (readingSteps && subStepMatch && currentPhase.steps.length > 0) {
+            const isCompleted = subStepMatch[1].toLowerCase().includes('(✓');
+            const cleanSubStep = subStepMatch[1].replace(/\(✓.*?\)/i, '').trim();
+            currentPhase.steps[currentPhase.steps.length - 1].text += `\n- ${cleanSubStep}`;
+            // Mark the parent step as completed if any sub-step is completed
+            if(isCompleted) currentPhase.steps[currentPhase.steps.length - 1].isCompleted = true;
             continue;
         }
 
@@ -89,16 +116,6 @@ async function parseRoadmap(): Promise<Phase[]> {
             currentPhase.description = objectiveMatch[1].trim();
             readingSteps = false; // Stop reading steps if we find an objective
             continue;
-        }
-
-        if (readingSteps) {
-             const stepMatch = line.match(/^\s*\*\s*(.*?)\s*(\(✓ Completado\))?$/);
-             if (stepMatch) {
-                currentPhase.steps.push({
-                    text: stepMatch[1].trim(),
-                    isCompleted: !!stepMatch[2],
-                });
-             }
         }
     }
   }
@@ -168,7 +185,7 @@ const PhaseCard = ({ phase, index }: { phase: Phase, index: number }) => (
                             {phase.steps.map((step, i) => (
                                 <li key={i} className="flex items-start gap-3">
                                     <CheckCircle className={`h-5 w-5 mt-0.5 flex-shrink-0 ${step.isCompleted ? 'text-green-500' : 'text-muted-foreground/30'}`} />
-                                    <span className={`text-sm ${step.isCompleted ? 'text-foreground' : 'text-muted-foreground'}`}>
+                                    <span className={`text-sm ${step.isCompleted ? 'text-foreground' : 'text-muted-foreground'} whitespace-pre-line`}>
                                         {step.text}
                                     </span>
                                 </li>

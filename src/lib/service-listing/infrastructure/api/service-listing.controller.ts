@@ -1,8 +1,9 @@
 // src/lib/service-listing/infrastructure/api/service-listing.controller.ts
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { ApiResponse } from '@/lib/platform/api/api-response';
 import { adminAuth } from '@/lib/firebase/admin-config';
+import { uploadFile } from '@/lib/user/infrastructure/storage/firebase-storage.adapter';
 
 // Infrastructure
 import { FirestoreServiceListingRepository } from '../persistence/firestore-service-listing.repository';
@@ -11,21 +12,28 @@ import { FirestoreServiceListingRepository } from '../persistence/firestore-serv
 import { CreateServiceListingUseCase } from '../../application/create-service-listing.use-case';
 import { GetAllServiceListingsUseCase } from '../../application/get-all-service-listings.use-case';
 import { GetServiceListingUseCase } from '../../application/get-service-listing.use-case';
-import { UpdateServiceListingUseCase } from '../../application/update-service-listing.use-case';
+import { UpdateServiceListingUseCase, UpdateServiceListingInput } from '../../application/update-service-listing.use-case';
 import { DeleteServiceListingUseCase } from '../../application/delete-service-listing.use-case';
 import type { UserRole } from '@/lib/user/domain/user.entity';
+import { ServiceListing } from '../../domain/service-listing.entity';
 
-// Validation Schemas
-const ServiceListingSchema = z.object({
+// Validation Schemas for FormData
+const ServiceListingFormSchema = z.object({
   title: z.string().min(5),
   description: z.string().min(20),
   category: z.string().min(1),
   city: z.string().min(1),
-  price: z.number().min(0),
+  price: z.coerce.number().min(0), // Coerce from string to number
   priceType: z.enum(['per_hour', 'fixed', 'per_project']),
   contactPhone: z.string().min(7),
   contactEmail: z.string().email(),
+  contactViaWhatsApp: z.preprocess((val) => val === 'true' || val === true, z.boolean()),
 });
+
+const UpdateStatusSchema = z.object({
+    status: z.enum(['published', 'rejected']),
+});
+
 
 export class ServiceListingController {
   private createUseCase: CreateServiceListingUseCase;
@@ -43,24 +51,46 @@ export class ServiceListingController {
     this.deleteUseCase = new DeleteServiceListingUseCase(repository);
   }
 
-  async create(req: NextRequest): Promise<ApiResponse> {
+  async create(req: NextRequest): Promise<NextResponse> {
+    if (!adminAuth) {
+        return ApiResponse.error('Authentication service not configured.', 503);
+    }
     const token = req.headers.get('Authorization')?.split('Bearer ')[1];
     if (!token) return ApiResponse.unauthorized();
     const { uid: userId } = await adminAuth.verifyIdToken(token);
 
-    const json = await req.json();
-    const data = ServiceListingSchema.parse(json);
+    const formData = await req.formData();
+    const serviceImageFile = formData.get('serviceImageFile') as File | null;
     
-    const newListing = await this.createUseCase.execute({ ...data, userId });
+    const data = ServiceListingFormSchema.parse({
+        title: formData.get('title'),
+        description: formData.get('description'),
+        category: formData.get('category'),
+        city: formData.get('city'),
+        price: formData.get('price'),
+        priceType: formData.get('priceType'),
+        contactPhone: formData.get('contactPhone'),
+        contactEmail: formData.get('contactEmail'),
+        contactViaWhatsApp: formData.get('contactViaWhatsApp'),
+    });
+    
+    let imageUrl: string | undefined = undefined;
+    if (serviceImageFile) {
+        const fileBuffer = Buffer.from(await serviceImageFile.arrayBuffer());
+        const filePath = `service-listings/${userId}/${Date.now()}-${serviceImageFile.name}`;
+        imageUrl = await uploadFile(fileBuffer, filePath, serviceImageFile.type);
+    }
+    
+    const newListing = await this.createUseCase.execute({ ...data, userId, imageUrl });
     return ApiResponse.created(newListing);
   }
   
-  async getAll(req: NextRequest): Promise<ApiResponse> {
+  async getAll(req: NextRequest): Promise<NextResponse> {
     const listings = await this.getAllUseCase.execute();
     return ApiResponse.success(listings);
   }
 
-  async getById(req: NextRequest, { params }: { params: { id: string } }): Promise<ApiResponse> {
+  async getById(req: NextRequest, { params }: { params: { id: string } }): Promise<NextResponse> {
     const listing = await this.getByIdUseCase.execute(params.id);
     if (!listing) {
       return ApiResponse.notFound('Service listing not found.');
@@ -68,24 +98,77 @@ export class ServiceListingController {
     return ApiResponse.success(listing);
   }
 
-  async update(req: NextRequest, { params }: { params: { id: string } }): Promise<ApiResponse> {
+  async update(req: NextRequest, { params }: { params: { id: string } }): Promise<NextResponse> {
+    if (!adminAuth) {
+        return ApiResponse.error('Authentication service not configured.', 503);
+    }
     const token = req.headers.get('Authorization')?.split('Bearer ')[1];
     if (!token) return ApiResponse.unauthorized();
     const { uid: actorId, roles } = await adminAuth.verifyIdToken(token);
+    const actorRoles = (roles || []) as UserRole[];
     
-    const json = await req.json();
-    const dataToUpdate = ServiceListingSchema.partial().parse(json);
+    const formData = await req.formData();
+    const serviceImageFile = formData.get('serviceImageFile') as File | null;
     
-    const updatedListing = await this.updateUseCase.execute(params.id, dataToUpdate, actorId, (roles || []) as UserRole[]);
+    const dataToUpdate: UpdateServiceListingInput = {};
+
+    // Populate dataToUpdate only with fields present in formData
+    for (const [key, value] of formData.entries()) {
+        if (key !== 'serviceImageFile' && value !== null) {
+            (dataToUpdate as any)[key] = value;
+        }
+    }
+    
+    // Coerce specific fields if they exist
+    if (dataToUpdate.price) {
+        dataToUpdate.price = Number(dataToUpdate.price);
+    }
+     if (typeof dataToUpdate.contactViaWhatsApp === 'string') {
+        dataToUpdate.contactViaWhatsApp = dataToUpdate.contactViaWhatsApp === 'true';
+    }
+
+    if (serviceImageFile) {
+        const fileBuffer = Buffer.from(await serviceImageFile.arrayBuffer());
+        const filePath = `service-listings/${actorId}/${Date.now()}-${serviceImageFile.name}`;
+        dataToUpdate.imageUrl = await uploadFile(fileBuffer, filePath, serviceImageFile.type);
+    }
+    
+    const updatedListing = await this.updateUseCase.execute(params.id, dataToUpdate, actorId, actorRoles);
     return ApiResponse.success(updatedListing);
   }
 
-  async delete(req: NextRequest, { params }: { params: { id: string } }): Promise<ApiResponse> {
+  async updateStatus(req: NextRequest, { params }: { params: { id: string } }): Promise<NextResponse> {
+      if (!adminAuth) {
+          return ApiResponse.error('Authentication service not configured.', 503);
+      }
+      const token = req.headers.get('Authorization')?.split('Bearer ')[1];
+      if (!token) return ApiResponse.unauthorized();
+      const { uid: actorId, roles } = await adminAuth.verifyIdToken(token);
+      const actorRoles = (roles || []) as UserRole[];
+      
+      const json = await req.json();
+      const { status } = UpdateStatusSchema.parse(json);
+
+      // The useCase internally checks for Admin/SAdmin roles, but we can do a preliminary check here.
+      if (!actorRoles.includes('Admin') && !actorRoles.includes('SAdmin')) {
+          return ApiResponse.forbidden('You do not have permission to change the status of this listing.');
+      }
+
+      // We only need to pass the status field to the use case.
+      const updatedListing = await this.updateUseCase.execute(params.id, { status }, actorId, actorRoles);
+      return ApiResponse.success(updatedListing);
+  }
+
+  async delete(req: NextRequest, { params }: { params: { id: string } }): Promise<NextResponse> {
+    if (!adminAuth) {
+        return ApiResponse.error('Authentication service not configured.', 503);
+    }
     const token = req.headers.get('Authorization')?.split('Bearer ')[1];
     if (!token) return ApiResponse.unauthorized();
     const { uid: actorId, roles } = await adminAuth.verifyIdToken(token);
+    const actorRoles = (roles || []) as UserRole[];
     
-    await this.deleteUseCase.execute(params.id, actorId, (roles || []) as UserRole[]);
+    await this.deleteUseCase.execute(params.id, actorId, actorRoles);
     return ApiResponse.noContent();
   }
 }

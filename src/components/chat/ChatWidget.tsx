@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
@@ -17,7 +18,7 @@ import { LuBotMessageSquare } from "react-icons/lu";
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import type { ChatMessage } from '@/lib/chat-types';
-import { Avatar, AvatarFallback } from '../ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '../ui/sheet';
 import { useChat } from '@/context/ChatContext';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
@@ -202,6 +203,8 @@ const allBusinessQuestions = [
 const getShuffledSample = (arr: string[], count: number) => {
     return arr.sort(() => 0.5 - Math.random()).slice(0, count);
 }
+
+const AGENT_AVATAR_URL = "https://firebasestorage.googleapis.com/v0/b/colombia-en-esp.firebasestorage.app/o/web%2FImagen%20de%20WhatsApp%202025-08-09%20a%20las%2018.20.39_3c2b6161.jpg?alt=media&token=41ebe34a-f846-41fc-937f-4141f1240ee8";
 
 
 export default function ChatWidget() {
@@ -390,19 +393,26 @@ export default function ChatWidget() {
               const isUser = msg.role === 'user';
               const isAdmin = msg.role === 'admin';
               const isModel = msg.role === 'model';
+              
               const alignment = isUser ? 'justify-end' : 'justify-start';
               const bgColor = isUser ? 'bg-primary text-primary-foreground' : isAdmin ? 'bg-yellow-100 dark:bg-yellow-900/50' : 'bg-muted';
+              
               const avatar = isUser ? (
                   <Avatar className="w-8 h-8 flex-shrink-0">
                     <AvatarFallback className="bg-muted"><User size={18} /></AvatarFallback>
                   </Avatar>
               ) : (
-                  <Avatar className="w-8 h-8 flex-shrink-0">
+                <Avatar className="w-8 h-8 flex-shrink-0">
+                  {!isBusinessChat ? (
+                    <AvatarImage src={AGENT_AVATAR_URL} alt="Avatar de Valeria" className="object-cover" />
+                  ) : (
                     <AvatarFallback className={cn(isAdmin ? 'bg-yellow-400 text-black' : 'bg-primary/10 text-primary')}>
-                        {isAdmin ? <UserCog size={18} /> : <Bot size={18} />}
+                      {isAdmin ? <UserCog size={18} /> : <Bot size={18} />}
                     </AvatarFallback>
-                 </Avatar>
+                  )}
+                </Avatar>
               );
+              
               const authorName = isAdmin ? (msg.authorName || 'Admin') : isModel ? (chatContext?.businessName || 'Asistente IA') : '';
 
               return (
@@ -441,9 +451,13 @@ export default function ChatWidget() {
             )}
             {isAiResponding && (
                 <div className="flex items-end gap-2 justify-start">
-                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                        <Bot size={20} />
-                    </div>
+                    <Avatar className="w-8 h-8 flex-shrink-0">
+                      {!isBusinessChat ? (
+                        <AvatarImage src={AGENT_AVATAR_URL} alt="Avatar de Valeria" className="object-cover" />
+                      ) : (
+                        <AvatarFallback className='bg-primary/10 text-primary'><Bot size={18} /></AvatarFallback>
+                      )}
+                    </Avatar>
                     <div className="bg-muted rounded-xl px-4 py-3 rounded-bl-none flex items-center gap-2">
                         <Loader2 className="animate-spin h-4 w-4" />
                         <span className="text-sm text-muted-foreground">Escribiendo...</span>
@@ -482,9 +496,10 @@ export default function ChatWidget() {
             {showProactive && !isChatOpen && proactiveMessage && (
                 <div className="absolute bottom-full right-0 mb-3 w-max max-w-[280px] animate-in fade-in-50 slide-in-from-bottom-2">
                     <div className="flex items-end gap-2">
-                        <div className="flex-shrink-0 w-12 h-12 rounded-full bg-primary flex items-center justify-center text-primary-foreground shadow-lg z-10 -mr-2">
-                          <LuBotMessageSquare size={20} />
-                        </div>
+                        <Avatar className="w-12 h-12 flex-shrink-0 z-10 -mr-2 shadow-lg border-2 border-background">
+                            <AvatarImage src={AGENT_AVATAR_URL} alt="Avatar de Valeria" className="object-cover" />
+                             <AvatarFallback className="bg-primary text-primary-foreground"><LuBotMessageSquare size={20} /></AvatarFallback>
+                        </Avatar>
                          <div className="relative bg-background dark:bg-card shadow-lg rounded-lg p-3 text-sm group">
                             <p>{proactiveMessage}</p>
                             <div className="absolute right-3 -bottom-1.5 w-3 h-3 bg-background dark:bg-card transform rotate-45"></div>
@@ -502,12 +517,17 @@ export default function ChatWidget() {
             )}
              <Sheet open={isChatOpen} onOpenChange={setChatOpen}>
                 <SheetTrigger asChild>
-                    <Button
-                        className="w-16 h-16 rounded-full shadow-lg flex items-center justify-center"
+                     <Button
+                        className="w-16 h-16 rounded-full shadow-lg flex items-center justify-center p-0"
                         size="icon"
                         id="global-chat-trigger"
                     >
-                        {isChatOpen ? <X size={32} /> : <Bot size={40} />}
+                       {isChatOpen ? <X size={32} /> : 
+                       <Avatar className="w-full h-full">
+                           <AvatarImage src={AGENT_AVATAR_URL} alt="Avatar de Valeria, asistente IA" className="object-cover" />
+                           <AvatarFallback><Bot size={40}/></AvatarFallback>
+                       </Avatar>
+                       }
                     </Button>
                 </SheetTrigger>
                 <SheetContent 
@@ -516,7 +536,12 @@ export default function ChatWidget() {
                 >
                     <SheetHeader className="p-4 border-b flex-row items-center justify-between">
                         <SheetTitle className="flex items-center gap-2 font-headline text-lg">
-                            {isBusinessChat ? <Building className="h-6 w-6 text-primary" /> : <Sparkles className="h-6 w-6 text-primary" />}
+                            {isBusinessChat ? <Building className="h-6 w-6 text-primary" /> : (
+                               <Avatar className="w-8 h-8">
+                                <AvatarImage src={AGENT_AVATAR_URL} alt="Avatar de Valeria" className="object-cover"/>
+                                <AvatarFallback><Sparkles className="h-4 w-4"/></AvatarFallback>
+                               </Avatar>
+                            )}
                             {isBusinessChat ? `Asistente de ${chatContext.businessName}` : "Asistente de Inmigración"}
                         </SheetTitle>
                         {sessionId && (

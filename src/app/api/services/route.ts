@@ -6,7 +6,7 @@ import { NextRequest } from 'next/server';
 const serviceListingController = new ServiceListingController();
 
 // Anyone authenticated can create a service listing
-export const POST = apiHandler((req) => 
+export const POST = apiHandler((req: NextRequest) => 
   serviceListingController.create(req)
 , ['User', 'Admin', 'SAdmin', 'Advertiser']);
 

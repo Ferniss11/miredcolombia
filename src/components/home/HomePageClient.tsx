@@ -4,7 +4,7 @@
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import StripeCheckoutForm from "@/components/checkout/StripeCheckoutForm";
-import type { MigrationPackage, MigrationService, PurchaseableItem, PlaceDetails, JobPosting, BlogPost } from '@/lib/types';
+import type { MigrationPackage, MigrationService, PurchaseableItem, PlaceDetails, BlogPost, JobsCtaSectionProps } from '@/lib/types';
 
 // Import sections directly
 import HeroSection from './HeroSection';
@@ -23,7 +23,7 @@ import { useChat } from '@/context/ChatContext';
 type HomePageClientProps = {
   eurToCopRate: number;
   initialBusinesses: PlaceDetails[];
-  initialJobs: JobPosting[];
+  initialJobs: JobsCtaSectionProps['jobs'];
   initialPosts: BlogPost[];
 }
 
@@ -42,7 +42,7 @@ export default function HomePageClient({ eurToCopRate, initialBusinesses, initia
     <div className="flex flex-col min-h-[100dvh]">
       <main className="flex-1">
         <HeroSection />
-        <StepsSection />
+        <StepsSection onOpenChatAssistant={openChat} />
         <AboutSection />
         <AiAssistantSection onOpenChatModal={openChat} />
         <PackagesSection eurToCopRate={eurToCopRate} />
