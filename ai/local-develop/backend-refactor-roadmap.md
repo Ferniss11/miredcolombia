@@ -178,7 +178,7 @@ src/lib/
             *   **Propietario:** `owner: { userId: string, name: string, isTrusted: boolean, responseRate?: number, avgResponseTimeHours?: number, joinedAt: Date }`.
         *   Definir el puerto `property.repository.ts`.
     *   **Crear Casos de Uso (✓ Completado):** `create-property.use-case.ts`, `search-properties.use-case.ts`, `update-property-status.use-case.ts`, etc.
-    *   **Implementar Infraestructura:** `firestore-property.repository.ts`, `api/property.controller.ts` y las rutas de API correspondientes.
+    *   **Implementar Infraestructura (`src/lib/real-estate/infrastructure`) (✓ Completado):** `firestore-property.repository.ts`, `api/property.controller.ts` y las rutas de API correspondientes.
     *   **Desarrollar UI Pública - Página de Búsqueda (`/inmobiliaria`):**
         *   Implementar el diseño de dos columnas: un listado de propiedades a la izquierda y un mapa interactivo a la derecha.
         *   Utilizar la API de Google Maps para mostrar un mapa customizado.
