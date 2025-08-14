@@ -10,12 +10,13 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/componen
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Plus, Edit, Trash2, MoreVertical, Loader2, Handshake, Check, X } from 'lucide-react';
+import { Plus, Edit, Trash2, MoreVertical, Loader2, Handshake, Check, X, Tag } from 'lucide-react';
 import Image from 'next/image';
 import type { ServiceListing } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import ServiceForm from '@/components/services/ServiceForm';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 const formatPriceType = (priceType: 'per_hour' | 'fixed' | 'per_project') => {
     switch (priceType) {
@@ -154,7 +155,7 @@ export default function MyServicesPage() {
             
             {isLoading ? (
                  <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                    {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-48 w-full" />)}
+                    {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-64 w-full" />)}
                  </div>
             ) : listings.length === 0 ? (
                 <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-lg">
@@ -168,38 +169,53 @@ export default function MyServicesPage() {
             ) : (
                  <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                      {listings.map(listing => (
-                        <Card key={listing.id} className="flex flex-col overflow-hidden">
-                             {listing.imageUrl && <Image src={listing.imageUrl} alt={listing.title} width={400} height={200} className="w-full h-40 object-cover" />}
-                             <CardHeader className="flex flex-row items-start justify-between p-4">
-                                <div className="flex-grow">
-                                    <h3 className="font-bold font-headline text-lg leading-snug line-clamp-2">{listing.title}</h3>
-                                    <p className="text-xs text-muted-foreground">{listing.category}</p>
-                                </div>
-                                 <DropdownMenu>
-                                    <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end">
-                                        <DropdownMenuItem onClick={() => handleOpenSheetForEdit(listing)}><Edit className="mr-2 h-4 w-4" /> Editar</DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => setDeletingListingId(listing.id)} disabled={isPending} className="text-red-600"><Trash2 className="mr-2 h-4 w-4" /> Eliminar</DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
-                             </CardHeader>
-                             <CardContent className="p-4 pt-0 text-sm text-muted-foreground flex-grow">
-                                {listing.city} - <span className="font-bold text-foreground">€{listing.price}</span> <span className="text-xs">{formatPriceType(listing.priceType)}</span>
-                             </CardContent>
-                             <CardFooter className="p-2 border-t mt-auto flex items-center justify-between">
-                                {getStatusBadge(listing.status)}
-                                {isAdmin && listing.status === 'pending_review' && (
-                                    <div className="flex gap-2">
-                                        <Button size="sm" variant="outline" className="h-8 px-2 text-red-600 hover:bg-red-50 hover:text-red-700" onClick={() => handleUpdateStatus(listing.id, 'rejected')} disabled={isPending}>
-                                            <X className="h-4 w-4" />
-                                        </Button>
-                                         <Button size="sm" className="h-8 px-2 bg-green-600 hover:bg-green-700" onClick={() => handleUpdateStatus(listing.id, 'published')} disabled={isPending}>
-                                            <Check className="h-4 w-4" />
-                                        </Button>
+                        <Collapsible key={listing.id} asChild>
+                             <Card className="flex flex-col overflow-hidden">
+                                 {listing.imageUrl && <Image src={listing.imageUrl} alt={listing.title} width={400} height={200} className="w-full h-40 object-cover" />}
+                                 <CardHeader className="flex flex-row items-start justify-between p-4">
+                                    <div className="flex-grow">
+                                        <h3 className="font-bold font-headline text-lg leading-snug line-clamp-2">{listing.title}</h3>
+                                        <p className="text-xs text-muted-foreground">{listing.category}</p>
                                     </div>
-                                )}
-                             </CardFooter>
-                        </Card>
+                                     <DropdownMenu>
+                                        <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                            <DropdownMenuItem onClick={() => handleOpenSheetForEdit(listing)}><Edit className="mr-2 h-4 w-4" /> Editar</DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => setDeletingListingId(listing.id)} disabled={isPending} className="text-red-600"><Trash2 className="mr-2 h-4 w-4" /> Eliminar</DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                 </CardHeader>
+                                 <CardContent className="p-4 pt-0 text-sm text-muted-foreground flex-grow">
+                                     <div className="flex items-center gap-2 mb-2">
+                                        <Tag className="h-4 w-4 flex-shrink-0" />
+                                        <span className="font-semibold text-foreground">€{listing.price}</span>
+                                        <span className="text-xs">{formatPriceType(listing.priceType)}</span>
+                                     </div>
+                                     <p className="line-clamp-3">{listing.description}</p>
+                                      {listing.description.length > 100 && (
+                                        <CollapsibleTrigger asChild>
+                                            <Button variant="link" className="p-0 h-auto text-xs">Ver más</Button>
+                                        </CollapsibleTrigger>
+                                      )}
+                                      <CollapsibleContent>
+                                        <p className="mt-2 text-sm">{listing.description}</p>
+                                      </CollapsibleContent>
+                                 </CardContent>
+                                 <CardFooter className="p-2 border-t mt-auto flex items-center justify-between">
+                                    {getStatusBadge(listing.status)}
+                                    {isAdmin && listing.status === 'pending_review' && (
+                                        <div className="flex gap-2">
+                                            <Button size="sm" variant="outline" className="h-8 px-2 text-red-600 hover:bg-red-50 hover:text-red-700" onClick={() => handleUpdateStatus(listing.id, 'rejected')} disabled={isPending}>
+                                                <X className="h-4 w-4" />
+                                            </Button>
+                                             <Button size="sm" className="h-8 px-2 bg-green-600 hover:bg-green-700" onClick={() => handleUpdateStatus(listing.id, 'published')} disabled={isPending}>
+                                                <Check className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                    )}
+                                 </CardFooter>
+                            </Card>
+                        </Collapsible>
                      ))}
                  </div>
             )}
