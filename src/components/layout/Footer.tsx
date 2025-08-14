@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Instagram, Youtube } from "lucide-react";
@@ -59,6 +60,7 @@ export default function Footer() {
                 <ul className="mt-4 space-y-4">
                   <li><Link href="/directorio" className="text-base text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">Negocios</Link></li>
                   <li><Link href="/empleos" className="text-base text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">Empleo</Link></li>
+                  <li><Link href="/inmobiliaria" className="text-base text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">Inmobiliaria</Link></li>
                   <li><Link href="/servicios" className="text-base text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">Servicios</Link></li>
                   <li><Link href="/blog" className="text-base text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">Blog</Link></li>
                   <li><Link href="/precios" className="text-base text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">Precios</Link></li>
