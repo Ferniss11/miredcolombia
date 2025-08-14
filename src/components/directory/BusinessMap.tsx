@@ -1,14 +1,12 @@
 'use client'
 
 import React from 'react'
-import { GoogleMap, useJsApiLoader, MarkerF } from '@react-google-maps/api';
+import { GoogleMap, MarkerF } from '@react-google-maps/api';
 
 const containerStyle = {
   width: '100%',
   height: '100%'
 };
-
-const libraries = ["maps", "places"] as any;
 
 interface BusinessMapProps {
     center: {
@@ -16,16 +14,13 @@ interface BusinessMapProps {
         lng: number;
     };
     name: string;
+    isMapsApiLoaded: boolean; // Recibe el estado de carga como prop
 }
 
-const BusinessMap = ({ center, name }: BusinessMapProps) => {
-  const { isLoaded } = useJsApiLoader({
-    id: 'google-map-script-main',
-    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!,
-    libraries
-  })
+const BusinessMap = ({ center, name, isMapsApiLoaded }: BusinessMapProps) => {
+  // Ya no se llama a useJsApiLoader aquí
 
-  return isLoaded ? (
+  return isMapsApiLoaded ? (
       <GoogleMap
         mapContainerStyle={containerStyle}
         center={center}
@@ -36,7 +31,7 @@ const BusinessMap = ({ center, name }: BusinessMapProps) => {
           title={name}
         />
       </GoogleMap>
-  ) : <></>
+  ) : <div className="w-full h-full bg-muted animate-pulse" /> // Muestra un esqueleto mientras carga
 }
 
 export default React.memo(BusinessMap);

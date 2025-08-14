@@ -1,7 +1,9 @@
 
+'use client';
+
 import React from 'react';
 import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
+import { notFound, useParams } from 'next/navigation';
 import { getPublicPropertyByIdAction } from '@/lib/real-estate/infrastructure/nextjs/property.server-actions';
 import Image from 'next/image';
 import { Badge } from '@/components/ui/badge';
@@ -10,46 +12,16 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { 
     BedDouble, Bath, Square, MapPin, Check, Phone, Mail, Home,
-    Wifi, Snowflake, Thermometer, Wind, UtensilsCrossed, WashingMachine
+    Wifi, Snowflake, Thermometer, Wind, UtensilsCrossed, WashingMachine, Loader2
 } from 'lucide-react';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import BusinessMap from '@/components/directory/BusinessMap';
 import ContactForm from './_components/ContactForm';
+import { useJsApiLoader } from '@react-google-maps/api';
+import { useEffect, useState } from 'react';
+import type { Property } from '@/lib/real-estate/domain/property.entity';
 
-
-type Props = {
-  params: { id: string }
-}
-
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { property } = await getPublicPropertyByIdAction(params.id);
- 
-  if (!property) {
-    return {
-      title: 'Propiedad no encontrada'
-    }
-  }
-
-  const title = `${property.title} | Mi Red Colombia`;
-  const description = property.description.substring(0, 160).trim() + '...';
- 
-  return {
-    title,
-    description,
-    openGraph: {
-        title,
-        description,
-        images: [
-            {
-                url: property.images?.[0] || 'https://firebasestorage.googleapis.com/v0/b/colombia-en-esp.firebasestorage.app/o/web%2FLOGO.png?alt=media&token=86f8e9f6-587a-4cb6-bae1-15b0c815f22b',
-                width: 1200,
-                height: 630,
-                alt: property.title,
-            },
-        ],
-    },
-  }
-}
+const libraries = ['places', 'maps'] as any;
 
 const formatPrice = (price: number) => {
   return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0 }).format(price);
@@ -61,22 +33,49 @@ const amenityIcons = {
     ac: Snowflake,
     kitchen: UtensilsCrossed,
     washing_machine: WashingMachine,
-    balcony: Home, // Using Home icon for Balcony
-    pool: Wind, // Using Wind icon for Pool, needs better mapping
-    gym: Wind, // Using Wind icon for Gym, needs better mapping
+    balcony: Home,
+    pool: Wind,
+    gym: Wind,
 } as const;
 
-export default async function PropertyDetailsPage({ params }: Props) {
-  const { property, error } = await getPublicPropertyByIdAction(params.id);
+export default function PropertyDetailsPage() {
+  const params = useParams();
+  const id = Array.isArray(params.id) ? params.id[0] : params.id;
   
-  if (error || !property) {
-    notFound();
+  const [property, setProperty] = useState<Property | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const { isLoaded } = useJsApiLoader({
+    id: 'google-map-script-main',
+    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!,
+    libraries,
+  });
+
+  useEffect(() => {
+    if (id) {
+        setIsLoading(true);
+        getPublicPropertyByIdAction(id).then(({ property, error }) => {
+            if (error || !property) {
+                notFound();
+            } else {
+                setProperty(property as Property);
+            }
+            setIsLoading(false);
+        });
+    }
+  }, [id]);
+
+  if (isLoading || !property) {
+    return (
+        <div className="container mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+            <Loader2 className="h-16 w-16 animate-spin mx-auto mt-24 text-primary"/>
+        </div>
+    )
   }
 
   return (
     <div className="bg-gray-50 dark:bg-gray-950">
         <div className="container mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-            {/* Image Carousel Header */}
             <header className="mb-8">
                  {property.images && property.images.length > 0 ? (
                     <Carousel className="w-full rounded-xl overflow-hidden shadow-lg">
@@ -107,9 +106,7 @@ export default async function PropertyDetailsPage({ params }: Props) {
             </header>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 lg:gap-8">
-                {/* Main Content */}
                 <div className="lg:col-span-2 space-y-8">
-                    {/* Title and Info */}
                     <Card>
                         <CardHeader>
                             <div className="flex justify-between items-start">
@@ -134,7 +131,6 @@ export default async function PropertyDetailsPage({ params }: Props) {
                         </CardHeader>
                     </Card>
 
-                    {/* Description */}
                     <Card>
                         <CardHeader>
                             <CardTitle>Descripción</CardTitle>
@@ -144,7 +140,6 @@ export default async function PropertyDetailsPage({ params }: Props) {
                         </CardContent>
                     </Card>
                     
-                    {/* Amenities */}
                     {property.amenities && property.amenities.length > 0 && (
                         <Card>
                             <CardHeader><CardTitle>Servicios y Comodidades</CardTitle></CardHeader>
@@ -163,18 +158,20 @@ export default async function PropertyDetailsPage({ params }: Props) {
                         </Card>
                     )}
 
-                    {/* Map */}
                      <Card>
                         <CardHeader><CardTitle>Ubicación</CardTitle></CardHeader>
                         <CardContent>
                             <div className="aspect-video w-full rounded-lg overflow-hidden">
-                                <BusinessMap center={property.location} name={property.title} />
+                                <BusinessMap 
+                                    center={property.location} 
+                                    name={property.title} 
+                                    isMapsApiLoaded={isLoaded}
+                                />
                             </div>
                         </CardContent>
                     </Card>
                 </div>
                 
-                {/* Right Sidebar */}
                 <div className="lg:col-span-1 space-y-6">
                     <Card className="sticky top-24 shadow-lg">
                         <CardHeader>
@@ -190,4 +187,3 @@ export default async function PropertyDetailsPage({ params }: Props) {
     </div>
   );
 }
-
