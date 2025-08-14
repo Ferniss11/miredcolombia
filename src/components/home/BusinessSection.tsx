@@ -65,19 +65,19 @@ export default function BusinessSection({ businesses }: { businesses: PlaceDetai
                              <ul className="space-y-4 text-muted-foreground">
                                 <li className="flex items-start gap-3">
                                     <CheckCircle className="h-5 w-5 mt-1 text-green-500 flex-shrink-0"/>
-                                    <div>
+                                    <div className="w-full">
                                         <p><strong>Asistente IA:</strong> Activa un asistente en tu perfil para responder clientes 24/7.</p>
                                     </div>
                                 </li>
                                 <li className="flex items-start gap-3">
                                     <CheckCircle className="h-5 w-5 mt-1 text-green-500 flex-shrink-0"/>
-                                    <div>
+                                    <div className="w-full">
                                         <p><strong>Posicionamiento SEO:</strong> Mejora tu SEO local con perfiles optimizados por IA.</p>
                                     </div>
                                 </li>
                                  <li className="flex items-start gap-3">
                                     <CheckCircle className="h-5 w-5 mt-1 text-green-500 flex-shrink-0"/>
-                                    <div>
+                                    <div className="w-full">
                                        <p><strong>Gestión Simplificada:</strong> Publica ofertas de empleo y gestiona tu perfil fácilmente.</p>
                                     </div>
                                 </li>
