@@ -84,7 +84,7 @@ export class PropertyController {
           bathrooms: Number(formData.get('bathrooms')),
           address: formData.get('address') as string,
           location: JSON.parse(formData.get('location') as string), // Assuming location is a JSON string
-          amenities: (formData.get('amenities') as string)?.split(',') || [],
+          amenities: ((formData.get('amenities') as string)?.split(',') || []) as any,
           images: imageUrls,
         };
 
