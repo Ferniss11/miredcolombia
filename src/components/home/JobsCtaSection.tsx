@@ -14,7 +14,7 @@ const JobsCtaSection: React.FC<JobsCtaSectionProps> = ({ jobs }) => {
     const { user } = useAuth();
 
     const advertiserHref = user ? '/dashboard/jobs' : '/signup?role=advertiser';
-    const candidateHref = user ? '/services' : '/signup?role=user';
+    const candidateHref = user ? '/servicios' : '/signup?role=user';
     
     return (
         <section className="w-full py-12 md:py-24 lg:py-32 bg-background">
@@ -78,7 +78,7 @@ const JobsCtaSection: React.FC<JobsCtaSectionProps> = ({ jobs }) => {
                  
                  <div className="flex justify-center mt-8">
                     <Button asChild>
-                        <Link href="/jobs">
+                        <Link href="/empleos">
                             Ver Todas las Ofertas <ArrowRight className="ml-2 h-4 w-4" />
                         </Link>
                     </Button>

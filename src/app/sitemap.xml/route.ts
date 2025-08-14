@@ -19,13 +19,13 @@ function generateSiteMap(posts: any[], businesses: any[], jobs: JobPosting[]) {
        <priority>1.0</priority>
      </url>
      <url>
-       <loc>${URL}/directory</loc>
+       <loc>${URL}/directorio</loc>
        <lastmod>${today}</lastmod>
        <changefreq>weekly</changefreq>
        <priority>0.8</priority>
      </url>
       <url>
-       <loc>${URL}/jobs</loc>
+       <loc>${URL}/empleos</loc>
        <lastmod>${today}</lastmod>
        <changefreq>daily</changefreq>
        <priority>0.9</priority>
@@ -37,19 +37,19 @@ function generateSiteMap(posts: any[], businesses: any[], jobs: JobPosting[]) {
        <priority>0.8</priority>
      </url>
      <url>
-       <loc>${URL}/pricing</loc>
+       <loc>${URL}/precios</loc>
        <lastmod>${today}</lastmod>
        <changefreq>monthly</changefreq>
        <priority>0.7</priority>
      </url>
       <url>
-       <loc>${URL}/legal/privacy</loc>
+       <loc>${URL}/legal/privacidad</loc>
        <lastmod>2024-07-09</lastmod>
        <changefreq>yearly</changefreq>
        <priority>0.3</priority>
      </url>
      <url>
-       <loc>${URL}/legal/terms</loc>
+       <loc>${URL}/legal/terminos</loc>
        <lastmod>2024-07-09</lastmod>
        <changefreq>yearly</changefreq>
        <priority>0.3</priority>
@@ -74,7 +74,7 @@ function generateSiteMap(posts: any[], businesses: any[], jobs: JobPosting[]) {
        .map(({ id }) => {
          return `
        <url>
-           <loc>${`${URL}/directory/${id}`}</loc>
+           <loc>${`${URL}/directorio/${id}`}</loc>
            <lastmod>${today}</lastmod> 
            <changefreq>monthly</changefreq>
            <priority>0.6</priority>
@@ -88,7 +88,7 @@ function generateSiteMap(posts: any[], businesses: any[], jobs: JobPosting[]) {
        .map(({ id, updatedAt }) => {
          return `
        <url>
-           <loc>${`${URL}/jobs/${id}`}</loc>
+           <loc>${`${URL}/empleos/${id}`}</loc>
            <lastmod>${new Date(updatedAt).toISOString().split('T')[0]}</lastmod> 
            <changefreq>weekly</changefreq>
            <priority>0.8</priority>
