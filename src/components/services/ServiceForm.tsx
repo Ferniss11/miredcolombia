@@ -47,6 +47,17 @@ export default function ServiceForm({ listingToEdit, onFormSubmit }: ServiceForm
 
     const form = useForm<ServiceListingFormValues>({
         resolver: zodResolver(ServiceListingFormSchema),
+        defaultValues: {
+            title: '',
+            description: '',
+            category: '',
+            city: '',
+            price: 0,
+            priceType: 'fixed',
+            contactPhone: userProfile?.businessProfile?.phone || '',
+            contactEmail: userProfile?.email || '',
+            contactViaWhatsApp: true,
+        },
     });
 
     useEffect(() => {
@@ -57,6 +68,7 @@ export default function ServiceForm({ listingToEdit, onFormSubmit }: ServiceForm
                 contactViaWhatsApp: listingToEdit.contactViaWhatsApp || false,
             });
         } else {
+            // Reset with default values when not editing, ensuring fields are controlled
             form.reset({
                 title: '',
                 description: '',
