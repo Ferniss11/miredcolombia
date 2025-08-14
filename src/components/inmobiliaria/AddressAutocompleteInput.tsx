@@ -6,7 +6,7 @@ import { useJsApiLoader } from '@react-google-maps/api';
 import { Input } from '@/components/ui/input';
 import { FormItem, FormLabel } from '@/components/ui/form';
 
-const libraries = ['places'] as any;
+const libraries = ['places', 'maps'] as any;
 
 interface AddressAutocompleteInputProps {
   onAddressSelect: (address: string, location: { lat: number; lng: number; }) => void;
@@ -15,6 +15,7 @@ interface AddressAutocompleteInputProps {
 
 const AddressAutocompleteInput: React.FC<AddressAutocompleteInputProps> = ({ onAddressSelect, initialValue = '' }) => {
   const { isLoaded } = useJsApiLoader({
+    id: 'google-map-script', // Use a consistent ID
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!,
     libraries,
   });

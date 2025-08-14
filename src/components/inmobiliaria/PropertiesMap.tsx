@@ -10,6 +10,8 @@ const containerStyle = {
   height: '100%'
 };
 
+const libraries = ['places', 'maps'] as any;
+
 interface PropertiesMapProps {
     properties: Property[];
     highlightedPropertyId: string | null;
@@ -18,8 +20,9 @@ interface PropertiesMapProps {
 
 const PropertiesMap = ({ properties, highlightedPropertyId, onMarkerHover }: PropertiesMapProps) => {
     const { isLoaded } = useJsApiLoader({
-        id: 'google-map-script',
+        id: 'google-map-script', // Use a consistent ID
         googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!,
+        libraries
     });
 
     // Default center to Madrid if no properties are available

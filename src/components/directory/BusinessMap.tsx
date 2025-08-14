@@ -8,6 +8,8 @@ const containerStyle = {
   height: '100%'
 };
 
+const libraries = ["maps"] as any;
+
 interface BusinessMapProps {
     center: {
         lat: number;
@@ -19,7 +21,8 @@ interface BusinessMapProps {
 const BusinessMap = ({ center, name }: BusinessMapProps) => {
   const { isLoaded } = useJsApiLoader({
     id: 'google-map-script',
-    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!
+    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!,
+    libraries
   })
 
   return isLoaded ? (
