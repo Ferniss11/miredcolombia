@@ -193,6 +193,7 @@ src/lib/
         *   Implementar sistema de aprobación de propiedades por parte de administradores.
     *   **Implementar Flujo de Creación para Invitados:**
         *   Utilizar el mismo patrón de modal de dos pasos que en "Servicios" para que agentes inmobiliarios o propietarios se registren y publiquen su primera propiedad fácilmente desde la página `/inmobiliaria`.
+        *   El formulario de creación de propiedad deberá incluir un campo de búsqueda de direcciones con autocompletado de Google Maps para seleccionar la ubicación y obtener las coordenadas de forma precisa.
 
 
 ---
@@ -218,3 +219,5 @@ src/lib/
 
 
 Este plan nos proporciona una guía clara y estructurada para ejecutar una refactorización exitosa, sentando las bases para una aplicación mucho más robusta, escalable y fácil de mantener.
+
+    
