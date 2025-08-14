@@ -16,6 +16,7 @@ export interface ServiceListing {
   contactEmail: string;
   imageUrl?: string; // Optional URL for a promotional image
   isFeatured: boolean; // For future monetization
+  status: 'published' | 'pending_review' | 'rejected';
   createdAt: Date;
   updatedAt: Date;
 }

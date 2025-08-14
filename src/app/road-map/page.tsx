@@ -80,8 +80,30 @@ async function parseRoadmap(): Promise<Phase[]> {
     }
 
     if (currentPhase) {
-        if (line.trim() === '*   **Pasos:**') {
+        const stepSectionMatch = line.match(/^\s*\*\s*\*\*(.*?):\*\*\s*(.*)/);
+        if (stepSectionMatch) {
+            const stepTitle = stepSectionMatch[1].trim();
+            const stepDescription = stepSectionMatch[2].trim();
+             const isCompleted = stepDescription.toLowerCase().includes('(✓ completado)');
+             const cleanDescription = stepDescription.replace(/\(✓ completado\)/i, '').trim();
+
+            if(currentPhase.steps.find(s => s.text.startsWith(stepTitle))) {
+                 // It's a sub-step, append it
+                let lastStep = currentPhase.steps[currentPhase.steps.length - 1];
+                lastStep.text += `\n- ${cleanDescription}`;
+            } else {
+                 currentPhase.steps.push({
+                    text: `${stepTitle}: ${cleanDescription}`,
+                    isCompleted: isCompleted,
+                });
+            }
             readingSteps = true;
+            continue;
+        }
+
+        const subStepMatch = line.match(/^\s*\*\s*-\s*(.*)/);
+        if (readingSteps && subStepMatch && currentPhase.steps.length > 0) {
+            currentPhase.steps[currentPhase.steps.length - 1].text += `\n- ${subStepMatch[1].trim()}`;
             continue;
         }
 
@@ -90,16 +112,6 @@ async function parseRoadmap(): Promise<Phase[]> {
             currentPhase.description = objectiveMatch[1].trim();
             readingSteps = false; // Stop reading steps if we find an objective
             continue;
-        }
-
-        if (readingSteps) {
-             const stepMatch = line.match(/^\s*\*\s*(.*?)\s*(\(✓ Completado\))?$/);
-             if (stepMatch) {
-                currentPhase.steps.push({
-                    text: stepMatch[1].trim(),
-                    isCompleted: !!stepMatch[2],
-                });
-             }
         }
     }
   }
@@ -169,7 +181,7 @@ const PhaseCard = ({ phase, index }: { phase: Phase, index: number }) => (
                             {phase.steps.map((step, i) => (
                                 <li key={i} className="flex items-start gap-3">
                                     <CheckCircle className={`h-5 w-5 mt-0.5 flex-shrink-0 ${step.isCompleted ? 'text-green-500' : 'text-muted-foreground/30'}`} />
-                                    <span className={`text-sm ${step.isCompleted ? 'text-foreground' : 'text-muted-foreground'}`}>
+                                    <span className={`text-sm ${step.isCompleted ? 'text-foreground' : 'text-muted-foreground'} whitespace-pre-line`}>
                                         {step.text}
                                     </span>
                                 </li>

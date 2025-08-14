@@ -143,25 +143,25 @@ src/lib/
 ## **Fase 7: Desarrollo del Portal "Ofrezco mis Servicios" (En Progreso)**
 *   **Objetivo:** Crear una nueva funcionalidad para que cualquier usuario registrado (tanto `User` como `Advertiser`) pueda publicar sus servicios profesionales, creando un mercado interno y una nueva vía de oportunidades para la comunidad.
 *   **Pasos:**
-    *   **Definir el Dominio (`src/lib/service-listing/domain`):**
-        *   Crear `service-listing.entity.ts` con campos como `title`, `description`, `category`, `userId`, `price`, `priceType` ('por hora', 'fijo'), `city`, `contactInfo`.
-        *   Crear el puerto `service-listing.repository.ts`.
-    *   **Crear los Casos de Uso (`src/lib/service-listing/application`):**
-        *   `create-service-listing.use-case.ts`.
-        *   `update-service-listing.use-case.ts`.
-        *   `get-all-service-listings.use-case.ts`.
-        *   `delete-service-listing.use-case.ts`.
-    *   **Implementar la Infraestructura (`src/lib/service-listing/infrastructure`):**
-        *   `persistence/firestore-service-listing.repository.ts`.
-        *   `api/service-listing.controller.ts` para exponer los casos de uso.
-        *   Crear las rutas de API correspondientes (`/api/services`, `/api/services/[id]`).
+    *   **Definir el Dominio y Casos de Uso (`src/lib/service-listing`) (✓ Completado):**
+        *   Crear `service-listing.entity.ts` con campos como `title`, `description`, `category`, `price`, `status`, `imageUrl`, etc. (✓)
+        *   Crear el puerto `service-listing.repository.ts`. (✓)
+        *   Crear los casos de uso (`create`, `update`, `get`, `delete`, etc.). (✓)
+    *   **Implementar la Infraestructura (`src/lib/service-listing/infrastructure`) (✓ Completado):**
+        *   `persistence/firestore-service-listing.repository.ts`. (✓)
+        *   `api/service-listing.controller.ts` para exponer los casos de uso. (✓)
+        *   Crear las rutas de API correspondientes (`/api/services`, `/api/services/[id]`). (✓)
     *   **Desarrollar UI de Gestión (Dashboard):**
-        *   Crear una nueva página en el dashboard (`/dashboard/my-services`) donde los usuarios puedan crear, ver, editar y eliminar sus servicios ofrecidos.
-        *   Permitir el acceso a esta página a los roles `User`, `Advertiser`, `Admin` y `SAdmin`.
+        *   Crear una nueva página en el dashboard (`/dashboard/my-services`) donde los usuarios `User` y `Advertiser` puedan crear, ver, editar y eliminar sus servicios ofrecidos.
+        *   Crear una vista de moderación para `Admin` y `SAdmin` donde puedan ver **todos** los servicios y aprobar o rechazar los que están `pending_review`.
+        *   Implementar un sistema de aprobación/rechazo que cambie el `status` de la entidad.
     *   **Desarrollar UI Pública:**
-        *   Crear una nueva página pública `/services` que liste todos los servicios disponibles, con capacidades de búsqueda y filtrado por categoría y ciudad.
-    *   **Actualizar UI del Home:**
-        *   Modificar la tarjeta CTA "¿Buscas tu próxima oportunidad?" en la sección de empleos para que se convierta en "Ofrece tus Servicios Profesionales", enlazando a la nueva página `/services` o al dashboard.
+        *   Crear una nueva página pública `/services` que liste todos los servicios con estado `published`.
+        *   Implementar capacidades de búsqueda y filtrado por categoría y ciudad.
+    *   **Implementar Flujo de Creación para Invitados:**
+        *   Diseñar un modal de dos pasos en la página pública `/services`:
+            *   Paso 1: Formulario de registro rápido de cuenta de usuario.
+            *   Paso 2: Formulario para crear la oferta de servicio.
     *   **(Futuro) Integración de Pagos:**
         *   Integrar Stripe para permitir a los usuarios destacar sus anuncios de servicios por una tarifa, creando una nueva vía de monetización.
 
