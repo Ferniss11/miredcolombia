@@ -9,7 +9,7 @@ export default function LayoutProvider({ children }: { children: React.ReactNode
     const isDashboard = pathname.startsWith('/dashboard');
 
     if (isDashboard) {
-        return <main>{children}</main>;
+        return <>{children}</>;
     }
 
     return (
