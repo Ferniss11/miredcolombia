@@ -14,6 +14,7 @@ export interface ServiceListing {
   priceType: 'per_hour' | 'fixed' | 'per_project';
   contactPhone: string;
   contactEmail: string;
+  contactViaWhatsApp: boolean; // New field
   imageUrl?: string; // Optional URL for a promotional image
   isFeatured: boolean; // For future monetization
   status: 'published' | 'pending_review' | 'rejected';

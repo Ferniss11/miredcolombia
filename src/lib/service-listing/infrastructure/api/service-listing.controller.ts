@@ -26,6 +26,7 @@ const ServiceListingFormSchema = z.object({
   priceType: z.enum(['per_hour', 'fixed', 'per_project']),
   contactPhone: z.string().min(7),
   contactEmail: z.string().email(),
+  contactViaWhatsApp: z.preprocess((val) => val === 'true' || val === true, z.boolean()),
 });
 
 
@@ -65,6 +66,7 @@ export class ServiceListingController {
         priceType: formData.get('priceType'),
         contactPhone: formData.get('contactPhone'),
         contactEmail: formData.get('contactEmail'),
+        contactViaWhatsApp: formData.get('contactViaWhatsApp'),
     });
     
     let imageUrl: string | undefined = undefined;
@@ -97,21 +99,29 @@ export class ServiceListingController {
     }
     const token = req.headers.get('Authorization')?.split('Bearer ')[1];
     if (!token) return ApiResponse.unauthorized();
-    const { uid: actorId, customClaims } = await adminAuth.verifyIdToken(token);
-    const actorRoles = (customClaims?.roles || []) as UserRole[];
+    const { uid: actorId, roles } = await adminAuth.verifyIdToken(token);
+    const actorRoles = (roles || []) as UserRole[];
     
     const formData = await req.formData();
     const serviceImageFile = formData.get('serviceImageFile') as File | null;
     
+    const formValues = {
+        title: formData.get('title'),
+        description: formData.get('description'),
+        category: formData.get('category'),
+        city: formData.get('city'),
+        price: formData.get('price'),
+        priceType: formData.get('priceType'),
+        contactPhone: formData.get('contactPhone'),
+        contactEmail: formData.get('contactEmail'),
+        contactViaWhatsApp: formData.get('contactViaWhatsApp'),
+    };
+    
+    // Use partial schema for updates, as not all fields are required
     let dataToUpdate: UpdateServiceListingInput = ServiceListingFormSchema.partial().parse({
-        title: formData.get('title') || undefined,
-        description: formData.get('description') || undefined,
-        category: formData.get('category') || undefined,
-        city: formData.get('city') || undefined,
-        price: formData.get('price') ? Number(formData.get('price')) : undefined,
-        priceType: formData.get('priceType') || undefined,
-        contactPhone: formData.get('contactPhone') || undefined,
-        contactEmail: formData.get('contactEmail') || undefined,
+        ...formValues,
+        price: formValues.price ? Number(formValues.price) : undefined,
+        contactViaWhatsApp: formValues.contactViaWhatsApp ? (formValues.contactViaWhatsApp === 'true') : undefined,
     });
     
     // Remove undefined keys so we only update provided fields
@@ -133,8 +143,8 @@ export class ServiceListingController {
     }
     const token = req.headers.get('Authorization')?.split('Bearer ')[1];
     if (!token) return ApiResponse.unauthorized();
-    const { uid: actorId, customClaims } = await adminAuth.verifyIdToken(token);
-    const actorRoles = (customClaims?.roles || []) as UserRole[];
+    const { uid: actorId, roles } = await adminAuth.verifyIdToken(token);
+    const actorRoles = (roles || []) as UserRole[];
     
     await this.deleteUseCase.execute(params.id, actorId, actorRoles);
     return ApiResponse.noContent();

@@ -45,6 +45,7 @@ import Image from 'next/image';
 import { ServiceListing } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Switch } from '@/components/ui/switch';
 
 
 const ServiceListingFormSchema = z.object({
@@ -58,10 +59,20 @@ const ServiceListingFormSchema = z.object({
   }),
   contactPhone: z.string().min(7, "El teléfono de contacto es obligatorio."),
   contactEmail: z.string().email("El email de contacto debe ser válido."),
+  contactViaWhatsApp: z.boolean().default(false),
   serviceImageFile: z.custom<FileList>().optional(),
 });
 
 type ServiceListingFormValues = z.infer<typeof ServiceListingFormSchema>;
+
+const formatPriceType = (priceType: 'per_hour' | 'fixed' | 'per_project') => {
+    switch (priceType) {
+        case 'per_hour': return '/ hora';
+        case 'fixed': return 'fijo';
+        case 'per_project': return '/ proyecto';
+        default: return '';
+    }
+};
 
 export default function MyServicesPage() {
     const { user, userProfile, loading: authLoading } = useAuth();
@@ -85,6 +96,7 @@ export default function MyServicesPage() {
             priceType: 'fixed',
             contactPhone: '',
             contactEmail: '',
+            contactViaWhatsApp: false,
         },
     });
 
@@ -123,12 +135,14 @@ export default function MyServicesPage() {
             form.reset({
                 ...editingListing,
                 price: editingListing.price || 0,
+                contactViaWhatsApp: editingListing.contactViaWhatsApp || false,
             });
         } else {
             form.reset({
                 title: '', description: '', category: '', city: '',
                 price: 0, priceType: 'fixed', contactPhone: userProfile?.businessProfile?.phone || '',
                 contactEmail: userProfile?.email || '',
+                contactViaWhatsApp: true, // Default to true for new listings
             });
         }
     }, [editingListing, form, userProfile]);
@@ -261,7 +275,7 @@ export default function MyServicesPage() {
                                 </DropdownMenu>
                              </CardHeader>
                              <CardContent className="p-4 pt-0 text-sm text-muted-foreground flex-grow">
-                                {listing.city} - <span className="font-bold text-foreground">€{listing.price}</span>
+                                {listing.city} - <span className="font-bold text-foreground">€{listing.price}</span> <span className="text-xs">{formatPriceType(listing.priceType)}</span>
                              </CardContent>
                              <CardFooter className="p-4 pt-0 border-t mt-auto">
                                 {getStatusBadge(listing.status)}
@@ -296,6 +310,26 @@ export default function MyServicesPage() {
                                         <FormField control={form.control} name="contactPhone" render={({ field }) => (<FormItem><FormLabel>Teléfono de Contacto</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
                                         <FormField control={form.control} name="contactEmail" render={({ field }) => (<FormItem><FormLabel>Email de Contacto</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem>)} />
                                     </div>
+                                    <FormField
+                                        control={form.control}
+                                        name="contactViaWhatsApp"
+                                        render={({ field }) => (
+                                            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                                                <div className="space-y-0.5">
+                                                    <FormLabel>Aceptar contacto por WhatsApp</FormLabel>
+                                                    <FormDescription>
+                                                        Permite que los interesados te contacten directamente por WhatsApp.
+                                                    </FormDescription>
+                                                </div>
+                                                <FormControl>
+                                                    <Switch
+                                                        checked={field.value}
+                                                        onCheckedChange={field.onChange}
+                                                    />
+                                                </FormControl>
+                                            </FormItem>
+                                        )}
+                                    />
                                 </form>
                             </Form>
                         </div>
@@ -327,4 +361,3 @@ export default function MyServicesPage() {
         </div>
     );
 }
-
