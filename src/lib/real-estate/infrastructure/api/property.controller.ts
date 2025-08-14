@@ -7,6 +7,7 @@ import type { UserRole } from '@/lib/user/domain/user.entity';
 
 // Infrastructure
 import { FirestorePropertyRepository } from '../persistence/firestore-property.repository';
+import { uploadFile } from '@/lib/user/infrastructure/storage/firebase-storage.adapter';
 
 // Application Use Cases
 import { CreatePropertyUseCase } from '../../application/create-property.use-case';
@@ -53,7 +54,6 @@ export class PropertyController {
         return { actorId, actorRoles };
     }
     
-    // This will be expanded to handle file uploads
     async create(req: NextRequest): Promise<ApiResponse> {
         const { actorId } = await this.getActor(req);
         const user = await this.getUserProfileUseCase.execute(actorId);
@@ -61,8 +61,34 @@ export class PropertyController {
             return ApiResponse.unauthorized('User profile not found.');
         }
 
-        const json = await req.json(); // Zod validation will be added here
-        const newProperty = await this.createUseCase.execute(json, user);
+        const formData = await req.formData();
+        const images = formData.getAll('images') as File[];
+        
+        const imageUrls: string[] = [];
+        for (const image of images) {
+            const buffer = Buffer.from(await image.arrayBuffer());
+            const filePath = `property-images/${actorId}/${Date.now()}-${image.name}`;
+            const url = await uploadFile(buffer, filePath, image.type);
+            imageUrls.push(url);
+        }
+
+        // Zod validation would happen here on the form fields
+        const propertyData = {
+          title: formData.get('title') as string,
+          description: formData.get('description') as string,
+          listingType: formData.get('listingType') as 'rent' | 'sale',
+          propertyType: formData.get('propertyType') as 'apartment' | 'house' | 'room',
+          price: Number(formData.get('price')),
+          area: Number(formData.get('area')),
+          bedrooms: Number(formData.get('bedrooms')),
+          bathrooms: Number(formData.get('bathrooms')),
+          address: formData.get('address') as string,
+          location: JSON.parse(formData.get('location') as string), // Assuming location is a JSON string
+          amenities: (formData.get('amenities') as string)?.split(',') || [],
+          images: imageUrls,
+        };
+
+        const newProperty = await this.createUseCase.execute(propertyData, user);
         return ApiResponse.created(newProperty);
     }
     
@@ -82,12 +108,27 @@ export class PropertyController {
         return ApiResponse.success(property);
     }
     
-    // This will be expanded to handle file uploads
     async update(req: NextRequest, { params }: { params: { id: string } }): Promise<ApiResponse> {
         const { actorId, actorRoles } = await this.getActor(req);
-        const json = await req.json();
         
-        const updatedProperty = await this.updateUseCase.execute(params.id, json, actorId, actorRoles);
+        const formData = await req.formData();
+        const images = formData.getAll('images') as File[];
+        const existingImageUrls = (formData.get('existingImageUrls') as string)?.split(',') || [];
+        
+        const newImageUrls: string[] = [];
+        for (const image of images) {
+            const buffer = Buffer.from(await image.arrayBuffer());
+            const filePath = `property-images/${actorId}/${Date.now()}-${image.name}`;
+            const url = await uploadFile(buffer, filePath, image.type);
+            newImageUrls.push(url);
+        }
+        
+        const dataToUpdate = {
+            // Parse other fields from formData here...
+            images: [...existingImageUrls, ...newImageUrls],
+        };
+
+        const updatedProperty = await this.updateUseCase.execute(params.id, dataToUpdate, actorId, actorRoles);
         return ApiResponse.success(updatedProperty);
     }
 
