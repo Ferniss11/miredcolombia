@@ -16,10 +16,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Image from 'next/image';
 
 const navLinks = [
-  { href: "/", label: "Inicio" },
   { href: "/directorio", label: "Negocios" },
-  { href: "/empleos", label: "Empleo" },
   { href: "/inmobiliaria", label: "Inmobiliaria" },
+  { href: "/empleos", label: "Empleo" },
   { href: "/servicios", label: "Servicios" },
   { href: "/blog", label: "Blog" },
   { href: "/precios", label: "Precios" },

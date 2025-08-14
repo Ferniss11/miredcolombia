@@ -5,7 +5,7 @@ import React, { useState, useEffect } from 'react';
 import type { Metadata } from 'next';
 import { getPublicJobPostingsAction } from '@/lib/job-posting/infrastructure/nextjs/job-posting.server-actions';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertCircle, Upload, Building } from 'lucide-react';
+import { AlertCircle, Upload, Building, PlusCircle } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -49,13 +49,15 @@ const JobsPublicPage = () => {
         if (user) {
             return (
                 <Button asChild>
-                    <Link href="/dashboard/jobs">Publica tu oferta ahora</Link>
+                    <Link href="/dashboard/jobs">
+                        <PlusCircle className="mr-2 h-4 w-4" /> Publica tu oferta
+                    </Link>
                 </Button>
             );
         }
         return (
             <Button onClick={() => setIsSheetOpen(true)}>
-                Publica tu oferta ahora
+                <PlusCircle className="mr-2 h-4 w-4" /> Publica tu oferta
             </Button>
         );
     };
@@ -68,6 +70,7 @@ const JobsPublicPage = () => {
                     <p className="text-lg text-muted-foreground mt-2 font-body max-w-2xl mx-auto">
                         Encuentra tu próxima aventura profesional en España.
                     </p>
+                    <div className="mt-6">{renderCtaButton()}</div>
                 </div>
 
                 {error && (
@@ -79,40 +82,6 @@ const JobsPublicPage = () => {
                 )}
 
                 <JobsList initialJobs={jobs || []} />
-
-                {/* CTA Section */}
-                <div className="py-12 grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-                    <Card className="relative overflow-hidden bg-background shadow-lg text-center">
-                        <div className="absolute inset-0 bg-conic-glow opacity-20"></div>
-                        <CardContent className="p-8 flex flex-col items-center justify-center h-full relative">
-                            <div className="mx-auto p-4 bg-primary/20 rounded-full inline-flex mb-4">
-                                <Building className="w-8 h-8 text-primary" />
-                            </div>
-                            <h3 className="text-xl font-bold font-headline">¿Tienes una vacante?</h3>
-                            <p className="text-muted-foreground mt-2 mb-6 flex-grow">
-                                Publica tu oferta de empleo y llega a miles de profesionales colombianos cualificados en España.
-                            </p>
-                            {renderCtaButton()}
-                        </CardContent>
-                    </Card>
-                    <Card className="relative overflow-hidden bg-background shadow-lg text-center">
-                        <div className="absolute inset-0 bg-conic-glow opacity-20"></div>
-                        <CardContent className="p-8 flex flex-col items-center justify-center h-full relative">
-                            <div className="mx-auto p-4 bg-secondary rounded-full inline-flex mb-4">
-                                <Upload className="w-8 h-8 text-secondary-foreground" />
-                            </div>
-                            <h3 className="text-xl font-bold font-headline">¿Buscas tu próxima oportunidad?</h3>
-                            <p className="text-muted-foreground mt-2 mb-6 flex-grow">
-                                Crea tu perfil de candidato, sube tu CV y deja que las oportunidades te encuentren.
-                            </p>
-                            <Button asChild variant="secondary">
-                                <Link href="/signup?role=user">
-                                    Sube tu Hoja de Vida
-                                </Link>
-                            </Button>
-                        </CardContent>
-                    </Card>
-                </div>
             </div>
             <GuestJobCreationSheet isOpen={isSheetOpen} onOpenChange={setIsSheetOpen} />
         </>
