@@ -20,17 +20,20 @@ const AddressAutocompleteInput: React.FC<AddressAutocompleteInputProps> = ({ onA
     libraries,
   });
 
-  const [inputValue, setInputValue] = useState(value);
+  const [inputValue, setInputValue] = useState(value || '');
   const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   
   // Sync internal state with form value from react-hook-form
   useEffect(() => {
-    setInputValue(value);
-  }, [value]);
+    // Only update if the parent form value is different to prevent loops
+    if (value !== inputValue) {
+        setInputValue(value || '');
+    }
+  }, [value, inputValue]);
 
   useEffect(() => {
-    if (isLoaded && inputRef.current) {
+    if (isLoaded && inputRef.current && !autocompleteRef.current) {
       autocompleteRef.current = new window.google.maps.places.Autocomplete(
         inputRef.current,
         {
@@ -53,6 +56,12 @@ const AddressAutocompleteInput: React.FC<AddressAutocompleteInputProps> = ({ onA
           onAddressSelect(place.formatted_address, location); // Update coordinates
         }
       });
+    }
+    // Clean up the event listener when the component unmounts
+    return () => {
+        if (autocompleteRef.current) {
+            window.google.maps.event.clearInstanceListeners(autocompleteRef.current);
+        }
     }
   }, [isLoaded, onAddressSelect, onChange]);
   
