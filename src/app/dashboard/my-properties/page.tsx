@@ -201,7 +201,7 @@ export default function MyPropertiesPage() {
             ) : (
                 <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                     {properties.map(property => {
-                        if (isAdmin && property.owner.userId !== user?.uid) {
+                        if (isAdmin) {
                              return <AdminPropertyCard 
                                 key={property.id}
                                 property={property}
