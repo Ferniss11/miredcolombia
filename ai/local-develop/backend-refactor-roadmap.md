@@ -161,27 +161,32 @@ src/lib/
         *   Diseñar un modal de dos pasos en la página pública `/services`: (✓)
             *   Paso 1: Formulario de registro rápido. (✓)
             *   Paso 2: Formulario para crear el servicio. (✓)
-    *   **(Futuro) Integración de Pagos:**
-        *   Integrar Stripe para permitir a los usuarios destacar sus anuncios de servicios por una tarifa, creando una nueva vía de monetización.
 
 ---
 
-## **Fase 8: Portal Inmobiliario (En Progreso)**
-*   **Objetivo:** Desarrollar un portal completo para la búsqueda de vivienda (alquiler y venta), aplicando la arquitectura hexagonal desde el principio.
+## **Fase 8: Portal Inmobiliario con Mapa Interactivo (En Progreso)**
+*   **Objetivo:** Desarrollar un portal completo para la búsqueda de vivienda (alquiler y venta), con una interfaz moderna que combine un listado de propiedades con un mapa interactivo.
 *   **Pasos:**
     *   **Definir Dominio Inmobiliario (`src/lib/real-estate`):**
-        *   Crear `property.entity.ts` con campos como `title`, `description`, `price`, `type` ('alquiler', 'venta'), `bedrooms`, `bathrooms`, `area`, `images`, `location`, `status`, etc.
+        *   Crear `property.entity.ts` con campos como `title`, `description`, `listingType` ('rent', 'sale'), `propertyType` ('apartment', 'house', 'room'), `price`, `bedrooms`, `bathrooms`, `area`, `images` (array de URLs), `location` (coordenadas), `address`, `status` ('available', 'rented', 'sold', 'pending_review'), etc.
         *   Definir el puerto `property.repository.ts`.
-    *   **Crear Casos de Uso:** `create-property.use-case.ts`, `search-properties.use-case.ts`, etc.
+    *   **Crear Casos de Uso:** `create-property.use-case.ts`, `search-properties.use-case.ts`, `update-property-status.use-case.ts`, etc.
     *   **Implementar Infraestructura:** `firestore-property.repository.ts`, `api/property.controller.ts` y las rutas de API correspondientes.
+    *   **Desarrollar UI Pública - Página de Búsqueda (`/inmobiliaria`):**
+        *   Implementar el diseño de dos columnas: un listado de propiedades a la izquierda y un mapa interactivo a la derecha.
+        *   Utilizar la API de Google Maps para mostrar un mapa customizado.
+        *   Renderizar marcadores de precios en el mapa para cada propiedad.
+        *   Implementar la interactividad: al pasar el cursor sobre un marcador, se debe resaltar la tarjeta correspondiente en el listado (y viceversa).
+        *   Crear tarjetas de propiedad con carrusel de imágenes, precio y detalles clave.
+        *   Implementar filtros avanzados (precio, tipo, habitaciones, etc.) que actualicen tanto el listado como el mapa.
+    *   **Desarrollar UI Pública - Página de Detalles (`/inmobiliaria/[id]`):**
+        *   Crear una página de aterrizaje para cada propiedad con una galería de fotos completa, descripción detallada, servicios, ubicación en el mapa y formulario de contacto.
     *   **Desarrollar UI de Gestión (Dashboard):**
-        *   Permitir a los usuarios (agentes inmobiliarios o particulares) publicar y gestionar sus propiedades desde el dashboard.
+        *   Permitir a los usuarios (agentes inmobiliarios o particulares) publicar y gestionar sus propiedades desde `/dashboard/my-properties`.
         *   Implementar sistema de aprobación de propiedades por parte de administradores.
-    *   **Desarrollar UI Pública:**
-        *   Crear las páginas `/inmobiliaria` (listado) y `/inmobiliaria/[id]` (detalle).
-        *   Implementar búsqueda avanzada (precio, habitaciones, tipo, ubicación) y mapa interactivo.
     *   **Implementar Flujo de Creación para Invitados:**
-        *   Utilizar el mismo patrón de modal de dos pasos que en "Servicios" para que agentes inmobiliarios se registren y publiquen su primera propiedad fácilmente.
+        *   Utilizar el mismo patrón de modal de dos pasos que en "Servicios" para que agentes inmobiliarios o propietarios se registren y publiquen su primera propiedad fácilmente desde la página `/inmobiliaria`.
+
 
 ---
 
