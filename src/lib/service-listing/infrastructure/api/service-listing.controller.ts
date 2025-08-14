@@ -12,7 +12,7 @@ import { FirestoreServiceListingRepository } from '../persistence/firestore-serv
 import { CreateServiceListingUseCase } from '../../application/create-service-listing.use-case';
 import { GetAllServiceListingsUseCase } from '../../application/get-all-service-listings.use-case';
 import { GetServiceListingUseCase } from '../../application/get-service-listing.use-case';
-import { UpdateServiceListingUseCase } from '../../application/update-service-listing.use-case';
+import { UpdateServiceListingUseCase, UpdateServiceListingInput } from '../../application/update-service-listing.use-case';
 import { DeleteServiceListingUseCase } from '../../application/delete-service-listing.use-case';
 import type { UserRole } from '@/lib/user/domain/user.entity';
 
@@ -97,21 +97,25 @@ export class ServiceListingController {
     }
     const token = req.headers.get('Authorization')?.split('Bearer ')[1];
     if (!token) return ApiResponse.unauthorized();
-    const { uid: actorId, roles } = await adminAuth.verifyIdToken(token);
+    const { uid: actorId, customClaims } = await adminAuth.verifyIdToken(token);
+    const actorRoles = (customClaims?.roles || []) as UserRole[];
     
     const formData = await req.formData();
     const serviceImageFile = formData.get('serviceImageFile') as File | null;
     
-    const dataToUpdate = ServiceListingFormSchema.partial().parse({
-        title: formData.get('title'),
-        description: formData.get('description'),
-        category: formData.get('category'),
-        city: formData.get('city'),
-        price: formData.get('price'),
-        priceType: formData.get('priceType'),
-        contactPhone: formData.get('contactPhone'),
-        contactEmail: formData.get('contactEmail'),
+    let dataToUpdate: UpdateServiceListingInput = ServiceListingFormSchema.partial().parse({
+        title: formData.get('title') || undefined,
+        description: formData.get('description') || undefined,
+        category: formData.get('category') || undefined,
+        city: formData.get('city') || undefined,
+        price: formData.get('price') ? Number(formData.get('price')) : undefined,
+        priceType: formData.get('priceType') || undefined,
+        contactPhone: formData.get('contactPhone') || undefined,
+        contactEmail: formData.get('contactEmail') || undefined,
     });
+    
+    // Remove undefined keys so we only update provided fields
+    dataToUpdate = Object.fromEntries(Object.entries(dataToUpdate).filter(([_, v]) => v !== undefined));
 
     if (serviceImageFile) {
         const fileBuffer = Buffer.from(await serviceImageFile.arrayBuffer());
@@ -119,7 +123,7 @@ export class ServiceListingController {
         dataToUpdate.imageUrl = await uploadFile(fileBuffer, filePath, serviceImageFile.type);
     }
 
-    const updatedListing = await this.updateUseCase.execute(params.id, dataToUpdate, actorId, (roles || []) as UserRole[]);
+    const updatedListing = await this.updateUseCase.execute(params.id, dataToUpdate, actorId, actorRoles);
     return ApiResponse.success(updatedListing);
   }
 
@@ -129,9 +133,10 @@ export class ServiceListingController {
     }
     const token = req.headers.get('Authorization')?.split('Bearer ')[1];
     if (!token) return ApiResponse.unauthorized();
-    const { uid: actorId, roles } = await adminAuth.verifyIdToken(token);
+    const { uid: actorId, customClaims } = await adminAuth.verifyIdToken(token);
+    const actorRoles = (customClaims?.roles || []) as UserRole[];
     
-    await this.deleteUseCase.execute(params.id, actorId, (roles || []) as UserRole[]);
+    await this.deleteUseCase.execute(params.id, actorId, actorRoles);
     return ApiResponse.noContent();
   }
 }
