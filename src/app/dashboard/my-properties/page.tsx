@@ -64,7 +64,7 @@ export default function MyPropertiesPage() {
     const [deletingPropertyId, setDeletingPropertyId] = useState<string | null>(null);
 
     const { isLoaded } = useJsApiLoader({
-        id: 'google-map-script-dashboard',
+        id: 'google-map-script-main',
         googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!,
         libraries,
     });
