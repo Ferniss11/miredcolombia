@@ -66,10 +66,18 @@ export default function PropertyForm({ propertyToEdit, onFormSubmit }: PropertyF
             ...propertyToEdit,
             images: undefined,
         } : {
+            title: '',
+            description: '',
             listingType: 'rent',
             propertyType: 'apartment',
+            price: 0,
+            area: 0,
             bedrooms: 1,
             bathrooms: 1,
+            address: '',
+            location: { lat: 0, lng: 0 },
+            images: undefined,
+            amenities: [],
         },
     });
     
