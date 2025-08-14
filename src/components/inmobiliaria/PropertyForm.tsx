@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useEffect, useState, useTransition } from 'react';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useAuth } from '@/context/AuthContext';
@@ -14,10 +14,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button';
 import { SheetFooter, SheetClose } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2 } from 'lucide-react';
+import { Loader2, MapPin } from 'lucide-react';
 import type { Property } from '@/lib/real-estate/domain/property.entity';
-import AddressAutocompleteInput from './AddressAutocompleteInput';
 import { Checkbox } from '../ui/checkbox';
+import LocationPickerModal from './LocationPickerModal'; // Importar el nuevo componente
 
 const amenitiesList = [
     { id: 'wifi', label: 'Wi-Fi' },
@@ -44,7 +44,7 @@ const PropertyFormSchema = z.object({
         lat: z.number(),
         lng: z.number(),
     }),
-    images: z.custom<FileList>(),
+    images: z.custom<FileList>().optional(),
     amenities: z.array(z.string()).optional(),
 });
 
@@ -53,19 +53,21 @@ type PropertyFormValues = z.infer<typeof PropertyFormSchema>;
 type PropertyFormProps = {
     propertyToEdit?: Property | null;
     onFormSubmit: () => void;
-    isMapsApiLoaded: boolean; // Receive loader status as a prop
+    isMapsApiLoaded: boolean;
 };
 
 export default function PropertyForm({ propertyToEdit, onFormSubmit, isMapsApiLoaded }: PropertyFormProps) {
     const { user } = useAuth();
     const { toast } = useToast();
     const [isPending, startTransition] = useTransition();
+    const [isLocationModalOpen, setLocationModalOpen] = useState(false);
 
     const form = useForm<PropertyFormValues>({
         resolver: zodResolver(PropertyFormSchema),
         defaultValues: propertyToEdit ? {
             ...propertyToEdit,
             images: undefined,
+            price: propertyToEdit.price || 0,
         } : {
             title: '',
             description: '',
@@ -76,15 +78,16 @@ export default function PropertyForm({ propertyToEdit, onFormSubmit, isMapsApiLo
             bedrooms: 1,
             bathrooms: 1,
             address: '',
-            location: { lat: 0, lng: 0 },
+            location: { lat: 40.416775, lng: -3.703790 }, // Default a Madrid
             images: undefined,
             amenities: [],
         },
     });
     
-    const handleAddressSelect = (address: string, location: { lat: number; lng: number; }) => {
-        form.setValue('address', address);
+    const handleLocationSelect = (address: string, location: { lat: number; lng: number; }) => {
+        form.setValue('address', address, { shouldValidate: true });
         form.setValue('location', location);
+        setLocationModalOpen(false);
     };
 
     const onSubmit = async (values: PropertyFormValues) => {
@@ -132,6 +135,8 @@ export default function PropertyForm({ propertyToEdit, onFormSubmit, isMapsApiLo
             }
         });
     };
+    
+    const addressValue = form.watch('address');
 
     return (
          <>
@@ -141,24 +146,25 @@ export default function PropertyForm({ propertyToEdit, onFormSubmit, isMapsApiLo
                         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                             <FormField control={form.control} name="title" render={({ field }) => (<FormItem><FormLabel>Título del Anuncio</FormLabel><FormControl><Input placeholder="Ej: Apartamento luminoso en el centro" {...field} /></FormControl><FormMessage /></FormItem>)} />
                             
-                            <FormField
-                                control={form.control}
-                                name="address"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Dirección</FormLabel>
-                                        <FormControl>
-                                            <AddressAutocompleteInput
-                                                onAddressSelect={handleAddressSelect}
-                                                value={field.value}
-                                                onChange={field.onChange}
-                                                isMapsApiLoaded={isMapsApiLoaded}
-                                            />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
+                            <FormItem>
+                                <FormLabel>Dirección</FormLabel>
+                                <FormControl>
+                                    <div className="flex items-center gap-2">
+                                        <div className="flex-grow p-2 border rounded-md min-h-[40px] text-sm bg-muted">
+                                            {addressValue ? (
+                                                <p>{addressValue}</p>
+                                            ) : (
+                                                <p className="text-muted-foreground">No se ha seleccionado ninguna dirección</p>
+                                            )}
+                                        </div>
+                                        <Button type="button" variant="outline" onClick={() => setLocationModalOpen(true)}>
+                                            <MapPin className="mr-2 h-4 w-4"/>
+                                            Seleccionar
+                                        </Button>
+                                    </div>
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
                             
                             <FormField control={form.control} name="description" render={({ field }) => (<FormItem><FormLabel>Descripción Detallada</FormLabel><FormControl><Textarea placeholder="Describe tu propiedad: características, vecindario, etc." rows={6} {...field} /></FormControl><FormMessage /></FormItem>)} />
 
@@ -232,6 +238,14 @@ export default function PropertyForm({ propertyToEdit, onFormSubmit, isMapsApiLo
                     {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (propertyToEdit ? 'Guardar Cambios' : 'Publicar Propiedad')}
                 </Button>
             </SheetFooter>
+
+            <LocationPickerModal
+                isOpen={isLocationModalOpen}
+                onOpenChange={setLocationModalOpen}
+                onLocationSelect={handleLocationSelect}
+                isMapsApiLoaded={isMapsApiLoaded}
+                initialLocation={form.getValues('location')}
+            />
         </>
     );
 }
