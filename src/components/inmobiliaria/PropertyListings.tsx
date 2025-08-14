@@ -21,14 +21,14 @@ export default function PropertyListings({ initialProperties, isMapsApiLoaded }:
 
      const filteredProperties = useMemo(() => {
         if (!searchQuery) {
-            return properties;
+            return initialProperties;
         }
         const lowercasedQuery = searchQuery.toLowerCase();
-        return properties.filter(p =>
+        return initialProperties.filter(p =>
             p.title.toLowerCase().includes(lowercasedQuery) ||
             p.address.toLowerCase().includes(lowercasedQuery)
         );
-    }, [searchQuery, properties]);
+    }, [searchQuery, initialProperties]);
 
 
     return (

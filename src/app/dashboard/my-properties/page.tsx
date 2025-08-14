@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/componen
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Plus, Edit, Trash2, MoreVertical, Loader2, HomeIcon as Home, Check, X, MapPin } from 'lucide-react';
+import { Plus, Edit, Trash2, MoreVertical, Loader2, Home as HomeIcon, Check, X, MapPin } from 'lucide-react';
 import Image from 'next/image';
 import type { Property } from '@/lib/real-estate/domain/property.entity';
 import { cn } from '@/lib/utils';
@@ -52,6 +52,35 @@ const PropertyCard = ({ property, onEdit, onDelete, isProcessing }: { property: 
     );
 };
 
+// New component for Admin view
+const AdminPropertyCard = ({ property, onUpdateStatus, onDelete, isProcessing }: { property: Property; onUpdateStatus: (id: string, status: 'available' | 'rejected') => void; onDelete: (id: string) => void; isProcessing: boolean }) => {
+    return (
+        <Card className="flex flex-col overflow-hidden">
+            {property.images && property.images[0] && <Image src={property.images[0]} alt={property.title} width={400} height={200} className="w-full h-40 object-cover" />}
+            <CardHeader className="p-4">
+                 <h3 className="font-bold font-headline text-lg leading-snug line-clamp-2">{property.title}</h3>
+                 <p className="text-xs text-muted-foreground">Propietario: {property.owner.name}</p>
+            </CardHeader>
+            <CardContent className="p-4 pt-0 flex-grow">
+                <Badge variant="secondary">{property.status === 'pending_review' ? 'Pendiente de Revisión' : property.status}</Badge>
+            </CardContent>
+            <CardFooter className="p-2 border-t mt-auto flex items-center justify-between">
+                <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => onDelete(property.id)} disabled={isProcessing}><Trash2 className="h-4 w-4"/></Button>
+                {property.status === 'pending_review' && (
+                    <div className="flex gap-2">
+                        <Button size="sm" variant="outline" className="h-8 px-2 text-red-600 hover:bg-red-50 hover:text-red-700" onClick={() => onUpdateStatus(property.id, 'rejected')} disabled={isProcessing}>
+                            <X className="h-4 w-4" /> Rechazar
+                        </Button>
+                         <Button size="sm" className="h-8 px-2 bg-green-600 hover:bg-green-700" onClick={() => onUpdateStatus(property.id, 'available')} disabled={isProcessing}>
+                            <Check className="h-4 w-4" /> Aprobar
+                        </Button>
+                    </div>
+                )}
+            </CardFooter>
+        </Card>
+    )
+}
+
 export default function MyPropertiesPage() {
     const { user, userProfile, loading: authLoading } = useAuth();
     const { toast } = useToast();
@@ -62,6 +91,8 @@ export default function MyPropertiesPage() {
     const [isSheetOpen, setIsSheetOpen] = useState(false);
     const [editingProperty, setEditingProperty] = useState<Property | null>(null);
     const [deletingPropertyId, setDeletingPropertyId] = useState<string | null>(null);
+    
+    const isAdmin = userProfile?.role === 'Admin' || userProfile?.role === 'SAdmin';
 
     const { isLoaded } = useJsApiLoader({
         id: 'google-map-script-main',
@@ -78,7 +109,7 @@ export default function MyPropertiesPage() {
             if (!response.ok) throw new Error("Failed to fetch properties");
             const allProperties: Property[] = await response.json();
             
-            if (userProfile?.role === 'Admin' || userProfile?.role === 'SAdmin') {
+            if (isAdmin) {
                 setProperties(allProperties);
             } else {
                 setProperties(allProperties.filter(p => p.owner.userId === user.uid));
@@ -88,13 +119,13 @@ export default function MyPropertiesPage() {
         } finally {
             setIsLoading(false);
         }
-    }, [user, userProfile, toast]);
+    }, [user, isAdmin, toast]);
 
     useEffect(() => {
-        if (!authLoading) {
+        if (!authLoading && user) {
             fetchProperties();
         }
-    }, [authLoading, fetchProperties]);
+    }, [authLoading, user, fetchProperties]);
 
     const handleOpenSheetForEdit = (property: Property) => {
         setEditingProperty(property);
@@ -127,10 +158,29 @@ export default function MyPropertiesPage() {
         });
     };
     
+     const handleUpdateStatus = async (propertyId: string, status: 'available' | 'rejected') => {
+        if (!user) return;
+        startTransition(async () => {
+            try {
+                const idToken = await user.getIdToken();
+                const response = await fetch(`/api/real-estate/${propertyId}/status`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
+                    body: JSON.stringify({ status }),
+                });
+                if (!response.ok) throw new Error((await response.json()).error?.message || 'Error al actualizar estado');
+                toast({ title: 'Estado Actualizado', description: `La propiedad ha sido ${status === 'available' ? 'aprobada' : 'rechazada'}.` });
+                await fetchProperties();
+            } catch (error) {
+                toast({ variant: 'destructive', title: 'Error', description: error instanceof Error ? error.message : 'Error inesperado.' });
+            }
+        });
+    };
+
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
-                <h1 className="text-3xl font-bold font-headline">Mis Propiedades</h1>
+                <h1 className="text-3xl font-bold font-headline">{isAdmin ? 'Moderar Propiedades' : 'Mis Propiedades'}</h1>
                 <Button onClick={handleOpenSheetForCreate}>
                     <Plus className="mr-2 h-4 w-4" /> Publicar Propiedad
                 </Button>
@@ -142,23 +192,32 @@ export default function MyPropertiesPage() {
                 </div>
             ) : properties.length === 0 ? (
                 <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-lg">
-                    <Home className="mx-auto h-12 w-12" />
-                    <h3 className="mt-4 text-lg font-semibold">Aún no has publicado ninguna propiedad</h3>
+                    <HomeIcon className="mx-auto h-12 w-12" />
+                    <h3 className="mt-4 text-lg font-semibold">Aún no hay propiedades</h3>
                     <Button className="mt-4" onClick={handleOpenSheetForCreate}>
                         <Plus className="mr-2 h-4 w-4" /> Publicar mi primera propiedad
                     </Button>
                 </div>
             ) : (
                 <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                    {properties.map(property => (
-                        <PropertyCard
+                    {properties.map(property => {
+                        if (isAdmin && property.owner.userId !== user?.uid) {
+                             return <AdminPropertyCard 
+                                key={property.id}
+                                property={property}
+                                onUpdateStatus={handleUpdateStatus}
+                                onDelete={() => setDeletingPropertyId(property.id)}
+                                isProcessing={isPending}
+                             />;
+                        }
+                        return <PropertyCard
                             key={property.id}
                             property={property}
                             onEdit={handleOpenSheetForEdit}
                             onDelete={() => setDeletingPropertyId(property.id)}
                             isProcessing={isPending}
                         />
-                    ))}
+                    })}
                 </div>
             )}
             

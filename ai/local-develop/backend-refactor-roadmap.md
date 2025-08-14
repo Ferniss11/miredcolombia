@@ -164,36 +164,29 @@ src/lib/
 
 ---
 
-## **Fase 8: Portal Inmobiliario con Mapa Interactivo (En Progreso)**
+## **Fase 8: Portal Inmobiliario con Mapa Interactivo (✓ Completada)**
 *   **Objetivo:** Desarrollar un portal completo para la búsqueda de vivienda (alquiler y venta), con una interfaz moderna que combine un listado de propiedades con un mapa interactivo.
 *   **Pasos:**
     *   **Definir Dominio Inmobiliario (`src/lib/real-estate`) (✓ Completado):**
-        *   Crear `property.entity.ts` con una estructura robusta:
-            *   **Información Principal:** `title`, `description`, `listingType` ('rent', 'sale'), `propertyType` ('apartment', 'house', 'room'), `price`, `area`, `images` (array de URLs), `address`, `location` (coordenadas), `status` ('available', 'rented', 'sold', 'pending_review', 'rejected').
-            *   **Detalles de la Propiedad:** `bedrooms`, `bathrooms`, `amenities` (['wifi', 'heating', 'ac', 'kitchen', 'washing_machine', 'balcony', 'pool', 'gym']).
-            *   **Detalles de la Habitación (si `propertyType` es 'room'):** `roomDetails: { bedType: 'single' | 'double', isVerified: boolean }`, `totalRoomsInFlat`.
-            *   **Compañeros de Piso (si aplica):** `flatmates: { gender: 'female_only' | 'male_only' | 'mixed', studentOnly: boolean, ageRange: [number, number] }`.
-            *   **Reglas y Contrato:** `rules: { petsAllowed: boolean, smokingAllowed: boolean }, contract: { minStayNights: number, maxStayNights: number | null }`.
-            *   **Disponibilidad:** `availability: [{ month: 'YYYY-MM', price: number, status: 'available' | 'occupied' }]`.
-            *   **Propietario:** `owner: { userId: string, name: string, isTrusted: boolean, responseRate?: number, avgResponseTimeHours?: number, joinedAt: Date }`.
-        *   Definir el puerto `property.repository.ts`.
-    *   **Crear Casos de Uso (✓ Completado):** `create-property.use-case.ts`, `search-properties.use-case.ts`, `update-property-status.use-case.ts`, etc.
-    *   **Implementar Infraestructura (`src/lib/real-estate/infrastructure`) (✓ Completado):** `firestore-property.repository.ts`, `api/property.controller.ts` y las rutas de API correspondientes.
-    *   **Desarrollar UI Pública - Página de Búsqueda (`/inmobiliaria`):**
-        *   Implementar el diseño de dos columnas: un listado de propiedades a la izquierda y un mapa interactivo a la derecha.
-        *   Utilizar la API de Google Maps para mostrar un mapa customizado.
-        *   Renderizar marcadores de precios en el mapa para cada propiedad.
-        *   Implementar la interactividad: al pasar el cursor sobre un marcador, se debe resaltar la tarjeta correspondiente en el listado (y viceversa).
-        *   Crear tarjetas de propiedad con carrusel de imágenes, precio y detalles clave.
-        *   Implementar filtros avanzados (precio, tipo, habitaciones, etc.) que actualicen tanto el listado como el mapa.
-    *   **Desarrollar UI Pública - Página de Detalles (`/inmobiliaria/[id]`):**
-        *   Crear una página de aterrizaje para cada propiedad con una galería de fotos completa, descripción detallada, servicios, ubicación en el mapa y formulario de contacto.
-    *   **Desarrollar UI de Gestión (Dashboard):**
-        *   Permitir a los usuarios (agentes inmobiliarios o particulares) publicar y gestionar sus propiedades desde `/dashboard/my-properties`.
-        *   Implementar sistema de aprobación de propiedades por parte de administradores.
-    *   **Implementar Flujo de Creación para Invitados:**
-        *   Utilizar el mismo patrón de modal de dos pasos que en "Servicios" para que agentes inmobiliarios o propietarios se registren y publiquen su primera propiedad fácilmente desde la página `/inmobiliaria`.
-        *   El formulario de creación de propiedad deberá incluir un campo de búsqueda de direcciones con autocompletado de Google Maps para seleccionar la ubicación y obtener las coordenadas de forma precisa.
+        *   Crear `property.entity.ts` con una estructura robusta: (✓)
+        *   Definir el puerto `property.repository.ts`. (✓)
+    *   **Crear Casos de Uso (✓ Completado):** `create-property.use-case.ts`, `search-properties.use-case.ts`, `update-property-status.use-case.ts`, etc. (✓)
+    *   **Implementar Infraestructura (`src/lib/real-estate/infrastructure`) (✓ Completado):** `firestore-property.repository.ts`, `api/property.controller.ts` y las rutas de API correspondientes. (✓)
+    *   **Desarrollar UI Pública - Página de Búsqueda (`/inmobiliaria`) (✓ Completado):**
+        *   Implementar el diseño de dos columnas: listado de propiedades a la izquierda y mapa interactivo a la derecha. (✓)
+        *   Utilizar la API de Google Maps para mostrar un mapa customizado. (✓)
+        *   Renderizar marcadores de precios en el mapa para cada propiedad. (✓)
+        *   Implementar la interactividad: al pasar el cursor sobre un marcador, se debe resaltar la tarjeta correspondiente en el listado (y viceversa). (✓)
+        *   Crear tarjetas de propiedad con carrusel de imágenes, precio y detalles clave. (✓)
+        *   Implementar filtros avanzados (precio, tipo, habitaciones, etc.) que actualicen tanto el listado como el mapa. (✓)
+    *   **Desarrollar UI Pública - Página de Detalles (`/inmobiliaria/[id]`) (✓ Completado):**
+        *   Crear una página de aterrizaje para cada propiedad con una galería de fotos completa, descripción detallada, servicios, ubicación en el mapa y formulario de contacto. (✓)
+    *   **Desarrollar UI de Gestión (Dashboard) (✓ Completado):**
+        *   Permitir a los usuarios (agentes inmobiliarios o particulares) publicar y gestionar sus propiedades desde `/dashboard/my-properties`. (✓)
+        *   Implementar sistema de aprobación de propiedades por parte de administradores. (✓)
+    *   **Implementar Flujo de Creación para Invitados (✓ Completado):**
+        *   Utilizar el mismo patrón de modal de dos pasos que en "Servicios" para que agentes inmobiliarios o propietarios se registren y publiquen su primera propiedad fácilmente desde la página `/inmobiliaria`. (✓)
+        *   El formulario de creación de propiedad deberá incluir un campo de búsqueda de direcciones con autocompletado de Google Maps para seleccionar la ubicación y obtener las coordenadas de forma precisa. (✓)
 
 
 ---
