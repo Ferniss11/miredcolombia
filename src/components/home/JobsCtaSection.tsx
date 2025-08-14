@@ -68,8 +68,8 @@ const JobsCtaSection: React.FC<JobsCtaSectionProps> = ({ jobs }) => {
                         <Card className="relative overflow-hidden bg-background shadow-lg text-center">
                             <div className="absolute inset-0 bg-conic-glow opacity-20"></div>
                             <CardContent className="p-8 flex flex-col items-center justify-center h-full relative">
-                                <div className="mx-auto p-4 bg-secondary rounded-full inline-flex mb-4">
-                                    <Handshake className="w-8 h-8 text-secondary-foreground" />
+                                <div className="mx-auto p-4 bg-accent/20 rounded-full inline-flex mb-4">
+                                    <Handshake className="w-8 h-8 text-accent" />
                                 </div>
                                 <h3 className="text-xl font-bold font-headline">Ofrece tus Servicios Profesionales</h3>
                                 <p className="text-muted-foreground mt-2 mb-6 flex-grow">
