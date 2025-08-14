@@ -3,6 +3,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import type { Metadata } from 'next'
+import { getPublishedServiceListingsAction } from "@/lib/service-listing/infrastructure/nextjs/service-listing.server-actions";
+import ServiceCard from "@/components/services/ServiceCard";
+import Link from "next/link";
  
 export const metadata: Metadata = {
   title: 'Servicios Profesionales | Mi Red Colombia',
@@ -10,9 +13,7 @@ export const metadata: Metadata = {
 }
 
 export default async function ServicesPage() {
-    // En el futuro, aquí llamaremos a la acción para obtener los servicios.
-    // const { services, error } = await getServiceListingsAction();
-    const services: any[] = [];
+    const { listings, error } = await getPublishedServiceListingsAction();
 
     return (
         <div className="container mx-auto px-4 py-12 md:px-6">
@@ -22,7 +23,7 @@ export default async function ServicesPage() {
                     Conecta con profesionales y autónomos de la comunidad colombiana en España.
                 </p>
                  <Button className="mt-4" asChild>
-                    <a href="/dashboard">Publica tu Servicio</a>
+                    <Link href="/dashboard/my-services">Publica tu Servicio</Link>
                 </Button>
             </div>
 
@@ -36,14 +37,16 @@ export default async function ServicesPage() {
                 </div>
             </div>
 
-            {services.length === 0 ? (
+            {!listings || listings.length === 0 ? (
                  <div className="text-center py-16 text-muted-foreground border-2 border-dashed rounded-lg">
                     <h2 className="text-2xl font-semibold">Aún no hay servicios publicados</h2>
                     <p className="mt-1 text-sm">¡Sé el primero en ofrecer tus habilidades a la comunidad!</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
-                   {/* Aquí se mapearán los ServiceCard cuando tengamos datos */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                   {listings.map(listing => (
+                        <ServiceCard key={listing.id} listing={listing} />
+                   ))}
                 </div>
             )}
         </div>
