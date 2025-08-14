@@ -1,7 +1,8 @@
+
 // src/app/inmobiliaria/page.tsx
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { getPublicPropertiesAction } from "@/lib/real-estate/infrastructure/nextjs/property.server-actions";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, PlusCircle } from "lucide-react";
@@ -19,12 +20,12 @@ export default function InmobiliariaPage() {
   const [error, setError] = useState<string | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
 
-  useState(() => {
+  useEffect(() => {
     getPublicPropertiesAction().then(({ properties, error }) => {
       if (error) setError(error);
       if (properties) setProperties(properties);
     });
-  });
+  }, []); // Empty dependency array ensures this runs only once on mount
 
   const renderCallToActionButton = () => {
     if (user) {
