@@ -15,6 +15,7 @@ import { GetServiceListingUseCase } from '../../application/get-service-listing.
 import { UpdateServiceListingUseCase, UpdateServiceListingInput } from '../../application/update-service-listing.use-case';
 import { DeleteServiceListingUseCase } from '../../application/delete-service-listing.use-case';
 import type { UserRole } from '@/lib/user/domain/user.entity';
+import { ServiceListing } from '../../domain/service-listing.entity';
 
 // Validation Schemas for FormData
 const ServiceListingFormSchema = z.object({
@@ -27,6 +28,10 @@ const ServiceListingFormSchema = z.object({
   contactPhone: z.string().min(7),
   contactEmail: z.string().email(),
   contactViaWhatsApp: z.preprocess((val) => val === 'true' || val === true, z.boolean()),
+});
+
+const UpdateStatusSchema = z.object({
+    status: z.enum(['published', 'rejected']),
 });
 
 
@@ -105,11 +110,11 @@ export class ServiceListingController {
     const formData = await req.formData();
     const serviceImageFile = formData.get('serviceImageFile') as File | null;
     
-    let dataToUpdate: UpdateServiceListingInput = {};
+    const dataToUpdate: UpdateServiceListingInput = {};
 
     // Populate dataToUpdate only with fields present in formData
     for (const [key, value] of formData.entries()) {
-        if (key !== 'serviceImageFile') {
+        if (key !== 'serviceImageFile' && value !== null) {
             (dataToUpdate as any)[key] = value;
         }
     }
@@ -118,7 +123,7 @@ export class ServiceListingController {
     if (dataToUpdate.price) {
         dataToUpdate.price = Number(dataToUpdate.price);
     }
-     if (dataToUpdate.contactViaWhatsApp) {
+     if (typeof dataToUpdate.contactViaWhatsApp === 'string') {
         dataToUpdate.contactViaWhatsApp = dataToUpdate.contactViaWhatsApp === 'true';
     }
 
@@ -127,11 +132,31 @@ export class ServiceListingController {
         const filePath = `service-listings/${actorId}/${Date.now()}-${serviceImageFile.name}`;
         dataToUpdate.imageUrl = await uploadFile(fileBuffer, filePath, serviceImageFile.type);
     }
-
-    // Since we are creating dataToUpdate dynamically, we don't need to parse with Zod here,
-    // as the use case will handle the partial update. The types are compatible.
+    
     const updatedListing = await this.updateUseCase.execute(params.id, dataToUpdate, actorId, actorRoles);
     return ApiResponse.success(updatedListing);
+  }
+
+  async updateStatus(req: NextRequest, { params }: { params: { id: string } }): Promise<NextResponse> {
+      if (!adminAuth) {
+          return ApiResponse.error('Authentication service not configured.', 503);
+      }
+      const token = req.headers.get('Authorization')?.split('Bearer ')[1];
+      if (!token) return ApiResponse.unauthorized();
+      const { uid: actorId, roles } = await adminAuth.verifyIdToken(token);
+      const actorRoles = (roles || []) as UserRole[];
+      
+      const json = await req.json();
+      const { status } = UpdateStatusSchema.parse(json);
+
+      // The useCase internally checks for Admin/SAdmin roles, but we can do a preliminary check here.
+      if (!actorRoles.includes('Admin') && !actorRoles.includes('SAdmin')) {
+          return ApiResponse.forbidden('You do not have permission to change the status of this listing.');
+      }
+
+      // We only need to pass the status field to the use case.
+      const updatedListing = await this.updateUseCase.execute(params.id, { status }, actorId, actorRoles);
+      return ApiResponse.success(updatedListing);
   }
 
   async delete(req: NextRequest, { params }: { params: { id: string } }): Promise<NextResponse> {

@@ -230,13 +230,13 @@ export default function MyServicesPage() {
              if (!user) return;
             try {
                 const idToken = await user.getIdToken();
-                const formData = new FormData();
-                formData.append('status', status);
-
-                const response = await fetch(`/api/services/${listingId}`, {
-                    method: 'POST',
-                    headers: { Authorization: `Bearer ${idToken}` },
-                    body: formData,
+                const response = await fetch(`/api/services/${listingId}/status`, {
+                    method: 'PUT',
+                    headers: { 
+                        Authorization: `Bearer ${idToken}`,
+                        'Content-Type': 'application/json',
+                     },
+                    body: JSON.stringify({ status }),
                 });
 
                 if (!response.ok) {
