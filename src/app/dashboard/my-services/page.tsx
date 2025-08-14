@@ -307,7 +307,7 @@ export default function MyServicesPage() {
                                         <FormField control={form.control} name="priceType" render={({ field }) => (<FormItem><FormLabel>Tipo de Precio</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Elige un tipo" /></SelectTrigger></FormControl><SelectContent><SelectItem value="per_hour">Por Hora</SelectItem><SelectItem value="fixed">Precio Fijo</SelectItem><SelectItem value="per_project">Por Proyecto</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
                                     </div>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <FormField control={form.control} name="contactPhone" render={({ field }) => (<FormItem><FormLabel>Teléfono de Contacto</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                        <FormField control={form.control} name="contactPhone" render={({ field }) => (<FormItem><FormLabel>Teléfono de Contacto</FormLabel><FormControl><Input placeholder="+34 600 000 000" {...field} /></FormControl><FormMessage /></FormItem>)} />
                                         <FormField control={form.control} name="contactEmail" render={({ field }) => (<FormItem><FormLabel>Email de Contacto</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem>)} />
                                     </div>
                                     <FormField
