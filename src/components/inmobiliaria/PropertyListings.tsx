@@ -58,7 +58,7 @@ export default function PropertyListings({ initialProperties, isMapsApiLoaded }:
     };
 
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-2 h-[calc(100vh-170px)]">
+        <div className="grid grid-cols-1 lg:grid-cols-2 h-auto lg:h-[calc(100vh-170px)]">
             {/* Left Column: Filters and List */}
             <div className="flex flex-col h-full">
                 <div className="p-4 border-b space-y-4">
