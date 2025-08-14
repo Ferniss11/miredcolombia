@@ -4,32 +4,37 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useJsApiLoader } from '@react-google-maps/api';
 import { Input } from '@/components/ui/input';
-import { FormItem, FormLabel } from '@/components/ui/form';
 
 const libraries = ['places', 'maps'] as any;
 
 interface AddressAutocompleteInputProps {
   onAddressSelect: (address: string, location: { lat: number; lng: number; }) => void;
-  initialValue?: string;
+  value: string;
+  onChange: (value: string) => void;
 }
 
-const AddressAutocompleteInput: React.FC<AddressAutocompleteInputProps> = ({ onAddressSelect, initialValue = '' }) => {
+const AddressAutocompleteInput: React.FC<AddressAutocompleteInputProps> = ({ onAddressSelect, value, onChange }) => {
   const { isLoaded } = useJsApiLoader({
-    id: 'google-map-script', // Use a consistent ID
+    id: 'google-map-script',
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!,
     libraries,
   });
 
-  const [inputValue, setInputValue] = useState(initialValue);
+  const [inputValue, setInputValue] = useState(value);
   const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  
+  // Sync internal state with form value from react-hook-form
+  useEffect(() => {
+    setInputValue(value);
+  }, [value]);
 
   useEffect(() => {
     if (isLoaded && inputRef.current) {
       autocompleteRef.current = new window.google.maps.places.Autocomplete(
         inputRef.current,
         {
-          componentRestrictions: { country: 'es' }, // Restrict to Spain
+          componentRestrictions: { country: 'es' },
           fields: ['address_components', 'geometry', 'icon', 'name', 'formatted_address'],
           types: ['address'],
         }
@@ -42,25 +47,29 @@ const AddressAutocompleteInput: React.FC<AddressAutocompleteInputProps> = ({ onA
             lat: place.geometry.location.lat(),
             lng: place.geometry.location.lng(),
           };
-          onAddressSelect(place.formatted_address, location);
+          // Update both the visual input and the form state
           setInputValue(place.formatted_address);
+          onChange(place.formatted_address); // Update react-hook-form
+          onAddressSelect(place.formatted_address, location); // Update coordinates
         }
       });
     }
-  }, [isLoaded, onAddressSelect]);
+  }, [isLoaded, onAddressSelect, onChange]);
   
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setInputValue(e.target.value);
+    onChange(e.target.value); // Propagate change to react-hook-form
+  }
+
   if (!isLoaded) return <Input disabled placeholder="Cargando mapa..." />;
 
   return (
-    <FormItem>
-        <FormLabel>Dirección</FormLabel>
-        <Input
-            ref={inputRef}
-            placeholder="Empieza a escribir la dirección..."
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-        />
-    </FormItem>
+    <Input
+        ref={inputRef}
+        placeholder="Empieza a escribir la dirección..."
+        value={inputValue}
+        onChange={handleInputChange}
+    />
   );
 };
 

@@ -140,8 +140,23 @@ export default function PropertyForm({ propertyToEdit, onFormSubmit }: PropertyF
                         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                             <FormField control={form.control} name="title" render={({ field }) => (<FormItem><FormLabel>Título del Anuncio</FormLabel><FormControl><Input placeholder="Ej: Apartamento luminoso en el centro" {...field} /></FormControl><FormMessage /></FormItem>)} />
                             
-                            <AddressAutocompleteInput onAddressSelect={handleAddressSelect} />
-                            {form.formState.errors.address && <FormMessage>{form.formState.errors.address.message}</FormMessage>}
+                            <FormField
+                                control={form.control}
+                                name="address"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Dirección</FormLabel>
+                                        <FormControl>
+                                            <AddressAutocompleteInput
+                                                onAddressSelect={handleAddressSelect}
+                                                value={field.value}
+                                                onChange={field.onChange}
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
                             
                             <FormField control={form.control} name="description" render={({ field }) => (<FormItem><FormLabel>Descripción Detallada</FormLabel><FormControl><Textarea placeholder="Describe tu propiedad: características, vecindario, etc." rows={6} {...field} /></FormControl><FormMessage /></FormItem>)} />
 
