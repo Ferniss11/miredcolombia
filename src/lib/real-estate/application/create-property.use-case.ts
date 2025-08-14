@@ -18,7 +18,7 @@ export class CreatePropertyUseCase {
       userId: user.uid,
       name: user.name,
       isTrusted: false, // This could be based on user history in the future
-      joinedAt: user.createdAt,
+      joinedAt: user.createdAt || new Date(), // Fallback to now() if createdAt is undefined
     };
 
     const propertyToCreate: Omit<Property, 'id'> = {
