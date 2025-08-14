@@ -40,7 +40,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/componen
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Plus, Edit, Trash2, MoreVertical, Loader2, Handshake, Eye } from 'lucide-react';
+import { Plus, Edit, Trash2, MoreVertical, Loader2, Handshake, Check, X } from 'lucide-react';
 import Image from 'next/image';
 import { ServiceListing } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -142,7 +142,7 @@ export default function MyServicesPage() {
                 title: '', description: '', category: '', city: '',
                 price: 0, priceType: 'fixed', contactPhone: userProfile?.businessProfile?.phone || '',
                 contactEmail: userProfile?.email || '',
-                contactViaWhatsApp: true, // Default to true for new listings
+                contactViaWhatsApp: true,
             });
         }
     }, [editingListing, form, userProfile]);
@@ -225,6 +225,32 @@ export default function MyServicesPage() {
         });
     };
     
+    const handleUpdateStatus = (listingId: string, status: 'published' | 'rejected') => {
+        startTransition(async () => {
+             if (!user) return;
+            try {
+                const idToken = await user.getIdToken();
+                const formData = new FormData();
+                formData.append('status', status);
+
+                const response = await fetch(`/api/services/${listingId}`, {
+                    method: 'POST',
+                    headers: { Authorization: `Bearer ${idToken}` },
+                    body: formData,
+                });
+
+                if (!response.ok) {
+                    const result = await response.json();
+                    throw new Error(result.error?.message || 'Error al actualizar estado');
+                }
+                toast({ title: 'Estado Actualizado', description: `El servicio ha sido ${status === 'published' ? 'aprobado' : 'rechazado'}.` });
+                await fetchListings();
+            } catch (error) {
+                 toast({ variant: 'destructive', title: 'Error', description: error instanceof Error ? error.message : 'Ocurrió un error inesperado.' });
+            }
+        });
+    }
+    
      const getStatusBadge = (status: ServiceListing['status']) => {
         switch (status) {
             case 'published': return <Badge className="bg-green-100 text-green-800 border-green-300">Publicado</Badge>;
@@ -234,10 +260,12 @@ export default function MyServicesPage() {
         }
     };
 
+    const isAdmin = userProfile?.role === 'Admin' || userProfile?.role === 'SAdmin';
+
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
-                <h1 className="text-3xl font-bold font-headline">Mis Servicios Ofrecidos</h1>
+                <h1 className="text-3xl font-bold font-headline">{isAdmin ? 'Moderar Servicios' : 'Mis Servicios Ofrecidos'}</h1>
                 <Button onClick={handleOpenSheetForCreate}>
                     <Plus className="mr-2 h-4 w-4" /> Crear Nuevo Servicio
                 </Button>
@@ -277,8 +305,18 @@ export default function MyServicesPage() {
                              <CardContent className="p-4 pt-0 text-sm text-muted-foreground flex-grow">
                                 {listing.city} - <span className="font-bold text-foreground">€{listing.price}</span> <span className="text-xs">{formatPriceType(listing.priceType)}</span>
                              </CardContent>
-                             <CardFooter className="p-4 pt-0 border-t mt-auto">
+                             <CardFooter className="p-2 border-t mt-auto flex items-center justify-between">
                                 {getStatusBadge(listing.status)}
+                                {isAdmin && listing.status === 'pending_review' && (
+                                    <div className="flex gap-2">
+                                        <Button size="sm" variant="outline" className="h-8 px-2 text-red-600 hover:bg-red-50 hover:text-red-700" onClick={() => handleUpdateStatus(listing.id, 'rejected')} disabled={isPending}>
+                                            <X className="h-4 w-4" />
+                                        </Button>
+                                         <Button size="sm" className="h-8 px-2 bg-green-600 hover:bg-green-700" onClick={() => handleUpdateStatus(listing.id, 'published')} disabled={isPending}>
+                                            <Check className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                )}
                              </CardFooter>
                         </Card>
                      ))}

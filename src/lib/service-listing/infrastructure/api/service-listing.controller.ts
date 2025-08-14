@@ -105,27 +105,22 @@ export class ServiceListingController {
     const formData = await req.formData();
     const serviceImageFile = formData.get('serviceImageFile') as File | null;
     
-    const formValues = {
-        title: formData.get('title'),
-        description: formData.get('description'),
-        category: formData.get('category'),
-        city: formData.get('city'),
-        price: formData.get('price'),
-        priceType: formData.get('priceType'),
-        contactPhone: formData.get('contactPhone'),
-        contactEmail: formData.get('contactEmail'),
-        contactViaWhatsApp: formData.get('contactViaWhatsApp'),
-    };
+    let dataToUpdate: UpdateServiceListingInput = {};
+
+    // Populate dataToUpdate only with fields present in formData
+    for (const [key, value] of formData.entries()) {
+        if (key !== 'serviceImageFile') {
+            (dataToUpdate as any)[key] = value;
+        }
+    }
     
-    // Use partial schema for updates, as not all fields are required
-    let dataToUpdate: UpdateServiceListingInput = ServiceListingFormSchema.partial().parse({
-        ...formValues,
-        price: formValues.price ? Number(formValues.price) : undefined,
-        contactViaWhatsApp: formValues.contactViaWhatsApp ? (formValues.contactViaWhatsApp === 'true') : undefined,
-    });
-    
-    // Remove undefined keys so we only update provided fields
-    dataToUpdate = Object.fromEntries(Object.entries(dataToUpdate).filter(([_, v]) => v !== undefined));
+    // Coerce specific fields if they exist
+    if (dataToUpdate.price) {
+        dataToUpdate.price = Number(dataToUpdate.price);
+    }
+     if (dataToUpdate.contactViaWhatsApp) {
+        dataToUpdate.contactViaWhatsApp = dataToUpdate.contactViaWhatsApp === 'true';
+    }
 
     if (serviceImageFile) {
         const fileBuffer = Buffer.from(await serviceImageFile.arrayBuffer());
@@ -133,6 +128,8 @@ export class ServiceListingController {
         dataToUpdate.imageUrl = await uploadFile(fileBuffer, filePath, serviceImageFile.type);
     }
 
+    // Since we are creating dataToUpdate dynamically, we don't need to parse with Zod here,
+    // as the use case will handle the partial update. The types are compatible.
     const updatedListing = await this.updateUseCase.execute(params.id, dataToUpdate, actorId, actorRoles);
     return ApiResponse.success(updatedListing);
   }
