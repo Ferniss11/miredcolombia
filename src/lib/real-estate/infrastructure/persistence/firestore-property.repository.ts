@@ -72,6 +72,9 @@ export class FirestorePropertyRepository implements PropertyRepository {
 
     async update(id: string, data: Partial<Omit<Property, 'id' | 'createdAt'>>): Promise<Property> {
         const db = this.getDb();
+        if (!adminInstance?.firestore?.FieldValue) {
+            throw new Error('Firebase Admin SDK is not fully initialized.');
+        }
         const docRef = db.collection(PROPERTIES_COLLECTION).doc(id);
         
         await docRef.update({
