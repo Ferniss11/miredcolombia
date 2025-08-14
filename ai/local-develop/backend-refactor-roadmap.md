@@ -140,7 +140,7 @@ src/lib/
 
 ---
 
-## **Fase 7: Desarrollo del Portal "Ofrezco mis Servicios" (En Progreso)**
+## **Fase 7: Desarrollo del Portal "Ofrezco mis Servicios" (✓ Completada)**
 *   **Objetivo:** Crear una nueva funcionalidad para que cualquier usuario registrado (tanto `User` como `Advertiser`) pueda publicar sus servicios profesionales, creando un mercado interno y una nueva vía de oportunidades para la comunidad.
 *   **Pasos:**
     *   **Definir el Dominio y Casos de Uso (`src/lib/service-listing`) (✓ Completado):**
@@ -150,31 +150,38 @@ src/lib/
     *   **Implementar la Infraestructura (`src/lib/service-listing/infrastructure`) (✓ Completado):**
         *   `persistence/firestore-service-listing.repository.ts`. (✓)
         *   `api/service-listing.controller.ts` para exponer los casos de uso. (✓)
-        *   Crear las rutas de API correspondientes (`/api/services`, `/api/services/[id]`). (✓)
-    *   **Desarrollar UI de Gestión (Dashboard):**
-        *   Crear una nueva página en el dashboard (`/dashboard/my-services`) donde los usuarios `User` y `Advertiser` puedan crear, ver, editar y eliminar sus servicios ofrecidos.
-        *   Crear una vista de moderación para `Admin` y `SAdmin` donde puedan ver **todos** los servicios y aprobar o rechazar los que están `pending_review`.
-        *   Implementar un sistema de aprobación/rechazo que cambie el `status` de la entidad.
-    *   **Desarrollar UI Pública:**
-        *   Crear una nueva página pública `/services` que liste todos los servicios con estado `published`.
-        *   Implementar capacidades de búsqueda y filtrado por categoría y ciudad.
-    *   **Implementar Flujo de Creación para Invitados:**
-        *   Diseñar un modal de dos pasos en la página pública `/services`:
-            *   Paso 1: Formulario de registro rápido de cuenta de usuario.
-            *   Paso 2: Formulario para crear la oferta de servicio.
+        *   Crear las rutas de API correspondientes (`/api/services`, `/api/services/[id]`, `/api/services/[id]/status`). (✓)
+    *   **Desarrollar UI de Gestión (Dashboard) (✓ Completado):**
+        *   Crear página `/dashboard/my-services` donde usuarios gestionan sus servicios. (✓)
+        *   Implementar vista de moderación para `Admin` donde pueden aprobar/rechazar. (✓)
+    *   **Desarrollar UI Pública (✓ Completado):**
+        *   Crear página pública `/services` que lista los servicios aprobados. (✓)
+        *   Implementar búsqueda y filtrado. (✓)
+    *   **Implementar Flujo de Creación para Invitados (✓ Completado):**
+        *   Diseñar un modal de dos pasos en la página pública `/services`: (✓)
+            *   Paso 1: Formulario de registro rápido. (✓)
+            *   Paso 2: Formulario para crear el servicio. (✓)
     *   **(Futuro) Integración de Pagos:**
         *   Integrar Stripe para permitir a los usuarios destacar sus anuncios de servicios por una tarifa, creando una nueva vía de monetización.
 
 ---
 
-## **Fase 8: Portal Inmobiliario (Próximos Pasos)**
+## **Fase 8: Portal Inmobiliario (En Progreso)**
 *   **Objetivo:** Desarrollar un portal completo para la búsqueda de vivienda (alquiler y venta), aplicando la arquitectura hexagonal desde el principio.
 *   **Pasos:**
-    *   **Definir Dominio Inmobiliario (`src/lib/real-estate/domain`):** Crear `property.entity.ts`, `real-estate.repository.ts`.
-    *   **Crear Casos de Uso:** `create-property-listing.use-case.ts`, `search-properties.use-case.ts`, etc.
-    *   **Implementar Infraestructura:** `firestore-real-estate.repository.ts`, `api/real-estate.controller.ts` y las rutas de API correspondientes.
-    *   **Desarrollar UI Pública:** Crear las páginas `/properties` (listado) y `/properties/[id]` (detalle).
-    *   **Desarrollar UI de Gestión:** Permitir a los usuarios (y agencias) publicar y gestionar sus propiedades desde el dashboard.
+    *   **Definir Dominio Inmobiliario (`src/lib/real-estate`):**
+        *   Crear `property.entity.ts` con campos como `title`, `description`, `price`, `type` ('alquiler', 'venta'), `bedrooms`, `bathrooms`, `area`, `images`, `location`, `status`, etc.
+        *   Definir el puerto `property.repository.ts`.
+    *   **Crear Casos de Uso:** `create-property.use-case.ts`, `search-properties.use-case.ts`, etc.
+    *   **Implementar Infraestructura:** `firestore-property.repository.ts`, `api/property.controller.ts` y las rutas de API correspondientes.
+    *   **Desarrollar UI de Gestión (Dashboard):**
+        *   Permitir a los usuarios (agentes inmobiliarios o particulares) publicar y gestionar sus propiedades desde el dashboard.
+        *   Implementar sistema de aprobación de propiedades por parte de administradores.
+    *   **Desarrollar UI Pública:**
+        *   Crear las páginas `/inmobiliaria` (listado) y `/inmobiliaria/[id]` (detalle).
+        *   Implementar búsqueda avanzada (precio, habitaciones, tipo, ubicación) y mapa interactivo.
+    *   **Implementar Flujo de Creación para Invitados:**
+        *   Utilizar el mismo patrón de modal de dos pasos que en "Servicios" para que agentes inmobiliarios se registren y publiquen su primera propiedad fácilmente.
 
 ---
 

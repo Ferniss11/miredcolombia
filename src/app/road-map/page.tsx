@@ -64,10 +64,10 @@ async function parseRoadmap(): Promise<Phase[]> {
       const statusText = phaseMatch[3].trim();
       
       let status: PhaseStatus = 'En Progreso';
-      if (statusText === '✓ Completada') status = 'Completada';
-      else if (statusText === 'Pausado') status = 'En Pausa';
-      else if (statusText === 'En Progreso') status = 'En Progreso';
-      else if (statusText === 'Próximos Pasos') status = 'Próximos Pasos';
+      if (statusText.includes('Completada')) status = 'Completada';
+      else if (statusText.includes('Pausado')) status = 'En Pausa';
+      else if (statusText.includes('En Progreso')) status = 'En Progreso';
+      else if (statusText.includes('Próximos Pasos')) status = 'Próximos Pasos';
 
       currentPhase = {
         title: `${phaseKey}: ${titleText}`,
@@ -84,8 +84,8 @@ async function parseRoadmap(): Promise<Phase[]> {
         if (stepSectionMatch) {
             const stepTitle = stepSectionMatch[1].trim();
             const stepDescription = stepSectionMatch[2].trim();
-             const isCompleted = stepDescription.toLowerCase().includes('(✓ completado)');
-             const cleanDescription = stepDescription.replace(/\(✓ completado\)/i, '').trim();
+             const isCompleted = stepDescription.toLowerCase().includes('(✓');
+             const cleanDescription = stepDescription.replace(/\(✓.*?\)/i, '').trim();
 
             if(currentPhase.steps.find(s => s.text.startsWith(stepTitle))) {
                  // It's a sub-step, append it
@@ -103,7 +103,11 @@ async function parseRoadmap(): Promise<Phase[]> {
 
         const subStepMatch = line.match(/^\s*\*\s*-\s*(.*)/);
         if (readingSteps && subStepMatch && currentPhase.steps.length > 0) {
-            currentPhase.steps[currentPhase.steps.length - 1].text += `\n- ${subStepMatch[1].trim()}`;
+            const isCompleted = subStepMatch[1].toLowerCase().includes('(✓');
+            const cleanSubStep = subStepMatch[1].replace(/\(✓.*?\)/i, '').trim();
+            currentPhase.steps[currentPhase.steps.length - 1].text += `\n- ${cleanSubStep}`;
+            // Mark the parent step as completed if any sub-step is completed
+            if(isCompleted) currentPhase.steps[currentPhase.steps.length - 1].isCompleted = true;
             continue;
         }
 
