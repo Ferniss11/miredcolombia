@@ -404,7 +404,7 @@ export default function ChatWidget() {
               ) : (
                 <Avatar className="w-8 h-8 flex-shrink-0">
                   {!isBusinessChat ? (
-                    <AvatarImage src={AGENT_AVATAR_URL} alt="Avatar de Valeria"/>
+                    <AvatarImage src={AGENT_AVATAR_URL} alt="Avatar de Valeria" className="object-cover" />
                   ) : (
                     <AvatarFallback className={cn(isAdmin ? 'bg-yellow-400 text-black' : 'bg-primary/10 text-primary')}>
                       {isAdmin ? <UserCog size={18} /> : <Bot size={18} />}
@@ -453,7 +453,7 @@ export default function ChatWidget() {
                 <div className="flex items-end gap-2 justify-start">
                     <Avatar className="w-8 h-8 flex-shrink-0">
                       {!isBusinessChat ? (
-                        <AvatarImage src={AGENT_AVATAR_URL} alt="Avatar de Valeria"/>
+                        <AvatarImage src={AGENT_AVATAR_URL} alt="Avatar de Valeria" className="object-cover" />
                       ) : (
                         <AvatarFallback className='bg-primary/10 text-primary'><Bot size={18} /></AvatarFallback>
                       )}
@@ -497,7 +497,7 @@ export default function ChatWidget() {
                 <div className="absolute bottom-full right-0 mb-3 w-max max-w-[280px] animate-in fade-in-50 slide-in-from-bottom-2">
                     <div className="flex items-end gap-2">
                         <Avatar className="w-12 h-12 flex-shrink-0 z-10 -mr-2 shadow-lg border-2 border-background">
-                            <AvatarImage src={AGENT_AVATAR_URL} alt="Avatar de Valeria" />
+                            <AvatarImage src={AGENT_AVATAR_URL} alt="Avatar de Valeria" className="object-cover" />
                              <AvatarFallback className="bg-primary text-primary-foreground"><LuBotMessageSquare size={20} /></AvatarFallback>
                         </Avatar>
                          <div className="relative bg-background dark:bg-card shadow-lg rounded-lg p-3 text-sm group">
@@ -524,7 +524,7 @@ export default function ChatWidget() {
                     >
                        {isChatOpen ? <X size={32} /> : 
                        <Avatar className="w-full h-full">
-                           <AvatarImage src={AGENT_AVATAR_URL} alt="Avatar de Valeria, asistente IA"/>
+                           <AvatarImage src={AGENT_AVATAR_URL} alt="Avatar de Valeria, asistente IA" className="object-cover" />
                            <AvatarFallback><Bot size={40}/></AvatarFallback>
                        </Avatar>
                        }
@@ -538,7 +538,7 @@ export default function ChatWidget() {
                         <SheetTitle className="flex items-center gap-2 font-headline text-lg">
                             {isBusinessChat ? <Building className="h-6 w-6 text-primary" /> : (
                                <Avatar className="w-8 h-8">
-                                <AvatarImage src={AGENT_AVATAR_URL} alt="Avatar de Valeria"/>
+                                <AvatarImage src={AGENT_AVATAR_URL} alt="Avatar de Valeria" className="object-cover"/>
                                 <AvatarFallback><Sparkles className="h-4 w-4"/></AvatarFallback>
                                </Avatar>
                             )}
