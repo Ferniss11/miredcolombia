@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import type { Metadata } from 'next';
 import { getPublishedServiceListingsAction } from "@/lib/service-listing/infrastructure/nextjs/service-listing.server-actions";
@@ -21,13 +21,17 @@ export default function ServicesPage() {
     const [isSheetOpen, setIsSheetOpen] = useState(false);
     const [listings, setListings] = useState<ServiceListing[]>([]);
     
-    // We will fetch listings on the client side to simplify for now
-    useState(() => {
+    // Fetch listings on the client side using useEffect to avoid render-cycle errors.
+    useEffect(() => {
         getPublishedServiceListingsAction().then(({ listings, error }) => {
-            if (error) console.error(error);
-            else if (listings) setListings(listings);
-        })
-    });
+            if (error) {
+                console.error("Failed to fetch service listings:", error);
+            } else if (listings) {
+                setListings(listings);
+            }
+        });
+    }, []); // Empty dependency array ensures this runs only once on mount.
+
 
     const renderCallToActionButton = () => {
         if (user) {
