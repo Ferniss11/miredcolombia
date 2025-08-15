@@ -73,7 +73,8 @@ export function DashboardSidebar() {
   ];
 
   const userNav = [
-    { href: "/dashboard/candidate-profile", label: "Mi Perfil", icon: Briefcase },
+    { href: "/dashboard", label: "Resumen", icon: LayoutGrid },
+    { href: "/dashboard/candidate-profile", label: "Mi Perfil Profesional", icon: Briefcase },
     { href: "/dashboard/my-properties", label: "Mis Propiedades", icon: HomeIcon },
     { href: "/dashboard/my-services", label: "Mis Servicios", icon: Handshake },
   ];
@@ -122,7 +123,7 @@ export function DashboardSidebar() {
             <SidebarMenuItem key={item.href}>
               <Link href={item.href}>
                 <SidebarMenuButton
-                  isActive={pathname === item.href || (item.href !== '/dashboard/admin' && item.href !== '/dashboard/advertiser' && pathname.startsWith(item.href))}
+                  isActive={pathname === item.href || (item.href !== '/dashboard' && item.href !== '/dashboard/admin' && item.href !== '/dashboard/advertiser' && pathname.startsWith(item.href))}
                   icon={item.icon}
                   tooltip={item.label}
                   data-state={state}

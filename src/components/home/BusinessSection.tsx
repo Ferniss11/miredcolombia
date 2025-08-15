@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React from 'react';
@@ -12,7 +11,6 @@ import Autoplay from "embla-carousel-autoplay";
 import type { PlaceDetails } from '@/lib/types';
 import Image from 'next/image';
 import { StarRating } from './StarRating';
-
 
 const PlaceholderCard = () => (
     <Card className="overflow-hidden shadow-lg border-2 border-dashed bg-primary/10 border-primary/30 h-full flex flex-col justify-center items-center text-center p-6">
@@ -33,28 +31,24 @@ const PlaceholderCard = () => (
 
 export default function BusinessSection({ businesses }: { businesses: PlaceDetails[] }) {
     const carouselItems = React.useMemo(() => {
-        // The businesses are already shuffled on the server.
         const items: (PlaceDetails | { type: 'placeholder' })[] = [...businesses];
-        
-        // Insert placeholder card strategically
         if (items.length > 1) {
             items.splice(2, 0, { type: 'placeholder' });
         } else {
             items.push({ type: 'placeholder' });
         }
         items.unshift({ type: 'placeholder' });
-
         return items;
     }, [businesses]);
 
     return (
         <section className="w-full py-12 md:py-24 lg:py-32 bg-primary/10">
-             <div className="container px-4 md:px-6">
-                <div className="relative bg-card rounded-xl shadow-lg p-8 md:p-12 overflow-hidden">
-                    <div className="absolute inset-0 bg-conic-glow opacity-20 z-0"></div>
-                    <div className="relative z-10 grid md:grid-cols-2 gap-12 items-center">
-                        <div className="space-y-6">
-                             <div className="inline-flex items-center gap-2 text-sm font-semibold text-primary bg-primary/10 px-3 py-1 rounded-full">
+            <div className="container mx-auto px-4 md:px-6">
+                <div className="bg-card rounded-xl shadow-lg p-6 md:p-8 lg:p-12">
+                    <div className="flex flex-col lg:flex-row gap-12 items-center">
+                        {/* Left Side: Text Content */}
+                        <div className="w-full lg:w-1/2 space-y-6">
+                            <div className="inline-flex items-center gap-2 text-sm font-semibold text-primary bg-primary/10 px-3 py-1 rounded-full">
                                 <Building className="h-5 w-5" />
                                 <span>Para Negocios</span>
                             </div>
@@ -62,18 +56,18 @@ export default function BusinessSection({ businesses }: { businesses: PlaceDetai
                             <p className="text-muted-foreground text-lg">
                                 Conecta con miles de colombianos que necesitan tus servicios. Promociona tu negocio en la plataforma líder de migración.
                             </p>
-                             <ul className="space-y-4 text-muted-foreground">
+                            <ul className="space-y-4 text-muted-foreground">
                                 <li className="flex items-start gap-3">
                                     <CheckCircle className="h-5 w-5 mt-1 text-green-500 flex-shrink-0"/>
-                                    <span><strong>Asistente IA:</strong> Activa un asistente en tu perfil para responder clientes 24/7.</span>
+                                    <div><strong>Asistente IA:</strong> Activa un asistente en tu perfil para responder clientes 24/7.</div>
                                 </li>
                                 <li className="flex items-start gap-3">
                                     <CheckCircle className="h-5 w-5 mt-1 text-green-500 flex-shrink-0"/>
-                                    <span><strong>Posicionamiento SEO:</strong> Mejora tu SEO local con perfiles optimizados por IA.</span>
+                                    <div><strong>Posicionamiento SEO:</strong> Mejora tu SEO local con perfiles optimizados por IA.</div>
                                 </li>
-                                 <li className="flex items-start gap-3">
+                                <li className="flex items-start gap-3">
                                     <CheckCircle className="h-5 w-5 mt-1 text-green-500 flex-shrink-0"/>
-                                    <span><strong>Gestión Simplificada:</strong> Publica ofertas de empleo y gestiona tu perfil fácilmente.</span>
+                                    <div><strong>Gestión Simplificada:</strong> Publica ofertas de empleo y gestiona tu perfil fácilmente.</div>
                                 </li>
                             </ul>
                             <div className="flex flex-col sm:flex-row gap-4 pt-4">
@@ -91,8 +85,9 @@ export default function BusinessSection({ businesses }: { businesses: PlaceDetai
                             </div>
                         </div>
 
-                        <div className="min-h-[400px] flex items-center justify-center">
-                             {businesses.length > 0 ? (
+                        {/* Right Side: Carousel */}
+                        <div className="w-full lg:w-1/2 flex items-center justify-center min-h-[400px]">
+                            {businesses.length > 0 ? (
                                 <Carousel
                                     opts={{ loop: true, align: "start" }}
                                     plugins={[Autoplay({ delay: 4000, stopOnInteraction: true })]}

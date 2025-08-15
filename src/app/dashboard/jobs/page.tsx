@@ -17,7 +17,7 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent, CardHeader, CardFooter } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Plus, Edit, Trash2, MoreVertical, Briefcase, Eye } from 'lucide-react';
+import { Loader2, Plus, Edit, Trash2, MoreVertical, Briefcase, Eye, Users } from 'lucide-react';
 import Image from 'next/image';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { JobPostingFormSchema, JobPostingFormValues } from '@/lib/types';
@@ -179,6 +179,7 @@ const JobsPage = () => {
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
+                      <DropdownMenuItem asChild><Link href={`/dashboard/jobs/${job.id}/applicants`}><Users className="mr-2 h-4 w-4" /> Ver Postulantes</Link></DropdownMenuItem>
                       <DropdownMenuItem onClick={() => handleOpenSheetForEdit(job)}><Edit className="mr-2 h-4 w-4" /> Editar</DropdownMenuItem>
                       <DropdownMenuItem asChild><Link href={`/empleos/previsualizar/${job.id}`} target="_blank"><Eye className="mr-2 h-4 w-4" /> Previsualizar</Link></DropdownMenuItem>
                       <DropdownMenuItem onClick={() => handleDelete(job.id)} disabled={isPending} className="text-red-600"><Trash2 className="mr-2 h-4 w-4" /> Eliminar</DropdownMenuItem>
