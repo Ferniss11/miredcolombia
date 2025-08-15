@@ -115,6 +115,12 @@ export default function GuestJobApplicationSheet({ isOpen, onOpenChange, jobId, 
 
     const profileForm = useForm<CandidateProfileFormValues>({
         resolver: zodResolver(CandidateProfileSchema),
+        defaultValues: {
+            professionalTitle: '',
+            summary: '',
+            skills: [],
+            resumeFile: undefined,
+        }
     });
 
     useEffect(() => {
