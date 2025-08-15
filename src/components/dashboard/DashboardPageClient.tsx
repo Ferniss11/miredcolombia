@@ -9,6 +9,7 @@ import { Loader2, Briefcase, Home, Handshake, ArrowRight } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '../ui/button';
+import MyApplications from './MyApplications';
 
 // A reusable card for quick actions
 const ActionCard = ({ title, description, icon: Icon, href }: { title: string, description: string, icon: React.ElementType, href: string }) => (
@@ -91,6 +92,8 @@ export default function DashboardPageClient() {
             href="/dashboard/my-services"
          />
       </div>
+
+      <MyApplications />
     </div>
   );
 }
