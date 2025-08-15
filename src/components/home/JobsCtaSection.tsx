@@ -21,7 +21,7 @@ const JobsCtaSection: React.FC<JobsCtaSectionProps> = ({ jobs }) => {
     return (
         <>
             <section className="w-full py-12 md:py-24 lg:py-32 bg-background">
-                <div className="container px-4 md:px-6">
+                <div className="container px-4 md:px-6 max-w-6xl">
                     <div className="flex flex-col items-center justify-center space-y-4 text-center">
                         <div className="space-y-2">
                             <div className="inline-block rounded-lg bg-gray-100 px-3 py-1 text-sm dark:bg-gray-800">Portal de Empleo</div>
@@ -45,9 +45,9 @@ const JobsCtaSection: React.FC<JobsCtaSectionProps> = ({ jobs }) => {
 
                     {/* Call to Action Section */}
                     <div className="py-12 grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-                        <Card className="relative overflow-hidden bg-background shadow-lg text-center">
+                        <Card className="relative overflow-hidden bg-background shadow-lg text-center flex flex-col">
                             <div className="absolute inset-0 bg-conic-glow opacity-20"></div>
-                            <CardContent className="p-8 flex flex-col items-center justify-center h-full relative">
+                            <CardContent className="p-8 flex flex-col items-center justify-center h-full relative flex-grow">
                                 <div className="mx-auto p-4 bg-primary/20 rounded-full inline-flex mb-4">
                                     <Briefcase className="w-8 h-8 text-primary" />
                                 </div>
@@ -65,9 +65,9 @@ const JobsCtaSection: React.FC<JobsCtaSectionProps> = ({ jobs }) => {
                                 </div>
                             </CardContent>
                         </Card>
-                        <Card className="relative overflow-hidden bg-background shadow-lg text-center">
+                         <Card className="relative overflow-hidden bg-background shadow-lg text-center flex flex-col">
                             <div className="absolute inset-0 bg-conic-glow opacity-20"></div>
-                            <CardContent className="p-8 flex flex-col items-center justify-center h-full relative">
+                            <CardContent className="p-8 flex flex-col items-center justify-center h-full relative flex-grow">
                                 <div className="mx-auto p-4 bg-accent/20 rounded-full inline-flex mb-4">
                                     <Handshake className="w-8 h-8 text-accent" />
                                 </div>
