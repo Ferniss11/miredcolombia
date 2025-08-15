@@ -51,8 +51,8 @@ export default function AiAssistantSection({ onOpenChatModal }: { onOpenChatModa
     return (
         <>
             <section id="asistente-ia" className="w-full py-12 md:py-24 lg:py-32 bg-secondary dark:bg-card">
-                <div className="container px-4 md:px-6">
-                    <div className="mx-auto grid max-w-6xl lg:grid-cols-2 gap-12 items-center">
+                <div className="container px-4 md:px-6 max-w-6xl">
+                    <div className="mx-auto grid lg:grid-cols-2 gap-12 items-center">
                         {/* Left Side: Main CTA and Text */}
                         <div className="flex flex-col items-start space-y-6">
                             <div className="w-20 h-20 rounded-full overflow-hidden p-1 bg-primary/20 inline-flex ring-4 ring-primary/30">

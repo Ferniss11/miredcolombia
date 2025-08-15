@@ -7,7 +7,6 @@ import { FileStack, PlaneLanding, Gavel, Home as HomeIcon, Handshake, MessageCir
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from "../ui/button";
-import { useChat } from "@/context/ChatContext";
 
 const steps = [
     {
@@ -50,10 +49,9 @@ const stepColors = [
     { bg: "bg-[#F1BF00]", text: "text-black" },   // Spain Yellow
 ];
 
-export default function StepsSection() {
+export default function StepsSection({ onOpenChatAssistant }: { onOpenChatAssistant: () => void }) {
     const [isModalOpen, setModalOpen] = useState(false);
     const [selectedStep, setSelectedStep] = useState<(typeof steps)[0] | null>(null);
-    const { openChat } = useChat();
 
     const phoneNumber = "34653863675";
     const whatsappMessage = selectedStep ? encodeURIComponent(`Hola, tengo una pregunta sobre el paso: "${selectedStep.title}"`) : '';
@@ -66,7 +64,7 @@ export default function StepsSection() {
 
     const handleOpenChatAssistant = () => {
         setModalOpen(false);
-        openChat();
+        onOpenChatAssistant();
     }
 
     return (
