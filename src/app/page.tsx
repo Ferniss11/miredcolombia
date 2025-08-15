@@ -5,7 +5,6 @@ import { getEurToCopRate } from '@/lib/currency-actions';
 import { getSavedBusinessesAction } from '@/lib/directory-actions';
 import { getPublicJobPostingsAction } from '@/lib/job-posting/infrastructure/nextjs/job-posting.server-actions';
 import type { PlaceDetails, BlogPost, JobsCtaSectionProps } from '@/lib/types';
-import { ChatProvider } from '@/context/ChatContext';
 
 // Correctly import the Use Case and Repository from the hexagonal architecture
 import { GetAllBlogPostsUseCase } from '@/lib/blog/application/get-all-blog-posts.use-case';
@@ -52,13 +51,11 @@ export default async function HomePage() {
 
 
   return (
-    <ChatProvider>
-        <HomePageClient
-            eurToCopRate={eurToCopRate} 
-            initialBusinesses={randomBusinesses}
-            initialJobs={jobs?.slice(0, 4) || []}
-            initialPosts={latestPosts}
-         />
-    </ChatProvider>
+    <HomePageClient
+        eurToCopRate={eurToCopRate} 
+        initialBusinesses={randomBusinesses}
+        initialJobs={jobs?.slice(0, 4) || []}
+        initialPosts={latestPosts}
+     />
   );
 }
