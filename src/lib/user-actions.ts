@@ -9,14 +9,15 @@ import { uploadFile } from './user/infrastructure/storage/firebase-storage.adapt
 import { cookies } from 'next/headers';
 
 
-export async function updateCandidateProfileAction(uid: string, formData: FormData) {
+export async function updateCandidateProfileAction(uid: string, formData: FormData, idToken: string) {
      try {
         const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:9002';
         // Note: We send FormData directly, so Content-Type will be set automatically by fetch
         const response = await fetch(`${appUrl}/api/users/${uid}/candidate-profile`, {
             method: 'PUT',
             headers: {
-                Cookie: cookies().toString(),
+                // Pass the fresh token in the Authorization header
+                'Authorization': `Bearer ${idToken}`,
             },
             body: formData,
             cache: 'no-store',

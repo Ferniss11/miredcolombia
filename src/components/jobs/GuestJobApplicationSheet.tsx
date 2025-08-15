@@ -144,7 +144,7 @@ export default function GuestJobApplicationSheet({ isOpen, onOpenChange, jobId, 
     
     const handleProfileAndApply = async (values: CandidateProfileFormValues) => {
         if (!user) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Debes iniciar sesión.' });
+            toast({ variant: 'destructive', title: 'Error de Autenticación', description: 'Tu sesión ha expirado. Por favor, cierra esto e intenta de nuevo.' });
             return;
         }
         if (!values.resumeFile || values.resumeFile.length === 0) {
@@ -154,6 +154,9 @@ export default function GuestJobApplicationSheet({ isOpen, onOpenChange, jobId, 
 
         startTransition(async () => {
             try {
+                // Get fresh token right before the actions
+                const idToken = await user.getIdToken(true);
+
                 // 1. Update Profile (upload resume)
                 const formData = new FormData();
                 formData.append('professionalTitle', values.professionalTitle || '');
@@ -161,11 +164,11 @@ export default function GuestJobApplicationSheet({ isOpen, onOpenChange, jobId, 
                 formData.append('skills', Array.isArray(values.skills) ? values.skills.join(',') : '');
                 if (values.resumeFile) formData.append('resumeFile', values.resumeFile[0]);
                 
-                const profileResult = await updateCandidateProfileAction(user.uid, formData);
+                // Pass the fresh token to the action
+                const profileResult = await updateCandidateProfileAction(user.uid, formData, idToken);
                 if (!profileResult.success) throw new Error(profileResult.error || 'No se pudo actualizar tu perfil.');
 
                 // 2. Submit Application
-                const idToken = await user.getIdToken();
                 const applyResponse = await fetch(`/api/jobs/${jobId}/apply`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
