@@ -80,7 +80,7 @@ interface AuthContextType {
   loading: boolean;
   claims: IdTokenResult['claims'] | null;
   refreshUserProfile: () => Promise<void>;
-  signUpWithEmail: (name: string, email: string, password: string, role: UserRole) => Promise<{ error: string | null }>;
+  signUpWithEmail: (name: string, email: string, password: string, role: UserRole) => Promise<{ error: string | null, user: User | null }>;
   loginWithEmail: (email: string, password: string) => Promise<{ error: AuthError | null }>;
   loginWithGoogle: (role: UserRole) => Promise<{ error?: string }>;
   linkPasswordToAccount: (password: string) => Promise<{ error?: string | null }>;
@@ -116,8 +116,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const firestoreRole = profile?.role;
         const tokenRoles = (idTokenResult.claims.roles || []) as UserRole[];
         
-        // If the role exists in Firestore but not in the token, sync it.
-        // This handles legacy users.
         if (firestoreRole && tokenRoles.length === 0) {
             console.log(`[AuthContext] Legacy user detected (${firebaseUser.uid}). Synchronizing role to custom claims...`);
             await syncUserRoleAction(firebaseUser.uid);
@@ -168,14 +166,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [user, fetchUserProfile]);
 
-  const signUpWithEmail = async (name: string, email: string, password: string, role: UserRole): Promise<{ error: string | null }> => {
-    if (!authInstance) return { error: 'Firebase not initialized' };
+  const signUpWithEmail = async (name: string, email: string, password: string, role: UserRole): Promise<{ error: string | null, user: User | null }> => {
+    if (!authInstance) return { error: 'Firebase not initialized', user: null };
     try {
         const userCredential = await createUserWithEmailAndPassword(authInstance, email, password);
         await ensureUserProfileExists(userCredential.user, name, role);
         await userCredential.user.getIdToken(true); // Force token refresh to get claims
         await fetchUserProfile(userCredential.user);
-        return { error: null };
+        return { error: null, user: userCredential.user };
     } catch (error: any) {
         if (error.code === 'auth/email-already-in-use') {
             const methods = await fetchSignInMethodsForEmail(authInstance, email);
@@ -188,18 +186,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                         await linkWithCredential(result.user, credential);
                         await result.user.getIdToken(true);
                         await fetchUserProfile(result.user);
-                        return { error: null };
+                        return { error: null, user: result.user };
                     } catch (linkError: any) {
-                        return { error: `No se pudo vincular la cuenta: ${linkError.message}` };
+                        return { error: `No se pudo vincular la cuenta: ${linkError.message}`, user: null };
                     }
                 } else {
-                    return { error: "Registro cancelado. Por favor, inicia sesión con Google." };
+                    return { error: "Registro cancelado. Por favor, inicia sesión con Google.", user: null };
                 }
             } else {
-                return { error: "Este correo electrónico ya está registrado con una contraseña." };
+                return { error: "Este correo electrónico ya está registrado con una contraseña.", user: null };
             }
         }
-        return { error: (error as AuthError).message };
+        return { error: (error as AuthError).message, user: null };
     }
 };
 

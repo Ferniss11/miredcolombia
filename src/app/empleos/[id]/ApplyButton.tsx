@@ -34,7 +34,6 @@ export default function ApplyButton({ jobId, jobTitle }: ApplyButtonProps) {
         title: 'Perfil Incompleto',
         description: 'Por favor, sube tu currículum en tu perfil de candidato antes de aplicar.',
       });
-      // Optionally redirect to the profile page
       router.push('/dashboard/candidate-profile');
       return;
     }
@@ -81,14 +80,13 @@ export default function ApplyButton({ jobId, jobTitle }: ApplyButtonProps) {
         )}
         Aplicar a esta oferta
       </Button>
-      {!user && (
-        <GuestJobApplicationSheet
-          isOpen={isSheetOpen}
-          onOpenChange={setIsSheetOpen}
-          jobId={jobId}
-          jobTitle={jobTitle}
-        />
-      )}
+      
+      <GuestJobApplicationSheet
+        isOpen={isSheetOpen}
+        onOpenChange={setIsSheetOpen}
+        jobId={jobId}
+        jobTitle={jobTitle}
+      />
     </>
   );
 }

@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useTransition, useEffect } from 'react';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
@@ -58,7 +58,6 @@ const SignUpStep = ({ form, onSubmit, isSubmitting }: { form: UseFormReturn<Sign
 // -- Step 2: Candidate Profile Form --
 const ProfileStep = ({ form, onSubmit, isSubmitting, jobTitle }: { form: UseFormReturn<CandidateProfileFormValues>, onSubmit: (v: CandidateProfileFormValues) => void, isSubmitting: boolean, jobTitle: string }) => {
     useEffect(() => {
-        // Pre-fill the professional title with the job title
         form.setValue('professionalTitle', jobTitle);
     }, [jobTitle, form]);
     
@@ -68,7 +67,7 @@ const ProfileStep = ({ form, onSubmit, isSubmitting, jobTitle }: { form: UseForm
                 <SheetTitle>Paso 2: Completa tu perfil para aplicar</SheetTitle>
                 <SheetDescription>Sube tu CV y completa tu perfil. Esto es lo que verá el empleador.</SheetDescription>
             </SheetHeader>
-            <ScrollArea className="h-[calc(100vh-120px)] pr-6">
+             <ScrollArea className="h-[calc(100vh-170px)] pr-6 -mr-6">
                 <div className="py-4">
                     <Form {...form}>
                         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -88,10 +87,12 @@ const ProfileStep = ({ form, onSubmit, isSubmitting, jobTitle }: { form: UseForm
                                     <FormMessage />
                                  </FormItem>
                              )} />
-                             <Button type="submit" className="w-full" disabled={isSubmitting}>
-                                {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Briefcase className="mr-2 h-4 w-4"/>}
-                                Completar Perfil y Postular
-                            </Button>
+                             <SheetFooter className="pt-4 sticky bottom-0 bg-background">
+                                <Button type="submit" className="w-full" disabled={isSubmitting}>
+                                    {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Briefcase className="mr-2 h-4 w-4"/>}
+                                    Completar Perfil y Postular
+                                </Button>
+                             </SheetFooter>
                         </form>
                     </Form>
                 </div>
@@ -116,22 +117,21 @@ export default function GuestJobApplicationSheet({ isOpen, onOpenChange, jobId, 
         resolver: zodResolver(CandidateProfileSchema),
     });
 
-    // Effect to advance to step 2 if the user signs up successfully
     useEffect(() => {
-        if (user && step === 1) {
-            setStep(2);
+        if (!isOpen) {
+            // Reset to step 1 when sheet is closed externally
+            setTimeout(() => setStep(1), 300);
         }
-    }, [user, step]);
-
+    }, [isOpen]);
 
     const handleSignUp = async (values: SignUpFormValues) => {
         startTransition(async () => {
-            const { error } = await signUpWithEmail(values.name, values.email, values.password, 'User');
-            if (error) {
-                toast({ variant: 'destructive', title: 'Error de Registro', description: error });
+            const { error, user: newUser } = await signUpWithEmail(values.name, values.email, values.password, 'User');
+            if (error || !newUser) {
+                toast({ variant: 'destructive', title: 'Error de Registro', description: error || "No se pudo crear el usuario." });
             } else {
                 toast({ title: '¡Cuenta Creada!', description: 'Ahora, completa tu perfil para postular.' });
-                // The useEffect will handle moving to step 2
+                setStep(2);
             }
         });
     };
@@ -173,7 +173,6 @@ export default function GuestJobApplicationSheet({ isOpen, onOpenChange, jobId, 
                 });
                 
                 onOpenChange(false);
-                setTimeout(() => setStep(1), 300);
 
             } catch (error) {
                 const errorMessage = error instanceof Error ? error.message : 'Un error desconocido ocurrió.';
@@ -181,24 +180,19 @@ export default function GuestJobApplicationSheet({ isOpen, onOpenChange, jobId, 
             }
         });
     }
+    
+    // Render logic
+    const renderContent = () => {
+        if (step === 2) {
+             return <ProfileStep form={profileForm} onSubmit={handleProfileAndApply} isSubmitting={isSubmitting} jobTitle={jobTitle} />;
+        }
+        return <SignUpStep form={signUpForm} onSubmit={handleSignUp} isSubmitting={isSubmitting} />;
+    }
 
     return (
-        <Sheet open={isOpen} onOpenChange={(open) => {
-            onOpenChange(open);
-            // Reset to step 1 when sheet is closed
-            if (!open) {
-                setTimeout(() => setStep(1), 300);
-            }
-        }}>
-            <SheetContent className="sm:max-w-xl w-full p-0">
-                 <div className="p-6">
-                    {step === 1 && !user && (
-                        <SignUpStep form={signUpForm} onSubmit={handleSignUp} isSubmitting={isSubmitting} />
-                    )}
-                    {step === 2 && user && (
-                        <ProfileStep form={profileForm} onSubmit={handleProfileAndApply} isSubmitting={isSubmitting} jobTitle={jobTitle} />
-                    )}
-                 </div>
+        <Sheet open={isOpen} onOpenChange={onOpenChange}>
+            <SheetContent className="sm:max-w-xl w-full p-6 flex flex-col">
+                {renderContent()}
             </SheetContent>
         </Sheet>
     );
