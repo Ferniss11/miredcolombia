@@ -33,7 +33,7 @@ const JobsCtaSection: React.FC<JobsCtaSectionProps> = ({ jobs }) => {
                     </div>
 
                     {/* Job Postings List */}
-                    <div className="mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 py-12">
+                    <div className="mx-auto max-w-6xl grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 py-12">
                         {jobs && jobs.length > 0 ? (
                             jobs.map((job) => (
                                 <JobCard key={job.id} job={job} />
