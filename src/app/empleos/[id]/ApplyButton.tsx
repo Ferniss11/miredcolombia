@@ -1,4 +1,4 @@
-// src/app/jobs/[id]/ApplyButton.tsx
+
 'use client';
 
 import { useAuth } from '@/context/AuthContext';
@@ -7,6 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 import { Loader2, Briefcase } from 'lucide-react';
+import GuestJobApplicationSheet from '@/components/jobs/GuestJobApplicationSheet';
 
 interface ApplyButtonProps {
   jobId: string;
@@ -18,11 +19,12 @@ export default function ApplyButton({ jobId, jobTitle }: ApplyButtonProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
 
   const handleApply = async () => {
     if (!user) {
-      // Redirect to login if not authenticated
-      router.push('/login');
+      // Open the sheet for guest users
+      setIsSheetOpen(true);
       return;
     }
 
@@ -70,13 +72,23 @@ export default function ApplyButton({ jobId, jobTitle }: ApplyButtonProps) {
   };
 
   return (
-    <Button onClick={handleApply} disabled={isPending}>
-      {isPending ? (
-        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-      ) : (
-        <Briefcase className="mr-2 h-4 w-4" />
+    <>
+      <Button onClick={handleApply} disabled={isPending}>
+        {isPending ? (
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        ) : (
+          <Briefcase className="mr-2 h-4 w-4" />
+        )}
+        Aplicar a esta oferta
+      </Button>
+      {!user && (
+        <GuestJobApplicationSheet
+          isOpen={isSheetOpen}
+          onOpenChange={setIsSheetOpen}
+          jobId={jobId}
+          jobTitle={jobTitle}
+        />
       )}
-      Aplicar a esta oferta
-    </Button>
+    </>
   );
 }
