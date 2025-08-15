@@ -49,8 +49,8 @@ export default function BusinessSection({ businesses }: { businesses: PlaceDetai
 
     return (
         <section className="w-full py-12 md:py-24 lg:py-32 bg-primary/10">
-             <div className="container">
-                <div className="relative bg-card rounded-xl shadow-lg p-6 md:p-8 lg:p-12">
+             <div className="container px-4 md:px-6">
+                <div className="relative bg-card rounded-xl shadow-lg px-4 py-6 md:p-8 lg:p-12">
                     <div className="absolute inset-0 bg-conic-glow opacity-20 z-0"></div>
                     <div className="relative z-10 grid md:grid-cols-2 gap-12 items-center">
                         <div className="space-y-6">
@@ -97,12 +97,12 @@ export default function BusinessSection({ businesses }: { businesses: PlaceDetai
                             </div>
                         </div>
 
-                        <div className="min-h-[400px] flex items-center justify-center">
+                        <div className="min-h-[400px] flex items-center justify-center w-full">
                              {businesses.length > 0 ? (
                                 <Carousel
                                     opts={{ loop: true, align: "start" }}
                                     plugins={[Autoplay({ delay: 4000, stopOnInteraction: true })]}
-                                    className="w-full max-w-sm"
+                                    className="w-full"
                                 >
                                     <CarouselContent>
                                         {carouselItems.map((item, index) => (
