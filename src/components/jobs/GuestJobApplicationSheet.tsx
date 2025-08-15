@@ -78,7 +78,7 @@ const ProfileStep = ({ form, onSubmit, isSubmitting, jobTitle }: { form: UseForm
                                 <FormItem>
                                     <FormLabel>Habilidades (Opcional)</FormLabel>
                                     <FormControl><Input placeholder="Ej: React, Figma, Contabilidad..." value={Array.isArray(field.value) ? field.value.join(', ') : ''} onChange={(e) => field.onChange(e.target.value.split(',').map(s => s.trim()))} /></FormControl>
-                                    <FormDescription>Separa tus habilidades por comas.</FormDescription><FormMessage />
+                                    <FormMessage />
                                 </FormItem>
                              )} />
                              <FormField control={form.control} name="resumeFile" render={({ field: { value, onChange, ...fieldProps }}) => (
@@ -116,6 +116,14 @@ export default function GuestJobApplicationSheet({ isOpen, onOpenChange, jobId, 
         resolver: zodResolver(CandidateProfileSchema),
     });
 
+    // Effect to advance to step 2 if the user signs up successfully
+    useEffect(() => {
+        if (user && step === 1) {
+            setStep(2);
+        }
+    }, [user, step]);
+
+
     const handleSignUp = async (values: SignUpFormValues) => {
         startTransition(async () => {
             const { error } = await signUpWithEmail(values.name, values.email, values.password, 'User');
@@ -123,7 +131,7 @@ export default function GuestJobApplicationSheet({ isOpen, onOpenChange, jobId, 
                 toast({ variant: 'destructive', title: 'Error de Registro', description: error });
             } else {
                 toast({ title: '¡Cuenta Creada!', description: 'Ahora, completa tu perfil para postular.' });
-                setStep(2);
+                // The useEffect will handle moving to step 2
             }
         });
     };
@@ -175,10 +183,16 @@ export default function GuestJobApplicationSheet({ isOpen, onOpenChange, jobId, 
     }
 
     return (
-        <Sheet open={isOpen} onOpenChange={onOpenChange}>
+        <Sheet open={isOpen} onOpenChange={(open) => {
+            onOpenChange(open);
+            // Reset to step 1 when sheet is closed
+            if (!open) {
+                setTimeout(() => setStep(1), 300);
+            }
+        }}>
             <SheetContent className="sm:max-w-xl w-full p-0">
                  <div className="p-6">
-                    {step === 1 && (
+                    {step === 1 && !user && (
                         <SignUpStep form={signUpForm} onSubmit={handleSignUp} isSubmitting={isSubmitting} />
                     )}
                     {step === 2 && user && (
