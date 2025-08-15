@@ -44,7 +44,7 @@ const JobsCtaSection: React.FC<JobsCtaSectionProps> = ({ jobs }) => {
                     </div>
 
                     {/* Call to Action Section */}
-                    <div className="py-12 grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+                    <div className="py-12 grid grid-cols-1 md:grid-cols-2 gap-8">
                         <Card className="relative overflow-hidden bg-background shadow-lg text-center flex flex-col">
                             <div className="absolute inset-0 bg-conic-glow opacity-20"></div>
                             <CardContent className="p-8 flex flex-col items-center justify-center h-full relative flex-grow">
