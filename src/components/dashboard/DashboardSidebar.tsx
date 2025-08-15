@@ -73,7 +73,7 @@ export function DashboardSidebar() {
   ];
 
   const userNav = [
-    { href: "/dashboard/candidate-profile", label: "Mi Perfil", icon: Briefcase },
+    { href: "/dashboard/candidate-profile", label: "Mi Perfil Profesional", icon: Briefcase },
     { href: "/dashboard/my-properties", label: "Mis Propiedades", icon: HomeIcon },
     { href: "/dashboard/my-services", label: "Mis Servicios", icon: Handshake },
   ];
