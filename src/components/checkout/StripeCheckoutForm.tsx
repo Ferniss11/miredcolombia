@@ -30,7 +30,7 @@ const stripePromise = loadStripe(
   process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
 );
 
-type ItemProp = (MigrationPackage | MigrationService) & { type: 'package' | 'service' };
+type ItemProp = (MigrationPackage | MigrationService | { name: string; id: string; price: number; description?: string }) & { type: 'package' | 'service' | 'plan' };
 type CheckoutFormProps = {
   item: ItemProp;
 };
@@ -108,7 +108,7 @@ const CheckoutFormWithSteps = ({ item }: CheckoutFormProps) => {
                 comments: formData.comments,
                 itemId: item.id,
                 itemName: item.name,
-                amount: item.price,
+                amount: typeof item.price === 'number' ? item.price : 0,
                 currency: 'eur',
                 status: 'succeeded',
                 stripePaymentIntentId: paymentIntent.id,
@@ -121,8 +121,10 @@ const CheckoutFormWithSteps = ({ item }: CheckoutFormProps) => {
         setIsProcessing(false);
     };
     
-    const formatPrice = (price: number) => {
-        return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(price);
+    const formatPrice = (price: number | string) => {
+        const numericPrice = typeof price === 'string' ? parseFloat(price.replace(/[^0-9.,]/g, '').replace(',', '.')) : price;
+        if (isNaN(numericPrice)) return 'Precio no disponible';
+        return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(numericPrice);
     };
     
     // Step 4: Success Screen
@@ -326,7 +328,7 @@ const StripeCheckoutForm = ({ item }: CheckoutFormProps) => {
     const { toast } = useToast();
 
     useEffect(() => {
-        if (item) {
+        if (item && typeof item.price === 'number') {
             createPaymentIntentAction({ amount: item.price, metadata: { itemId: item.id, itemName: item.name } })
                 .then(data => {
                     if (data.error) {
@@ -341,6 +343,10 @@ const StripeCheckoutForm = ({ item }: CheckoutFormProps) => {
                     setError(`Error al preparar el pago: ${errorMessage}`);
                     toast({ variant: 'destructive', title: 'Error', description: `Error al preparar el pago: ${errorMessage}` });
                 });
+        } else if (item && typeof item.price !== 'number') {
+            const errorMessage = `El precio del artículo '${item.name}' no es un número válido.`;
+            setError(errorMessage);
+            toast({ variant: 'destructive', title: 'Error de Configuración', description: errorMessage });
         }
     }, [item, toast]);
 

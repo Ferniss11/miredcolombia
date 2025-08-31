@@ -26,6 +26,11 @@ function CheckoutPageContent() {
         );
     }
     
+     const displayPrice = typeof item.price === 'number'
+        ? new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(item.price)
+        : item.price;
+
+
     return (
          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
             <div className="space-y-4">
@@ -33,15 +38,10 @@ function CheckoutPageContent() {
                 <Card>
                     <CardHeader>
                         <CardTitle>{item.name}</CardTitle>
-                        <CardDescription>{item.description || "Plan de suscripción de Valeria"}</CardDescription>
+                        <CardDescription>{(item as any).description || "Plan de suscripción de Valeria"}</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        {typeof item.price === 'number' ? (
-                            <p className="text-2xl font-bold">{new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(item.price)}</p>
-                        ) : (
-                             <p className="text-2xl font-bold">{item.price}</p>
-                        )}
-                        
+                        <p className="text-2xl font-bold">{displayPrice}</p>
                     </CardContent>
                 </Card>
             </div>
@@ -51,7 +51,7 @@ function CheckoutPageContent() {
                      <CardDescription>Tu pago es procesado de forma segura a través de Stripe.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                   <StripeCheckoutForm item={{...item, type: 'package'}} />
+                   <StripeCheckoutForm item={{...item, type: 'package', price: typeof item.price === 'number' ? item.price : 0}} />
                 </CardContent>
             </Card>
         </div>

@@ -94,8 +94,8 @@ export const migrationServices: MigrationService[] = [
         id: 'recogida-aeropuerto',
         title: 'Recogida en Aeropuerto',
         name: 'Recogida en Aeropuerto',
-        description: 'Te esperamos en el aeropuerto y te llevamos a tu nuevo hogar.',
         price: 120,
+        description: 'Te esperamos en el aeropuerto y te llevamos a tu nuevo hogar.',
         icon: 'Plane',
         buttonColor: 'bg-indigo-600 hover:bg-indigo-700',
     },
@@ -151,7 +151,7 @@ export const valeriaPlans = [
     {
       id: 'plan_free',
       name: 'Gratis',
-      price: '0€',
+      price: 0,
       priceDetails: '/ mes',
       features: [
         '3 consultas al día',
@@ -164,7 +164,7 @@ export const valeriaPlans = [
     {
       id: 'plan_colombia',
       name: 'Plan Colombia',
-      price: '2,99€',
+      price: 2.99,
       priceDetails: '/ mes',
       features: [
         'Consultas ilimitadas',
@@ -178,7 +178,7 @@ export const valeriaPlans = [
     {
       id: 'plan_espana',
       name: 'Plan España',
-      price: '7,99€',
+      price: 7.99,
       priceDetails: '/ mes',
       features: [
         'Todo lo del Plan Colombia',

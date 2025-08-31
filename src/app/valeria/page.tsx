@@ -52,7 +52,7 @@ export default function ValeriaPage() {
                     <CardHeader className="items-center text-center">
                     <CardTitle className="font-headline text-2xl">{plan.name}</CardTitle>
                     <div className="flex items-baseline">
-                        <span className="text-4xl font-bold">{plan.price}</span>
+                        <span className="text-4xl font-bold">{typeof plan.price === 'number' ? `${plan.price.toLocaleString('es-ES', { minimumFractionDigits: 2 })}€` : plan.price}</span>
                         <span className="text-muted-foreground ml-1">{plan.priceDetails}</span>
                     </div>
                     </CardHeader>
