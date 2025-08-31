@@ -16,12 +16,13 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Image from 'next/image';
 
 const navLinks = [
-  { href: "/directorio", label: "Negocios" },
-  { href: "/inmobiliaria", label: "Inmobiliaria" },
   { href: "/empleos", label: "Empleo" },
-  { href: "/servicios", label: "Servicios" },
-  { href: "/blog", label: "Blog" },
-  { href: "/precios", label: "Precios" },
+  { href: "/vivienda", label: "Vivienda" },
+  { href: "/tramites", label: "Trámites" },
+  { href: "/packs", label: "Packs" },
+  { href: "/valeria", label: "Valeria" },
+  { href: "/guias", label: "Guías" },
+  { href: "/directorio", label: "Directorio" },
 ];
 
 export default function Header() {

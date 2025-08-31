@@ -55,7 +55,7 @@ export default function InmobiliariaPage() {
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen flex flex-col">
         <div className="text-center py-8 bg-secondary dark:bg-card">
             <h1 className="text-4xl md:text-5xl font-bold font-headline">Portal Inmobiliario</h1>
             <p className="text-lg text-muted-foreground mt-2 font-body max-w-2xl mx-auto">
@@ -74,10 +74,12 @@ export default function InmobiliariaPage() {
             </div>
         )}
 
-        <PropertyListings 
-            initialProperties={properties || []} 
-            isMapsApiLoaded={isLoaded}
-        />
+        <div className="flex-grow">
+          <PropertyListings 
+              initialProperties={properties || []} 
+              isMapsApiLoaded={isLoaded}
+          />
+        </div>
         
         <GuestPropertyCreationSheet 
             isOpen={isSheetOpen} 
