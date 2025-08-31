@@ -1,3 +1,4 @@
+
 # Hoja de Ruta Técnica: Reestructuración de MiRedColombia (2024-2025)
 
 ## 1. Visión Estratégica y Técnica
@@ -20,9 +21,9 @@
     *   Refactorizar `src/components/layout/Header.tsx` para reflejar el nuevo menú: Inicio, Empleo, Vivienda, Trámites, Packs, Valeria, Guías, Directorio.
     *   Eliminar los enlaces obsoletos.
 
-*   **1.2. Rediseñar la Página de Inicio (`/`):**
-    *   Implementar el nuevo `HeroSection` con los textos estratégicos.
-    *   Crear la sección "Cómo te ayudamos" (3 columnas).
+*   **1.2. Rediseñar la Página de Inicio (`/`) (✓):**
+    *   Implementar el nuevo `HeroSection` con los textos estratégicos. (✓)
+    *   Crear la sección "Cómo te ayudamos" (3 columnas). (✓)
     *   Crear la sección "Packs" que enlace a la página `/packs`.
     *   Crear la mini-sección de "Valeria" que enlace a la página `/valeria`.
     *   Eliminar la sección de servicios individuales.

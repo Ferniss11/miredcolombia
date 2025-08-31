@@ -1,8 +1,7 @@
 
-
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import type { PlaceDetails, BlogPost, JobsCtaSectionProps } from '@/lib/types';
 
 // Import sections directly
@@ -16,18 +15,14 @@ import TestimonialsSection from './TestimonialsSection';
 import DirectorySection from './DirectorySection';
 import JobsCtaSection from './JobsCtaSection';
 import { useChat } from '@/context/ChatContext';
+import HowWeHelpSection from './HowWeHelpSection';
+
 
 type HomePageClientProps = {
   eurToCopRate: number;
   initialBusinesses: PlaceDetails[];
   initialJobs: JobsCtaSectionProps['jobs'];
   initialPosts: BlogPost[];
-}
-
-// A new section component to be created
-const HowWeHelpSection = () => {
-    // Placeholder content until we build it out
-    return null; 
 }
 
 
