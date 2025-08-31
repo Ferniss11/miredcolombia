@@ -12,7 +12,7 @@
 
 ---
 
-## Fase 1: Cimientos y Reestructuración de la Interfaz (Core UI)
+## Fase 1: Cimientos y Reestructuración de la Interfaz (Core UI) (✓)
 
 **Objetivo:** Establecer la nueva estructura de navegación y las páginas principales.
 
@@ -36,7 +36,7 @@
 
 **Objetivo:** Implementar la página de Valeria y el sistema de suscripción.
 
-*   **2.1. Diseñar la Página de Valeria (`/valeria`):**
+*   **2.1. Diseñar la Página de Valeria (`/valeria`) (✓):**
     *   Implementar la sección de introducción.
     *   Diseñar las tarjetas de planes (Gratis, Plan Colombia, Plan España) con sus características y precios.
     *   El CTA "Empieza ahora" debe llevar al usuario al flujo de registro o al chat si ya está logueado.
