@@ -3,16 +3,12 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import StripeCheckoutForm from "@/components/checkout/StripeCheckoutForm";
-import type { MigrationPackage, MigrationService, PurchaseableItem, PlaceDetails, BlogPost, JobsCtaSectionProps } from '@/lib/types';
+import type { PlaceDetails, BlogPost, JobsCtaSectionProps } from '@/lib/types';
 
 // Import sections directly
 import HeroSection from './HeroSection';
 import AboutSection from './AboutSection';
 import StepsSection from './StepsSection';
-import PackagesSection from './PackagesSection';
-import ServicesSection from './ServicesSection';
 import AiAssistantSection from './AiAssistantSection';
 import BlogSection from './BlogSection';
 import BusinessSection from './BusinessSection';
@@ -28,48 +24,30 @@ type HomePageClientProps = {
   initialPosts: BlogPost[];
 }
 
-export default function HomePageClient({ eurToCopRate, initialBusinesses, initialJobs, initialPosts }: HomePageClientProps) {
-  const [isCheckoutOpen, setCheckoutOpen] = useState(false);
-  const [selectedItem, setSelectedItem] = useState<PurchaseableItem | null>(null);
-  
-  const { openChat } = useChat();
+// A new section component to be created
+const HowWeHelpSection = () => {
+    // Placeholder content until we build it out
+    return null; 
+}
 
-  const handlePurchaseClick = (item: MigrationPackage | MigrationService, type: 'package' | 'service') => {
-    setSelectedItem({ ...item, type });
-    setCheckoutOpen(true);
-  };
+
+export default function HomePageClient({ eurToCopRate, initialBusinesses, initialJobs, initialPosts }: HomePageClientProps) {
+  const { openChat } = useChat();
 
   return (
     <div className="flex flex-col min-h-[100dvh]">
       <main className="flex-1">
         <HeroSection />
+        <HowWeHelpSection />
         <StepsSection onOpenChatAssistant={openChat} />
         <AboutSection />
         <AiAssistantSection onOpenChatModal={openChat} />
-        <PackagesSection eurToCopRate={eurToCopRate} />
-        <ServicesSection eurToCopRate={eurToCopRate} />
         <JobsCtaSection jobs={initialJobs} />
         <DirectorySection businesses={initialBusinesses.slice(0, 4)} />
         <BusinessSection businesses={initialBusinesses} />
         <BlogSection posts={initialPosts} />
         <TestimonialsSection />
       </main>
-
-      <Dialog open={isCheckoutOpen} onOpenChange={setCheckoutOpen}>
-        <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Completa tu compra</DialogTitle>
-            {selectedItem && (
-                <DialogDescription>
-                    Estás a un paso de adquirir {selectedItem.name}.
-                </DialogDescription>
-            )}
-          </DialogHeader>
-          {selectedItem && (
-            <StripeCheckoutForm item={selectedItem} />
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

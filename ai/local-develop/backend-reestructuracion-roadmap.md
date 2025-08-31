@@ -16,7 +16,7 @@
 
 **Objetivo:** Establecer la nueva estructura de navegación y las páginas principales.
 
-*   **1.1. Actualizar Menú Principal:**
+*   **1.1. Actualizar Menú Principal (✓):**
     *   Refactorizar `src/components/layout/Header.tsx` para reflejar el nuevo menú: Inicio, Empleo, Vivienda, Trámites, Packs, Valeria, Guías, Directorio.
     *   Eliminar los enlaces obsoletos.
 
