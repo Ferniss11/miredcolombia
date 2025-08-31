@@ -1,3 +1,4 @@
+
 import type { SubscriptionPlan, MigrationPackage, MigrationService } from './types';
 
 
@@ -60,7 +61,7 @@ export const mockUser = {
 
 export const migrationPackages: MigrationPackage[] = [
   {
-    id: 'consultoria',
+    id: 'pack_consultoria',
     name: 'Consultoría Inicial',
     price: 39,
     description: "Resuelve tus dudas con un experto y empieza con seguridad.",
@@ -69,7 +70,7 @@ export const migrationPackages: MigrationPackage[] = [
     textColor: '',
   },
   {
-    id: 'onboarding',
+    id: 'pack_onboarding',
     name: 'Onboarding en España',
     price: 0, // El precio se gestiona con el partner
     description: "Te recibimos, te guiamos en tus primeros trámites y te acompañamos en la adaptación.",
@@ -78,7 +79,7 @@ export const migrationPackages: MigrationPackage[] = [
     textColor: '',
   },
   {
-    id: 'viaje',
+    id: 'pack_viaje',
     name: 'Viaje Completo',
     price: 0, // El precio se gestiona con el partner
     description: "Organizamos tu viaje a España con seguridad: vuelos, seguros y traslados.",
@@ -92,6 +93,7 @@ export const migrationServices: MigrationService[] = [
     {
         id: 'recogida-aeropuerto',
         title: 'Recogida en Aeropuerto',
+        name: 'Recogida en Aeropuerto',
         description: 'Te esperamos en el aeropuerto y te llevamos a tu nuevo hogar.',
         price: 120,
         icon: 'Plane',
@@ -100,6 +102,7 @@ export const migrationServices: MigrationService[] = [
     {
         id: 'homologacion-licencia',
         title: 'Homologación Licencia Conducción',
+        name: 'Homologación Licencia Conducción',
         description: 'Gestionamos el canje de tu licencia de conducir colombiana por la española.',
         price: 250,
         icon: 'FileText', // You might want a better icon like Car
@@ -108,6 +111,7 @@ export const migrationServices: MigrationService[] = [
     {
         id: 'apertura-cuenta',
         title: 'Apertura de Cuenta Bancaria',
+        name: 'Apertura de Cuenta Bancaria',
         description: 'Asesoría para abrir tu primera cuenta bancaria en España sin complicaciones.',
         price: 100,
         icon: 'CreditCard',
@@ -117,6 +121,7 @@ export const migrationServices: MigrationService[] = [
     {
         id: 'seguro-medico',
         title: 'Contratación de Seguro Médico',
+        name: 'Contratación de Seguro Médico',
         description: 'Encontramos el seguro de salud con la cobertura que necesitas al mejor precio.',
         price: 80,
         icon: 'Shield',
@@ -125,6 +130,7 @@ export const migrationServices: MigrationService[] = [
     {
         id: 'empadronamiento',
         title: 'Cita de Empadronamiento',
+        name: 'Cita de Empadronamiento',
         description: 'Agendamos tu cita y te preparamos para el trámite de empadronamiento.',
         price: 90,
         icon: 'MapPin',
@@ -133,9 +139,54 @@ export const migrationServices: MigrationService[] = [
      {
         id: 'homologacion-titulo',
         title: 'Homologación de Título',
+        name: 'Homologación de Título',
         description: 'Gestión completa para la validación de tu título profesional en España.',
         price: 350,
         icon: 'FileText',
         buttonColor: 'bg-blue-600 hover:bg-blue-700',
+    },
+];
+
+export const valeriaPlans = [
+    {
+      id: 'plan_free',
+      name: 'Gratis',
+      price: '0€',
+      priceDetails: '/ mes',
+      features: [
+        '3 consultas al día',
+        'Respuestas básicas de la base de conocimiento',
+        'Acceso al chat 24/7',
+      ],
+      cta: 'Empieza Gratis',
+      variant: 'outline'
+    },
+    {
+      id: 'plan_colombia',
+      name: 'Plan Colombia',
+      price: '2,99€',
+      priceDetails: '/ mes',
+      features: [
+        'Consultas ilimitadas',
+        'Respuestas extendidas y detalladas',
+        'Acceso a checklists descargables',
+        'Generación de documentos básicos en PDF',
+      ],
+      cta: 'Elegir Plan Colombia',
+       variant: 'default'
+    },
+    {
+      id: 'plan_espana',
+      name: 'Plan España',
+      price: '7,99€',
+      priceDetails: '/ mes',
+      features: [
+        'Todo lo del Plan Colombia',
+        'Alertas de empleo personalizadas',
+        'Alertas de vivienda según tus criterios',
+        'Acceso a todas las guías premium',
+      ],
+      cta: 'Elegir Plan España',
+      variant: 'default'
     },
 ];
