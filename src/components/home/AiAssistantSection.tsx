@@ -3,11 +3,12 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Bot, MessageCircle, Lightbulb, PlayCircle } from "lucide-react";
+import { Bot, MessageCircle, Lightbulb, PlayCircle, Package } from "lucide-react";
 import RealTimeClocks from "@/components/layout/RealTimeClocks";
 import { cn } from "@/lib/utils";
 import Image from 'next/image';
 import VideoModal from "../ui/video-modal";
+import Link from "next/link";
 
 const migrationTips = [
     "Recuerda apostillar todos tus documentos oficiales en Colombia antes de viajar.",
@@ -65,19 +66,21 @@ export default function AiAssistantSection({ onOpenChatModal }: { onOpenChatModa
                                />
                             </div>
                             <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl font-headline">
-                                Conoce a Valeria, tu Asistente IA en Mi Red Colombia
+                                Con Valeria nunca estarás solo
                             </h2>
                             <p className="max-w-xl text-muted-foreground md:text-xl/relaxed font-body">
-                                Disponible 24/7, Valeria es la inteligencia artificial de Mi Red Colombia lista para ayudarte en cualquier momento. Responde al instante tus dudas sobre visados, trámites, empleo, vivienda y mucho más, para que tu proceso de venir o vivir en España sea más fácil y rápido.
+                                Tu asesora IA 24/7. Gratis para empezar, y con planes Premium que incluyen alertas de empleo, vivienda y guías exclusivas para que tu proceso sea aún más fácil.
                             </p>
                             <div className="flex flex-col sm:flex-row gap-4">
-                                <Button size="lg" onClick={onOpenChatModal}>
+                                <Button size="lg" variant="outline" onClick={onOpenChatModal}>
                                     <MessageCircle className="mr-2 h-5 w-5" />
-                                    Chatea con Valeria Ahora
+                                    Probar Gratis
                                 </Button>
-                                 <Button size="lg" variant="outline" onClick={() => setVideoModalOpen(true)}>
-                                    <PlayCircle className="mr-2 h-5 w-5" />
-                                    Ver Video de Presentación
+                                 <Button asChild size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground">
+                                    <Link href="/valeria">
+                                        <Package className="mr-2 h-5 w-5" />
+                                        Ver planes de Valeria
+                                    </Link>
                                 </Button>
                             </div>
                         </div>

@@ -16,6 +16,7 @@ import DirectorySection from './DirectorySection';
 import JobsCtaSection from './JobsCtaSection';
 import { useChat } from '@/context/ChatContext';
 import HowWeHelpSection from './HowWeHelpSection';
+import PackagesSection from './PackagesSection';
 
 
 type HomePageClientProps = {
@@ -34,8 +35,7 @@ export default function HomePageClient({ eurToCopRate, initialBusinesses, initia
       <main className="flex-1">
         <HeroSection />
         <HowWeHelpSection />
-        <StepsSection onOpenChatAssistant={openChat} />
-        <AboutSection />
+        <PackagesSection />
         <AiAssistantSection onOpenChatModal={openChat} />
         <JobsCtaSection jobs={initialJobs} />
         <DirectorySection businesses={initialBusinesses.slice(0, 4)} />

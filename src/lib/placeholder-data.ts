@@ -60,62 +60,31 @@ export const mockUser = {
 
 export const migrationPackages: MigrationPackage[] = [
   {
-    id: 'esencial',
-    name: 'Esencial',
-    title: 'Esencial',
-    price: 500,
-    priceCOP: '',
-    description: 'Perfecto para comenzar tu proceso migratorio con lo fundamental en España',
-    features: [
-      'Asesoría inicial personalizada (2 horas)',
-      'Revisión completa de documentos',
-      'Guía detallada de trámites básicos',
-      'Lista de verificación personalizada',
-      'Soporte por WhatsApp (horario laboral)',
-      'Recursos digitales descargables', 
-      'Gestión NIE/TIE'
-
-    ],
-    color: 'from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700',
-    textColor: 'text-green-600'
+    id: 'consultoria',
+    name: 'Consultoría Inicial',
+    price: 39,
+    description: "Resuelve tus dudas con un experto y empieza con seguridad.",
+    features: [],
+    color: '',
+    textColor: '',
   },
   {
-    id: 'vip',
-    name: 'VIP',
-    title: 'VIP',
-    price: 700,
-    priceCOP: '',
-    description: 'Acompañamiento completo durante todo tu proceso de migración',
-    features: [
-      'Todo lo del paquete Esencial',
-      'Búsqueda y orientación de vivienda',
-      'Orientación laboral y preparación de CV',
-      'Soporte telefónico prioritario',
-      'Guía de integración cultural',
-      'Seguimiento mensual por 3 meses'
-    ],
-    popular: true,
-    color: 'from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700',
-    textColor: 'text-blue-600'
+    id: 'onboarding',
+    name: 'Onboarding en España',
+    price: 0, // El precio se gestiona con el partner
+    description: "Te recibimos, te guiamos en tus primeros trámites y te acompañamos en la adaptación.",
+     features: [],
+    color: '',
+    textColor: '',
   },
   {
-    id: 'empresarial',
-    name: 'Empresarial',
-    title: 'Empresarial',
-    price: 1500,
-    priceCOP: '',
-    description: 'Servicio premium con atención personalizada y exclusiva para emprendedores colombianos',
-    features: [
-      'Todo lo del paquete Integral',
-      'Orientación para apertura de empresa',
-      'Gestor personal asignado exclusivamente',
-      'Atención prioritaria 24/7',
-      'Networking',
-      'Acompañamiento en primeros 30 días',
-      'Seguimiento por 6 meses',
-    ],
-    color: 'from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700',
-    textColor: 'text-purple-600'
+    id: 'viaje',
+    name: 'Viaje Completo',
+    price: 0, // El precio se gestiona con el partner
+    description: "Organizamos tu viaje a España con seguridad: vuelos, seguros y traslados.",
+     features: [],
+    color: '',
+    textColor: '',
   }
 ];
 
