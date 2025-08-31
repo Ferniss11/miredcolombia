@@ -47,7 +47,7 @@ const valeriaPlans = [
 
 export default function ValeriaPage() {
   return (
-    <div className="container mx-auto px-4 py-12 md:px-6">
+    <div className="container mx-auto px-4 py-12 md:py-24">
       <div className="text-center mb-12">
         <h1 className="text-4xl md:text-5xl font-bold font-headline">Valeria, tu Asistente IA</h1>
         <p className="text-lg text-muted-foreground mt-2 font-body max-w-2xl mx-auto">
