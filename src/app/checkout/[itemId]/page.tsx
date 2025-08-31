@@ -1,16 +1,19 @@
 
 'use client';
 
-import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
+import { useParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { migrationPackages, migrationServices } from '@/lib/placeholder-data';
+import { migrationPackages, migrationServices, valeriaPlans } from '@/lib/placeholder-data';
 import StripeCheckoutForm from '@/components/checkout/StripeCheckoutForm';
 import { Loader2 } from 'lucide-react';
 
-function CheckoutPageContent({ params }: { params: { itemId: string } }) {
-    const allItems = [...migrationPackages, ...migrationServices];
-    const item = allItems.find(i => i.id === params.itemId);
+function CheckoutPageContent() {
+    const params = useParams();
+    const itemId = Array.isArray(params.itemId) ? params.itemId[0] : params.itemId;
+    
+    const allItems = [...migrationPackages, ...migrationServices, ...valeriaPlans];
+    const item = allItems.find(i => i.id === itemId);
 
     if (!item) {
         return (
@@ -30,10 +33,15 @@ function CheckoutPageContent({ params }: { params: { itemId: string } }) {
                 <Card>
                     <CardHeader>
                         <CardTitle>{item.name}</CardTitle>
-                        <CardDescription>{item.description}</CardDescription>
+                        <CardDescription>{item.description || "Plan de suscripción de Valeria"}</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <p className="text-2xl font-bold">{new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(item.price)}</p>
+                        {typeof item.price === 'number' ? (
+                            <p className="text-2xl font-bold">{new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(item.price)}</p>
+                        ) : (
+                             <p className="text-2xl font-bold">{item.price}</p>
+                        )}
+                        
                     </CardContent>
                 </Card>
             </div>
@@ -50,14 +58,12 @@ function CheckoutPageContent({ params }: { params: { itemId: string } }) {
     );
 }
 
-
-export default function CheckoutPage({ params }: { params: { itemId: string } }) {
+export default function CheckoutPage() {
   return (
     <div className="container mx-auto px-4 py-12 md:px-6">
         <Suspense fallback={<div className="flex justify-center"><Loader2 className="h-8 w-8 animate-spin"/></div>}>
-            <CheckoutPageContent params={params} />
+            <CheckoutPageContent />
         </Suspense>
     </div>
   );
 }
-
