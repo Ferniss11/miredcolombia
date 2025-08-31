@@ -6,7 +6,7 @@ import { useParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { migrationPackages, migrationServices, valeriaPlans } from '@/lib/placeholder-data';
 import StripeCheckoutForm from '@/components/checkout/StripeCheckoutForm';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Check } from 'lucide-react';
 
 function CheckoutPageContent() {
     const params = useParams();
@@ -32,16 +32,26 @@ function CheckoutPageContent() {
 
 
     return (
-         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            <div className="space-y-4">
-                <h2 className="text-2xl font-bold font-headline">Completa tu Compra</h2>
-                <Card>
+         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-6xl mx-auto">
+            <div className="space-y-6">
+                <h2 className="text-3xl font-bold font-headline">Completa tu Compra</h2>
+                <Card className="bg-secondary/50">
                     <CardHeader>
-                        <CardTitle>{item.name}</CardTitle>
-                        <CardDescription>{(item as any).description || "Plan de suscripción de Valeria"}</CardDescription>
+                        <CardTitle className="text-2xl">{item.name}</CardTitle>
+                        <CardDescription>{(item as any).description || `Suscripción al ${item.name}`}</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <p className="text-2xl font-bold">{displayPrice}</p>
+                        <p className="text-3xl font-bold mb-4">{displayPrice} <span className="text-sm font-normal text-muted-foreground">{(item as any).priceDetails}</span></p>
+                        {item.features && item.features.length > 0 && (
+                             <ul className="space-y-3">
+                                {item.features.map((feature, index) => (
+                                <li key={index} className="flex items-start">
+                                    <Check className="h-5 w-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
+                                    <span>{feature}</span>
+                                </li>
+                                ))}
+                            </ul>
+                        )}
                     </CardContent>
                 </Card>
             </div>
