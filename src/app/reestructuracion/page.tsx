@@ -27,59 +27,47 @@ type Phase = {
 };
 
 async function parseRestructuringRoadmap(): Promise<Phase[]> {
-  const filePath = path.join(process.cwd(), 'ai/local-develop/backend-reestructuracion-roadmap.md');
-  const content = await fs.readFile(filePath, 'utf-8');
-  
-  const phases: Phase[] = [];
-  const lines = content.split('\n');
+    const filePath = path.join(process.cwd(), 'ai/local-develop/backend-reestructuracion-roadmap.md');
+    const content = await fs.readFile(filePath, 'utf-8');
+    
+    const phases: Phase[] = [];
+    // Split content by "---" which separates the preamble from the phases
+    const sections = content.split('---');
+    const phaseContent = sections.length > 1 ? sections.slice(1).join('---') : content;
+    
+    // Split into phases using "## Fase" as a delimiter
+    const phaseBlocks = phaseContent.split(/\n(?=## Fase \d+:)/).filter(block => block.trim() !== '');
 
-  let currentPhase: Phase | null = null;
-  let readingObjective = false;
+    for (const block of phaseBlocks) {
+        const lines = block.trim().split('\n');
+        const titleMatch = lines[0].match(/^## (Fase \d+:.+)/);
+        if (!titleMatch) continue;
 
-  for (const line of lines) {
-    const phaseMatch = line.match(/^## (Fase \d+): (.*)/);
-    if (phaseMatch) {
-      if (currentPhase) {
-        phases.push(currentPhase);
-      }
-      readingObjective = false;
-      currentPhase = {
-        title: `${phaseMatch[1]}: ${phaseMatch[2].trim()}`,
-        objective: '',
-        steps: [],
-      };
-      continue;
-    }
+        const phase: Phase = {
+            title: titleMatch[1].trim(),
+            objective: '',
+            steps: [],
+        };
 
-    if (currentPhase) {
-      if (line.trim().startsWith('**Objetivo:**')) {
-        currentPhase.objective = line.replace('**Objetivo:**', '').trim();
-        readingObjective = true;
-        continue;
-      }
-
-      if (line.trim().startsWith('*   **')) {
-        const stepMatch = line.match(/\*\s*\*\*(.*?):\*\*\s*(.*)/);
-        if (stepMatch) {
-             currentPhase.steps.push({
-                text: `${stepMatch[1]}: ${stepMatch[2]}`
-            });
-        } else {
-             currentPhase.steps.push({
-                text: line.replace('*   ','').trim()
-            });
+        let isReadingSteps = false;
+        for (let i = 1; i < lines.length; i++) {
+            const line = lines[i].trim();
+            if (line.startsWith('**Objetivo:**')) {
+                phase.objective = line.replace('**Objetivo:**', '').trim();
+                isReadingSteps = false; // Stop reading steps if objective is found
+            } else if (line.startsWith('*   **')) {
+                 // Main step
+                 phase.steps.push({ text: line.replace('*   **', '').replace('**', '').trim() });
+            } else if (line.startsWith('*   ')) {
+                 // Sub-step, intended to be part of the last main step but for simplicity we add it as its own
+                 phase.steps.push({ text: line.replace('*   ','').trim() });
+            }
         }
-        continue;
-      }
+        phases.push(phase);
     }
-  }
-
-  if (currentPhase) {
-    phases.push(currentPhase);
-  }
-
-  return phases;
+    return phases;
 }
+
 
 // --- Components ---
 const PhaseCard = ({ phase, index }: { phase: Phase; index: number }) => (
