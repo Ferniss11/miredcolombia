@@ -24,9 +24,9 @@
 *   **1.2. Rediseñar la Página de Inicio (`/`) (✓):**
     *   Implementar el nuevo `HeroSection` con los textos estratégicos. (✓)
     *   Crear la sección "Cómo te ayudamos" (3 columnas). (✓)
-    *   Crear la sección "Packs" que enlace a la página `/packs`.
-    *   Crear la mini-sección de "Valeria" que enlace a la página `/valeria`.
-    *   Eliminar la sección de servicios individuales.
+    *   Crear la sección "Packs" que enlace a la página `/packs`. (✓)
+    *   Crear la mini-sección de "Valeria" que enlace a la página `/valeria`. (✓)
+    *   Eliminar la sección de servicios individuales. (✓)
 
 *   **1.3. Crear Páginas Estructurales (Placeholders):**
     *   Crear los archivos de página para `/empleo`, `/vivienda`, `/tramites`, `/packs`, `/valeria`, y `/guias` con un diseño básico y el texto de introducción definido en el plan estratégico.
