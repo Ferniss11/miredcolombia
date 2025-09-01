@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -14,23 +13,24 @@ import {
 import { loadStripe, type StripeElementsOptions } from '@stripe/stripe-js';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, ArrowLeft, Check } from 'lucide-react';
+import { Loader2, ArrowLeft, Check, Lock } from 'lucide-react';
 import { createPaymentIntentAction, createOrderAction } from '@/lib/payment-actions';
 import { useAuth } from '@/context/AuthContext';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import type { MigrationPackage, MigrationService } from '@/lib/types';
+import type { MigrationPackage, MigrationService, ValeriaPlan } from '@/lib/types';
 import { Switch } from '../ui/switch';
 import { Textarea } from '../ui/textarea';
 import { Checkbox } from '../ui/checkbox';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 const stripePromise = loadStripe(
   process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
 );
 
-type ItemProp = (MigrationPackage | MigrationService | { name: string; id: string; price: number; description?: string }) & { type: 'package' | 'service' | 'plan' };
+type ItemProp = (MigrationPackage | MigrationService | ValeriaPlan) & { type: 'package' | 'service' | 'plan' };
 type CheckoutFormProps = {
   item: ItemProp;
 };
@@ -54,6 +54,7 @@ const CheckoutFormWithSteps = ({ item }: CheckoutFormProps) => {
     const stripe = useStripe();
     const elements = useElements();
     const { user, userProfile } = useAuth();
+    const router = useRouter();
 
     const [step, setStep] = useState(1);
     const [isProcessing, setIsProcessing] = useState(false);
@@ -88,6 +89,13 @@ const CheckoutFormWithSteps = ({ item }: CheckoutFormProps) => {
 
         setIsProcessing(true);
         setMessage(null);
+        
+        // This is only triggered from within the Sheet now, so user should exist.
+        if (!user) {
+            setMessage('Error de autenticación. Por favor, reinicia el proceso.');
+            setIsProcessing(false);
+            return;
+        }
 
         const { error, paymentIntent } = await stripe.confirmPayment({
             elements,
@@ -99,7 +107,7 @@ const CheckoutFormWithSteps = ({ item }: CheckoutFormProps) => {
         } else if (paymentIntent && paymentIntent.status === 'succeeded') {
             const formData = form.getValues();
             await createOrderAction({
-                userId: user?.uid || null,
+                userId: user.uid,
                 firstName: formData.firstName,
                 lastName: formData.lastName,
                 email: formData.email,
@@ -138,12 +146,19 @@ const CheckoutFormWithSteps = ({ item }: CheckoutFormProps) => {
                 <p className="text-muted-foreground">
                     Hemos recibido tu pedido y te enviaremos una confirmación a tu correo electrónico en breve. Si tienes alguna pregunta, no dudes en contactarnos.
                 </p>
-                <p className="text-sm text-muted-foreground pt-4">
-                    Puedes cerrar esta ventana.
-                </p>
+                 <Button onClick={() => router.push('/dashboard')}>
+                    Ir a mi Panel
+                </Button>
             </div>
         );
     }
+    
+     // If the user is logged in, we skip the info form (Step 1)
+    useEffect(() => {
+        if (user) {
+            setStep(2);
+        }
+    }, [user]);
 
     // Step 1: User Info
     if (step === 1) {
@@ -205,7 +220,6 @@ const CheckoutFormWithSteps = ({ item }: CheckoutFormProps) => {
                             <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
                                 <div className="space-y-0.5">
                                     <FormLabel>Contacto por WhatsApp</FormLabel>
-                                    <p className="text-xs text-muted-foreground">¿Podemos contactarte por WhatsApp?</p>
                                 </div>
                                 <FormControl>
                                     <Switch checked={field.value} onCheckedChange={field.onChange} />
@@ -239,7 +253,7 @@ const CheckoutFormWithSteps = ({ item }: CheckoutFormProps) => {
                             </FormControl>
                             <div className="space-y-1 leading-none">
                             <FormLabel>
-                                Acepto los <Link href="#" className="text-primary hover:underline">términos y condiciones</Link>.
+                                Acepto los <Link href="/legal/terminos" className="text-primary hover:underline">términos y condiciones</Link>.
                             </FormLabel>
                             <FormMessage />
                             </div>
@@ -268,15 +282,11 @@ const CheckoutFormWithSteps = ({ item }: CheckoutFormProps) => {
                         </div>
                         <div className="flex justify-between">
                             <span className="text-muted-foreground">Comprador:</span>
-                            <span className="font-medium">{formData.firstName} {formData.lastName}</span>
+                            <span className="font-medium">{userProfile?.name || 'Invitado'}</span>
                         </div>
                          <div className="flex justify-between">
                             <span className="text-muted-foreground">Email:</span>
-                            <span className="font-medium">{formData.email}</span>
-                        </div>
-                         <div className="flex justify-between">
-                            <span className="text-muted-foreground">Teléfono:</span>
-                            <span className="font-medium">{formData.phone}</span>
+                            <span className="font-medium">{userProfile?.email}</span>
                         </div>
                         <div className="flex justify-between font-bold text-base pt-2">
                             <span>Total a Pagar:</span>
@@ -285,7 +295,7 @@ const CheckoutFormWithSteps = ({ item }: CheckoutFormProps) => {
                     </CardContent>
                 </Card>
                 <div className="flex justify-between mt-6">
-                    <Button variant="outline" onClick={() => setStep(1)}>
+                    <Button variant="outline" onClick={() => user ? null : setStep(1)} disabled={!!user}>
                         <ArrowLeft className="mr-2 h-4 w-4" /> Volver
                     </Button>
                     <Button onClick={() => setStep(3)}>
@@ -326,10 +336,11 @@ const StripeCheckoutForm = ({ item }: CheckoutFormProps) => {
     const [clientSecret, setClientSecret] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
     const { toast } = useToast();
+    const { user } = useAuth(); // Get user from auth context
 
     useEffect(() => {
         if (item && typeof item.price === 'number') {
-            createPaymentIntentAction({ amount: item.price, metadata: { itemId: item.id, itemName: item.name } })
+            createPaymentIntentAction({ amount: item.price, metadata: { itemId: item.id, itemName: item.name, userId: user?.uid || 'guest' } })
                 .then(data => {
                     if (data.error) {
                         setError(data.error);
@@ -348,7 +359,7 @@ const StripeCheckoutForm = ({ item }: CheckoutFormProps) => {
             setError(errorMessage);
             toast({ variant: 'destructive', title: 'Error de Configuración', description: errorMessage });
         }
-    }, [item, toast]);
+    }, [item, toast, user]);
 
     if (!item) return null;
 
@@ -364,7 +375,15 @@ const StripeCheckoutForm = ({ item }: CheckoutFormProps) => {
         );
     }
 
-    const options: StripeElementsOptions = { clientSecret };
+    const options: StripeElementsOptions = { 
+        clientSecret,
+        appearance: {
+            theme: 'stripe',
+            variables: {
+                colorPrimary: '#fcc203', // ShadCN primary color
+            }
+        }
+    };
 
     return (
         <Elements options={options} stripe={stripePromise}>

@@ -1,6 +1,6 @@
-
 'use client';
 
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Check, MessageCircle } from "lucide-react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,12 +9,34 @@ import Link from "next/link";
 import Image from "next/image";
 import { useChat } from "@/context/ChatContext";
 import { valeriaPlans } from "@/lib/placeholder-data";
+import { useAuth } from "@/context/AuthContext";
+import CheckoutSheet from "@/components/checkout/CheckoutSheet";
+import type { ValeriaPlan } from '@/lib/types';
 
 
 export default function ValeriaPage() {
   const { openChat } = useChat();
+  const { user } = useAuth();
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<ValeriaPlan | null>(null);
+
+  const handlePlanSelection = (plan: ValeriaPlan) => {
+    if (!user && plan.id !== 'plan_free') {
+      setSelectedPlan(plan);
+      setIsSheetOpen(true);
+    } else {
+      // For logged-in users, or for the free plan, go to the appropriate page
+      if (plan.id === 'plan_free') {
+        openChat();
+      } else {
+        window.location.href = `/checkout/${plan.id}`;
+      }
+    }
+  };
+
 
   return (
+    <>
     <div className="bg-secondary/50 dark:bg-card">
         <div className="container mx-auto px-4 py-12 md:py-24">
             <div className="text-center mb-8">
@@ -67,17 +89,9 @@ export default function ValeriaPage() {
                     </ul>
                     </CardContent>
                     <CardFooter>
-                        {plan.id === 'plan_free' ? (
-                            <Button className="w-full" variant={plan.variant as any} onClick={openChat}>
-                                {plan.cta}
-                            </Button>
-                        ) : (
-                            <Button asChild className="w-full" variant={plan.variant as any}>
-                                <Link href={`/checkout/${plan.id}`}>
-                                    {plan.cta}
-                                </Link>
-                            </Button>
-                        )}
+                        <Button className="w-full" variant={plan.variant as any} onClick={() => handlePlanSelection(plan)}>
+                            {plan.cta}
+                        </Button>
                     </CardFooter>
                 </Card>
                 ))}
@@ -93,5 +107,11 @@ export default function ValeriaPage() {
             </div>
         </div>
     </div>
+    <CheckoutSheet
+        isOpen={isSheetOpen}
+        onOpenChange={setIsSheetOpen}
+        plan={selectedPlan}
+    />
+    </>
   );
 }

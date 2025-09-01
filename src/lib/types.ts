@@ -196,6 +196,16 @@ export type MigrationService = {
     buttonColor: string;
 }
 
+export type ValeriaPlan = {
+    id: string;
+    name: string;
+    price: number | string;
+    priceDetails: string;
+    features: string[];
+    cta: string;
+    variant: 'default' | 'outline' | 'secondary' | 'ghost' | 'link';
+}
+
 export type Customer = {
   id?: string;
   userId?: string | null; // Link to auth user if they are registered
@@ -366,4 +376,3 @@ export type Business = import('./directory/domain/business.entity').Business;
 export type ServiceListing = import('./service-listing/domain/service-listing.entity').ServiceListing;
 export type AgentConfig = import('./chat-types').AgentConfig;
 export type JobsCtaSectionProps = { jobs: JobPosting[]; };
-
