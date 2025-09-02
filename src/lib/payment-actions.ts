@@ -1,3 +1,4 @@
+
 'use server';
 
 import { z } from 'zod';
@@ -107,7 +108,7 @@ export async function createOrderAction(
 
 
 const checkoutSessionSchema = z.object({
-  priceId: z.string(),
+  priceId: z.string().startsWith('price_'), // Ensure it's a valid Stripe Price ID
   userId: z.string(),
   userEmail: z.string().email(),
 });
@@ -134,7 +135,7 @@ export async function createSubscriptionCheckoutSessionAction(
       customer: customer.id,
       line_items: [
         {
-          price: priceId,
+          price: priceId, // Use the validated priceId from the input
           quantity: 1,
         },
       ],
@@ -142,7 +143,7 @@ export async function createSubscriptionCheckoutSessionAction(
       cancel_url: `${appUrl}/valeria?payment=cancelled`,
       metadata: {
         firebaseUID: userId,
-        priceId: priceId,
+        priceId: priceId, // Store the priceId in metadata to know which plan was purchased
       },
     });
 

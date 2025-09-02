@@ -1,5 +1,5 @@
 
-import type { SubscriptionPlan, MigrationPackage, MigrationService } from './types';
+import type { SubscriptionPlan, MigrationPackage, MigrationService, ValeriaPlan } from './types';
 
 
 export const subscriptionPlans: SubscriptionPlan[] = [
@@ -147,9 +147,9 @@ export const migrationServices: MigrationService[] = [
     },
 ];
 
-export const valeriaPlans = [
+export const valeriaPlans: ValeriaPlan[] = [
     {
-      id: 'plan_free',
+      id: 'plan_free', // Internal ID, doesn't go to Stripe
       name: 'Gratis',
       price: 0,
       priceDetails: '/ mes',
@@ -162,7 +162,7 @@ export const valeriaPlans = [
       variant: 'outline'
     },
     {
-      id: 'plan_colombia',
+      id: process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_COLOMBIA || 'price_colombia_default',
       name: 'Plan Colombia',
       price: 2.99,
       priceDetails: '/ mes',
@@ -176,7 +176,7 @@ export const valeriaPlans = [
        variant: 'default'
     },
     {
-      id: 'plan_espana',
+      id: process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_ESPANA || 'price_espana_default',
       name: 'Plan España',
       price: 7.99,
       priceDetails: '/ mes',
