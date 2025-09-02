@@ -139,7 +139,7 @@ export async function createSubscriptionCheckoutSessionAction(
           quantity: 1,
         },
       ],
-      success_url: `${appUrl}/dashboard?payment=success`,
+      success_url: `${appUrl}/dashboard/valeria?payment=success`,
       cancel_url: `${appUrl}/valeria?payment=cancelled`,
       metadata: {
         firebaseUID: userId,

@@ -1,6 +1,5 @@
 
-
-"use client";
+'use client';
 
 import {
   Sidebar,
@@ -41,9 +40,11 @@ import { ThemeToggle } from "../ui/theme-toggle";
 
 export function DashboardSidebar() {
   const pathname = usePathname();
-  const { userProfile, logout } = useAuth();
+  const { userProfile, logout, claims } = useAuth();
   const { toast } = useToast();
   const { state } = useSidebar();
+  
+  const hasValeriaPlan = claims?.valeria_plan === 'colombia' || claims?.valeria_plan === 'espana';
 
   const advertiserNav = [
     { href: "/dashboard/advertiser", label: "Resumen", icon: LayoutGrid },
@@ -74,6 +75,7 @@ export function DashboardSidebar() {
 
   const userNav = [
     { href: "/dashboard", label: "Resumen", icon: LayoutGrid },
+    ...(hasValeriaPlan ? [{ href: "/dashboard/valeria", label: "Valeria Premium", icon: Sparkles }] : []),
     { href: "/dashboard/candidate-profile", label: "Mi Perfil Profesional", icon: Briefcase },
     { href: "/dashboard/my-properties", label: "Mis Propiedades", icon: HomeIcon },
     { href: "/dashboard/my-services", label: "Mis Servicios", icon: Handshake },
