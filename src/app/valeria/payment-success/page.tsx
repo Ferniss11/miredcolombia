@@ -49,35 +49,27 @@ const Confetti = () => {
 export default function PaymentSuccessPage() {
     const { forceTokenRefresh, claims } = useAuth();
     const router = useRouter();
-    const [status, setStatus] = useState('Verificando pago...');
+    const [status, setStatus] = useState('Verificando pago y refrescando sesión...');
 
+    // Step 1: Trigger token refresh on component mount
     useEffect(() => {
-        const verifyAndRedirect = async () => {
-            setStatus('Refrescando tu sesión...');
-            await forceTokenRefresh();
+        forceTokenRefresh();
+    }, [forceTokenRefresh]);
 
-            // After refresh, check claims directly. The context will update.
-            // We give it a small delay to allow context to propagate.
-            setTimeout(() => {
-                 setStatus('Accediendo a tu plan...');
-                 // The claims object from useAuth will be updated now
-                 // We re-read it inside the timeout to get the latest value.
-                 const latestClaims = claims;
-                 const plan = latestClaims?.valeria_plan;
-
-                 if (plan === 'colombia' || plan === 'espana') {
+    // Step 2: React to claims changes and redirect
+    useEffect(() => {
+        if (claims) {
+            const plan = claims?.valeria_plan;
+            if (plan === 'colombia' || plan === 'espana') {
+                setStatus('¡Todo listo! Redirigiendo a tu panel...');
+                // Use a timeout to let the user see the success message
+                setTimeout(() => {
                     router.replace('/dashboard/valeria');
-                 } else {
-                    // Fallback in case claims didn't propagate in time
-                    // This could be improved with a more robust state management
-                    console.warn("Claim not available immediately after refresh. Retrying redirection.");
-                    router.replace('/dashboard/valeria');
-                 }
-            }, 2500); // Increased delay to ensure context updates
-        };
+                }, 1500);
+            }
+        }
+    }, [claims, router]);
 
-        verifyAndRedirect();
-    }, [forceTokenRefresh, router, claims]);
 
     return (
         <div className="flex flex-col items-center justify-center min-h-screen bg-background relative overflow-hidden">
@@ -94,4 +86,3 @@ export default function PaymentSuccessPage() {
         </div>
     );
 }
-
