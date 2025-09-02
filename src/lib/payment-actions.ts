@@ -21,7 +21,6 @@ export async function createPaymentIntentAction(
     }
     const { amount, metadata } = paymentIntentSchema.parse(input);
 
-    // Stripe expects the amount in the smallest currency unit (e.g., cents)
     const amountInCents = Math.round(amount * 100);
 
     const paymentIntent = await stripe.paymentIntents.create({
@@ -103,5 +102,54 @@ export async function createOrderAction(
       success: false,
       error: `No se pudo guardar el pedido: ${errorMessage}`,
     };
+  }
+}
+
+
+const checkoutSessionSchema = z.object({
+  priceId: z.string(),
+  userId: z.string(),
+  userEmail: z.string().email(),
+});
+
+export async function createSubscriptionCheckoutSessionAction(
+  input: z.infer<typeof checkoutSessionSchema>
+) {
+  try {
+    if (!stripe) {
+      throw new Error('Stripe no está configurado.');
+    }
+    const { priceId, userId, userEmail } = checkoutSessionSchema.parse(input);
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:9002';
+    
+    // Find or create a Stripe customer
+    let customer = await stripe.customers.list({ email: userEmail, limit: 1 }).then(res => res.data[0]);
+    if (!customer) {
+        customer = await stripe.customers.create({ email: userEmail, metadata: { firebaseUID: userId } });
+    }
+
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      mode: 'subscription',
+      customer: customer.id,
+      line_items: [
+        {
+          price: priceId,
+          quantity: 1,
+        },
+      ],
+      success_url: `${appUrl}/dashboard?payment=success`,
+      cancel_url: `${appUrl}/valeria?payment=cancelled`,
+      metadata: {
+        firebaseUID: userId,
+        priceId: priceId,
+      },
+    });
+
+    return { sessionId: session.id, error: null };
+  } catch (error) {
+    console.error('Error creating Stripe Checkout session:', error);
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+    return { sessionId: null, error: `No se pudo crear la sesión de pago: ${errorMessage}` };
   }
 }
