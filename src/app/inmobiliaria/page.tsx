@@ -1,10 +1,11 @@
+
 // src/app/inmobiliaria/page.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
 import { getPublicPropertiesAction } from "@/lib/real-estate/infrastructure/nextjs/property.server-actions";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle, PlusCircle } from "lucide-react";
+import { AlertCircle, PlusCircle, Info } from "lucide-react";
 import PropertyListings from "@/components/inmobiliaria/PropertyListings";
 import { Button } from "@/components/ui/button";
 import GuestPropertyCreationSheet from "@/components/inmobiliaria/GuestPropertyCreationSheet";
@@ -57,11 +58,18 @@ export default function InmobiliariaPage() {
   return (
     <div className="min-h-screen flex flex-col">
         <div className="text-center py-8 bg-secondary dark:bg-card">
-            <h1 className="text-4xl md:text-5xl font-bold font-headline">Portal Inmobiliario</h1>
+            <h1 className="text-4xl md:text-5xl font-bold font-headline">Portal de Vivienda</h1>
             <p className="text-lg text-muted-foreground mt-2 font-body max-w-2xl mx-auto">
-                Encuentra tu próximo hogar en España.
+                Tu nuevo hogar en España te espera. Alquila o compra de forma segura con propietarios y agencias de confianza.
             </p>
              <div className="mt-4">{renderCallToActionButton()}</div>
+             <Alert variant="default" className="max-w-md mx-auto mt-6 text-left bg-blue-50 border-blue-200">
+                <Info className="h-4 w-4 !text-blue-600" />
+                <AlertTitle className="text-blue-800">¡Atención Propietarios!</AlertTitle>
+                <AlertDescription className="text-blue-700">
+                    La publicación de inmuebles es gratuita hasta Diciembre de 2025.
+                </AlertDescription>
+            </Alert>
         </div>
 
         {error && (
