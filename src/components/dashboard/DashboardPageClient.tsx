@@ -10,6 +10,7 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '../ui/button';
 import MyApplications from './MyApplications';
+import DebugInfoCard from '../debug/DebugInfoCard';
 
 // A reusable card for quick actions
 const ActionCard = ({ title, description, icon: Icon, href }: { title: string, description: string, icon: React.ElementType, href: string }) => (
@@ -34,7 +35,7 @@ const ActionCard = ({ title, description, icon: Icon, href }: { title: string, d
 );
 
 export default function DashboardPageClient() {
-  const { user, userProfile, loading } = useAuth();
+  const { user, userProfile, loading, claims } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const customToken = searchParams.get('customToken');
@@ -94,6 +95,12 @@ export default function DashboardPageClient() {
       </div>
 
       <MyApplications />
+
+      <div className="grid gap-6 md:grid-cols-2 pt-8">
+        <DebugInfoCard title="Auth User Object" description="Datos del usuario desde Firebase Authentication." data={user} />
+        <DebugInfoCard title="User Profile (Firestore)" description="Datos del perfil desde Firestore." data={userProfile} />
+        <DebugInfoCard title="Auth Token Claims" description="Claims decodificados del token de autenticación (incluye el rol)." data={claims} />
+      </div>
     </div>
   );
 }
