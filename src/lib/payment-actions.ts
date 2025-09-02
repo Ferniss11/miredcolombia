@@ -3,8 +3,8 @@
 
 import { z } from 'zod';
 import { stripe } from '@/lib/stripe';
-import { createOrder } from '@/services/order.service';
 import { getOrCreateCustomer } from '@/services/customer.service';
+import { createOrder } from '@/services/order.service';
 
 const paymentIntentSchema = z.object({
   amount: z.number().positive(),

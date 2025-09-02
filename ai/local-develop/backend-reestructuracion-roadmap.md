@@ -12,7 +12,7 @@
 
 ---
 
-## Fase 1: Cimientos y Reestructuración de la Interfaz (Core UI) (✓)
+## Fase 1: Cimientos y Reestructuración de la Interfaz (Core UI) (✓ Completada)
 
 **Objetivo:** Establecer la nueva estructura de navegación y las páginas principales.
 
@@ -32,7 +32,7 @@
 
 ---
 
-## Fase 2: Desarrollo del Ecosistema de Valeria (Monetización)
+## Fase 2: Desarrollo del Ecosistema de Valeria (Monetización) (✓ COMPLETADA)
 
 **Objetivo:** Implementar la página de Valeria y el sistema de suscripción.
 
@@ -41,15 +41,30 @@
     *   Diseñar las tarjetas de planes (Gratis, Plan Colombia, Plan España) con sus características y precios.
     *   El CTA "Empieza ahora" debe llevar al usuario al flujo de registro o al chat si ya está logueado.
 
-*   **2.2. Integración con Stripe para Suscripciones:**
-    *   Configurar productos y precios en Stripe para los planes de Valeria.
-    *   Crear un webhook para recibir actualizaciones de Stripe (ej. `subscription.created`, `subscription.updated`).
-    *   Implementar una `server action` que cree una sesión de Stripe Checkout cuando un usuario elige un plan.
+*   **2.2. Integración con Stripe para Suscripciones (✓):**
+    *   Configurar productos y precios en Stripe para los planes de Valeria. (✓)
+    *   Crear un webhook para recibir actualizaciones de Stripe (`checkout.session.completed`). (✓)
+    *   Implementar una `server action` que cree una sesión de Stripe Checkout cuando un usuario elige un plan. (✓)
 
-*   **2.3. Lógica de Acceso por Roles (Valeria):**
-    *   Modificar el `AuthContext` y el `UserController` para manejar un nuevo tipo de rol o claim `valeria_plan: 'free' | 'colombia' | 'espana'`.
-    *   El webhook de Stripe debe actualizar este claim en Firebase Auth.
-    *   El backend del chat de Valeria (`migration-chat-flow`) debe verificar este claim para dar respuestas básicas o extendidas.
+*   **2.3. Lógica de Acceso por Roles (Valeria) (✓):**
+    *   Modificar el `AuthContext` y el `UserController` para manejar un nuevo tipo de rol o claim `valeria_plan: 'free' | 'colombia' | 'espana'`. (✓)
+    *   El webhook de Stripe debe actualizar este claim en Firebase Auth. (✓)
+    *   El backend del chat de Valeria (`migration-chat-flow`) debe verificar este claim para dar respuestas básicas o extendidas. (✓)
+
+---
+
+## Fase 2.5: Sistema de Órdenes y Contabilidad (PRÓXIMOS PASOS)
+
+**Objetivo:** Crear un registro persistente de todas las transacciones (suscripciones y pagos únicos) para la contabilidad y gestión de la plataforma.
+
+*   **Crear Entidades `Customer` y `Order`:**
+    *   Definir la entidad `Customer` para almacenar datos de los compradores (registrados o invitados).
+    *   Definir la entidad `Order` para registrar cada transacción, vinculando el cliente, el producto y el ID de pago de Stripe.
+*   **Implementar Repositorios y Casos de Uso:**
+    *   Crear `CustomerRepository` y `OrderRepository` en Firestore.
+    *   Implementar un `CreateOrderUseCase` que encapsule la lógica de negocio para crear una nueva orden.
+*   **Integrar en el Flujo de Pago:**
+    *   Modificar el `StripeCheckoutForm` y las `payment-actions` para que, tras un pago exitoso, se llame al `CreateOrderUseCase` y se guarde un registro de la orden en la base de datos.
 
 ---
 

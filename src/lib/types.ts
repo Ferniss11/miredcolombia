@@ -204,7 +204,7 @@ export type ValeriaPlan = {
     features: string[];
     cta: string;
     variant: 'default' | 'outline' | 'secondary' | 'ghost' | 'link';
-}
+};
 
 export type Customer = {
   id?: string;
