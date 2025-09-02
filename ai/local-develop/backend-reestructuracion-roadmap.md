@@ -72,21 +72,21 @@
 
 **Objetivo:** Adaptar los portales de Empleo, Vivienda y Directorio al nuevo modelo de negocio (gratis hasta Dic 2025, de pago después).
 
-*   **3.1. Portal de Empleo (`/empleo`):**
-    *   Actualizar la página con los nuevos textos de introducción y CTAs para Empresas y Trabajadores.
-    *   Añadir una nota visual clara en el formulario de publicación de ofertas: "Publicación gratuita hasta Diciembre de 2025".
+*   **3.1. Portal de Empleo (`/empleo`) (✓):**
+    *   Actualizar la página con los nuevos textos de introducción y CTAs para Empresas y Trabajadores. (✓)
+    *   Añadir una nota visual clara en el formulario de publicación de ofertas: "Publicación gratuita hasta Diciembre de 2025". (✓)
 
-*   **3.2. Portal de Vivienda (`/vivienda`):**
-    *   Actualizar la página de introducción.
-    *   Añadir nota en el formulario de publicación: "Publicación gratuita hasta Diciembre de 2025".
+*   **3.2. Portal de Vivienda (`/vivienda`) (✓):**
+    *   Actualizar la página de introducción. (✓)
+    *   Añadir nota en el formulario de publicación: "Publicación gratuita hasta Diciembre de 2025". (✓)
 
-*   **3.3. Directorio de Negocios (`/directorio`):**
-    *   Actualizar la página de introducción.
-    *   Añadir nota en el formulario de registro de negocio: "Perfil básico gratuito hasta Diciembre de 2025".
+*   **3.3. Directorio de Negocios (`/directorio`) (✓):**
+    *   Actualizar la página de introducción. (✓)
+    *   Añadir nota en el formulario de registro de negocio: "Perfil básico gratuito hasta Diciembre de 2025". (✓)
 
-*   **3.4. Backend para Futuros Pagos:**
-    *   Modificar los modelos de datos de `JobPosting`, `Property` y `Business` para incluir un campo `subscriptionId` y `plan_expires_at`.
-    *   Esto preparará el sistema para la lógica de pago que se activará en 2026.
+*   **3.4. Backend para Futuros Pagos (✓):**
+    *   Modificar los modelos de datos de `JobPosting`, `Property` y `Business` para incluir un campo `subscriptionId` y `planExpiresAt`. (✓)
+    *   Esto preparará el sistema para la lógica de pago que se activará en 2026. (✓)
 
 ---
 

@@ -69,6 +69,10 @@ export interface Property {
     joinedAt: Date;
   };
 
+  // Metadatos de la publicación y suscripción futura
+  subscriptionId?: string; // ID de la suscripción de Stripe para esta publicación
+  planExpiresAt?: Date; // Fecha de expiración de la visibilidad
+  
   // Timestamps
   createdAt: Date;
   updatedAt: Date;

@@ -1,4 +1,3 @@
-
 export interface JobPosting {
   id: string;
   title: string;
@@ -26,7 +25,9 @@ export interface JobPosting {
   applicationDeadline?: string;
   requiredSkills?: string[]; // E.g., ['React', 'Node.js', 'TypeScript']
 
-  // Metadatos de la publicación
+  // Metadatos de la publicación y suscripción futura
+  subscriptionId?: string; // ID de la suscripción de Stripe para esta publicación
+  planExpiresAt?: Date; // Fecha de expiración de la visibilidad
   creatorId: string; // Can be a UID or a guest identifier like an email
   creatorRole: 'admin' | 'advertiser' | 'guest';
   status: 'ACTIVE' | 'INACTIVE' | 'FILLED' | 'PENDING_REVIEW'; // Estado de la oferta
