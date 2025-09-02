@@ -64,11 +64,11 @@
     *   Crear `CustomerRepository` y `OrderRepository` en Firestore. (✓)
     *   Implementar un `CreateOrderUseCase` que encapsule la lógica de negocio para crear una nueva orden. (✓)
 *   **Integrar en el Flujo de Pago (✓):**
-    *   Modificar el `StripeCheckoutForm` y las `payment-actions` para que, tras un pago exitoso, se llame al `CreateOrderUseCase` y se guarde un registro de la orden en la base de datos. (✓)
+    *   Modificar el webhook de Stripe para que, tras un pago exitoso, se llame al `CreateOrderUseCase` y se guarde un registro de la orden en la base de datos. (✓)
 
 ---
 
-## Fase 3: Evolución de los Portales (Modelo Freemium a Futuro) (PRÓXIMOS PASOS)
+## Fase 3: Evolución de los Portales (Modelo Freemium a Futuro) (✓ COMPLETADA)
 
 **Objetivo:** Adaptar los portales de Empleo, Vivienda y Directorio al nuevo modelo de negocio (gratis hasta Dic 2025, de pago después).
 
@@ -90,21 +90,32 @@
 
 ---
 
-## Fase 4: Contenido y Marketing Automation
+## Fase 4: Contenido y Marketing Automation (Lead Magnets) (PRÓXIMOS PASOS)
 
-**Objetivo:** Transformar el blog en un motor de captación de leads y nutrir a los usuarios a través de email.
+**Objetivo:** Transformar la sección de "Guías" en un motor de captación de leads, ofreciendo contenido de alto valor a cambio de datos de contacto.
 
-*   **4.1. Migración de Blog a Guías:**
-    *   Renombrar la ruta `/blog` a `/guias`.
-    *   Actualizar la UI para que se presente como una colección de guías descargables en lugar de un blog tradicional.
+*   **4.1. Crear la Entidad `Guide` (Backend Hexagonal):**
+    *   **Dominio:** Definir la entidad `Guide` (`guide.entity.ts`) con campos: `id`, `title`, `description`, `coverImageUrl`, `pdfUrl`, `category`, `createdAt`.
+    *   **Dominio:** Definir el puerto `GuideRepository` (`guide.repository.ts`).
+    *   **Infraestructura:** Implementar `FirestoreGuideRepository` (`firestore-guide.repository.ts`) para la persistencia.
+    *   **Aplicación:** Crear los casos de uso necesarios (`create`, `get`, `update`, `delete`).
 
-*   **4.2. Implementar Lead Magnets:**
-    *   En cada página de guía (`/guias/[slug]`), añadir un CTA prominente: "Descarga la guía completa en PDF".
-    *   Crear un formulario modal que pida el email del usuario para enviar la guía.
+*   **4.2. Desarrollar el Gestor de Guías (Admin Dashboard):**
+    *   **UI:** Crear una nueva página en el dashboard de administrador (`/dashboard/admin/guides`).
+    *   **UI:** Implementar un formulario que permita al administrador subir una guía: título, descripción, imagen de portada (a Firebase Storage) y el archivo PDF (a Firebase Storage).
+    *   **API:** Crear los endpoints de API (`/api/guides`) y el `GuideController` para conectar la UI con los casos de uso del backend.
 
-*   **4.3. Configurar Secuencia de Email (Automation):**
-    *   Conectar el formulario de guías a una herramienta de email marketing (ej. Mailchimp, SendGrid).
-    *   Configurar la secuencia de bienvenida y nutrición descrita en el plan estratégico.
+*   **4.3. Implementar la UI Pública de Guías (`/guias`):**
+    *   **UI:** La página `/guias` mostrará las guías publicadas en un formato de tarjetas visualmente atractivo (portada, título, descripción).
+    *   **UI:** Cada tarjeta tendrá un botón "Descargar Guía". Al hacer clic, se abrirá un modal (`DownloadGuideModal`).
+    *   **UI (`DownloadGuideModal`):**
+        *   Este modal contendrá un formulario simple: `nombre`, `email` (obligatorio) y `teléfono` (opcional).
+        *   Se reutilizará el `CreateOrderUseCase` existente. Al enviar el formulario, se creará un `Customer` (si no existe) y una `Order` con `type: 'lead_magnet'`, `itemName: 'Guía: [Título de la guía]'`, y `amount: 0`.
+
+*   **4.4. Configurar la Secuencia de Email (Automation - Futuro):**
+    *   **Infraestructura:** Conectar el `CreateOrderUseCase` (cuando el tipo sea `lead_magnet`) a un servicio de email (ej. Mailchimp, SendGrid) mediante un nuevo `EmailAdapter`.
+    *   **Lógica:** Al crear una orden de tipo "guía", se añadirá el email del cliente a una lista de correo específica.
+    *   **Marketing:** Configurar en la herramienta de email marketing la secuencia de bienvenida que envía el enlace de descarga del PDF y comienza el flujo de nutrición de leads.
 
 ---
 
