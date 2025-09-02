@@ -2,43 +2,33 @@
 'use client';
 
 import { useAuth } from "@/context/AuthContext";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 
 export default function ValeriaLayout({ children }: { children: React.ReactNode }) {
-  const { user, claims, loading, forceTokenRefresh } = useAuth();
+  const { user, claims, loading } = useAuth();
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [isVerifying, setIsVerifying] = useState(true);
 
   useEffect(() => {
-    const verifyAccess = async () => {
-      if (loading) {
-        return; // Wait until Firebase Auth is initialized
-      }
+    if (loading) {
+      return; // Wait until Firebase Auth is initialized
+    }
 
-      // If just returned from payment, force a token refresh to get new claims
-      if (searchParams.get('payment') === 'success') {
-        await forceTokenRefresh();
-      }
-
-      if (!user) {
-        router.replace('/login');
-        return;
-      }
-      
-      const plan = claims?.valeria_plan;
-      if (plan !== 'colombia' && plan !== 'espana') {
-        router.replace('/valeria'); // Redirect to upgrade page if no valid plan
-      } else {
-        setIsVerifying(false); // Verification complete, user has access
-      }
-    };
-
-    verifyAccess();
+    if (!user) {
+      router.replace('/login');
+      return;
+    }
     
-  }, [user, claims, loading, router, forceTokenRefresh, searchParams]);
+    const plan = claims?.valeria_plan;
+    if (plan !== 'colombia' && plan !== 'espana') {
+      router.replace('/valeria'); // Redirect to upgrade page if no valid plan
+    } else {
+      setIsVerifying(false); // Verification complete, user has access
+    }
+    
+  }, [user, claims, loading, router]);
 
   if (loading || isVerifying) {
     return (
