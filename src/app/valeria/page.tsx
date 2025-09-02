@@ -1,6 +1,8 @@
+
 'use client';
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Check, MessageCircle } from "lucide-react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,6 +14,7 @@ import { valeriaPlans } from "@/lib/placeholder-data";
 import { useAuth } from "@/context/AuthContext";
 import CheckoutSheet from "@/components/checkout/CheckoutSheet";
 import type { ValeriaPlan } from '@/lib/types';
+import { useToast } from "@/hooks/use-toast";
 
 
 export default function ValeriaPage() {
@@ -19,6 +22,25 @@ export default function ValeriaPage() {
   const { user } = useAuth();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<ValeriaPlan | null>(null);
+
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const paymentStatus = searchParams.get('payment');
+    if (paymentStatus === 'cancelled') {
+      toast({
+        title: 'Pago Cancelado',
+        description: 'El proceso de pago fue cancelado. Puedes intentarlo de nuevo cuando quieras.',
+        variant: 'default',
+        duration: 5000,
+      });
+      // Remove the query parameter from the URL
+      router.replace('/valeria', { scroll: false });
+    }
+  }, [searchParams, router, toast]);
+
 
   const handlePlanSelection = (plan: ValeriaPlan) => {
     if (!user && plan.id !== 'plan_free') {
