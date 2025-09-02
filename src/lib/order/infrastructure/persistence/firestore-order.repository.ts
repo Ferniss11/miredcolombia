@@ -28,8 +28,8 @@ const toOrder = (doc: DocumentSnapshot): Order => {
 
 export class FirestoreOrderRepository implements OrderRepository {
     private getDb() {
-        if (!adminDb || !adminInstance.firestore.FieldValue) {
-            throw new Error('Firestore not initialized');
+        if (!adminDb || !adminInstance?.firestore?.FieldValue) {
+            throw new Error('Firestore not initialized or FieldValue is unavailable.');
         }
         return adminDb;
     }
@@ -52,7 +52,7 @@ export class FirestoreOrderRepository implements OrderRepository {
         const docRef = db.collection(CUSTOMERS_COLLECTION).doc();
         const newCustomerData = {
             ...customerData,
-            createdAt: adminInstance.firestore.FieldValue.serverTimestamp(),
+            createdAt: adminInstance!.firestore.FieldValue.serverTimestamp(),
         };
         await docRef.set(newCustomerData);
         const newDoc = await docRef.get();
@@ -64,10 +64,20 @@ export class FirestoreOrderRepository implements OrderRepository {
         const docRef = db.collection(ORDERS_COLLECTION).doc();
         const newOrderData = {
             ...orderData,
-            createdAt: adminInstance.firestore.FieldValue.serverTimestamp(),
+            createdAt: adminInstance!.firestore.FieldValue.serverTimestamp(),
         };
         await docRef.set(newOrderData);
         const newDoc = await docRef.get();
         return toOrder(newDoc);
+    }
+
+    async findAllByUserId(userId: string): Promise<Order[]> {
+        const db = this.getDb();
+        const snapshot = await db.collection(ORDERS_COLLECTION)
+            .where('userId', '==', userId)
+            .orderBy('createdAt', 'desc')
+            .get();
+        
+        return snapshot.docs.map(doc => toOrder(doc));
     }
 }

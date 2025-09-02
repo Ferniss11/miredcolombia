@@ -25,4 +25,11 @@ export interface OrderRepository {
    * @returns The newly created Order entity.
    */
   createOrder(orderData: Omit<Order, 'id' | 'createdAt'>): Promise<Order>;
+
+  /**
+   * Finds all orders placed by a specific user.
+   * @param userId - The UID of the user.
+   * @returns An array of Order entities.
+   */
+  findAllByUserId(userId: string): Promise<Order[]>;
 }
