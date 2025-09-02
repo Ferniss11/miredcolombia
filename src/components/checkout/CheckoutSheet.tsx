@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect, useTransition } from 'react';
@@ -18,6 +19,7 @@ import { Switch } from '../ui/switch';
 import { Textarea } from '../ui/textarea';
 import Link from 'next/link';
 import type { ValeriaPlan } from '@/lib/types';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 
 interface CheckoutSheetProps {
