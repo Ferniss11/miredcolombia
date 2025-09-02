@@ -4,27 +4,36 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { Loader2, CheckCircle, PartyPopper } from 'lucide-react';
+import { Loader2, CheckCircle } from 'lucide-react';
 
-// A simple confetti component
+// A simple confetti component that is safe from hydration errors
 const Confetti = () => {
+    const [confettiPieces, setConfettiPieces] = useState<React.CSSProperties[]>([]);
+
+    useEffect(() => {
+        // Generate confetti styles only on the client side
+        const newPieces = Array.from({ length: 150 }).map(() => ({
+            left: `${Math.random() * 100}%`,
+            top: `${-20 + Math.random() * -80}%`,
+            animation: `fall ${2 + Math.random() * 2}s ${Math.random() * 3}s linear infinite`,
+            '--color': `hsl(${Math.random() * 360}, 70%, 60%)`,
+        } as React.CSSProperties));
+        setConfettiPieces(newPieces);
+    }, []);
+
+    if (confettiPieces.length === 0) {
+        return null; // Render nothing on the server and initial client render
+    }
+
     return (
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-            {Array.from({ length: 150 }).map((_, i) => {
-                const style = {
-                    left: `${Math.random() * 100}%`,
-                    top: `${-20 + Math.random() * -80}%`, // Start above the screen
-                    animation: `fall ${2 + Math.random() * 2}s ${Math.random() * 3}s linear infinite`,
-                    '--color': `hsl(${Math.random() * 360}, 70%, 60%)`,
-                } as React.CSSProperties;
-                return (
-                    <div
-                        key={i}
-                        className="absolute w-2 h-2 bg-[--color] rounded-full opacity-70"
-                        style={style}
-                    ></div>
-                );
-            })}
+            {confettiPieces.map((style, i) => (
+                <div
+                    key={i}
+                    className="absolute w-2 h-2 bg-[--color] rounded-full opacity-70"
+                    style={style}
+                ></div>
+            ))}
             <style jsx>{`
                 @keyframes fall {
                     to {
@@ -52,7 +61,10 @@ export default function PaymentSuccessPage() {
             setTimeout(() => {
                  setStatus('Accediendo a tu plan...');
                  // The claims object from useAuth will be updated now
-                 const plan = claims?.valeria_plan;
+                 // We re-read it inside the timeout to get the latest value.
+                 const latestClaims = claims;
+                 const plan = latestClaims?.valeria_plan;
+
                  if (plan === 'colombia' || plan === 'espana') {
                     router.replace('/dashboard/valeria');
                  } else {
@@ -61,7 +73,7 @@ export default function PaymentSuccessPage() {
                     console.warn("Claim not available immediately after refresh. Retrying redirection.");
                     router.replace('/dashboard/valeria');
                  }
-            }, 1500); // 1.5 second delay to ensure context updates
+            }, 2500); // Increased delay to ensure context updates
         };
 
         verifyAndRedirect();
