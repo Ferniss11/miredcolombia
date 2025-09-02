@@ -53,22 +53,22 @@
 
 ---
 
-## Fase 2.5: Sistema de Órdenes y Contabilidad (PRÓXIMOS PASOS)
+## Fase 2.5: Sistema de Órdenes y Contabilidad (✓ COMPLETADA)
 
 **Objetivo:** Crear un registro persistente de todas las transacciones (suscripciones y pagos únicos) para la contabilidad y gestión de la plataforma.
 
-*   **Crear Entidades `Customer` y `Order`:**
-    *   Definir la entidad `Customer` para almacenar datos de los compradores (registrados o invitados).
-    *   Definir la entidad `Order` para registrar cada transacción, vinculando el cliente, el producto y el ID de pago de Stripe.
-*   **Implementar Repositorios y Casos de Uso:**
-    *   Crear `CustomerRepository` y `OrderRepository` en Firestore.
-    *   Implementar un `CreateOrderUseCase` que encapsule la lógica de negocio para crear una nueva orden.
-*   **Integrar en el Flujo de Pago:**
-    *   Modificar el `StripeCheckoutForm` y las `payment-actions` para que, tras un pago exitoso, se llame al `CreateOrderUseCase` y se guarde un registro de la orden en la base de datos.
+*   **Crear Entidades `Customer` y `Order` (✓):**
+    *   Definir la entidad `Customer` para almacenar datos de los compradores (registrados o invitados). (✓)
+    *   Definir la entidad `Order` para registrar cada transacción, vinculando el cliente, el producto y el ID de pago de Stripe. (✓)
+*   **Implementar Repositorios y Casos de Uso (✓):**
+    *   Crear `CustomerRepository` y `OrderRepository` en Firestore. (✓)
+    *   Implementar un `CreateOrderUseCase` que encapsule la lógica de negocio para crear una nueva orden. (✓)
+*   **Integrar en el Flujo de Pago (✓):**
+    *   Modificar el `StripeCheckoutForm` y las `payment-actions` para que, tras un pago exitoso, se llame al `CreateOrderUseCase` y se guarde un registro de la orden en la base de datos. (✓)
 
 ---
 
-## Fase 3: Evolución de los Portales (Modelo Freemium a Futuro)
+## Fase 3: Evolución de los Portales (Modelo Freemium a Futuro) (PRÓXIMOS PASOS)
 
 **Objetivo:** Adaptar los portales de Empleo, Vivienda y Directorio al nuevo modelo de negocio (gratis hasta Dic 2025, de pago después).
 
