@@ -19,6 +19,7 @@ import { TiptapEditor } from '@/components/ui/tiptap-editor';
 import { EmailSequence, EmailStep } from '@/lib/email-sequence/domain/email-sequence.entity';
 import { v4 as uuidv4 } from 'uuid';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { GenerateEmailSequenceOutput } from '@/lib/types';
 
 
 const SequenceStepSchema = z.object({
@@ -32,12 +33,14 @@ const SequenceFormSchema = z.object({
   name: z.string().min(3, "El nombre de la secuencia es muy corto."),
   trigger: z.enum(['on_guide_download', 'on_user_signup', 'on_service_purchase']),
   steps: z.array(SequenceStepSchema),
+  isActive: z.boolean().default(true), // Added isActive to the form schema
 });
+
 
 type SequenceFormValues = z.infer<typeof SequenceFormSchema>;
 
 interface SequenceFormProps {
-  sequenceToEdit?: EmailSequence | null;
+  sequenceToEdit?: EmailSequence | GenerateEmailSequenceOutput | null;
   onSuccess: () => void;
   onCancel: () => void;
 }
@@ -82,7 +85,7 @@ export default function SequenceForm({ sequenceToEdit, onSuccess, onCancel }: Se
 
   const form = useForm<SequenceFormValues>({
     resolver: zodResolver(SequenceFormSchema),
-    defaultValues: { name: '', trigger: 'on_guide_download', steps: [] },
+    defaultValues: { name: '', trigger: 'on_guide_download', steps: [], isActive: true },
   });
 
   const { fields, append, remove } = useFieldArray({
@@ -96,9 +99,10 @@ export default function SequenceForm({ sequenceToEdit, onSuccess, onCancel }: Se
         name: sequenceToEdit.name,
         trigger: sequenceToEdit.trigger,
         steps: sequenceToEdit.steps.map(s => ({...s})), // Create a copy
+        isActive: 'isActive' in sequenceToEdit ? sequenceToEdit.isActive : true,
       });
     } else {
-        form.reset({ name: '', trigger: 'on_guide_download', steps: [{ id: uuidv4(), delayMinutes: 60, subject: '', body: '<p>Hola {{firstName}},</p>' }] });
+        form.reset({ name: '', trigger: 'on_guide_download', steps: [{ id: uuidv4(), delayMinutes: 60, subject: '', body: '<p>Hola {{firstName}},</p>' }], isActive: true });
     }
   }, [sequenceToEdit, form]);
   
@@ -111,8 +115,9 @@ export default function SequenceForm({ sequenceToEdit, onSuccess, onCancel }: Se
     startTransition(async () => {
         try {
             const token = await user.getIdToken();
-            const endpoint = sequenceToEdit ? `/api/email/sequences/${sequenceToEdit.id}` : '/api/email/sequences';
-            const method = sequenceToEdit ? 'PUT' : 'POST';
+            const isEditing = sequenceToEdit && 'id' in sequenceToEdit;
+            const endpoint = isEditing ? `/api/email/sequences/${sequenceToEdit.id}` : '/api/email/sequences';
+            const method = isEditing ? 'PUT' : 'POST';
 
             const response = await fetch(endpoint, {
                 method,
@@ -123,7 +128,7 @@ export default function SequenceForm({ sequenceToEdit, onSuccess, onCancel }: Se
                 const result = await response.json();
                 throw new Error(result.error?.message || 'Error al guardar la secuencia');
             }
-            toast({ title: `Secuencia ${sequenceToEdit ? 'actualizada' : 'creada'}` });
+            toast({ title: `Secuencia ${isEditing ? 'actualizada' : 'creada'}` });
             onSuccess();
         } catch (error) {
              toast({ variant: 'destructive', title: 'Error', description: error instanceof Error ? error.message : 'Error desconocido' });
@@ -134,8 +139,8 @@ export default function SequenceForm({ sequenceToEdit, onSuccess, onCancel }: Se
   return (
     <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full overflow-hidden">
-            <ScrollArea className="flex-1 pr-6">
-                <div className="space-y-6 pb-6">
+            <ScrollArea className="flex-1 p-6">
+                <div className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField control={form.control} name="name" render={({ field }) => (<FormItem><FormLabel>Nombre de la Secuencia</FormLabel><FormControl><Input placeholder="Ej: Bienvenida Guía Empadronamiento" {...field} /></FormControl><FormMessage /></FormItem>)} />
                         <FormField control={form.control} name="trigger" render={({ field }) => (<FormItem><FormLabel>Disparador (Trigger)</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="on_guide_download">Al descargar una guía</SelectItem><SelectItem value="on_user_signup" disabled>Al registrarse un usuario</SelectItem><SelectItem value="on_service_purchase" disabled>Al comprar un servicio</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
@@ -155,11 +160,11 @@ export default function SequenceForm({ sequenceToEdit, onSuccess, onCancel }: Se
                 </div>
             </ScrollArea>
 
-            <SheetFooter className="pt-4 pb-10 mt-auto border-t bg-background">
-                <Button type="button" variant="outline" onClick={onCancel}>Cancelar</Button>
+            <SheetFooter className="p-6 mt-auto border-t bg-background">
+                <SheetClose asChild><Button type="button" variant="outline" onClick={onCancel}>Cancelar</Button></SheetClose>
                 <Button type="submit" disabled={isPending}>
                     {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    {sequenceToEdit ? 'Guardar Cambios' : 'Crear Secuencia'}
+                    {sequenceToEdit && 'id' in sequenceToEdit ? 'Guardar Cambios' : 'Crear Secuencia'}
                 </Button>
             </SheetFooter>
         </form>
