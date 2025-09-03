@@ -62,7 +62,7 @@ const EmailStepForm = ({ control, index, remove }: { control: any, index: number
                     <div className="flex items-center justify-between">
                         <FormLabel>Cuerpo del Email</FormLabel>
                         <CollapsibleTrigger asChild>
-                            <Button variant="ghost" size="sm">
+                            <Button type="button" variant="ghost" size="sm">
                                 {isEditorExpanded ? <Minimize className="h-4 w-4 mr-2" /> : <Maximize className="h-4 w-4 mr-2" />}
                                 {isEditorExpanded ? 'Contraer' : 'Expandir'}
                             </Button>
@@ -103,7 +103,7 @@ export default function SequenceForm({ sequenceToEdit, onSuccess, onCancel }: Se
   }, [sequenceToEdit, form]);
   
   const addStep = () => {
-    append({ id: uuidv4(), delayMinutes: 60, subject: '', body: '<p>Hola {{firstName}},</p>' });
+    append({ id: uuidv4(), delayMinutes: 1440, subject: '', body: '<p>Este es el siguiente paso...</p>' });
   };
   
   const onSubmit = async (values: SequenceFormValues) => {
@@ -134,7 +134,7 @@ export default function SequenceForm({ sequenceToEdit, onSuccess, onCancel }: Se
   return (
     <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full overflow-hidden">
-            <ScrollArea className="flex-1 p-6 -m-6">
+            <ScrollArea className="flex-1 pr-6">
                 <div className="space-y-6 pb-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField control={form.control} name="name" render={({ field }) => (<FormItem><FormLabel>Nombre de la Secuencia</FormLabel><FormControl><Input placeholder="Ej: Bienvenida Guía Empadronamiento" {...field} /></FormControl><FormMessage /></FormItem>)} />
@@ -155,7 +155,7 @@ export default function SequenceForm({ sequenceToEdit, onSuccess, onCancel }: Se
                 </div>
             </ScrollArea>
 
-            <SheetFooter className="py-4 mt-auto border-t">
+            <SheetFooter className="py-4 mt-auto border-t bg-background">
                 <Button type="button" variant="outline" onClick={onCancel}>Cancelar</Button>
                 <Button type="submit" disabled={isPending}>
                     {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
