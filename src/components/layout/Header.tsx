@@ -85,10 +85,10 @@ export default function Header() {
                   <Separator className="my-4" />
                   <div className="flex flex-col space-y-2">
                     <Button asChild variant="outline" onClick={() => setOpen(false)}>
-                      <Link href="#">
+                      <a href="#">
                         <MessageCircle className="mr-2 h-4 w-4" />
                         Contacto WhatsApp
-                      </Link>
+                      </a>
                     </Button>
                     {!loading && (
                         <>
