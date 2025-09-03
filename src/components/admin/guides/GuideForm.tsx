@@ -126,7 +126,7 @@ export default function GuideForm({ guideToEdit, onFormSubmit }: GuideFormProps)
                     <FormDescription>{guideToEdit ? "Sube un archivo para reemplazar la portada actual." : "Sube la imagen de portada para la guía."}</FormDescription>
                     <FormMessage />
                 </FormItem>
-            )}
+            )} />
              <FormField control={form.control} name="pdfFile" render={({ field }) => (
                 <FormItem>
                     <FormLabel>Archivo PDF de la Guía</FormLabel>
@@ -134,7 +134,7 @@ export default function GuideForm({ guideToEdit, onFormSubmit }: GuideFormProps)
                      <FormDescription>{guideToEdit ? "Sube un archivo para reemplazar el PDF actual." : "Sube el archivo PDF de la guía."}</FormDescription>
                     <FormMessage />
                 </FormItem>
-            )}
+            )} />
 
             <SheetFooter className="pt-4 sticky bottom-0 bg-background">
                 <SheetClose asChild><Button type="button" variant="outline">Cancelar</Button></SheetClose>
