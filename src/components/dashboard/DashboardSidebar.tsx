@@ -83,7 +83,7 @@ export function DashboardSidebar() {
     {
       category: 'IA y Supervisión',
       items: [
-        { href: "/dashboard/admin/agent", label: "Agente Global", icon: Bot },
+        { href: "/dashboard/admin/agent", label: "Gestión de Agentes", icon: Bot },
         { href: "/dashboard/admin/conversations", label: "Conversaciones", icon: MessageSquare },
       ]
     },
