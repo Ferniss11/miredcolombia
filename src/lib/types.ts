@@ -211,7 +211,7 @@ export type MigrationPackage = {
     name: string;
     title: string;
     price: number;
-    priceCOP: string;
+    priceCOP?: string;
     description: string;
     features: string[];
     color: string;
@@ -391,7 +391,7 @@ export const JobPostingFormSchema = z.object({
     (val) => (val === "" ? undefined : Number(val)),
     z.number().min(0, "El salario máximo no puede ser negativo.").optional()
   ),
-  jobType: z.enum(['FULL_TIME', 'PART_TIME', 'CONTRACT', 'INTERNSHIP'], {
+  jobType: z.enum(['FULL_TIME', 'PART_TIME', 'CONTRACT' | 'INTERNSHIP'], {
     errorMap: () => ({ message: "Tipo de empleo inválido." }),
   }),
   applicationUrl: z.string().url("URL de aplicación inválida.").optional().or(z.literal('')),
