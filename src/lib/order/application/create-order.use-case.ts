@@ -14,7 +14,6 @@ export type CreateOrderCustomerInput = {
     lastName: string;
     email: string;
     phone?: string;
-    // Add new fields from the quote form
     wantsWhatsAppContact?: boolean;
     comments?: string;
 };
@@ -67,8 +66,11 @@ export class CreateOrderUseCase {
     } else {
       // If customer exists, update their info if new details are provided
       const updates: Partial<Customer> = {};
+      if (customerInfo.firstName && customerInfo.firstName !== customer.firstName) updates.firstName = customerInfo.firstName;
+      if (customerInfo.lastName && customerInfo.lastName !== customer.lastName) updates.lastName = customerInfo.lastName;
       if (customerInfo.phone && customerInfo.phone !== customer.phone) updates.phone = customerInfo.phone;
       if (customerInfo.wantsWhatsAppContact !== undefined && customerInfo.wantsWhatsAppContact !== customer.wantsWhatsAppContact) updates.wantsWhatsAppContact = customerInfo.wantsWhatsAppContact;
+      if (customerInfo.comments && customerInfo.comments !== customer.comments) updates.comments = customerInfo.comments;
       if (Object.keys(updates).length > 0) {
         await this.orderRepository.updateCustomer(customer.id, updates);
       }

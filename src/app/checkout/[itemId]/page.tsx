@@ -13,11 +13,10 @@ import { useAuth } from '@/context/AuthContext';
 
 function CheckoutPageContent() {
     const params = useParams();
-    const { user, userProfile, loading } = useAuth(); // We need loading state
+    const { user, userProfile, loading } = useAuth();
 
     const itemId = Array.isArray(params.itemId) ? params.itemId[0] : params.itemId;
     
-    // Combine packages and services to find the item
     const allItems = [...migrationPackages, ...migrationServices];
     const item = allItems.find(i => i.id === itemId);
 
@@ -76,7 +75,7 @@ function CheckoutPageContent() {
                     <CardContent>
                          <StripeCheckoutForm 
                             item={{...item, type: 'package', price: typeof item.price === 'number' ? item.price : 0}}
-                            prefilledUser={user ? { name: userProfile?.name || '', email: user.email || '' } : undefined}
+                            prefilledUser={user ? { name: userProfile?.name || '', email: user.email || '', phone: userProfile?.businessProfile?.phone } : undefined}
                          />
                     </CardContent>
                 </Card>

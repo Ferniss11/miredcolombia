@@ -20,7 +20,10 @@ const createOneTimeCheckoutSchema = z.object({
   amount: z.number().positive(),
   userName: z.string(),
   userEmail: z.string(),
-  userId: z.string().optional(), // UserId is now optional for guest checkouts
+  userId: z.string().optional(),
+  phone: z.string().optional(),
+  wantsWhatsAppContact: z.boolean().optional(),
+  comments: z.string().optional(),
 });
 
 type CreateOneTimeCheckoutInput = z.infer<typeof createOneTimeCheckoutSchema>;
@@ -84,7 +87,7 @@ export async function createSubscriptionCheckoutSessionAction(input: CreateSubsc
 export async function createOneTimeCheckoutSessionAction(input: CreateOneTimeCheckoutInput) {
   try {
       const validatedInput = createOneTimeCheckoutSchema.parse(input);
-      const { itemId, itemName, amount, userName, userEmail, userId } = validatedInput;
+      const { itemId, itemName, amount, userName, userEmail, userId, phone, wantsWhatsAppContact, comments } = validatedInput;
 
       if (!stripe) throw new Error('Stripe no está configurado.');
 
@@ -96,7 +99,15 @@ export async function createOneTimeCheckoutSessionAction(input: CreateOneTimeChe
       const lastName = lastNameParts.join(' ');
 
       const order = await createOrderUseCase.execute(
-          { userId: userId || null, email: userEmail, firstName, lastName },
+          { 
+              userId: userId || null, 
+              email: userEmail, 
+              firstName, 
+              lastName, 
+              phone, 
+              wantsWhatsAppContact, 
+              comments 
+          },
           {
               itemId,
               itemName,
@@ -112,7 +123,7 @@ export async function createOneTimeCheckoutSessionAction(input: CreateOneTimeChe
       if (customers.data.length > 0 && customers.data[0].id) {
           customerId = customers.data[0].id;
       } else {
-          const newCustomer = await stripe.customers.create({ name: userName, email: userEmail, metadata: { firebaseUID: userId || '' } });
+          const newCustomer = await stripe.customers.create({ name: userName, email: userEmail, phone, metadata: { firebaseUID: userId || '' } });
           customerId = newCustomer.id;
       }
 
