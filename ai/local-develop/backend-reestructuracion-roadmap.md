@@ -141,6 +141,11 @@
     *   **Extensión de Firebase:** La extensión "Trigger Email" de Firebase se configura para escuchar nuevos documentos en la colección `mail`.
     *   **Lógica:** Cuando se crea la `Order`, el `CreateOrderUseCase` también buscará la secuencia de email asociada al `trigger` "Descarga de Guía". Luego, creará los documentos necesarios en la colección `mail` para cada paso de la secuencia, utilizando la función `delivery.schedule` de la extensión para programar los envíos futuros según el `delay` de cada paso.
 
+*   **5.5. Generador de Secuencias con IA (Bonus):**
+    *   Crear un nuevo flujo de Genkit (`generate-email-sequence.flow.ts`) capaz de generar una secuencia de emails completa (nombre, trigger, pasos, asuntos, cuerpos) a partir de un objetivo.
+    *   Añadir un nuevo modal en la UI del gestor de secuencias para que el admin pueda dar contexto a la IA (ej. "quiero una secuencia de 3 emails para dar la bienvenida a los que descarguen la guía de empadronamiento").
+    *   Al recibir la respuesta de la IA, pre-rellenar el formulario de creación de secuencias para que el admin pueda revisar y guardar.
+
 ---
 
 ## Fase 6: Contenido Audiovisual y Refinamiento Final
