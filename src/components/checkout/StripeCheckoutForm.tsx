@@ -1,6 +1,7 @@
+
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   PaymentElement,
   useStripe,
@@ -11,25 +12,31 @@ import { loadStripe, type StripeElementsOptions } from '@stripe/stripe-js';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
-import { createSubscriptionCheckoutSessionAction } from '@/lib/payment-actions';
+import { createOneTimeCheckoutSessionAction } from '@/lib/payment-actions';
 import { useAuth } from '@/context/AuthContext';
-import type { ValeriaPlan } from '@/lib/types';
+import { useRouter } from 'next/navigation';
 
 const stripePromise = loadStripe(
   process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
 );
 
-type ItemProp = ValeriaPlan & { type: 'plan' };
+type ItemProp = {
+    id: string;
+    name: string;
+    price: number;
+    type: 'package' | 'service';
+};
 type CheckoutFormProps = {
   item: ItemProp;
 };
 
-// The core payment form component
+// The core payment form component, now using Payment Intents
 const CheckoutForm = ({ item }: CheckoutFormProps) => {
     const stripe = useStripe();
     const elements = useElements();
-    const { user, userProfile } = useAuth();
+    const { user } = useAuth();
     const { toast } = useToast();
+    const router = useRouter();
 
     const [isProcessing, setIsProcessing] = useState(false);
     const [message, setMessage] = useState<string | null>(null);
@@ -45,24 +52,17 @@ const CheckoutForm = ({ item }: CheckoutFormProps) => {
         setMessage(null);
 
         try {
-            // We are now creating a subscription checkout session
-            const { sessionId, error } = await createSubscriptionCheckoutSessionAction({
-                priceId: item.id, // The item ID is now the Stripe Price ID
-                userId: user.uid,
-                userEmail: user.email || 'No email',
+            const { error } = await stripe.confirmPayment({
+                elements,
+                confirmParams: {
+                    return_url: `${window.location.origin}/valeria/payment-success`, // Re-use the success page for now
+                },
             });
 
-            if (error || !sessionId) {
-                throw new Error(error || 'No se pudo crear la sesión de checkout.');
-            }
-            
-            // Redirect to Stripe's hosted checkout page
-            const { error: stripeError } = await stripe.redirectToCheckout({
-                sessionId,
-            });
-
-            if (stripeError) {
-                throw stripeError;
+            if (error.type === "card_error" || error.type === "validation_error") {
+                setMessage(error.message || 'Error de validación desconocido.');
+            } else {
+                setMessage("Ha ocurrido un error inesperado.");
             }
 
         } catch (error) {
@@ -74,23 +74,15 @@ const CheckoutForm = ({ item }: CheckoutFormProps) => {
         }
     };
 
-     const formatPrice = (price: number | string) => {
-        const numericPrice = typeof price === 'string' ? parseFloat(price.replace(/[^0-9.,]/g, '').replace(',', '.')) : price;
-        if (isNaN(numericPrice)) return 'Precio no disponible';
-        return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(numericPrice);
-    };
-
     return (
         <form id="payment-form" onSubmit={handleSubmit}>
-            {/* The PaymentElement is no longer needed here as we use Stripe's hosted checkout page */}
-            <Button disabled={isProcessing || !stripe || !elements} id="submit" className="w-full">
+            <PaymentElement id="payment-element" />
+            <Button disabled={isProcessing || !stripe || !elements} id="submit" className="w-full mt-6">
                 <span id="button-text">
                     {isProcessing ? (
-                        <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Redirigiendo a pago...
-                        </>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     ) : (
-                        `Pagar ${formatPrice(item.price)}`
+                        `Pagar ${new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(item.price)}`
                     )}
                 </span>
             </Button>
@@ -99,12 +91,50 @@ const CheckoutForm = ({ item }: CheckoutFormProps) => {
     );
 };
 
-// Wrapper component that provides the Stripe context
+// Wrapper component that creates the PaymentIntent and provides Stripe context
 const StripeCheckoutForm = ({ item }: CheckoutFormProps) => {
-    if (!item) return null;
+    const { user } = useAuth();
+    const [clientSecret, setClientSecret] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        if (user && item) {
+            createOneTimeCheckoutSessionAction({
+                itemId: item.id,
+                itemName: item.name,
+                amount: item.price,
+                userId: user.uid,
+                userEmail: user.email!,
+            }).then(result => {
+                if (result.clientSecret) {
+                    setClientSecret(result.clientSecret);
+                } else if (result.error) {
+                    console.error("Error creating payment intent:", result.error);
+                }
+                setIsLoading(false);
+            });
+        }
+    }, [user, item]);
+    
+    if (isLoading) {
+        return (
+            <div className="flex items-center justify-center h-24">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+        );
+    }
+
+    if (!clientSecret) {
+        return <div>Error al cargar el formulario de pago. Por favor, refresca la página.</div>
+    }
+    
+    const options: StripeElementsOptions = {
+        clientSecret,
+        appearance: { theme: 'stripe' },
+    };
 
     return (
-        <Elements stripe={stripePromise}>
+        <Elements options={options} stripe={stripePromise}>
             <CheckoutForm item={item} />
         </Elements>
     );

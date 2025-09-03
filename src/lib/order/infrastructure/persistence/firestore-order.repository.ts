@@ -1,3 +1,4 @@
+
 // src/lib/order/infrastructure/persistence/firestore-order.repository.ts
 import type { Customer, Order } from '../../domain/order.entity';
 import type { OrderRepository } from '../../domain/order.repository';
@@ -65,12 +66,22 @@ export class FirestoreOrderRepository implements OrderRepository {
         const docRef = db.collection(ORDERS_COLLECTION).doc();
         const newOrderData = {
             ...orderData,
+            status: orderData.status || 'pending', // Default to pending for payment intents
             userId: orderData.userId || null, // Ensure undefined becomes null
             createdAt: adminInstance!.firestore.FieldValue.serverTimestamp(),
         };
         await docRef.set(newOrderData);
         const newDoc = await docRef.get();
         return toOrder(newDoc);
+    }
+    
+    async updateOrderStatus(orderId: string, status: Order['status'], paymentId: string): Promise<void> {
+        const db = this.getDb();
+        const docRef = db.collection(ORDERS_COLLECTION).doc(orderId);
+        await docRef.update({
+            status: status,
+            providerPaymentId: paymentId,
+        });
     }
 
     async findAllByUserId(userId: string): Promise<Order[]> {

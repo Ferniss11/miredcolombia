@@ -9,57 +9,81 @@ import { CreateOrderUseCase } from '@/lib/order/application/create-order.use-cas
 
 const WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
 
+// --- Webhook Handlers ---
+
 async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) {
+  // This handler is now specifically for SUBSCRIPTIONS created via Stripe's hosted Checkout page.
+  if (session.mode !== 'subscription') return;
+
   const userId = session.metadata?.firebaseUID;
   const priceId = session.metadata?.priceId;
   const customerDetails = session.customer_details;
 
-  if (session.mode === 'subscription' && session.payment_status === 'paid' && userId && priceId) {
+  if (session.payment_status === 'paid' && userId && priceId) {
     console.log(`[Stripe Webhook] Subscription checkout session completed for user ${userId} with price ${priceId}.`);
     
     // 1. Update user's plan via custom claims
-    const planResult = await setUserSubscriptionPlanAction(userId, priceId);
-    if (!planResult.success) {
-        console.error(`[Stripe Webhook] Failed to update user plan claim: ${planResult.error}`);
-        // Decide on error handling: maybe retry or alert administrators.
-    }
+    await setUserSubscriptionPlanAction(userId, priceId);
     
-    // 2. Create an Order record in our database for accounting
+    // 2. Create a "succeeded" Order record for accounting
     if (customerDetails?.email && session.amount_total !== null) {
-        try {
-            const orderRepository = new FirestoreOrderRepository();
-            const createOrderUseCase = new CreateOrderUseCase(orderRepository);
-
-            // Extract line item description as itemName
-            const lineItems = await stripe.checkout.sessions.listLineItems(session.id, { limit: 1 });
-            const itemName = lineItems.data[0]?.description || 'Suscripción a Valeria';
-            
-            await createOrderUseCase.execute(
-                { // Customer Info
-                    userId,
-                    email: customerDetails.email,
-                    firstName: customerDetails.name?.split(' ')[0] || '',
-                    lastName: customerDetails.name?.split(' ').slice(1).join(' ') || '',
-                    phone: customerDetails.phone || undefined,
-                },
-                { // Order Info
-                    itemId: priceId,
-                    itemName: itemName,
-                    amount: session.amount_total / 100, // Amount is in cents
-                    currency: session.currency || 'eur',
-                    provider: 'stripe',
-                    providerPaymentId: typeof session.payment_intent === 'string' ? session.payment_intent : '',
-                }
-            );
-            console.log(`[Stripe Webhook] Successfully created order record for user ${userId}.`);
-        } catch (orderError) {
-             console.error(`[Stripe Webhook] Failed to create order record for user ${userId}:`, orderError);
-        }
+      try {
+        const orderRepository = new FirestoreOrderRepository();
+        const createOrderUseCase = new CreateOrderUseCase(orderRepository);
+        const lineItems = await stripe.checkout.sessions.listLineItems(session.id, { limit: 1 });
+        const itemName = lineItems.data[0]?.description || 'Suscripción a Valeria';
+        
+        await createOrderUseCase.execute(
+          {
+            userId,
+            email: customerDetails.email,
+            firstName: customerDetails.name?.split(' ')[0] || '',
+            lastName: customerDetails.name?.split(' ').slice(1).join(' ') || '',
+            phone: customerDetails.phone || undefined,
+          },
+          {
+            itemId: priceId,
+            itemName: itemName,
+            amount: session.amount_total / 100, // Amount is in cents
+            currency: session.currency || 'eur',
+            provider: 'stripe',
+            providerPaymentId: typeof session.payment_intent === 'string' ? session.payment_intent : '',
+          }
+        );
+        console.log(`[Stripe Webhook] Successfully created order record for subscription for user ${userId}.`);
+      } catch (orderError) {
+        console.error(`[Stripe Webhook] Failed to create order record for subscription for user ${userId}:`, orderError);
+      }
     } else {
-         console.warn(`[Stripe Webhook] Could not create order record due to missing customer email or amount_total for session ${session.id}.`);
+      console.warn(`[Stripe Webhook] Could not create order record due to missing data for session ${session.id}.`);
     }
   }
 }
+
+async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent) {
+    // This handler is for one-time payments created via Payment Intents.
+    const orderId = paymentIntent.metadata.orderId;
+    if (!orderId) {
+        console.warn('[Stripe Webhook] Received payment_intent.succeeded without an orderId in metadata.');
+        return;
+    }
+
+    console.log(`[Stripe Webhook] PaymentIntent succeeded for order ${orderId}.`);
+
+    try {
+        const orderRepository = new FirestoreOrderRepository();
+        // Here we just update the status, as the order was already created with 'pending' status.
+        await orderRepository.updateOrderStatus(orderId, 'succeeded', paymentIntent.id);
+        console.log(`[Stripe Webhook] Successfully updated order ${orderId} to 'succeeded'.`);
+
+    } catch (error) {
+        console.error(`[Stripe Webhook] Failed to update order status for orderId ${orderId}:`, error);
+        // Here you might want to add logic to retry or alert administrators.
+    }
+}
+
+
+// --- Main Webhook Route ---
 
 export async function POST(req: NextRequest) {
   if (!WEBHOOK_SECRET) {
@@ -84,18 +108,27 @@ export async function POST(req: NextRequest) {
   }
 
   // Handle the event
-  switch (event.type) {
-    case 'checkout.session.completed':
-      const session = event.data.object as Stripe.Checkout.Session;
-      await handleCheckoutSessionCompleted(session);
-      break;
-    
-    // TODO: Handle other subscription events like 'customer.subscription.updated' or 'customer.subscription.deleted'
-    // to manage plan changes, cancellations, etc.
-    
-    default:
-      // console.log(`[Stripe Webhook] Unhandled event type ${event.type}`);
+  try {
+    switch (event.type) {
+      case 'checkout.session.completed':
+        await handleCheckoutSessionCompleted(event.data.object as Stripe.Checkout.Session);
+        break;
+      
+      case 'payment_intent.succeeded':
+        await handlePaymentIntentSucceeded(event.data.object as Stripe.PaymentIntent);
+        break;
+      
+      // TODO: Handle other events like 'customer.subscription.updated/deleted' for cancellations,
+      // and 'payment_intent.payment_failed' for failed one-time payments.
+      
+      default:
+        // console.log(`[Stripe Webhook] Unhandled event type ${event.type}`);
+    }
+  } catch(e) {
+     console.error(`[Stripe Webhook] Error handling event ${event.type}:`, e);
+     return NextResponse.json({ error: `Webhook handler failed: ${(e as Error).message}` }, { status: 500 });
   }
+
 
   return NextResponse.json({ received: true });
 }

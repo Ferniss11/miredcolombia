@@ -1,3 +1,4 @@
+
 // src/lib/order/domain/order.repository.ts
 import type { Customer, Order } from './order.entity';
 
@@ -25,6 +26,16 @@ export interface OrderRepository {
    * @returns The newly created Order entity.
    */
   createOrder(orderData: Omit<Order, 'id' | 'createdAt'>): Promise<Order>;
+
+  /**
+   * Updates the status of an existing order.
+   * @param orderId - The ID of the order to update.
+   * @param status - The new status of the order.
+   * @param paymentId - The payment provider's ID for the transaction.
+   * @returns A promise that resolves when the update is complete.
+   */
+  updateOrderStatus(orderId: string, status: Order['status'], paymentId: string): Promise<void>;
+
 
   /**
    * Finds all orders placed by a specific user.
