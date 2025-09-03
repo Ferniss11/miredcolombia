@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -59,22 +60,29 @@ export function DashboardSidebar() {
     { href: "/dashboard/advertiser/profile", label: "Perfil", icon: User },
   ];
 
+  // Reordered Admin Nav for better workflow
   const adminNav = [
+    // Core Management
     { href: "/dashboard/admin", label: "Resumen", icon: LayoutGrid },
     { href: "/dashboard/admin/users", label: "Usuarios", icon: UsersIcon },
+    // Content & Leads
+    { href: "/dashboard/admin/content", label: "Contenido IA", icon: Sparkles },
+    { href: "/dashboard/admin/blog", label: "Blog", icon: FileText },
     { href: "/dashboard/admin/guides", label: "Guías", icon: BookOpen },
     { href: "/dashboard/admin/email-sequences", label: "Secuencias Email", icon: Mails },
+    // AI & Monitoring
+    { href: "/dashboard/admin/agent", label: "Agente Global", icon: Bot },
+    { href: "/dashboard/admin/conversations", label: "Conversaciones", icon: MessageSquare },
+    // Portals Management
+    { href: "/dashboard/admin/directory", label: "Directorio", icon: Building },
     { href: "/dashboard/jobs", label: "Empleos", icon: Briefcase },
     { href: "/dashboard/my-properties", label: "Propiedades", icon: HomeIcon },
     { href: "/dashboard/my-services", label: "Servicios", icon: Handshake },
-    { href: "/dashboard/admin/blog", label: "Blog", icon: FileText },
-    { href: "/dashboard/admin/content", label: "Contenido IA", icon: Sparkles },
-    { href: "/dashboard/admin/agent", label: "Agente Global", icon: Bot },
-    { href: "/dashboard/admin/conversations", label: "Conversaciones", icon: MessageSquare },
-    { href: "/dashboard/admin/directory", label: "Directorio", icon: Building },
+    // Platform Settings
     { href: "/dashboard/admin/economics", label: "IA Económico", icon: Scale },
     { href: "/dashboard/admin/debug", label: "Depuración", icon: Bug },
   ];
+
 
   const userNav = [
     { href: "/dashboard", label: "Resumen", icon: LayoutGrid },
@@ -112,7 +120,7 @@ export function DashboardSidebar() {
     <Sidebar>
       <SidebarHeader>
         <div className="flex items-center gap-3 overflow-hidden">
-          <Image src="https://firebasestorage.googleapis.com/v0/b/colombia-en-esp.firebasestorage.app/o/web%2FLOGO.png?alt=media&token=86f8e9f6-587a-4cb6-bae1-15b0c815f22b" alt="Mi Red Colombia Logo" width={40} height={40} className="rounded-md shrink-0"/>
+          <Image src="https://firebasestorage.googleapis.com/v0/b/colombia-en-esp.firebasestorage.app/o/web%2FLOGO.png?alt=media&token=86f8e9f6-587a-4cb6-bae1-15b0c815f22b" alt="Mi Red Colombia Logo" width={32} height={32} className="rounded-md shrink-0"/>
           <div style={{ display: state === 'collapsed' ? 'none' : 'block' }}>
             <h3 className="font-semibold text-lg font-headline truncate">Mi Red Colombia</h3>
             <p className="text-xs text-muted-foreground truncate">Panel de {getRoleDisplayName()}</p>
