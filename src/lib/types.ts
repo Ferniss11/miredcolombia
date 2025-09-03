@@ -95,7 +95,7 @@ const SequenceTriggerSchema = z.enum(['on_guide_download', 'on_user_signup', 'on
 
 export const GenerateEmailSequenceInputSchema = z.object({
   objective: z.string().describe('The main goal of the email sequence (e.g., "Welcome sequence for new users who downloaded the empadronamiento guide").'),
-  numSteps: z.number().int().min(1).max(7).describe('The desired number of emails in the sequence.'),
+  numSteps: z.coerce.number().int().min(1, "Debe ser al menos 1").max(7, "No puede exceder 7"),
   tone: z.enum(['Amigable', 'Formal', 'Persuasivo', 'Informativo']).describe('The desired tone of voice for the emails.'),
   additionalInfo: z.string().optional().describe('Any other key information or context to include in the emails (e.g., "Mention a 10% discount on our services in the last email").'),
   model: z.string().optional().describe("The AI model to use for generation.").default('googleai/gemini-1.5-pro-latest'),

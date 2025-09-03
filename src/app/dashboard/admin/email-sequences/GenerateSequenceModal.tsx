@@ -57,7 +57,7 @@ export default function GenerateSequenceModal({ isOpen, onOpenChange, onSubmit, 
                 <FormField control={form.control} name="numSteps" render={({ field }) => (
                     <FormItem>
                         <FormLabel>Nº de Emails</FormLabel>
-                        <FormControl><Input type="number" min="1" max="7" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10))}/></FormControl>
+                        <FormControl><Input type="number" min="1" max="7" {...field} /></FormControl>
                         <FormMessage />
                     </FormItem>
                 )} />
