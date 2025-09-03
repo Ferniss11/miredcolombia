@@ -1,8 +1,7 @@
-
 // src/app/dashboard/admin/email-sequences/SequenceForm.tsx
 'use client';
 
-import React, { useTransition, useEffect } from 'react';
+import React, { useTransition, useEffect, useState } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -15,10 +14,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { SheetFooter } from '@/components/ui/sheet';
-import { Loader2, PlusCircle, Trash2, GripVertical } from 'lucide-react';
+import { Loader2, PlusCircle, Trash2, Maximize, Minimize } from 'lucide-react';
 import { TiptapEditor } from '@/components/ui/tiptap-editor';
 import { EmailSequence, EmailStep } from '@/lib/email-sequence/domain/email-sequence.entity';
 import { v4 as uuidv4 } from 'uuid';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+
 
 const SequenceStepSchema = z.object({
   id: z.string().default(() => uuidv4()),
@@ -39,6 +40,43 @@ interface SequenceFormProps {
   sequenceToEdit?: EmailSequence | null;
   onSuccess: () => void;
   onCancel: () => void;
+}
+
+const EmailStepForm = ({ control, index, remove }: { control: any, index: number, remove: (index: number) => void }) => {
+    const [isEditorExpanded, setIsEditorExpanded] = useState(false);
+    return (
+        <Card className="relative bg-muted/50">
+            <CardHeader>
+                <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center gap-2">Paso {index + 1}</CardTitle>
+                    <Button type="button" variant="ghost" size="icon" className="text-destructive" onClick={() => remove(index)}>
+                        <Trash2 className="w-4 h-4" />
+                    </Button>
+                </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                <FormField control={control} name={`steps.${index}.delayMinutes`} render={({ field }) => (<FormItem><FormLabel>Retraso desde el paso anterior (en minutos)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                <FormField control={control} name={`steps.${index}.subject`} render={({ field }) => (<FormItem><FormLabel>Asunto del Email</FormLabel><FormControl><Input placeholder="Asunto del correo" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                
+                <Collapsible open={isEditorExpanded} onOpenChange={setIsEditorExpanded}>
+                    <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                            <FormLabel>Cuerpo del Email</FormLabel>
+                            <CollapsibleTrigger asChild>
+                                <Button variant="ghost" size="sm">
+                                    {isEditorExpanded ? <Minimize className="h-4 w-4 mr-2" /> : <Maximize className="h-4 w-4 mr-2" />}
+                                    {isEditorExpanded ? 'Contraer' : 'Expandir'}
+                                </Button>
+                            </CollapsibleTrigger>
+                        </div>
+                        <CollapsibleContent>
+                             <FormField control={control} name={`steps.${index}.body`} render={({ field }) => (<FormItem><FormControl><TiptapEditor value={field.value} onChange={field.onChange} /></FormControl><FormMessage /></FormItem>)} />
+                        </CollapsibleContent>
+                    </div>
+                </Collapsible>
+            </CardContent>
+        </Card>
+    )
 }
 
 export default function SequenceForm({ sequenceToEdit, onSuccess, onCancel }: SequenceFormProps) {
@@ -63,6 +101,8 @@ export default function SequenceForm({ sequenceToEdit, onSuccess, onCancel }: Se
         trigger: sequenceToEdit.trigger,
         steps: sequenceToEdit.steps.map(s => ({...s})), // Create a copy
       });
+    } else {
+        form.reset({ name: '', trigger: 'on_guide_download', steps: [{ id: uuidv4(), delayMinutes: 60, subject: '', body: '<p>Hola {{firstName}},</p>' }] });
     }
   }, [sequenceToEdit, form]);
   
@@ -109,21 +149,7 @@ export default function SequenceForm({ sequenceToEdit, onSuccess, onCancel }: Se
               <h3 className="text-lg font-semibold mb-2">Pasos de la Secuencia</h3>
               <div className="space-y-4">
                 {fields.map((field, index) => (
-                  <Card key={field.id} className="relative bg-muted/50">
-                    <CardHeader>
-                        <div className="flex items-center justify-between">
-                            <CardTitle className="flex items-center gap-2">Paso {index + 1}</CardTitle>
-                             <Button type="button" variant="ghost" size="icon" className="text-destructive" onClick={() => remove(index)}>
-                                <Trash2 className="w-4 h-4" />
-                            </Button>
-                        </div>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <FormField control={form.control} name={`steps.${index}.delayMinutes`} render={({ field }) => (<FormItem><FormLabel>Retraso desde el paso anterior (en minutos)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                        <FormField control={form.control} name={`steps.${index}.subject`} render={({ field }) => (<FormItem><FormLabel>Asunto del Email</FormLabel><FormControl><Input placeholder="Asunto del correo" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                        <FormField control={form.control} name={`steps.${index}.body`} render={({ field }) => (<FormItem><FormLabel>Cuerpo del Email</FormLabel><FormControl><TiptapEditor value={field.value} onChange={field.onChange} /></FormControl><FormMessage /></FormItem>)} />
-                    </CardContent>
-                  </Card>
+                  <EmailStepForm key={field.id} control={form.control} index={index} remove={remove} />
                 ))}
                 <Button type="button" variant="outline" onClick={addStep} className="w-full">
                   <PlusCircle className="w-4 h-4 mr-2" /> Añadir Paso (Email)
@@ -144,3 +170,4 @@ export default function SequenceForm({ sequenceToEdit, onSuccess, onCancel }: Se
     </Form>
   );
 }
+
