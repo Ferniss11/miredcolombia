@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Plus, Edit, Trash2, MoreVertical, Loader2, Mails, ToggleRight, ToggleLeft, Sparkles } from 'lucide-react';
+import { Plus, Edit, Trash2, MoreVertical, Loader2, Mails, ToggleRight, ToggleLeft, Sparkles, AlertTriangle } from 'lucide-react';
 import type { EmailSequence } from '@/lib/email-sequence/domain/email-sequence.entity';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
@@ -20,6 +20,7 @@ import { generateEmailSequence } from '@/ai/flows/generate-email-sequence.flow';
 import type { GenerateEmailSequenceInput, GenerateEmailSequenceOutput } from '@/lib/types';
 import GenerateSequenceModal from './GenerateSequenceModal';
 
+const DRAFT_STORAGE_KEY = 'aiGeneratedSequenceDraft';
 
 export default function AdminEmailSequencesPage() {
     const { user } = useAuth();
@@ -32,6 +33,11 @@ export default function AdminEmailSequencesPage() {
     const [editingSequence, setEditingSequence] = useState<EmailSequence | GenerateEmailSequenceOutput | null>(null);
     const [deletingSequenceId, setDeletingSequenceId] = useState<string | null>(null);
     const [isGenerateModalOpen, setIsGenerateModalOpen] = useState(false);
+    
+    // State for handling the localStorage draft
+    const [draft, setDraft] = useState<GenerateEmailSequenceOutput | null>(null);
+    const [isDraftAlertOpen, setDraftAlertOpen] = useState(false);
+
 
     const fetchSequences = React.useCallback(() => {
         if (!user) return;
@@ -47,6 +53,18 @@ export default function AdminEmailSequencesPage() {
 
     useEffect(() => {
         fetchSequences();
+        // Check for a draft in localStorage when the component mounts
+        try {
+            const savedDraft = localStorage.getItem(DRAFT_STORAGE_KEY);
+            if (savedDraft) {
+                setDraft(JSON.parse(savedDraft));
+                setDraftAlertOpen(true);
+            }
+        } catch (error) {
+            console.error("Failed to read draft from localStorage", error);
+            localStorage.removeItem(DRAFT_STORAGE_KEY);
+        }
+
     }, [fetchSequences]);
 
     const handleOpenSheetForCreate = () => {
@@ -66,6 +84,7 @@ export default function AdminEmailSequencesPage() {
     
     const handleFormSuccess = () => {
         handleSheetClose();
+        localStorage.removeItem(DRAFT_STORAGE_KEY); // Clear draft on successful save
         fetchSequences();
     };
 
@@ -107,14 +126,16 @@ export default function AdminEmailSequencesPage() {
     const handleAiGenerationSubmit = (input: GenerateEmailSequenceInput) => {
         startTransition(async () => {
             try {
-                setIsGenerateModalOpen(false); // Close the context modal
+                setIsGenerateModalOpen(false);
                 toast({ title: "Generando secuencia...", description: "La IA está trabajando en tu nueva secuencia de emails. Esto puede tardar un momento." });
                 
                 const generatedSequence = await generateEmailSequence(input);
 
                 if (generatedSequence) {
+                    // Save to localStorage before opening the sheet
+                    localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(generatedSequence));
                     setEditingSequence(generatedSequence);
-                    setIsSheetOpen(true); // Open the main edit sheet with pre-filled data
+                    setIsSheetOpen(true);
                 } else {
                     throw new Error("La IA no devolvió una secuencia válida.");
                 }
@@ -123,6 +144,20 @@ export default function AdminEmailSequencesPage() {
             }
         });
     };
+
+    const handleRestoreDraft = () => {
+        if (draft) {
+            setEditingSequence(draft);
+            setIsSheetOpen(true);
+            setDraftAlertOpen(false);
+        }
+    }
+    
+    const handleDiscardDraft = () => {
+        localStorage.removeItem(DRAFT_STORAGE_KEY);
+        setDraft(null);
+        setDraftAlertOpen(false);
+    }
 
 
     return (
@@ -199,7 +234,7 @@ export default function AdminEmailSequencesPage() {
                 </CardContent>
             </Card>
 
-            <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+            <Sheet open={isSheetOpen} onOpenChange={handleSheetClose}>
                 <SheetContent className="sm:max-w-4xl w-full p-0">
                     <SheetHeader className="p-6">
                         <SheetTitle>{editingSequence && 'id' in editingSequence ? 'Editar Secuencia' : 'Crear Nueva Secuencia'}</SheetTitle>
@@ -234,6 +269,20 @@ export default function AdminEmailSequencesPage() {
                             {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             Sí, eliminar
                         </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+            
+            {/* Draft recovery dialog */}
+             <AlertDialog open={isDraftAlertOpen} onOpenChange={setDraftAlertOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle className="flex items-center gap-2"><AlertTriangle className="text-yellow-500" />Borrador sin Guardar</AlertDialogTitle>
+                        <AlertDialogDescription>Detectamos una secuencia generada por IA que no fue guardada. ¿Quieres continuar editándola?</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogAction variant="destructive" onClick={handleDiscardDraft}>Descartar</AlertDialogAction>
+                        <AlertDialogAction onClick={handleRestoreDraft}>Sí, restaurar borrador</AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
