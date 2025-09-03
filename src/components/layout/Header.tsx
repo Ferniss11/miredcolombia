@@ -17,12 +17,12 @@ import Image from 'next/image';
 const navLinks = [
   { href: "/empleos", label: "Empleo" },
   { href: "/vivienda", label: "Vivienda" },
-  { href: "/servicios", label: "Servicios" },
   { href: "/tramites", label: "Trámites" },
   { href: "/packs", label: "Packs" },
   { href: "/valeria", label: "Valeria" },
   { href: "/guias", label: "Guías" },
   { href: "/directorio", label: "Directorio" },
+  { href: "/servicios", label: "Servicios" },
 ];
 
 export default function Header() {
