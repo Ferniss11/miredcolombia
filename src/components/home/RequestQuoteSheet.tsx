@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useTransition, useEffect } from 'react';
@@ -10,10 +9,8 @@ import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Loader2, Send, CheckCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { saveQuoteRequestAction } from '@/lib/quote-request-actions';
 import { ScrollArea } from '../ui/scroll-area';
 
 interface RequestQuoteSheetProps {
@@ -22,25 +19,10 @@ interface RequestQuoteSheetProps {
     packageName: string;
 }
 
-const services = [
-  { id: 'flights', label: 'Billetes de Avión' },
-  { id: 'health_insurance', label: 'Seguro Médico' },
-  { id: 'airport_pickup', label: 'Recogida en Aeropuerto' },
-  { id: 'nie_tie', label: 'Trámite NIE/TIE' },
-  { id: 'empadronamiento', label: 'Cita Empadronamiento' },
-  { id: 'bank_account', label: 'Apertura Cuenta Bancaria' },
-  { id: 'housing_search', label: 'Búsqueda de Vivienda' },
-  { id: 'homologation', label: 'Homologación de Título' },
-];
-
 const QuoteFormSchema = z.object({
-  name: z.string().min(2, "El nombre es requerido."),
+  firstName: z.string().min(2, "El nombre es requerido."),
   email: z.string().email("Debe ser un email válido."),
-  phone: z.string().min(7, "El teléfono es requerido."),
-  travelDate: z.string().optional(),
-  adults: z.coerce.number().min(1, 'Debe haber al menos un adulto.').optional().default(1),
-  children: z.coerce.number().min(0).optional().default(0),
-  servicesNeeded: z.array(z.string()).optional(),
+  phone: z.string().optional(),
   message: z.string().optional(),
 });
 
@@ -53,12 +35,11 @@ export default function RequestQuoteSheet({ isOpen, onOpenChange, packageName }:
 
     const form = useForm<QuoteFormValues>({
         resolver: zodResolver(QuoteFormSchema),
-        defaultValues: { name: '', email: '', phone: '', adults: 1, children: 0, servicesNeeded: [], message: '' }
+        defaultValues: { firstName: '', email: '', phone: '', message: '' }
     });
     
     useEffect(() => {
         if (!isOpen) {
-            // Reset form and success state when the sheet is closed
             setTimeout(() => {
                 form.reset();
                 setIsSuccess(false);
@@ -69,13 +50,24 @@ export default function RequestQuoteSheet({ isOpen, onOpenChange, packageName }:
     const onSubmit = (values: QuoteFormValues) => {
         startTransition(async () => {
             try {
-                const result = await saveQuoteRequestAction({ ...values, packageName });
-                if (result.success) {
-                    toast({ title: '¡Solicitud Enviada!', description: 'Nuestro equipo se pondrá en contacto contigo en breve.' });
-                    setIsSuccess(true);
-                } else {
-                    throw new Error(result.error || 'No se pudo enviar la solicitud.');
+                // We use the same endpoint as the lead magnet, but with different item details
+                const response = await fetch('/api/orders/lead-magnet', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        ...values,
+                        guideId: packageName.toLowerCase().replace(/\s/g, '_'), // e.g., 'pack_onboarding'
+                        guideTitle: `Solicitud de Presupuesto: ${packageName}`,
+                    }),
+                });
+
+                if (!response.ok) {
+                    const result = await response.json();
+                    throw new Error(result.error?.message || 'No se pudo enviar la solicitud.');
                 }
+                
+                toast({ title: '¡Solicitud Enviada!', description: 'Nuestro equipo se pondrá en contacto contigo en breve.' });
+                setIsSuccess(true);
             } catch (error) {
                 const errorMessage = error instanceof Error ? error.message : 'Error desconocido.';
                 toast({ variant: 'destructive', title: 'Error', description: errorMessage });
@@ -107,38 +99,15 @@ export default function RequestQuoteSheet({ isOpen, onOpenChange, packageName }:
                         <form onSubmit={form.handleSubmit(onSubmit)} className="flex-1 flex flex-col overflow-hidden">
                             <ScrollArea className="flex-1 p-6">
                                 <div className="space-y-6">
-                                    <FormField control={form.control} name="name" render={({ field }) => (<FormItem><FormLabel>Nombre Completo</FormLabel><FormControl><Input placeholder="Tu nombre y apellidos" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                    <FormField control={form.control} name="firstName" render={({ field }) => (<FormItem><FormLabel>Nombre Completo</FormLabel><FormControl><Input placeholder="Tu nombre y apellidos" {...field} /></FormControl><FormMessage /></FormItem>)} />
                                     <div className="grid grid-cols-2 gap-4">
                                         <FormField control={form.control} name="email" render={({ field }) => (<FormItem><FormLabel>Email</FormLabel><FormControl><Input placeholder="tu@email.com" {...field} /></FormControl><FormMessage /></FormItem>)} />
                                         <FormField control={form.control} name="phone" render={({ field }) => (<FormItem><FormLabel>Teléfono</FormLabel><FormControl><Input placeholder="+34 600 000 000" {...field} /></FormControl><FormMessage /></FormItem>)} />
                                     </div>
-                                    <div className="grid grid-cols-3 gap-4">
-                                        <FormField control={form.control} name="travelDate" render={({ field }) => (<FormItem><FormLabel>Fecha de Viaje</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                        <FormField control={form.control} name="adults" render={({ field }) => (<FormItem><FormLabel>Adultos</FormLabel><FormControl><Input type="number" min="1" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                        <FormField control={form.control} name="children" render={({ field }) => (<FormItem><FormLabel>Niños</FormLabel><FormControl><Input type="number" min="0" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                    </div>
-                                    <FormField control={form.control} name="servicesNeeded" render={() => (
-                                        <FormItem>
-                                            <FormLabel>Servicios de Interés</FormLabel>
-                                            <div className="grid grid-cols-2 gap-4 rounded-lg border p-4">
-                                                {services.map((item) => (
-                                                    <FormField key={item.id} control={form.control} name="servicesNeeded" render={({ field }) => (
-                                                        <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                                                            <FormControl><Checkbox checked={field.value?.includes(item.id)} onCheckedChange={(checked) => {
-                                                                return checked ? field.onChange([...(field.value || []), item.id]) : field.onChange(field.value?.filter((value) => value !== item.id))
-                                                            }} /></FormControl>
-                                                            <FormLabel className="text-sm font-normal">{item.label}</FormLabel>
-                                                        </FormItem>
-                                                    )} />
-                                                ))}
-                                            </div>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )} />
-                                    <FormField control={form.control} name="message" render={({ field }) => (<FormItem><FormLabel>Mensaje Adicional</FormLabel><FormControl><Textarea placeholder="Cuéntanos más sobre tu caso para poder ayudarte mejor." {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                    <FormField control={form.control} name="message" render={({ field }) => (<FormItem><FormLabel>Mensaje Adicional</FormLabel><FormControl><Textarea placeholder="Cuéntanos más sobre tu caso para poder ayudarte mejor." rows={5} {...field} /></FormControl><FormMessage /></FormItem>)} />
                                 </div>
                             </ScrollArea>
-                            <SheetFooter className="p-6 mt-auto border-t">
+                            <SheetFooter className="p-6 mt-auto border-t bg-background">
                                 <Button type="submit" className="w-full" disabled={isPending}>
                                     {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
                                     Enviar Solicitud

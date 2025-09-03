@@ -10,8 +10,9 @@ const LeadMagnetSchema = z.object({
   firstName: z.string().min(2),
   email: z.string().email(),
   phone: z.string().optional(),
-  guideId: z.string().min(1),
-  guideTitle: z.string().min(1),
+  guideId: z.string().min(1), // Can be a guide ID or a package ID
+  guideTitle: z.string().min(1), // Can be guide title or package name for quote
+  message: z.string().optional(), // For quote requests
 });
 
 export class OrderController {
@@ -23,12 +24,17 @@ export class OrderController {
   }
 
   /**
-   * Handles creating an order for a lead magnet (e.g., guide download).
+   * Handles creating an order for a lead magnet (e.g., guide download or pack quote).
    * Linked to POST /api/orders/lead-magnet
    */
   async createLeadMagnetOrder(req: NextRequest): Promise<ApiResponse> {
     const json = await req.json();
     const input = LeadMagnetSchema.parse(json);
+
+    // Concatenate the user's message to the item name for context
+    const itemName = input.message 
+        ? `${input.guideTitle} (Mensaje: ${input.message})`
+        : `Guía: ${input.guideTitle}`;
 
     const newOrder = await this.createOrderUseCase.execute(
       { // Customer Info
@@ -39,7 +45,7 @@ export class OrderController {
       },
       { // Order Info
         itemId: input.guideId,
-        itemName: `Guía: ${input.guideTitle}`,
+        itemName: itemName,
         amount: 0,
         currency: 'eur',
         provider: 'lead_magnet',
