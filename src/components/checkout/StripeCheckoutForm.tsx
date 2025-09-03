@@ -18,6 +18,7 @@ import { Input } from '@/components/ui/input';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { useAuth } from '@/context/AuthContext';
 
 const stripePromise = loadStripe(
   process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
@@ -27,10 +28,11 @@ type ItemProp = {
     id: string;
     name: string;
     price: number;
-    type: 'package' | 'service' | 'plan'; // Adjusted to include 'plan'
+    type: 'package' | 'service' | 'plan'; 
 };
 type CheckoutFormWrapperProps = {
   item: ItemProp;
+  prefilledUser?: { name: string; email: string };
 };
 
 const CustomerDetailsSchema = z.object({
@@ -99,15 +101,39 @@ const CheckoutForm = ({ item, customerDetails }: { item: ItemProp, customerDetai
 };
 
 // Wrapper component for the entire checkout flow
-const StripeCheckoutForm = ({ item }: CheckoutFormWrapperProps) => {
+const StripeCheckoutForm = ({ item, prefilledUser }: CheckoutFormWrapperProps) => {
     const [isPending, startTransition] = useTransition();
     const [clientSecret, setClientSecret] = useState<string | null>(null);
-    const [customerDetails, setCustomerDetails] = useState<CustomerDetailsValues | null>(null);
+    const [customerDetails, setCustomerDetails] = useState<CustomerDetailsValues | null>(prefilledUser || null);
+    const { user } = useAuth();
+
 
     const form = useForm<CustomerDetailsValues>({
         resolver: zodResolver(CustomerDetailsSchema),
-        defaultValues: { name: '', email: '' },
+        defaultValues: { name: prefilledUser?.name || '', email: prefilledUser?.email || '' },
     });
+    
+    // Automatically trigger payment intent creation if user is already logged in
+    useEffect(() => {
+        if (prefilledUser && !clientSecret) {
+            startTransition(async () => {
+                const result = await createOneTimeCheckoutSessionAction({
+                    itemId: item.id,
+                    itemName: item.name,
+                    amount: item.price,
+                    userName: prefilledUser.name,
+                    userEmail: prefilledUser.email,
+                    userId: user?.uid,
+                });
+                if (result.clientSecret) {
+                    setClientSecret(result.clientSecret);
+                } else {
+                    console.error("Error creating payment intent:", result.error);
+                }
+            });
+        }
+    }, [prefilledUser, clientSecret, item, user?.uid]);
+
 
     const handleCustomerSubmit = async (values: CustomerDetailsValues) => {
         startTransition(async () => {
@@ -117,13 +143,13 @@ const StripeCheckoutForm = ({ item }: CheckoutFormWrapperProps) => {
                 amount: item.price,
                 userName: values.name,
                 userEmail: values.email,
+                userId: user?.uid, // Will be null for guests, which is fine
             });
             if (result.clientSecret) {
                 setCustomerDetails(values);
                 setClientSecret(result.clientSecret);
             } else {
                 console.error("Error creating payment intent:", result.error);
-                // Optionally show a toast error
             }
         });
     };
@@ -137,6 +163,14 @@ const StripeCheckoutForm = ({ item }: CheckoutFormWrapperProps) => {
             <Elements options={options} stripe={stripePromise}>
                 <CheckoutForm item={item} customerDetails={customerDetails} />
             </Elements>
+        );
+    }
+    
+    if (prefilledUser) {
+        return (
+            <div className="flex items-center justify-center">
+                <Loader2 className="h-6 w-6 animate-spin" />
+            </div>
         );
     }
 

@@ -8,9 +8,12 @@ import { migrationPackages, migrationServices } from '@/lib/placeholder-data';
 import StripeCheckoutForm from '@/components/checkout/StripeCheckoutForm';
 import { Loader2, Lock } from 'lucide-react';
 import { FaCcVisa, FaCcMastercard, FaCcStripe } from 'react-icons/fa';
+import { useAuth } from '@/context/AuthContext';
+
 
 function CheckoutPageContent() {
     const params = useParams();
+    const { user, userProfile } = useAuth();
 
     const itemId = Array.isArray(params.itemId) ? params.itemId[0] : params.itemId;
     
@@ -67,7 +70,10 @@ function CheckoutPageContent() {
                         </div>
                     </CardHeader>
                     <CardContent>
-                         <StripeCheckoutForm item={{...item, type: 'package', price: typeof item.price === 'number' ? item.price : 0}} />
+                         <StripeCheckoutForm 
+                            item={{...item, type: 'package', price: typeof item.price === 'number' ? item.price : 0}}
+                            prefilledUser={user ? { name: userProfile?.name || '', email: user.email || '' } : undefined}
+                         />
                     </CardContent>
                 </Card>
             </div>
@@ -84,3 +90,4 @@ export default function CheckoutPage() {
     </div>
   );
 }
+

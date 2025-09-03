@@ -19,6 +19,15 @@ export interface OrderRepository {
    * @returns The newly created Customer entity.
    */
   createCustomer(customerData: Omit<Customer, 'id' | 'createdAt'>): Promise<Customer>;
+  
+  /**
+   * Updates an existing customer record.
+   * @param customerId - The ID of the customer to update.
+   * @param data - The data to update.
+   * @returns The updated Customer entity.
+   */
+  updateCustomer(customerId: string, data: Partial<Customer>): Promise<Customer>;
+
 
   /**
    * Creates a new order record.

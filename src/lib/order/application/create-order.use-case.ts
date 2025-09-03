@@ -1,3 +1,4 @@
+
 // src/lib/order/application/create-order.use-case.ts
 import type { Customer, Order } from '../domain/order.entity';
 import type { OrderRepository } from '../domain/order.repository';
@@ -13,6 +14,9 @@ export type CreateOrderCustomerInput = {
     lastName: string;
     email: string;
     phone?: string;
+    // Add new fields from the quote form
+    wantsWhatsAppContact?: boolean;
+    comments?: string;
 };
 
 // Input for creating the order part
@@ -57,14 +61,24 @@ export class CreateOrderUseCase {
         lastName: customerInfo.lastName,
         email: customerInfo.email,
         phone: customerInfo.phone,
+        wantsWhatsAppContact: customerInfo.wantsWhatsAppContact,
+        comments: customerInfo.comments,
       });
+    } else {
+      // If customer exists, update their info if new details are provided
+      const updates: Partial<Customer> = {};
+      if (customerInfo.phone && customerInfo.phone !== customer.phone) updates.phone = customerInfo.phone;
+      if (customerInfo.wantsWhatsAppContact !== undefined && customerInfo.wantsWhatsAppContact !== customer.wantsWhatsAppContact) updates.wantsWhatsAppContact = customerInfo.wantsWhatsAppContact;
+      if (Object.keys(updates).length > 0) {
+        await this.orderRepository.updateCustomer(customer.id, updates);
+      }
     }
     
     // Step 2: Create the order and link it to the customer.
     const orderToCreate: Omit<Order, 'id' | 'createdAt'> = {
       customerId: customer.id,
       userId: customerInfo.userId,
-      status: 'succeeded',
+      status: orderDetails.provider === 'stripe' ? 'pending' : 'succeeded',
       ...orderDetails,
     };
     const newOrder = await this.orderRepository.createOrder(orderToCreate);

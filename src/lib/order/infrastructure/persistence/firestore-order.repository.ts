@@ -60,6 +60,15 @@ export class FirestoreOrderRepository implements OrderRepository {
         const newDoc = await docRef.get();
         return toCustomer(newDoc);
     }
+    
+     async updateCustomer(customerId: string, data: Partial<Customer>): Promise<Customer> {
+        const db = this.getDb();
+        const docRef = db.collection(CUSTOMERS_COLLECTION).doc(customerId);
+        await docRef.update(data);
+        const updatedDoc = await docRef.get();
+        return toCustomer(updatedDoc);
+    }
+
 
     async createOrder(orderData: Omit<Order, 'id' | 'createdAt'>): Promise<Order> {
         const db = this.getDb();

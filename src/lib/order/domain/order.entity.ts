@@ -1,3 +1,4 @@
+
 // src/lib/order/domain/order.entity.ts
 
 /**
@@ -10,6 +11,8 @@ export interface Customer {
   lastName: string;
   email: string;
   phone?: string;
+  wantsWhatsAppContact?: boolean;
+  comments?: string;
   createdAt: Date;
 }
 
