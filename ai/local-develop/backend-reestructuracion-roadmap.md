@@ -90,7 +90,7 @@
 
 ---
 
-## Fase 4: Contenido y Marketing Automation (Lead Magnets) (PRÓXIMOS PASOS)
+## Fase 4: Contenido y Marketing Automation (Lead Magnets) (✓ COMPLETADA)
 
 **Objetivo:** Transformar la sección de "Guías" en un motor de captación de leads, ofreciendo contenido de alto valor a cambio de datos de contacto.
 
@@ -105,34 +105,58 @@
     *   **UI (✓):** Crear una nueva página en el dashboard de administrador (`/dashboard/admin/guides`). (✓)
     *   **UI (✓):** Implementar un formulario que permita al administrador subir una guía: título, descripción, imagen de portada (a Firebase Storage) y el archivo PDF (a Firebase Storage). (✓)
 
-*   **4.3. Implementar la UI Pública de Guías (`/guias`) (✓):**
-    *   **UI (✓):** La página `/guias` mostrará las guías publicadas en un formato de tarjetas visualmente atractivo (portada, título, descripción). (✓)
-    *   **UI (✓):** Cada tarjeta tendrá un botón "Descargar Guía". Al hacer clic, se abrirá un modal (`DownloadGuideModal`). (✓)
+*   **4.3. Implementar la UI Pública de Guías (`/guias` y `/blog/[slug]`) (✓):**
+    *   **UI (✓):** La página `/guias` muestra las guías publicadas en un formato de tarjetas visualmente atractivo. (✓)
+    *   **UI (✓):** Cada tarjeta de guía tiene un botón "Descargar Guía" que abre un modal (`DownloadGuideModal`). (✓)
     *   **UI (`DownloadGuideModal`) (✓):**
-        *   Este modal contendrá un formulario simple: `nombre`, `email` (obligatorio) y `teléfono` (opcional). (✓)
-        *   Se reutilizará el `CreateOrderUseCase` existente. Al enviar el formulario, se creará un `Customer` (si no existe) y una `Order` con `type: 'lead_magnet'`, `itemName: 'Guía: [Título de la guía]'`, y `amount: 0`. (✓)
-
-*   **4.4. Configurar la Secuencia de Email (Automation - Futuro):**
-    *   **Infraestructura:** Conectar el `CreateOrderUseCase` (cuando el tipo sea `lead_magnet`) a un servicio de email (ej. Mailchimp, SendGrid) mediante un nuevo `EmailAdapter`.
-    *   **Lógica:** Al crear una orden de tipo "guía", se añadirá el email del cliente a una lista de correo específica.
-    *   **Marketing:** Configurar en la herramienta de email marketing la secuencia de bienvenida que envía el enlace de descarga del PDF y comienza el flujo de nutrición de leads.
+        *   Contiene un formulario simple para capturar leads. (✓)
+        *   Reutiliza el `CreateOrderUseCase` para crear un `Customer` y una `Order` de tipo `lead_magnet`. (✓)
+    *   **UI (Enriquecimiento del Blog) (✓):**
+        *   La página `/blog/[slug]` ahora incluye una barra lateral `sticky` con una `LeadMagnetCard` para capturar leads de forma contextual. (✓)
+        *   La página del blog también muestra `RelatedPosts` para mejorar la retención. (✓)
 
 ---
 
-## Fase 5: Contenido Audiovisual y Refinamiento Final
+## Fase 5: Automatización de Marketing por Email (Próximos Pasos)
+
+**Objetivo:** Nutrir a los leads capturados mediante secuencias de email automatizadas para convertirlos en clientes.
+
+*   **5.1. Definir Entidades de Email (Dominio):**
+    *   Crear `email-sequence.entity.ts`: Define una secuencia (ej. "Bienvenida Guía Empadronamiento"). Tendrá un `name`, un `triggerEvent` (`on_guide_download`, `on_user_signup`), y una lista de `EmailStep`.
+    *   Cada `EmailStep` tendrá: `delay` (ej. 1 hora, 2 días), `subject`, `body` (en Markdown/HTML), y una `templateId` (opcional, para plantillas de SendGrid).
+
+*   **5.2. Casos de Uso e Infraestructura (Backend):**
+    *   **Repositorio:** Crear `EmailSequenceRepository` (puerto) y su implementación en Firestore (`firestore-email-sequence.repository.ts`).
+    *   **Casos de Uso:** `CreateEmailSequence`, `AddStepToSequence`, `GetSequenceByTrigger`.
+    *   **API:** Crear un `EmailSequenceController` y los endpoints `/api/email/sequences` para que el admin pueda gestionar las secuencias.
+
+*   **5.3. Desarrollar el Gestor de Secuencias (Admin Dashboard):**
+    *   **UI:** Crear una nueva página en el dashboard (`/dashboard/admin/email-sequences`).
+    *   **UI (MVP):** Un formulario simple, no un canvas. El admin podrá:
+        *   Crear una nueva secuencia y asignarle un disparador (ej. "Descarga de Guía").
+        *   Para esa secuencia, podrá añadir "Pasos". Cada paso será un formulario para definir el `retraso`, el `asunto` y el `cuerpo del email`. Los pasos se mostrarán como una lista ordenada.
+
+*   **5.4. Integración con Trigger de Email de Firebase:**
+    *   **Adaptador:** Crear un `FirebaseEmailAdapter` que, al crear una orden de tipo `lead_magnet`, no solo guarde al `Customer`, sino que también añada un documento a una colección `mail` de Firestore.
+    *   **Extensión de Firebase:** La extensión "Trigger Email" de Firebase se configura para escuchar nuevos documentos en la colección `mail`.
+    *   **Lógica:** Cuando se crea la `Order`, el `CreateOrderUseCase` también buscará la secuencia de email asociada al `trigger` "Descarga de Guía". Luego, creará los documentos necesarios en la colección `mail` para cada paso de la secuencia, utilizando la función `delivery.schedule` de la extensión para programar los envíos futuros según el `delay` de cada paso.
+
+---
+
+## Fase 6: Contenido Audiovisual y Refinamiento Final
 
 **Objetivo:** Integrar los nuevos vídeos y realizar los ajustes finales de la plataforma.
 
-*   **5.1. Integrar Vídeos:**
+*   **6.1. Integrar Vídeos:**
     *   Reemplazar el vídeo actual del `HeroSection` por el nuevo vídeo de Jennifer.
     *   Añadir el vídeo demo de Valeria en la página `/valeria`.
     *   Añadir el vídeo animado de los packs en la página `/packs`.
 
-*   **5.2. Página de Trámites y Packs (Partner):**
+*   **6.2. Página de Trámites y Packs (Partner):**
     *   Asegurarse de que la página `/tramites` y `/packs` presenten los servicios en marca blanca.
     *   Verificar que los botones "Solicitar ahora" redirijan correctamente al sistema del partner.
 
-*   **5.3. Tracking y Analítica:**
+*   **6.3. Tracking y Analítica:**
     *   Implementar Google Analytics 4 y el Píxel de Meta.
     *   Configurar eventos clave: `start_valeria_trial`, `subscribe_valeria_plan`, `download_guide`, `click_partner_pack`.
 

@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import Link from "next/link";
@@ -18,6 +17,7 @@ import Image from 'next/image';
 const navLinks = [
   { href: "/empleos", label: "Empleo" },
   { href: "/vivienda", label: "Vivienda" },
+  { href: "/servicios", label: "Servicios" },
   { href: "/tramites", label: "Trámites" },
   { href: "/packs", label: "Packs" },
   { href: "/valeria", label: "Valeria" },
