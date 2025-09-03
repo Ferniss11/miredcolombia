@@ -1,4 +1,3 @@
-
 // src/lib/order/domain/order.repository.ts
 import type { Customer, Order } from './order.entity';
 
@@ -52,4 +51,11 @@ export interface OrderRepository {
    * @returns An array of Order entities.
    */
   findAllByUserId(userId: string): Promise<Order[]>;
+  
+  /**
+   * Finds an order by its Stripe Payment Intent ID.
+   * @param paymentIntentId - The ID from the payment provider.
+   * @returns The Order entity or null if not found.
+   */
+  findByPaymentIntentId(paymentIntentId: string): Promise<Order | null>;
 }

@@ -1,4 +1,3 @@
-
 // src/app/api/stripe/webhook/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe';
@@ -62,22 +61,27 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
 
 async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent) {
     // This handler is for one-time payments created via Payment Intents.
-    const orderId = paymentIntent.metadata.orderId;
-    if (!orderId) {
-        console.warn('[Stripe Webhook] Received payment_intent.succeeded without an orderId in metadata.');
-        return;
-    }
+    const paymentIntentId = paymentIntent.id;
 
-    console.log(`[Stripe Webhook] PaymentIntent succeeded for order ${orderId}.`);
+    console.log(`[Stripe Webhook] PaymentIntent succeeded for paymentIntentId ${paymentIntentId}.`);
 
     try {
         const orderRepository = new FirestoreOrderRepository();
-        // Here we just update the status, as the order was already created with 'pending' status.
-        await orderRepository.updateOrderStatus(orderId, 'succeeded', paymentIntent.id);
-        console.log(`[Stripe Webhook] Successfully updated order ${orderId} to 'succeeded'.`);
+        // Use the new method to find the order by payment intent ID
+        const order = await orderRepository.findByPaymentIntentId(paymentIntentId);
+
+        if (!order) {
+            console.error(`[Stripe Webhook] CRITICAL: Could not find an order with paymentIntentId ${paymentIntentId}.`);
+            // We should probably alert an admin here.
+            return;
+        }
+
+        // Update the order status to 'succeeded'. The paymentId is already linked.
+        await orderRepository.updateOrderStatus(order.id, 'succeeded', paymentIntentId);
+        console.log(`[Stripe Webhook] Successfully updated order ${order.id} to 'succeeded'.`);
 
     } catch (error) {
-        console.error(`[Stripe Webhook] Failed to update order status for orderId ${orderId}:`, error);
+        console.error(`[Stripe Webhook] Failed to update order status for paymentIntentId ${paymentIntentId}:`, error);
         // Here you might want to add logic to retry or alert administrators.
     }
 }
