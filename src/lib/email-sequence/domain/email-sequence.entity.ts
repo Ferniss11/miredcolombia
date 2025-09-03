@@ -1,16 +1,19 @@
 
 // src/lib/email-sequence/domain/email-sequence.entity.ts
+import { z } from 'zod';
 
 /**
  * Represents a single step in an email sequence.
  */
-export interface EmailStep {
-  id: string; // Unique ID for the step within the sequence
-  delayMinutes: number; // Delay in minutes after the previous step (or trigger)
-  subject: string;
-  body: string; // HTML or Markdown content for the email
-  templateId?: string; // Optional ID for a template in a service like SendGrid
-}
+export const EmailStepSchema = z.object({
+  id: z.string(), // Unique ID for the step within the sequence
+  delayMinutes: z.number().min(0), // Delay in minutes after the previous step (or trigger)
+  subject: z.string(),
+  body: z.string(), // HTML or Markdown content for the email
+  templateId: z.string().optional(), // Optional ID for a template in a service like SendGrid
+});
+export type EmailStep = z.infer<typeof EmailStepSchema>;
+
 
 /**
  * Defines the trigger events that can start an email sequence.
