@@ -1,4 +1,4 @@
-
+// src/components/guides/DownloadGuideModal.tsx
 'use client';
 
 import { useState, useTransition } from 'react';
@@ -42,20 +42,33 @@ export default function DownloadGuideModal({ isOpen, onOpenChange, guide }: Down
 
     const onSubmit = (values: DownloadFormValues) => {
         startTransition(async () => {
-            console.log("Form submitted for lead magnet:", {
-                guideId: guide.id,
-                guideTitle: guide.title,
-                customer: values
-            });
-            // TODO: Call a server action here to use CreateOrderUseCase with type 'lead_magnet'
-            toast({
-                title: '¡Gracias!',
-                description: 'La descarga comenzará en breve.',
-            });
-            setIsSuccess(true);
-            // In a real scenario, the action would return the PDF URL or trigger a download.
-            // For now, we'll just open the URL in a new tab.
-            window.open(guide.pdfUrl, '_blank');
+             try {
+                const response = await fetch('/api/orders/lead-magnet', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        ...values,
+                        guideId: guide.id,
+                        guideTitle: guide.title,
+                    }),
+                });
+
+                if (!response.ok) {
+                    const result = await response.json();
+                    throw new Error(result.error?.message || 'No se pudo registrar la descarga.');
+                }
+                
+                toast({
+                    title: '¡Gracias!',
+                    description: 'La descarga comenzará en breve.',
+                });
+                setIsSuccess(true);
+                window.open(guide.pdfUrl, '_blank');
+
+            } catch (error) {
+                const errorMessage = error instanceof Error ? error.message : 'Error desconocido.';
+                toast({ variant: 'destructive', title: 'Error', description: errorMessage });
+            }
         });
     };
     

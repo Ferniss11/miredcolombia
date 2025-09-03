@@ -6,7 +6,7 @@ import type { OrderRepository } from '../domain/order.repository';
 export type CreateOrderCustomerInput = {
     userId?: string | null;
     firstName: string;
-    lastName: string;
+    lastName: string; // Made optional for lead magnet forms
     email: string;
     phone?: string;
 };
@@ -17,8 +17,8 @@ export type CreateOrderDetailsInput = {
     itemName: string;
     amount: number;
     currency: string;
-    provider: 'stripe';
-    providerPaymentId: string;
+    provider: 'stripe' | 'lead_magnet';
+    providerPaymentId?: string; // Optional for non-payment orders
 };
 
 /**
@@ -51,7 +51,7 @@ export class CreateOrderUseCase {
     const orderToCreate: Omit<Order, 'id' | 'createdAt'> = {
       customerId: customer.id,
       userId: customerInfo.userId,
-      status: 'succeeded', // Assuming the use case is called after a successful payment
+      status: 'succeeded', // For lead magnets, status is always 'succeeded'
       ...orderDetails,
     };
     

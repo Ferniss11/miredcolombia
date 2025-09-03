@@ -23,9 +23,9 @@ export interface Order {
   userId?: string | null; // Link to auth user if they placed the order
   
   // Order Details
-  itemId: string; // The ID of the product/plan purchased (e.g., plan_colombia or a product ID)
-  itemName: string; // The name of the product/plan (e.g., "Plan Colombia")
-  amount: number; // The total amount paid
+  itemId: string; // The ID of the product/plan purchased (e.g., plan_colombia or guide_id)
+  itemName: string; // The name of the product/plan (e.g., "Plan Colombia" or "Guía: Empadronamiento")
+  amount: number; // The total amount paid (can be 0 for lead magnets)
   currency: string; // e.g., 'eur'
   
   // Status and Timestamps
@@ -33,6 +33,6 @@ export interface Order {
   createdAt: Date;
   
   // Payment Provider Details
-  provider: 'stripe'; // To allow for other providers in the future
-  providerPaymentId: string; // The ID from the payment provider (e.g., Stripe Payment Intent ID)
+  provider: 'stripe' | 'lead_magnet'; // To allow for other sources in the future
+  providerPaymentId?: string; // The ID from the payment provider (e.g., Stripe Payment Intent ID)
 }
