@@ -16,6 +16,7 @@ import CheckoutSheet from "@/components/checkout/CheckoutSheet";
 import type { ValeriaPlan } from '@/lib/types';
 import { useToast } from "@/hooks/use-toast";
 import VideoModal from "@/components/ui/video-modal";
+import { createSubscriptionCheckoutSessionAction } from "@/lib/payment-actions";
 
 
 export default function ValeriaPage() {
@@ -47,17 +48,36 @@ export default function ValeriaPage() {
   }, [searchParams, router, toast]);
 
 
-  const handlePlanSelection = (plan: ValeriaPlan) => {
-    if (!user && plan.id !== 'plan_free') {
-      setSelectedPlan(plan);
-      setIsSheetOpen(true);
-    } else {
-      // For logged-in users, or for the free plan, go to the appropriate page
+  const handlePlanSelection = async (plan: ValeriaPlan) => {
+    if (!user) {
       if (plan.id === 'plan_free') {
         openChat();
       } else {
-        window.location.href = `/checkout/${plan.id}`;
+        setSelectedPlan(plan);
+        setIsSheetOpen(true);
       }
+      return;
+    }
+
+    if (plan.id === 'plan_free') {
+        openChat();
+    } else {
+        // User is logged in, proceed to Stripe checkout
+        const result = await createSubscriptionCheckoutSessionAction({
+            priceId: plan.id,
+            userId: user.uid,
+            userEmail: user.email!,
+        });
+
+        if (result.error) {
+            toast({
+                variant: 'destructive',
+                title: 'Error al Iniciar Pago',
+                description: result.error,
+            });
+        } else if (result.sessionId) {
+            window.location.href = `/api/stripe/checkout?sessionId=${result.sessionId}`;
+        }
     }
   };
 
