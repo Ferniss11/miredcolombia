@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { z } from 'zod';
@@ -133,7 +134,7 @@ export async function createOneTimeCheckoutSessionAction(input: CreateOneTimeChe
           currency: 'eur',
           customer: customerId,
           metadata: {
-              orderId: order.id, // Link PaymentIntent to our Order
+              orderId: order.id, // FIX: Link PaymentIntent to our Order
               firebaseUID: userId || '',
           },
       });
@@ -146,3 +147,4 @@ export async function createOneTimeCheckoutSessionAction(input: CreateOneTimeChe
       return { error: `No se pudo iniciar el pago: ${errorMessage}` };
   }
 }
+
