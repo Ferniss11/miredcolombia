@@ -10,8 +10,8 @@ import React from 'react';
 type AboutSectionProps = {};
 
 export default function AboutSection({}: AboutSectionProps) {
-    const videoUrl = "https://firebasestorage.googleapis.com/v0/b/colombia-en-esp.firebasestorage.app/o/web%2FColombiasubir.mp4?alt=media&token=0158b045-9c77-4e91-958e-d17ba5b04068";
-    const videoTitle = "Conoce mi historia de migración";
+    const videoUrl = "https://firebasestorage.googleapis.com/v0/b/colombia-en-esp.firebasestorage.app/o/web%2Fcoentrevista1.mp4?alt=media&token=fe599a36-b11c-499a-a133-e24a87a4db82";
+    const videoTitle = "Entrevista a Jennifer Mendoza: Claves para Migrar a España";
     const [showVideo, setShowVideo] = React.useState(false);
 
     return (
@@ -25,7 +25,7 @@ export default function AboutSection({}: AboutSectionProps) {
                         <div className="space-y-4">
                             <div className="inline-block rounded-lg bg-gray-200 px-4 py-2 text-md font-semibold text-gray-800">Jennifer Mendoza – Tu guía de confianza</div>
                             <p className="max-w-lg mx-auto lg:mx-0 text-gray-600 md:text-xl/relaxed dark:text-gray-300 font-body">
-                                Soy colombiana y viví la experiencia de migrar a España. Conozco cada paso, cada dificultad y cada alegría del proceso.
+                                A través de esta entrevista, Jennifer Mendoza, fundadora de Mi Red Colombia, responde a las preguntas más frecuentes y comparte su visión para ayudar a la comunidad.
                             </p>
                         </div>
                         <div className="flex justify-center lg:justify-start gap-8 pt-4">
