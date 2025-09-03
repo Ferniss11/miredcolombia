@@ -10,9 +10,14 @@ const LeadMagnetSchema = z.object({
   firstName: z.string().min(2),
   email: z.string().email(),
   phone: z.string().optional(),
-  guideId: z.string().min(1), // Can be a guide ID or a package ID
-  guideTitle: z.string().min(1), // Can be guide title or package name for quote
-  message: z.string().optional(), // For quote requests
+  guideId: z.string().min(1).optional(),      // For guide downloads
+  guideTitle: z.string().min(1).optional(),  // For guide downloads
+  packageName: z.string().min(1).optional(), // For quote requests
+  travelDate: z.string().optional(),
+  adults: z.number().optional(),
+  children: z.number().optional(),
+  servicesNeeded: z.array(z.string()).optional(),
+  message: z.string().optional(),
 });
 
 export class OrderController {
@@ -31,21 +36,36 @@ export class OrderController {
     const json = await req.json();
     const input = LeadMagnetSchema.parse(json);
 
-    // Concatenate the user's message to the item name for context
-    const itemName = input.message 
-        ? `${input.guideTitle} (Mensaje: ${input.message})`
-        : `Guía: ${input.guideTitle}`;
+    const itemId = input.guideId || input.packageName?.toLowerCase().replace(/\s/g, '_') || 'quote_request';
+    
+    // Create a more descriptive item name for the order
+    let itemName = `Solicitud de presupuesto: ${input.packageName}`;
+    if (input.guideTitle) {
+      itemName = `Descarga de Guía: ${input.guideTitle}`;
+    } else if (input.packageName) {
+        const details = [
+            input.adults ? `${input.adults} adulto(s)` : '',
+            input.children ? `${input.children} niño(s)` : '',
+            input.servicesNeeded && input.servicesNeeded.length > 0 ? `Servicios: ${input.servicesNeeded.join(', ')}` : '',
+            input.message ? `Mensaje: ${input.message}` : ''
+        ].filter(Boolean).join(' | ');
+
+        if (details) {
+            itemName += ` (${details})`;
+        }
+    }
+
 
     const newOrder = await this.createOrderUseCase.execute(
       { // Customer Info
         firstName: input.firstName,
-        lastName: '', // Not required for lead magnet
+        lastName: '', // Not required for lead magnet/quote
         email: input.email,
         phone: input.phone,
       },
       { // Order Info
-        itemId: input.guideId,
-        itemName: itemName,
+        itemId: itemId,
+        itemName: itemName, // Use the more descriptive name
         amount: 0,
         currency: 'eur',
         provider: 'lead_magnet',

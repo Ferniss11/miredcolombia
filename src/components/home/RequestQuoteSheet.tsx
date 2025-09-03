@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useTransition, useEffect } from 'react';
@@ -12,6 +13,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Loader2, Send, CheckCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '../ui/scroll-area';
+import { Checkbox } from '../ui/checkbox';
 
 interface RequestQuoteSheetProps {
     isOpen: boolean;
@@ -19,10 +21,25 @@ interface RequestQuoteSheetProps {
     packageName: string;
 }
 
+const services = [
+  { id: 'flights', label: 'Billetes de Avión' },
+  { id: 'health_insurance', label: 'Seguro Médico' },
+  { id: 'airport_pickup', label: 'Recogida en Aeropuerto' },
+  { id: 'nie_tie', label: 'Trámite NIE/TIE' },
+  { id: 'empadronamiento', label: 'Cita Empadronamiento' },
+  { id: 'bank_account', label: 'Apertura Cuenta Bancaria' },
+  { id: 'housing_search', label: 'Búsqueda de Vivienda' },
+  { id: 'homologation', label: 'Homologación de Título' },
+];
+
 const QuoteFormSchema = z.object({
   firstName: z.string().min(2, "El nombre es requerido."),
   email: z.string().email("Debe ser un email válido."),
   phone: z.string().optional(),
+  travelDate: z.string().optional(),
+  adults: z.coerce.number().min(1, 'Debe haber al menos un adulto.').optional(),
+  children: z.coerce.number().min(0).optional().default(0),
+  servicesNeeded: z.array(z.string()).optional(),
   message: z.string().optional(),
 });
 
@@ -35,7 +52,16 @@ export default function RequestQuoteSheet({ isOpen, onOpenChange, packageName }:
 
     const form = useForm<QuoteFormValues>({
         resolver: zodResolver(QuoteFormSchema),
-        defaultValues: { firstName: '', email: '', phone: '', message: '' }
+        defaultValues: { 
+            firstName: '', 
+            email: '', 
+            phone: '', 
+            travelDate: '',
+            adults: 1,
+            children: 0,
+            servicesNeeded: [],
+            message: '' 
+        }
     });
     
     useEffect(() => {
@@ -50,14 +76,12 @@ export default function RequestQuoteSheet({ isOpen, onOpenChange, packageName }:
     const onSubmit = (values: QuoteFormValues) => {
         startTransition(async () => {
             try {
-                // We use the same endpoint as the lead magnet, but with different item details
                 const response = await fetch('/api/orders/lead-magnet', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         ...values,
-                        guideId: packageName.toLowerCase().replace(/\s/g, '_'), // e.g., 'pack_onboarding'
-                        guideTitle: `Solicitud de Presupuesto: ${packageName}`,
+                        packageName: packageName, // Pass the package name
                     }),
                 });
 
@@ -104,6 +128,53 @@ export default function RequestQuoteSheet({ isOpen, onOpenChange, packageName }:
                                         <FormField control={form.control} name="email" render={({ field }) => (<FormItem><FormLabel>Email</FormLabel><FormControl><Input placeholder="tu@email.com" {...field} /></FormControl><FormMessage /></FormItem>)} />
                                         <FormField control={form.control} name="phone" render={({ field }) => (<FormItem><FormLabel>Teléfono</FormLabel><FormControl><Input placeholder="+34 600 000 000" {...field} /></FormControl><FormMessage /></FormItem>)} />
                                     </div>
+                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        <FormField control={form.control} name="travelDate" render={({ field }) => (<FormItem><FormLabel>Fecha de Viaje (Aprox.)</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                        <FormField control={form.control} name="adults" render={({ field }) => (<FormItem><FormLabel>Adultos</FormLabel><FormControl><Input type="number" min="1" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                        <FormField control={form.control} name="children" render={({ field }) => (<FormItem><FormLabel>Niños</FormLabel><FormControl><Input type="number" min="0" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                    </div>
+                                    <FormField
+                                        control={form.control}
+                                        name="servicesNeeded"
+                                        render={() => (
+                                        <FormItem>
+                                            <div className="mb-4">
+                                            <FormLabel className="text-base">Servicios que te interesan</FormLabel>
+                                            <FormMessage />
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-4">
+                                            {services.map((item) => (
+                                                <FormField
+                                                key={item.id}
+                                                control={form.control}
+                                                name="servicesNeeded"
+                                                render={({ field }) => {
+                                                    return (
+                                                    <FormItem key={item.id} className="flex flex-row items-start space-x-3 space-y-0">
+                                                        <FormControl>
+                                                        <Checkbox
+                                                            checked={field.value?.includes(item.id)}
+                                                            onCheckedChange={(checked) => {
+                                                            return checked
+                                                                ? field.onChange([...(field.value || []), item.id])
+                                                                : field.onChange(
+                                                                    field.value?.filter(
+                                                                    (value) => value !== item.id
+                                                                    )
+                                                                )
+                                                            }}
+                                                        />
+                                                        </FormControl>
+                                                        <FormLabel className="font-normal">{item.label}</FormLabel>
+                                                    </FormItem>
+                                                    )
+                                                }}
+                                                />
+                                            ))}
+                                            </div>
+                                        </FormItem>
+                                        )}
+                                    />
                                     <FormField control={form.control} name="message" render={({ field }) => (<FormItem><FormLabel>Mensaje Adicional</FormLabel><FormControl><Textarea placeholder="Cuéntanos más sobre tu caso para poder ayudarte mejor." rows={5} {...field} /></FormControl><FormMessage /></FormItem>)} />
                                 </div>
                             </ScrollArea>
