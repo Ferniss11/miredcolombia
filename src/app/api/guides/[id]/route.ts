@@ -9,10 +9,9 @@ const guideController = new GuideController();
 type RouteContext = { params: { id: string } };
 
 // Public endpoint to get a single guide
-export const GET = apiHandler(async (req: NextRequest, { params }: RouteContext) => {
-    // This is a simplified version, as getById is not explicitly defined in controller but would be needed
-    return ApiResponse.notImplemented();
-});
+export const GET = apiHandler(async (req: NextRequest, { params }: RouteContext) =>
+  guideController.getById(req, { params: { id: params.id } })
+);
 
 // Protected endpoint for admins to update a guide
 export const POST = apiHandler((req: NextRequest, { params }: RouteContext) =>
@@ -20,6 +19,6 @@ export const POST = apiHandler((req: NextRequest, { params }: RouteContext) =>
 , ['Admin', 'SAdmin']);
 
 // Protected endpoint for admins to delete a guide
-export const DELETE = apiHandler((req: NextRequest, { params }: RouteContext) =>
+export const DELETE = apiHandler(async (req: NextRequest, { params }: RouteContext) =>
   guideController.delete({ params: { id: params.id } })
 , ['Admin', 'SAdmin']);

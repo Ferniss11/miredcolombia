@@ -13,6 +13,7 @@ import { CreateGuideUseCase } from '../../application/create-guide.use-case';
 import { GetAllGuidesUseCase } from '../../application/get-all-guides.use-case';
 import { UpdateGuideUseCase } from '../../application/update-guide.use-case';
 import { DeleteGuideUseCase } from '../../application/delete-guide.use-case';
+import { GetGuideUseCase } from '../../application/get-guide.use-case';
 
 // Zod schema for validating FormData
 const GuideFormSchema = z.object({
@@ -24,6 +25,7 @@ const GuideFormSchema = z.object({
 export class GuideController {
     private createUseCase: CreateGuideUseCase;
     private getAllUseCase: GetAllGuidesUseCase;
+    private getByIdUseCase: GetGuideUseCase;
     private updateUseCase: UpdateGuideUseCase;
     private deleteUseCase: DeleteGuideUseCase;
 
@@ -31,6 +33,7 @@ export class GuideController {
         const repository = new FirestoreGuideRepository();
         this.createUseCase = new CreateGuideUseCase(repository);
         this.getAllUseCase = new GetAllGuidesUseCase(repository);
+        this.getByIdUseCase = new GetGuideUseCase(repository);
         this.updateUseCase = new UpdateGuideUseCase(repository);
         this.deleteUseCase = new DeleteGuideUseCase(repository);
     }
@@ -67,6 +70,14 @@ export class GuideController {
     async getAll(): Promise<NextResponse> {
         const guides = await this.getAllUseCase.execute();
         return ApiResponse.success(guides);
+    }
+
+    async getById(req: NextRequest, { params }: { params: { id: string } }): Promise<NextResponse> {
+        const guide = await this.getByIdUseCase.execute(params.id);
+        if (!guide) {
+            return ApiResponse.notFound(`Guide with id ${params.id} not found.`);
+        }
+        return ApiResponse.success(guide);
     }
 
     async update(req: NextRequest, { params }: { params: { id: string } }): Promise<NextResponse> {
