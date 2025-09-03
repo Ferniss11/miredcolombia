@@ -1,5 +1,4 @@
 
-
 // src/app/dashboard/admin/email-sequences/page.tsx
 'use client';
 
@@ -18,7 +17,8 @@ import { Badge } from '@/components/ui/badge';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import SequenceForm from './SequenceForm';
 import { generateEmailSequence } from '@/ai/flows/generate-email-sequence.flow';
-import { GenerateEmailSequenceOutput } from '@/lib/types';
+import type { GenerateEmailSequenceInput, GenerateEmailSequenceOutput } from '@/lib/types';
+import GenerateSequenceModal from './GenerateSequenceModal';
 
 
 export default function AdminEmailSequencesPage() {
@@ -31,6 +31,7 @@ export default function AdminEmailSequencesPage() {
     const [isSheetOpen, setIsSheetOpen] = useState(false);
     const [editingSequence, setEditingSequence] = useState<EmailSequence | GenerateEmailSequenceOutput | null>(null);
     const [deletingSequenceId, setDeletingSequenceId] = useState<string | null>(null);
+    const [isGenerateModalOpen, setIsGenerateModalOpen] = useState(false);
 
     const fetchSequences = React.useCallback(() => {
         if (!user) return;
@@ -103,21 +104,17 @@ export default function AdminEmailSequencesPage() {
         });
     };
     
-    const handleGenerateWithAi = () => {
+    const handleAiGenerationSubmit = (input: GenerateEmailSequenceInput) => {
         startTransition(async () => {
             try {
+                setIsGenerateModalOpen(false); // Close the context modal
                 toast({ title: "Generando secuencia...", description: "La IA está trabajando en tu nueva secuencia de emails. Esto puede tardar un momento." });
-                // For now, we use a default prompt. Later, this will come from a modal.
-                const generatedSequence = await generateEmailSequence({
-                    objective: 'Crear una secuencia de bienvenida de 3 emails para los que descargan la guía de empadronamiento. El objetivo es entregar la guía, resolver dudas y finalmente presentar nuestros servicios de forma sutil.',
-                    numSteps: 3,
-                    tone: 'Amigable',
-                    additionalInfo: 'Usar un tono cercano y servicial.'
-                });
+                
+                const generatedSequence = await generateEmailSequence(input);
 
                 if (generatedSequence) {
                     setEditingSequence(generatedSequence);
-                    setIsSheetOpen(true);
+                    setIsSheetOpen(true); // Open the main edit sheet with pre-filled data
                 } else {
                     throw new Error("La IA no devolvió una secuencia válida.");
                 }
@@ -136,11 +133,11 @@ export default function AdminEmailSequencesPage() {
                     <h1 className="text-3xl font-bold font-headline">Secuencias de Email</h1>
                  </div>
                  <div className="flex items-center gap-2">
-                    <Button variant="outline" onClick={handleGenerateWithAi} disabled={isPending}>
+                    <Button onClick={() => setIsGenerateModalOpen(true)} disabled={isPending}>
                         <Sparkles className="mr-2 h-4 w-4" /> Crear con IA
                     </Button>
-                    <Button onClick={handleOpenSheetForCreate}>
-                        <Plus className="mr-2 h-4 w-4" /> Crear Nueva Secuencia
+                    <Button onClick={handleOpenSheetForCreate} variant="outline">
+                        <Plus className="mr-2 h-4 w-4" /> Crear Nueva
                     </Button>
                  </div>
             </div>
@@ -217,6 +214,13 @@ export default function AdminEmailSequencesPage() {
                     />
                 </SheetContent>
             </Sheet>
+
+            <GenerateSequenceModal
+                isOpen={isGenerateModalOpen}
+                onOpenChange={setIsGenerateModalOpen}
+                onSubmit={handleAiGenerationSubmit}
+                isGenerating={isPending}
+            />
 
             <AlertDialog open={!!deletingSequenceId} onOpenChange={(open) => !open && setDeletingSequenceId(null)}>
                 <AlertDialogContent>
