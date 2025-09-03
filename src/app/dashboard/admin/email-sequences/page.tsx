@@ -1,4 +1,5 @@
 
+
 // src/app/dashboard/admin/email-sequences/page.tsx
 'use client';
 
@@ -17,6 +18,7 @@ import { Badge } from '@/components/ui/badge';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import SequenceForm from './SequenceForm';
 import { generateEmailSequence } from '@/ai/flows/generate-email-sequence.flow';
+import { GenerateEmailSequenceOutput } from '@/lib/types';
 
 
 export default function AdminEmailSequencesPage() {
@@ -27,7 +29,7 @@ export default function AdminEmailSequencesPage() {
     const [sequences, setSequences] = useState<EmailSequence[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isSheetOpen, setIsSheetOpen] = useState(false);
-    const [editingSequence, setEditingSequence] = useState<EmailSequence | null>(null);
+    const [editingSequence, setEditingSequence] = useState<EmailSequence | GenerateEmailSequenceOutput | null>(null);
     const [deletingSequenceId, setDeletingSequenceId] = useState<string | null>(null);
 
     const fetchSequences = React.useCallback(() => {
@@ -114,7 +116,7 @@ export default function AdminEmailSequencesPage() {
                 });
 
                 if (generatedSequence) {
-                    setEditingSequence(generatedSequence as any);
+                    setEditingSequence(generatedSequence);
                     setIsSheetOpen(true);
                 } else {
                     throw new Error("La IA no devolvió una secuencia válida.");
@@ -203,13 +205,13 @@ export default function AdminEmailSequencesPage() {
             <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
                 <SheetContent className="sm:max-w-4xl w-full p-0">
                     <SheetHeader className="p-6">
-                        <SheetTitle>{editingSequence ? 'Editar Secuencia' : 'Crear Nueva Secuencia'}</SheetTitle>
+                        <SheetTitle>{editingSequence && 'id' in editingSequence ? 'Editar Secuencia' : 'Crear Nueva Secuencia'}</SheetTitle>
                         <SheetDescription>
                             Define los pasos, el contenido y los tiempos de tu automatización.
                         </SheetDescription>
                     </SheetHeader>
                     <SequenceForm 
-                        sequenceToEdit={editingSequence}
+                        sequenceToEdit={editingSequence as EmailSequence | null}
                         onSuccess={handleFormSuccess}
                         onCancel={handleSheetClose}
                     />

@@ -1,6 +1,8 @@
 
 
 import { z } from 'zod';
+import { v4 as uuidv4 } from 'uuid';
+
 
 // Schema for Blog Content Generation
 export const GenerateBlogContentInputSchema = z.object({
@@ -86,6 +88,39 @@ export const IntelligentArticleOutputSchema = z.object({
 });
 export type IntelligentArticle = z.infer<typeof IntelligentArticleOutputSchema>;
 
+
+// --- Email Sequence Schemas ---
+
+const SequenceTriggerSchema = z.enum(['on_guide_download', 'on_user_signup', 'on_service_purchase']);
+
+export const GenerateEmailSequenceInputSchema = z.object({
+  objective: z.string().describe('The main goal of the email sequence (e.g., "Welcome sequence for new users who downloaded the empadronamiento guide").'),
+  numSteps: z.number().int().min(1).max(7).describe('The desired number of emails in the sequence.'),
+  tone: z.enum(['Amigable', 'Formal', 'Persuasivo', 'Informativo']).describe('The desired tone of voice for the emails.'),
+  additionalInfo: z.string().optional().describe('Any other key information or context to include in the emails (e.g., "Mention a 10% discount on our services in the last email").'),
+  model: z.string().optional().describe("The AI model to use for generation.").default('googleai/gemini-1.5-pro-latest'),
+});
+export type GenerateEmailSequenceInput = z.infer<typeof GenerateEmailSequenceInputSchema>;
+
+
+const EmailStepOutputSchema = z.object({
+  id: z.string().default(() => uuidv4()).describe("A unique UUID for this step."),
+  delayMinutes: z.coerce.number().describe('The delay in minutes from the previous step. The first step\'s delay is from the initial trigger.'),
+  subject: z.string().describe('The subject line for this email.'),
+  body: z.string().describe('The full HTML content of the email. Use standard HTML tags like <p>, <strong>, <a>. Use {{firstName}} for personalization.'),
+});
+
+export const GenerateEmailSequenceOutputSchema = z.object({
+  name: z.string().describe('A descriptive internal name for the sequence.'),
+  trigger: SequenceTriggerSchema.describe('The trigger event that should start this sequence.'),
+  steps: z.array(EmailStepOutputSchema).describe('The array of email steps in the sequence.'),
+  isActive: z.boolean().default(true),
+});
+export type GenerateEmailSequenceOutput = z.infer<typeof GenerateEmailSequenceOutputSchema>;
+
+
+
+// --- General Application Types ---
 
 export type UserRole = 'Guest' | 'Advertiser' | 'Admin' | 'User' | 'SAdmin';
 
