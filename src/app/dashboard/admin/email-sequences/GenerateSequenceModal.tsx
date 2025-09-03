@@ -31,6 +31,7 @@ export default function GenerateSequenceModal({ isOpen, onOpenChange, onSubmit, 
       numSteps: 3,
       tone: 'Amigable',
       additionalInfo: 'En el último email, mencionar sutilmente nuestros planes de consultoría.',
+      model: 'googleai/gemini-1.5-pro-latest',
     },
   });
 
@@ -80,6 +81,26 @@ export default function GenerateSequenceModal({ isOpen, onOpenChange, onSubmit, 
                 <FormItem>
                     <FormLabel>Información Adicional (Opcional)</FormLabel>
                     <FormControl><Textarea placeholder="Ej: Mencionar un descuento del 10% en el último email..." rows={2} {...field} /></FormControl>
+                    <FormMessage />
+                </FormItem>
+            )} />
+             <FormField control={form.control} name="model" render={({ field }) => (
+                <FormItem>
+                    <FormLabel>Modelo de IA</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Selecciona un modelo" />
+                            </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                            <SelectItem value="googleai/gemini-1.5-flash-latest">Gemini 1.5 Flash (Rápido)</SelectItem>
+                            <SelectItem value="googleai/gemini-1.5-pro-latest">Gemini 1.5 Pro (Potente)</SelectItem>
+                            <SelectItem value="googleai/gemini-2.5-flash-lite">Gemini 2.5 Flash Lite</SelectItem>
+                            <SelectItem value="googleai/gemini-2.5-pro">Gemini 2.5 Pro</SelectItem>
+                            <SelectItem value="googleai/gemini-2.5-flash">Gemini 2.5 Flash</SelectItem>
+                        </SelectContent>
+                    </Select>
                     <FormMessage />
                 </FormItem>
             )} />

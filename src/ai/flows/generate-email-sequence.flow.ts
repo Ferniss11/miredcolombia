@@ -40,10 +40,7 @@ Tu tarea es crear una secuencia de emails completa, lógica y efectiva, basada e
 });
 
 export async function generateEmailSequence(input: GenerateEmailSequenceInput): Promise<GenerateEmailSequenceOutput> {
-    const { output } = await prompt({
-        ...input,
-        model: input.model || 'googleai/gemini-1.5-pro-latest' // Ensure model has a default
-    });
+    const { output } = await prompt(input, { model: input.model as any });
     if (!output) {
         throw new Error("AI did not return a sequence.");
     }
