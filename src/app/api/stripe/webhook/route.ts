@@ -29,7 +29,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
       try {
         const orderRepository = new FirestoreOrderRepository();
         const createOrderUseCase = new CreateOrderUseCase(orderRepository);
-        const lineItems = await stripe.checkout.sessions.listLineItems(session.id, { limit: 1 });
+        const lineItems = await stripe!.checkout.sessions.listLineItems(session.id, { limit: 1 });
         const itemName = lineItems.data[0]?.description || 'Suscripción a Valeria';
         
         await createOrderUseCase.execute(
@@ -60,29 +60,24 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
 }
 
 async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent) {
-    // This handler is for one-time payments created via Payment Intents.
     const paymentIntentId = paymentIntent.id;
 
     console.log(`[Stripe Webhook] PaymentIntent succeeded for paymentIntentId ${paymentIntentId}.`);
 
     try {
         const orderRepository = new FirestoreOrderRepository();
-        // Use the new method to find the order by payment intent ID
         const order = await orderRepository.findByPaymentIntentId(paymentIntentId);
 
         if (!order) {
             console.error(`[Stripe Webhook] CRITICAL: Could not find an order with paymentIntentId ${paymentIntentId}.`);
-            // We should probably alert an admin here.
             return;
         }
 
-        // Update the order status to 'succeeded'. The paymentId is already linked.
         await orderRepository.updateOrderStatus(order.id, 'succeeded', paymentIntentId);
         console.log(`[Stripe Webhook] Successfully updated order ${order.id} to 'succeeded'.`);
 
     } catch (error) {
         console.error(`[Stripe Webhook] Failed to update order status for paymentIntentId ${paymentIntentId}:`, error);
-        // Here you might want to add logic to retry or alert administrators.
     }
 }
 
@@ -93,6 +88,11 @@ export async function POST(req: NextRequest) {
   if (!WEBHOOK_SECRET) {
     console.error('Stripe webhook secret is not set.');
     return NextResponse.json({ error: 'Webhook secret not configured' }, { status: 500 });
+  }
+  
+  if (!stripe) {
+      console.error('Stripe is not initialized. Check STRIPE_SECRET_KEY.');
+      return NextResponse.json({ error: 'Stripe is not configured' }, { status: 500 });
   }
 
   const rawBody = await req.text();
@@ -121,9 +121,6 @@ export async function POST(req: NextRequest) {
       case 'payment_intent.succeeded':
         await handlePaymentIntentSucceeded(event.data.object as Stripe.PaymentIntent);
         break;
-      
-      // TODO: Handle other events like 'customer.subscription.updated/deleted' for cancellations,
-      // and 'payment_intent.payment_failed' for failed one-time payments.
       
       default:
         // console.log(`[Stripe Webhook] Unhandled event type ${event.type}`);
