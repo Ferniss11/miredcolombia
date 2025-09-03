@@ -71,7 +71,8 @@ const CheckoutForm = ({ item, customerDetails }: { item: ItemProp, customerDetai
             const { error } = await stripe.confirmPayment({
                 elements,
                 confirmParams: {
-                    return_url: `${window.location.origin}/valeria/payment-success`,
+                    // Corrected redirect URL for one-time payments
+                    return_url: `${window.location.origin}/pago-exitoso`,
                     receipt_email: customerDetails.email,
                 },
             });
