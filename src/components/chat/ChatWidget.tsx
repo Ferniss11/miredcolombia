@@ -23,6 +23,9 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '../u
 import { useChat } from '@/context/ChatContext';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '../ui/tooltip';
+import { usePathname } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
+
 
 // --- Welcome Form Sub-component ---
 const formSchema = z.object({
@@ -234,6 +237,11 @@ export default function ChatWidget() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isMounted, setIsMounted] = useState(false);
   const router = useRouter();
+  const pathname = usePathname();
+  const { user, claims } = useAuth();
+  
+  const isPremiumUser = claims?.valeria_plan === 'colombia' || claims?.valeria_plan === 'espana';
+  const isInDashboard = pathname.startsWith('/dashboard/valeria');
 
   const isBusinessChat = !!chatContext?.businessId;
   const suggestionPool = isBusinessChat ? allBusinessQuestions : allGeneralQuestions;
@@ -295,9 +303,16 @@ export default function ChatWidget() {
   }, [isChatOpen, sessionId, suggestionPool]);
   
   const handleSendMessage = async (messageText: string) => {
-    if (!messageText.trim() || !sessionId || isAiResponding) return;
+    if (!messageText.trim() || isAiResponding) return;
     setIsAiResponding(true);
     setCurrentMessage('');
+
+    // If there's no session, we can't send a message. This shouldn't happen with the new flow.
+    if (!sessionId) {
+        toast({ variant: 'destructive', title: 'Error', description: 'La sesión de chat no se ha iniciado.' });
+        setIsAiResponding(false);
+        return;
+    }
 
     const userMessage: ChatMessage = { 
         id: `temp-user-${Date.now()}`,
@@ -305,6 +320,7 @@ export default function ChatWidget() {
         text: messageText.trim(), 
         timestamp: new Date().toISOString(),
         replyTo: null,
+        authorId: user?.uid, // Add authorId for context
     };
     const newHistory = [...messages, userMessage];
     setMessages(newHistory);
@@ -373,6 +389,13 @@ export default function ChatWidget() {
   }
 
   const renderChatContent = () => {
+    // If the user is logged in, has a plan, and is on the dashboard page, directly show the chat.
+    if (user && isPremiumUser && isInDashboard && !sessionId) {
+        handleSessionStarted(`premium-session-${user.uid}`, [
+            { id: 'welcome', role: 'model', text: `¡Hola ${user.displayName}! Gracias por ser suscriptor. ¿En qué te puedo ayudar hoy?`, timestamp: new Date().toISOString(), replyTo: null }
+        ]);
+    }
+    
     if (!sessionId) {
       return (
         <WelcomeForm 
@@ -483,6 +506,14 @@ export default function ChatWidget() {
       </div>
     );
   };
+  
+  if (isInDashboard) {
+      return (
+        <div className="flex flex-col h-full rounded-lg border bg-card">
+            {renderChatContent()}
+        </div>
+      )
+  }
 
   if (!isChatVisible) {
     return null;

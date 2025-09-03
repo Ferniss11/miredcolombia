@@ -102,9 +102,9 @@ export class FirestoreUserRepository implements UserRepository {
   }
 
   // Agent Specific Methods
-  async getGlobalAgentConfig(): Promise<AgentConfig> {
+  async getAgentConfig(agentId: string = 'global'): Promise<AgentConfig> {
     if (!adminDb) throw new Error('Firestore not initialized');
-    const doc = await adminDb.collection('agentConfig').doc('main').get();
+    const doc = await adminDb.collection('agentConfig').doc(agentId).get();
     if (!doc.exists) {
         // Return a default config if none exists, to avoid crashing the UI
         return {
@@ -115,26 +115,8 @@ export class FirestoreUserRepository implements UserRepository {
     return doc.data() as AgentConfig;
   }
 
-  async saveGlobalAgentConfig(config: AgentConfig): Promise<void> {
+  async saveAgentConfig(agentId: string, config: AgentConfig): Promise<void> {
     if (!adminDb) throw new Error('Firestore not initialized');
-    await adminDb.collection('agentConfig').doc('main').set(config, { merge: true });
-  }
-
-  async updateAgentStatus(uid: string, isAgentEnabled: boolean): Promise<void> {
-    if (!adminDb) throw new Error('Firestore not initialized');
-    const userRef = adminDb.collection('users').doc(uid);
-    await userRef.update({
-      'businessProfile.isAgentEnabled': isAgentEnabled,
-      'updatedAt': new Date(),
-    });
-  }
-
-  async updateAgentConfig(uid: string, agentConfig: AgentConfig): Promise<void> {
-    if (!adminDb) throw new Error('Firestore not initialized');
-    const userRef = adminDb.collection('users').doc(uid);
-    await userRef.update({
-      'businessProfile.agentConfig': agentConfig,
-      'updatedAt': new Date(),
-    });
+    await adminDb.collection('agentConfig').doc(agentId).set(config, { merge: true });
   }
 }

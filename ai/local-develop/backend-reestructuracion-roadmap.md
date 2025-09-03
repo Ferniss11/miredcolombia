@@ -156,26 +156,45 @@
 
 ---
 
-## Fase 7: Ecosistema de Partners y Servicios Avanzados - PLANIFICACIÓN
+## Fase 7: Ecosistema de Asistentes IA "Valeria"
+*   **Estimación:** 12 horas
+*   **Objetivo:** Crear un entorno de chat premium y configurable para los usuarios suscritos a los planes de Valeria, proporcionando al administrador las herramientas para gestionar la inteligencia de cada plan de forma independiente.
+*   **7.1. Extender el Modelo de Configuración de Agentes:**
+    *   Utilizar la colección `agentConfig` existente en Firestore para manejar múltiples perfiles de agente.
+    *   Crear tres documentos distintos: `global` (para el chat público), `plan_colombia` y `plan_espana`.
+
+*   **7.2. Rediseñar el Panel de Administración de Agentes:**
+    *   La página `/dashboard/admin/agent` tendrá un selector o pestañas para elegir y configurar cada uno de los tres agentes.
+    *   Actualizar la acción `saveAgentConfigAction` para que reciba el ID del agente a modificar.
+
+*   **7.3. Adaptar la Lógica del Chat:**
+    *   Actualizar el `GenkitAgentAdapter` para que cargue la configuración del agente correcta (`global`, `plan_colombia` o `plan_espana`) basándose en el `claim` de suscripción del usuario.
+
+*   **7.4. Integrar Interfaz de Chat en el Dashboard de Valeria:**
+    *   Reemplazar el contenido actual de `/dashboard/valeria` con una interfaz de chat completa, dedicada para los suscriptores.
+
+---
+
+## Fase 8: Ecosistema de Partners y Servicios Avanzados - PLANIFICACIÓN
 *   **Estimación:** 30 horas
 *   **Objetivo:** Convertir las secciones "Packs" y "Trámites" en un mercado dinámico, permitiendo a profesionales verificados (partners) ofrecer sus servicios directamente a través de la plataforma.
-*   **7.1. Definir Rol y Entidades de Partner:**
+*   **8.1. Definir Rol y Entidades de Partner:**
     *   Crear un nuevo rol de usuario: `'Partner'`.
     *   Definir la entidad `PartnerProfile` en el dominio, con campos como `specialization`, `bio`, `servicesOffered`, `consultationPrice`, etc.
     *   Modificar las entidades `Pack` y `Tramite` para que puedan ser vinculadas a un `partnerId`.
 
-*   **7.2. Desarrollar el Dashboard de Partner:**
+*   **8.2. Desarrollar el Dashboard de Partner:**
     *   Crear la ruta `/dashboard/partner` con acceso restringido para este rol.
     *   Implementar un formulario para que los partners puedan editar su perfil público.
     *   Crear una interfaz para que los partners puedan ver y gestionar los `Leads` (consultas) recibidos.
 
-*   **7.3. Implementar el Flujo de Leads:**
+*   **8.3. Implementar el Flujo de Leads:**
     *   Asegurarse de que la página `/tramites` y `/packs` presenten los servicios en marca blanca.
     *   Verificar que los botones "Solicitar ahora" redirijan correctamente al sistema del partner.
     *   Reemplazar los botones de "Solicitar ahora" por un formulario de contacto modal.
     *   Al enviar el formulario, se creará una entidad `Lead` en la base de datos y se notificará por email al partner correspondiente.
 
-*   **7.4. Flujo de Aprobación de Partners (Admin):**
+*   **8.4. Flujo de Aprobación de Partners (Admin):**
     *   Crear una sección en el dashboard de administrador para ver y aprobar las solicitudes de nuevos partners.
     *   Asegurar que solo los partners aprobados aparezcan públicamente.
 

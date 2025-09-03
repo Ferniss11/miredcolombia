@@ -11,26 +11,26 @@ import { FirestoreUserRepository } from './user/infrastructure/persistence/fires
 import type { AgentConfig } from './types';
 
 
-export async function getGlobalAgentConfigAction() {
+export async function getAgentConfigAction(agentId: string = 'global') {
     try {
         const repo = new FirestoreUserRepository();
-        const config = await repo.getGlobalAgentConfig();
+        const config = await repo.getAgentConfig(agentId);
         return { config };
     } catch (error) {
-        console.error("Error getting global agent config:", error);
+        console.error(`Error getting agent config for ${agentId}:`, error);
         const message = error instanceof Error ? error.message : "An unknown error occurred.";
         return { error: message };
     }
 }
 
-export async function saveGlobalAgentConfigAction(config: AgentConfig) {
+export async function saveAgentConfigAction(agentId: string, config: AgentConfig) {
     try {
         const repo = new FirestoreUserRepository();
-        await repo.saveGlobalAgentConfig(config);
+        await repo.saveAgentConfig(agentId, config);
         revalidatePath('/dashboard/admin/agent');
         return { success: true };
     } catch (error) {
-        console.error("Error saving global agent config:", error);
+        console.error(`Error saving agent config for ${agentId}:`, error);
         const message = error instanceof Error ? error.message : "An unknown error occurred.";
         return { error: message };
     }
