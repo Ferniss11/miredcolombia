@@ -8,12 +8,14 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Save, Bot, Book, Calendar, Mail, Upload, Power, Database } from 'lucide-react';
+import { Loader2, Save, Bot, Book, Calendar, Mail, Upload, Power, Database, AlertTriangle } from 'lucide-react';
 import type { AgentConfig } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { getAgentConfigAction, saveAgentConfigAction } from '@/lib/user-actions-legacy';
 import { cn } from '@/lib/utils';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import Link from 'next/link';
 
 type AgentType = 'global' | 'plan_colombia' | 'plan_espana';
 
@@ -32,21 +34,20 @@ const agentDetails: Record<AgentType, { name: string; description: string }> = {
     }
 };
 
-// --- New ToolCard Component (Visual only for now) ---
-const ToolCard = ({ icon: Icon, title, description }: { icon: React.ElementType, title: string, description: string }) => (
+const ToolCard = ({ icon: Icon, title, description, onConnect }: { icon: React.ElementType, title: string, description: string, onConnect: () => void }) => (
     <Card className="flex flex-col text-center items-center justify-start p-4 hover:bg-muted/50 transition-colors">
         <div className="p-3 bg-primary/10 rounded-lg mb-2">
             <Icon className="w-6 h-6 text-primary" />
         </div>
         <h4 className="font-semibold text-sm">{title}</h4>
         <p className="text-xs text-muted-foreground mt-1 flex-grow">{description}</p>
-        <Button variant="outline" size="sm" className="mt-4 w-full" disabled>
+        <Button variant="outline" size="sm" className="mt-4 w-full" onClick={onConnect}>
             <Power className="mr-2 h-4 w-4" /> Conectar
         </Button>
     </Card>
 );
 
-const AgentConfigForm = ({ agentId, agentType }: { agentId: AgentType, agentType: {name: string, description: string} }) => {
+const AgentConfigForm = ({ agentId, agentType, onToolConnectClick }: { agentId: AgentType, agentType: {name: string, description: string}, onToolConnectClick: () => void }) => {
     const [config, setConfig] = useState<AgentConfig | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, startTransition] = useTransition();
@@ -101,60 +102,69 @@ const AgentConfigForm = ({ agentId, agentType }: { agentId: AgentType, agentType
                 <CardTitle>{agentType.name}</CardTitle>
                 <CardDescription>{agentType.description}</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-                <div className="space-y-2">
-                    <Label htmlFor={`system-prompt-${agentId}`}>System Prompt</Label>
-                    <Textarea
-                        id={`system-prompt-${agentId}`}
-                        placeholder="Eres un asistente amigable..."
-                        value={config.systemPrompt}
-                        onChange={(e) => handleConfigChange('systemPrompt', e.target.value)}
-                        rows={15}
-                        className="font-mono text-sm"
-                    />
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor={`model-${agentId}`}>Modelo de IA</Label>
-                    <Select
-                        value={config.model}
-                        onValueChange={(value) => handleConfigChange('model', value)}
-                    >
-                        <SelectTrigger id={`model-${agentId}`} className="w-full md:w-1/2">
-                            <SelectValue placeholder="Selecciona un modelo" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="googleai/gemini-1.5-flash-latest">Gemini 1.5 Flash (Rápido)</SelectItem>
-                            <SelectItem value="googleai/gemini-1.5-pro-latest">Gemini 1.5 Pro (Potente)</SelectItem>
-                            <SelectItem value="googleai/gemini-2.5-flash-lite">Gemini 2.5 Flash Lite</SelectItem>
-                            <SelectItem value="googleai/gemini-2.5-pro">Gemini 2.5 Pro</SelectItem>
-                            <SelectItem value="googleai/gemini-2.5-flash">Gemini 2.5 Flash</SelectItem>
-                        </SelectContent>
-                    </Select>
-                </div>
-                 {/* New Tools Section */}
-                <div className="space-y-4 pt-4">
-                    <Label>Herramientas del Agente</Label>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                       <ToolCard 
-                            icon={Database}
-                            title="Base de Conocimiento"
-                            description="Conecta al agente a tus guías y artículos para respuestas más precisas."
-                       />
-                       <ToolCard 
-                            icon={Calendar}
-                            title="Google Calendar"
-                            description="Permite al agente agendar y consultar citas directamente en tu calendario."
-                       />
-                       <ToolCard 
-                            icon={Mail}
-                            title="Conexión Email"
-                            description="Autoriza al agente a enviar correos de seguimiento a los clientes."
-                       />
-                        <ToolCard 
-                            icon={Upload}
-                            title="Análisis de Documentos"
-                            description="Sube documentos para que el agente los analice y te dé respuestas basadas en ellos."
-                       />
+            <CardContent>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    {/* Left Column: Main Configuration */}
+                    <div className="lg:col-span-2 space-y-6">
+                        <div className="space-y-2">
+                            <Label htmlFor={`system-prompt-${agentId}`}>System Prompt</Label>
+                            <Textarea
+                                id={`system-prompt-${agentId}`}
+                                placeholder="Eres un asistente amigable..."
+                                value={config.systemPrompt}
+                                onChange={(e) => handleConfigChange('systemPrompt', e.target.value)}
+                                rows={15}
+                                className="font-mono text-sm"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor={`model-${agentId}`}>Modelo de IA</Label>
+                            <Select
+                                value={config.model}
+                                onValueChange={(value) => handleConfigChange('model', value)}
+                            >
+                                <SelectTrigger id={`model-${agentId}`} className="w-full md:w-1/2">
+                                    <SelectValue placeholder="Selecciona un modelo" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="googleai/gemini-1.5-flash-latest">Gemini 1.5 Flash (Rápido)</SelectItem>
+                                    <SelectItem value="googleai/gemini-1.5-pro-latest">Gemini 1.5 Pro (Potente)</SelectItem>
+                                    <SelectItem value="googleai/gemini-2.5-flash-lite">Gemini 2.5 Flash Lite</SelectItem>
+                                    <SelectItem value="googleai/gemini-2.5-pro">Gemini 2.5 Pro</SelectItem>
+                                    <SelectItem value="googleai/gemini-2.5-flash">Gemini 2.5 Flash</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                    {/* Right Column: Tools */}
+                    <div className="lg:col-span-1 space-y-4">
+                        <Label>Herramientas del Agente</Label>
+                         <div className="grid grid-cols-2 gap-4">
+                           <ToolCard 
+                                icon={Database}
+                                title="Base de Conocimiento"
+                                description="Conecta al agente a tus guías y artículos."
+                                onConnect={onToolConnectClick}
+                           />
+                           <ToolCard 
+                                icon={Calendar}
+                                title="Google Calendar"
+                                description="Permite al agente agendar citas."
+                                onConnect={onToolConnectClick}
+                           />
+                           <ToolCard 
+                                icon={Mail}
+                                title="Conexión Email"
+                                description="Autoriza al agente a enviar correos."
+                                onConnect={onToolConnectClick}
+                           />
+                            <ToolCard 
+                                icon={Upload}
+                                title="Análisis de Docs"
+                                description="Sube PDFs para que el agente los analice."
+                                onConnect={onToolConnectClick}
+                           />
+                        </div>
                     </div>
                 </div>
             </CardContent>
@@ -169,29 +179,53 @@ const AgentConfigForm = ({ agentId, agentType }: { agentId: AgentType, agentType
 }
 
 export default function AgentManagementPage() {
+    const [isDevModalOpen, setIsDevModalOpen] = useState(false);
+
     return (
-        <div className="space-y-6">
-            <div className="flex items-center gap-4">
-                <Bot className="w-8 h-8 text-primary" />
-                <h1 className="text-3xl font-bold font-headline">Gestión de Agentes de IA</h1>
+        <>
+            <div className="space-y-6">
+                <div className="flex items-center gap-4">
+                    <Bot className="w-8 h-8 text-primary" />
+                    <h1 className="text-3xl font-bold font-headline">Gestión de Agentes de IA</h1>
+                </div>
+
+                <Tabs defaultValue="global" className="w-full">
+                    <TabsList className="grid w-full grid-cols-3">
+                        <TabsTrigger value="global">Agente Global</TabsTrigger>
+                        <TabsTrigger value="plan_colombia">Plan Colombia</TabsTrigger>
+                        <TabsTrigger value="plan_espana">Plan España</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="global">
+                        <AgentConfigForm agentId="global" agentType={agentDetails.global} onToolConnectClick={() => setIsDevModalOpen(true)} />
+                    </TabsContent>
+                    <TabsContent value="plan_colombia">
+                        <AgentConfigForm agentId="plan_colombia" agentType={agentDetails.plan_colombia} onToolConnectClick={() => setIsDevModalOpen(true)} />
+                    </TabsContent>
+                    <TabsContent value="plan_espana">
+                        <AgentConfigForm agentId="plan_espana" agentType={agentDetails.plan_espana} onToolConnectClick={() => setIsDevModalOpen(true)} />
+                    </TabsContent>
+                </Tabs>
             </div>
 
-             <Tabs defaultValue="global" className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
-                    <TabsTrigger value="global">Agente Global</TabsTrigger>
-                    <TabsTrigger value="plan_colombia">Plan Colombia</TabsTrigger>
-                    <TabsTrigger value="plan_espana">Plan España</TabsTrigger>
-                </TabsList>
-                <TabsContent value="global">
-                    <AgentConfigForm agentId="global" agentType={agentDetails.global}/>
-                </TabsContent>
-                <TabsContent value="plan_colombia">
-                     <AgentConfigForm agentId="plan_colombia" agentType={agentDetails.plan_colombia}/>
-                </TabsContent>
-                <TabsContent value="plan_espana">
-                     <AgentConfigForm agentId="plan_espana" agentType={agentDetails.plan_espana}/>
-                </TabsContent>
-            </Tabs>
-        </div>
+            <AlertDialog open={isDevModalOpen} onOpenChange={setIsDevModalOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle className="flex items-center gap-2">
+                           <AlertTriangle className="text-yellow-500" />
+                            Función en Desarrollo
+                        </AlertDialogTitle>
+                        <AlertDialogDescription>
+                            La conexión de herramientas avanzadas como la base de conocimiento vectorial y la integración con Google Calendar está en nuestra hoja de ruta. ¡Estamos trabajando para traerla pronto!
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cerrar</AlertDialogCancel>
+                        <AlertDialogAction asChild>
+                           <Link href="/reestructuracion">Ver Hoja de Ruta</Link>
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+        </>
     );
 }
