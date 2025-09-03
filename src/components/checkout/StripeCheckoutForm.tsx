@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useTransition } from 'react';
 import {
   PaymentElement,
   useStripe,
@@ -13,8 +13,11 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { createOneTimeCheckoutSessionAction } from '@/lib/payment-actions';
-import { useAuth } from '@/context/AuthContext';
-import { useRouter } from 'next/navigation';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
 
 const stripePromise = loadStripe(
   process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
@@ -24,27 +27,30 @@ type ItemProp = {
     id: string;
     name: string;
     price: number;
-    type: 'package' | 'service';
+    type: 'package' | 'service' | 'plan'; // Adjusted to include 'plan'
 };
-type CheckoutFormProps = {
+type CheckoutFormWrapperProps = {
   item: ItemProp;
 };
 
-// The core payment form component, now using Payment Intents
-const CheckoutForm = ({ item }: CheckoutFormProps) => {
+const CustomerDetailsSchema = z.object({
+    name: z.string().min(2, "El nombre es requerido."),
+    email: z.string().email("El email no es válido."),
+});
+type CustomerDetailsValues = z.infer<typeof CustomerDetailsSchema>;
+
+const CheckoutForm = ({ item, customerDetails }: { item: ItemProp, customerDetails: CustomerDetailsValues }) => {
     const stripe = useStripe();
     const elements = useElements();
-    const { user } = useAuth();
     const { toast } = useToast();
-    const router = useRouter();
-
+    
     const [isProcessing, setIsProcessing] = useState(false);
     const [message, setMessage] = useState<string | null>(null);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!stripe || !elements || !user) {
-            setMessage('El formulario de pago no está listo o no has iniciado sesión.');
+        if (!stripe || !elements) {
+            setMessage('El formulario de pago no está listo.');
             return;
         }
 
@@ -55,13 +61,14 @@ const CheckoutForm = ({ item }: CheckoutFormProps) => {
             const { error } = await stripe.confirmPayment({
                 elements,
                 confirmParams: {
-                    return_url: `${window.location.origin}/valeria/payment-success`, // Re-use the success page for now
+                    return_url: `${window.location.origin}/valeria/payment-success`,
+                    receipt_email: customerDetails.email,
                 },
             });
-
+            
             if (error.type === "card_error" || error.type === "validation_error") {
                 setMessage(error.message || 'Error de validación desconocido.');
-            } else {
+            } else if (error) {
                 setMessage("Ha ocurrido un error inesperado.");
             }
 
@@ -91,52 +98,70 @@ const CheckoutForm = ({ item }: CheckoutFormProps) => {
     );
 };
 
-// Wrapper component that creates the PaymentIntent and provides Stripe context
-const StripeCheckoutForm = ({ item }: CheckoutFormProps) => {
-    const { user } = useAuth();
+// Wrapper component for the entire checkout flow
+const StripeCheckoutForm = ({ item }: CheckoutFormWrapperProps) => {
+    const [isPending, startTransition] = useTransition();
     const [clientSecret, setClientSecret] = useState<string | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
+    const [customerDetails, setCustomerDetails] = useState<CustomerDetailsValues | null>(null);
 
-    useEffect(() => {
-        if (user && item) {
-            createOneTimeCheckoutSessionAction({
+    const form = useForm<CustomerDetailsValues>({
+        resolver: zodResolver(CustomerDetailsSchema),
+        defaultValues: { name: '', email: '' },
+    });
+
+    const handleCustomerSubmit = async (values: CustomerDetailsValues) => {
+        startTransition(async () => {
+            const result = await createOneTimeCheckoutSessionAction({
                 itemId: item.id,
                 itemName: item.name,
                 amount: item.price,
-                userId: user.uid,
-                userEmail: user.email!,
-            }).then(result => {
-                if (result.clientSecret) {
-                    setClientSecret(result.clientSecret);
-                } else if (result.error) {
-                    console.error("Error creating payment intent:", result.error);
-                }
-                setIsLoading(false);
+                userName: values.name,
+                userEmail: values.email,
             });
-        }
-    }, [user, item]);
+            if (result.clientSecret) {
+                setCustomerDetails(values);
+                setClientSecret(result.clientSecret);
+            } else {
+                console.error("Error creating payment intent:", result.error);
+                // Optionally show a toast error
+            }
+        });
+    };
     
-    if (isLoading) {
+    if (clientSecret && customerDetails) {
+        const options: StripeElementsOptions = {
+            clientSecret,
+            appearance: { theme: 'stripe' },
+        };
         return (
-            <div className="flex items-center justify-center h-24">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
+            <Elements options={options} stripe={stripePromise}>
+                <CheckoutForm item={item} customerDetails={customerDetails} />
+            </Elements>
         );
     }
 
-    if (!clientSecret) {
-        return <div>Error al cargar el formulario de pago. Por favor, refresca la página.</div>
-    }
-    
-    const options: StripeElementsOptions = {
-        clientSecret,
-        appearance: { theme: 'stripe' },
-    };
-
     return (
-        <Elements options={options} stripe={stripePromise}>
-            <CheckoutForm item={item} />
-        </Elements>
+        <Form {...form}>
+            <form onSubmit={form.handleSubmit(handleCustomerSubmit)} className="space-y-4">
+                <FormField control={form.control} name="name" render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Nombre Completo</FormLabel>
+                        <FormControl><Input placeholder="Tu nombre" {...field} /></FormControl>
+                        <FormMessage />
+                    </FormItem>
+                )} />
+                <FormField control={form.control} name="email" render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl><Input placeholder="tu@email.com" {...field} /></FormControl>
+                        <FormMessage />
+                    </FormItem>
+                )} />
+                <Button type="submit" className="w-full" disabled={isPending}>
+                    {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Continuar al Pago"}
+                </Button>
+            </form>
+        </Form>
     );
 };
 

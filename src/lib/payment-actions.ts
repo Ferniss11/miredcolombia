@@ -18,8 +18,9 @@ const createOneTimeCheckoutSchema = z.object({
   itemId: z.string(),
   itemName: z.string(),
   amount: z.number().positive(),
-  userId: z.string(),
+  userName: z.string(),
   userEmail: z.string(),
+  userId: z.string().optional(), // UserId is now optional for guest checkouts
 });
 
 type CreateOneTimeCheckoutInput = z.infer<typeof createOneTimeCheckoutSchema>;
@@ -83,16 +84,19 @@ export async function createSubscriptionCheckoutSessionAction(input: CreateSubsc
 export async function createOneTimeCheckoutSessionAction(input: CreateOneTimeCheckoutInput) {
   try {
       const validatedInput = createOneTimeCheckoutSchema.parse(input);
-      const { itemId, itemName, amount, userId, userEmail } = validatedInput;
+      const { itemId, itemName, amount, userName, userEmail, userId } = validatedInput;
 
       if (!stripe) throw new Error('Stripe no está configurado.');
 
       // 1. Create Order in our DB with 'pending' status
       const orderRepository = new FirestoreOrderRepository();
       const createOrderUseCase = new CreateOrderUseCase(orderRepository);
+      
+      const [firstName, ...lastNameParts] = userName.split(' ');
+      const lastName = lastNameParts.join(' ');
 
       const order = await createOrderUseCase.execute(
-          { userId, email: userEmail, firstName: 'User', lastName: '' }, // We might need more customer info here
+          { userId: userId || null, email: userEmail, firstName, lastName },
           {
               itemId,
               itemName,
@@ -108,7 +112,7 @@ export async function createOneTimeCheckoutSessionAction(input: CreateOneTimeChe
       if (customers.data.length > 0 && customers.data[0].id) {
           customerId = customers.data[0].id;
       } else {
-          const newCustomer = await stripe.customers.create({ email: userEmail, metadata: { firebaseUID: userId } });
+          const newCustomer = await stripe.customers.create({ name: userName, email: userEmail, metadata: { firebaseUID: userId || '' } });
           customerId = newCustomer.id;
       }
 
@@ -119,7 +123,7 @@ export async function createOneTimeCheckoutSessionAction(input: CreateOneTimeChe
           customer: customerId,
           metadata: {
               orderId: order.id, // Link PaymentIntent to our Order
-              firebaseUID: userId,
+              firebaseUID: userId || '',
           },
       });
 
