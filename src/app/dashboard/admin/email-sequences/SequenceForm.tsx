@@ -138,7 +138,7 @@ export default function SequenceForm({ sequenceToEdit, onSuccess, onCancel }: Se
 
   return (
     <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full overflow-hidden">
+        <form onSubmit={form.handleSubmit(onSubmit)} className="flex h-full flex-col overflow-hidden">
             <ScrollArea className="flex-1 p-6">
                 <div className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

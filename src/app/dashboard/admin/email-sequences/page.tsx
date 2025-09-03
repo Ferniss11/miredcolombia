@@ -1,4 +1,3 @@
-
 // src/app/dashboard/admin/email-sequences/page.tsx
 'use client';
 
@@ -235,8 +234,8 @@ export default function AdminEmailSequencesPage() {
             </Card>
 
             <Sheet open={isSheetOpen} onOpenChange={handleSheetClose}>
-                <SheetContent className="sm:max-w-4xl w-full p-0">
-                    <SheetHeader className="p-6">
+                <SheetContent className="sm:max-w-4xl w-full p-0 flex flex-col">
+                    <SheetHeader className="p-6 pb-0">
                         <SheetTitle>{editingSequence && 'id' in editingSequence ? 'Editar Secuencia' : 'Crear Nueva Secuencia'}</SheetTitle>
                         <SheetDescription>
                             Define los pasos, el contenido y los tiempos de tu automatización.
