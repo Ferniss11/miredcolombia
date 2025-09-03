@@ -1,4 +1,3 @@
-
 // src/app/dashboard/admin/email-sequences/SequenceForm.tsx
 'use client';
 
@@ -14,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { SheetFooter } from '@/components/ui/sheet';
+import { SheetFooter, SheetClose } from '@/components/ui/sheet';
 import { Loader2, PlusCircle, Trash2, Maximize, Minimize } from 'lucide-react';
 import { TiptapEditor } from '@/components/ui/tiptap-editor';
 import { EmailSequence, EmailStep } from '@/lib/email-sequence/domain/email-sequence.entity';
@@ -134,36 +133,36 @@ export default function SequenceForm({ sequenceToEdit, onSuccess, onCancel }: Se
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
-        <ScrollArea className="flex-grow p-1 -ml-1">
-          <div className="space-y-6 py-6 pr-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField control={form.control} name="name" render={({ field }) => (<FormItem><FormLabel>Nombre de la Secuencia</FormLabel><FormControl><Input placeholder="Ej: Bienvenida Guía Empadronamiento" {...field} /></FormControl><FormMessage /></FormItem>)} />
-              <FormField control={form.control} name="trigger" render={({ field }) => (<FormItem><FormLabel>Disparador (Trigger)</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="on_guide_download">Al descargar una guía</SelectItem><SelectItem value="on_user_signup" disabled>Al registrarse un usuario</SelectItem><SelectItem value="on_service_purchase" disabled>Al comprar un servicio</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
-            </div>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full overflow-hidden">
+            <ScrollArea className="flex-1 p-6 -m-6">
+                <div className="space-y-6 pb-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField control={form.control} name="name" render={({ field }) => (<FormItem><FormLabel>Nombre de la Secuencia</FormLabel><FormControl><Input placeholder="Ej: Bienvenida Guía Empadronamiento" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="trigger" render={({ field }) => (<FormItem><FormLabel>Disparador (Trigger)</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="on_guide_download">Al descargar una guía</SelectItem><SelectItem value="on_user_signup" disabled>Al registrarse un usuario</SelectItem><SelectItem value="on_service_purchase" disabled>Al comprar un servicio</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
+                    </div>
 
-            <div>
-              <h3 className="text-lg font-semibold mb-2">Pasos de la Secuencia</h3>
-              <div className="space-y-4">
-                {fields.map((field, index) => (
-                  <EmailStepForm key={field.id} control={form.control} index={index} remove={remove} />
-                ))}
-                <Button type="button" variant="outline" onClick={addStep} className="w-full">
-                  <PlusCircle className="w-4 h-4 mr-2" /> Añadir Paso (Email)
+                    <div>
+                        <h3 className="text-lg font-semibold mb-2">Pasos de la Secuencia</h3>
+                        <div className="space-y-4">
+                            {fields.map((field, index) => (
+                                <EmailStepForm key={field.id} control={form.control} index={index} remove={remove} />
+                            ))}
+                            <Button type="button" variant="outline" onClick={addStep} className="w-full">
+                                <PlusCircle className="w-4 h-4 mr-2" /> Añadir Paso (Email)
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            </ScrollArea>
+
+            <SheetFooter className="py-4 mt-auto border-t">
+                <Button type="button" variant="outline" onClick={onCancel}>Cancelar</Button>
+                <Button type="submit" disabled={isPending}>
+                    {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {sequenceToEdit ? 'Guardar Cambios' : 'Crear Secuencia'}
                 </Button>
-              </div>
-            </div>
-          </div>
-        </ScrollArea>
-
-        <SheetFooter className="py-4 pr-6 flex-shrink-0">
-          <Button type="button" variant="outline" onClick={onCancel}>Cancelar</Button>
-          <Button type="submit" disabled={isPending}>
-            {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {sequenceToEdit ? 'Guardar Cambios' : 'Crear Secuencia'}
-          </Button>
-        </SheetFooter>
-      </form>
+            </SheetFooter>
+        </form>
     </Form>
   );
 }
