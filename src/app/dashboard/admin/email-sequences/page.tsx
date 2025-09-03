@@ -10,12 +10,14 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Plus, Edit, Trash2, MoreVertical, Loader2, Mails, ToggleRight, ToggleLeft } from 'lucide-react';
+import { Plus, Edit, Trash2, MoreVertical, Loader2, Mails, ToggleRight, ToggleLeft, Sparkles } from 'lucide-react';
 import type { EmailSequence } from '@/lib/email-sequence/domain/email-sequence.entity';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import SequenceForm from './SequenceForm';
+import { generateEmailSequence } from '@/ai/flows/generate-email-sequence.flow';
+
 
 export default function AdminEmailSequencesPage() {
     const { user } = useAuth();
@@ -98,6 +100,31 @@ export default function AdminEmailSequencesPage() {
             }
         });
     };
+    
+    const handleGenerateWithAi = () => {
+        startTransition(async () => {
+            try {
+                toast({ title: "Generando secuencia...", description: "La IA está trabajando en tu nueva secuencia de emails. Esto puede tardar un momento." });
+                // For now, we use a default prompt. Later, this will come from a modal.
+                const generatedSequence = await generateEmailSequence({
+                    objective: 'Crear una secuencia de bienvenida de 3 emails para los que descargan la guía de empadronamiento. El objetivo es entregar la guía, resolver dudas y finalmente presentar nuestros servicios de forma sutil.',
+                    numSteps: 3,
+                    tone: 'Amigable',
+                    additionalInfo: 'Usar un tono cercano y servicial.'
+                });
+
+                if (generatedSequence) {
+                    setEditingSequence(generatedSequence as any);
+                    setIsSheetOpen(true);
+                } else {
+                    throw new Error("La IA no devolvió una secuencia válida.");
+                }
+            } catch (error) {
+                 toast({ variant: 'destructive', title: 'Error de IA', description: error instanceof Error ? error.message : 'No se pudo generar la secuencia.' });
+            }
+        });
+    };
+
 
     return (
         <div className="space-y-6">
@@ -106,9 +133,14 @@ export default function AdminEmailSequencesPage() {
                     <Mails className="w-8 h-8 text-primary" />
                     <h1 className="text-3xl font-bold font-headline">Secuencias de Email</h1>
                  </div>
-                <Button onClick={handleOpenSheetForCreate}>
-                    <Plus className="mr-2 h-4 w-4" /> Crear Nueva Secuencia
-                </Button>
+                 <div className="flex items-center gap-2">
+                    <Button variant="outline" onClick={handleGenerateWithAi} disabled={isPending}>
+                        <Sparkles className="mr-2 h-4 w-4" /> Crear con IA
+                    </Button>
+                    <Button onClick={handleOpenSheetForCreate}>
+                        <Plus className="mr-2 h-4 w-4" /> Crear Nueva Secuencia
+                    </Button>
+                 </div>
             </div>
 
             <Card>
@@ -169,8 +201,8 @@ export default function AdminEmailSequencesPage() {
             </Card>
 
             <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-                <SheetContent className="sm:max-w-4xl w-full">
-                    <SheetHeader>
+                <SheetContent className="sm:max-w-4xl w-full p-0">
+                    <SheetHeader className="p-6">
                         <SheetTitle>{editingSequence ? 'Editar Secuencia' : 'Crear Nueva Secuencia'}</SheetTitle>
                         <SheetDescription>
                             Define los pasos, el contenido y los tiempos de tu automatización.
