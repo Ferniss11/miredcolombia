@@ -148,7 +148,7 @@
 
 ---
 
-## Fase 6: Contenido Audiovisual y Refinamiento Final (✓ COMPLETADA)
+## Fase 6: Contenido Audiovisual y Refinamiento Final (EN PROGRESO)
 
 **Objetivo:** Integrar los nuevos vídeos y realizar los ajustes finales de la plataforma.
 
@@ -157,36 +157,33 @@
     *   Añadir el vídeo demo de Valeria en la página `/valeria`. (✓)
     *   Añadir el vídeo animado de los packs en la página `/packs`. (Pausado)
 
-*   **6.2. Página de Trámites y Packs (Partner) (✓):**
-    *   Asegurarse de que la página `/tramites` y `/packs` presenten los servicios en marca blanca. (✓)
-    *   Verificar que los botones "Solicitar ahora" redirijan correctamente al sistema del partner. (✓)
-
-*   **6.3. Tracking y Analítica (✓):**
-    *   Implementar Google Analytics 4 y el Píxel de Meta. (✓)
-    *   Configurar eventos clave: `start_valeria_trial`, `subscribe_valeria_plan`, `download_guide`, `click_partner_pack`. (✓)
+*   **6.2. Tracking y Analítica (Próximos Pasos):**
+    *   Implementar Google Analytics 4 y el Píxel de Meta.
+    *   Configurar eventos clave: `start_valeria_trial`, `subscribe_valeria_plan`, `download_guide`, `click_partner_pack`.
 
 ---
 
-## Fase 11: Ecosistema de Partners y Servicios Avanzados (Próximos Pasos)
+## Fase 7: Ecosistema de Partners y Servicios Avanzados (Próximos Pasos)
 
 **Objetivo:** Convertir las secciones "Packs" y "Trámites" en un mercado dinámico, permitiendo a profesionales verificados (partners) ofrecer sus servicios directamente a través de la plataforma.
 
-*   **11.1. Definir Rol y Entidades de Partner:**
+*   **7.1. Definir Rol y Entidades de Partner:**
     *   Crear un nuevo rol de usuario: `'Partner'`.
     *   Definir la entidad `PartnerProfile` en el dominio, con campos como `specialization`, `bio`, `servicesOffered`, `consultationPrice`, etc.
     *   Modificar las entidades `Pack` y `Tramite` para que puedan ser vinculadas a un `partnerId`.
 
-*   **11.2. Desarrollar el Dashboard de Partner:**
+*   **7.2. Desarrollar el Dashboard de Partner:**
     *   Crear la ruta `/dashboard/partner` con acceso restringido para este rol.
     *   Implementar un formulario para que los partners puedan editar su perfil público.
     *   Crear una interfaz para que los partners puedan ver y gestionar los `Leads` (consultas) recibidos.
 
-*   **11.3. Implementar el Flujo de Leads:**
-    *   Modificar las páginas públicas de `/packs` y `/tramites` para que muestren dinámicamente los servicios de los partners.
+*   **7.3. Implementar el Flujo de Leads:**
+    *   Asegurarse de que la página `/tramites` y `/packs` presenten los servicios en marca blanca.
+    *   Verificar que los botones "Solicitar ahora" redirijan correctamente al sistema del partner.
     *   Reemplazar los botones de "Solicitar ahora" por un formulario de contacto modal.
     *   Al enviar el formulario, se creará una entidad `Lead` en la base de datos y se notificará por email al partner correspondiente.
 
-*   **11.4. Flujo de Aprobación de Partners (Admin):**
+*   **7.4. Flujo de Aprobación de Partners (Admin):**
     *   Crear una sección en el dashboard de administrador para ver y aprobar las solicitudes de nuevos partners.
     *   Asegurar que solo los partners aprobados aparezcan públicamente.
 
@@ -197,4 +194,3 @@
 *   **Notas de IVA y Facturación:** Añadir el texto "Precios sin IVA. Se emite factura automáticamente." en todas las páginas donde se muestren precios de servicios de pago (Valeria, Empleo, Vivienda, Directorio).
 *   **Hosting y SSL:** Revisar la configuración actual del hosting para asegurar que puede soportar el aumento de tráfico y que el certificado SSL está correctamente configurado para toda la web.
 *   **Widget de Valeria:** Integrar el chat de Valeria de forma global en la web, asegurándose de que no interfiera con otros elementos de la UI.
-```
