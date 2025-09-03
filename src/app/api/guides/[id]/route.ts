@@ -2,16 +2,17 @@
 import { GuideController } from '@/lib/guide/infrastructure/api/guide.controller';
 import { apiHandler } from '@/lib/platform/api/api-handler';
 import { NextRequest } from 'next/server';
+import { ApiResponse } from '@/lib/platform/api/api-response';
 
 const guideController = new GuideController();
 
 type RouteContext = { params: { id: string } };
 
 // Public endpoint to get a single guide
-export const GET = async (req: NextRequest, { params }: RouteContext) => {
+export const GET = apiHandler(async (req: NextRequest, { params }: RouteContext) => {
     // This is a simplified version, as getById is not explicitly defined in controller but would be needed
-    return new Response('Not Implemented', { status: 501 });
-};
+    return ApiResponse.notImplemented();
+});
 
 // Protected endpoint for admins to update a guide
 export const POST = apiHandler((req: NextRequest, { params }: RouteContext) =>

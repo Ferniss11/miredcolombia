@@ -1,5 +1,5 @@
 // src/lib/guide/infrastructure/api/guide.controller.ts
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { ApiResponse } from '@/lib/platform/api/api-response';
 import { adminAuth } from '@/lib/firebase/admin-config';
@@ -35,7 +35,7 @@ export class GuideController {
         this.deleteUseCase = new DeleteGuideUseCase(repository);
     }
 
-    async create(req: NextRequest): Promise<ApiResponse> {
+    async create(req: NextRequest): Promise<NextResponse> {
         if (!adminAuth) return ApiResponse.error('Authentication service not configured.', 503);
         const token = req.headers.get('Authorization')?.split('Bearer ')[1];
         if (!token) return ApiResponse.unauthorized();
@@ -64,12 +64,12 @@ export class GuideController {
         return ApiResponse.created(newGuide);
     }
 
-    async getAll(): Promise<ApiResponse> {
+    async getAll(): Promise<NextResponse> {
         const guides = await this.getAllUseCase.execute();
         return ApiResponse.success(guides);
     }
 
-    async update(req: NextRequest, { params }: { params: { id: string } }): Promise<ApiResponse> {
+    async update(req: NextRequest, { params }: { params: { id: string } }): Promise<NextResponse> {
         if (!adminAuth) return ApiResponse.error('Authentication service not configured.', 503);
         const token = req.headers.get('Authorization')?.split('Bearer ')[1];
         if (!token) return ApiResponse.unauthorized();
@@ -99,7 +99,7 @@ export class GuideController {
         return ApiResponse.success(updatedGuide);
     }
 
-    async delete({ params }: { params: { id: string } }): Promise<ApiResponse> {
+    async delete({ params }: { params: { id: string } }): Promise<NextResponse> {
         await this.deleteUseCase.execute(params.id);
         // Note: This does not delete files from storage. A more robust implementation would.
         return ApiResponse.noContent();
