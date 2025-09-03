@@ -144,6 +144,17 @@ export function DashboardSidebar() {
     return pathname === href || (href !== '/dashboard' && href !== '/dashboard/admin' && href !== '/dashboard/advertiser' && pathname.startsWith(href));
   }
   
+  const renderAllAdminItems = () => {
+    return adminNav.flatMap(group => group.items).map(item => (
+       <SidebarMenuItem key={item.href}>
+          <Link href={item.href}>
+            <SidebarMenuButton isActive={isActive(item.href)} icon={item.icon} tooltip={item.label} data-state={state}>
+              {item.label}
+            </SidebarMenuButton>
+          </Link>
+        </SidebarMenuItem>
+    ));
+  }
 
   return (
     <Sidebar>
@@ -162,32 +173,37 @@ export function DashboardSidebar() {
       <SidebarContent>
         <SidebarMenu>
           {isGrouped ? (
-            adminNav.map((group) => (
-              <Collapsible key={group.category} defaultOpen={true}>
-                <CollapsibleTrigger
-                  className={cn("w-full", state === "collapsed" && "hidden")}
-                  disabled={state === "collapsed"}
-                >
-                  <div className="flex items-center justify-between p-2 hover:bg-sidebar-accent rounded-md">
-                     <h4 className="text-xs font-semibold uppercase text-muted-foreground tracking-wider">{group.category}</h4>
-                     <ChevronDown className="h-4 w-4 transition-transform [&[data-state=open]]:rotate-180" />
-                  </div>
-                </CollapsibleTrigger>
-                <CollapsibleContent>
-                   <SidebarMenu className="pl-2 pr-0 pt-0 pb-1">
-                      {group.items.map((item) => (
-                          <SidebarMenuItem key={item.href}>
-                              <Link href={item.href}>
-                                  <SidebarMenuButton isActive={isActive(item.href)} icon={item.icon} tooltip={item.label} data-state={state}>
-                                      {item.label}
-                                  </SidebarMenuButton>
-                              </Link>
-                          </SidebarMenuItem>
-                      ))}
-                   </SidebarMenu>
-                </CollapsibleContent>
-              </Collapsible>
-            ))
+            state === 'expanded' ? (
+              adminNav.map((group) => (
+                <Collapsible key={group.category} defaultOpen={true}>
+                  <CollapsibleTrigger
+                    className={cn("w-full", state === "collapsed" && "hidden")}
+                    disabled={state === "collapsed"}
+                  >
+                    <div className="flex items-center justify-between p-2 hover:bg-sidebar-accent rounded-md">
+                      <h4 className="text-xs font-semibold uppercase text-muted-foreground tracking-wider">{group.category}</h4>
+                      <ChevronDown className="h-4 w-4 transition-transform [&[data-state=open]]:rotate-180" />
+                    </div>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <SidebarMenu className="pl-2 pr-0 pt-0 pb-1">
+                        {group.items.map((item) => (
+                            <SidebarMenuItem key={item.href}>
+                                <Link href={item.href}>
+                                    <SidebarMenuButton isActive={isActive(item.href)} icon={item.icon} tooltip={item.label} data-state={state}>
+                                        {item.label}
+                                    </SidebarMenuButton>
+                                </Link>
+                            </SidebarMenuItem>
+                        ))}
+                    </SidebarMenu>
+                  </CollapsibleContent>
+                </Collapsible>
+              ))
+            ) : (
+              // Render only icons when collapsed
+              renderAllAdminItems()
+            )
           ) : (
             (navItems as { href: string; label: string; icon: React.ElementType }[]).map((item) => (
               <SidebarMenuItem key={item.href}>
