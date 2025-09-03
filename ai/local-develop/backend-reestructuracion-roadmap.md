@@ -94,16 +94,16 @@
 
 **Objetivo:** Transformar la sección de "Guías" en un motor de captación de leads, ofreciendo contenido de alto valor a cambio de datos de contacto.
 
-*   **4.1. Crear la Entidad `Guide` (Backend Hexagonal):**
+*   **4.1. Crear la Entidad `Guide` (Backend Hexagonal) (✓):**
     *   **Dominio:** Definir la entidad `Guide` (`guide.entity.ts`) con campos: `id`, `title`, `description`, `coverImageUrl`, `pdfUrl`, `category`, `createdAt`.
     *   **Dominio:** Definir el puerto `GuideRepository` (`guide.repository.ts`).
     *   **Infraestructura:** Implementar `FirestoreGuideRepository` (`firestore-guide.repository.ts`) para la persistencia.
     *   **Aplicación:** Crear los casos de uso necesarios (`create`, `get`, `update`, `delete`).
 
 *   **4.2. Desarrollar el Gestor de Guías (Admin Dashboard):**
+    *   **API (✓):** Crear los endpoints de API (`/api/guides`) y el `GuideController` para conectar la UI con los casos de uso del backend. (✓)
     *   **UI:** Crear una nueva página en el dashboard de administrador (`/dashboard/admin/guides`).
     *   **UI:** Implementar un formulario que permita al administrador subir una guía: título, descripción, imagen de portada (a Firebase Storage) y el archivo PDF (a Firebase Storage).
-    *   **API:** Crear los endpoints de API (`/api/guides`) y el `GuideController` para conectar la UI con los casos de uso del backend.
 
 *   **4.3. Implementar la UI Pública de Guías (`/guias`):**
     *   **UI:** La página `/guias` mostrará las guías publicadas en un formato de tarjetas visualmente atractivo (portada, título, descripción).
@@ -143,3 +143,4 @@
 *   **Notas de IVA y Facturación:** Añadir el texto "Precios sin IVA. Se emite factura automáticamente." en todas las páginas donde se muestren precios de servicios de pago (Valeria, Empleo, Vivienda, Directorio).
 *   **Hosting y SSL:** Revisar la configuración actual del hosting para asegurar que puede soportar el aumento de tráfico y que el certificado SSL está correctamente configurado para toda la web.
 *   **Widget de Valeria:** Integrar el chat de Valeria de forma global en la web, asegurándose de que no interfiera con otros elementos de la UI.
+```
