@@ -15,10 +15,13 @@ import {
 } from 'lucide-react';
 import { Separator } from './separator';
 import Link from '@tiptap/extension-link';
+import { cn } from '@/lib/utils';
+
 
 type TiptapProps = {
   value: string;
   onChange: (richText: string) => void;
+  isExpanded?: boolean; // New prop to control expanded state
 };
 
 const Toolbar = ({ editor }: { editor: Editor | null }) => {
@@ -85,7 +88,7 @@ const Toolbar = ({ editor }: { editor: Editor | null }) => {
 };
 
 
-export const TiptapEditor = ({ value, onChange }: TiptapProps) => {
+export const TiptapEditor = ({ value, onChange, isExpanded }: TiptapProps) => {
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -102,7 +105,10 @@ export const TiptapEditor = ({ value, onChange }: TiptapProps) => {
     content: value,
     editorProps: {
       attributes: {
-        class: 'rounded-md border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 min-h-[150px] border',
+        class: cn(
+          'rounded-md border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 min-h-[150px] border transition-all',
+          isExpanded && 'min-h-[50vh]' // Apply taller height when expanded
+        ),
       },
     },
     onUpdate({ editor }) {

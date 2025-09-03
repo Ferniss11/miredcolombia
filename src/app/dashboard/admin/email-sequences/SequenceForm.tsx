@@ -1,3 +1,4 @@
+
 // src/app/dashboard/admin/email-sequences/SequenceForm.tsx
 'use client';
 
@@ -58,21 +59,17 @@ const EmailStepForm = ({ control, index, remove }: { control: any, index: number
                 <FormField control={control} name={`steps.${index}.delayMinutes`} render={({ field }) => (<FormItem><FormLabel>Retraso desde el paso anterior (en minutos)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
                 <FormField control={control} name={`steps.${index}.subject`} render={({ field }) => (<FormItem><FormLabel>Asunto del Email</FormLabel><FormControl><Input placeholder="Asunto del correo" {...field} /></FormControl><FormMessage /></FormItem>)} />
                 
-                <Collapsible open={isEditorExpanded} onOpenChange={setIsEditorExpanded}>
-                    <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                            <FormLabel>Cuerpo del Email</FormLabel>
-                            <CollapsibleTrigger asChild>
-                                <Button variant="ghost" size="sm">
-                                    {isEditorExpanded ? <Minimize className="h-4 w-4 mr-2" /> : <Maximize className="h-4 w-4 mr-2" />}
-                                    {isEditorExpanded ? 'Contraer' : 'Expandir'}
-                                </Button>
-                            </CollapsibleTrigger>
-                        </div>
-                        <CollapsibleContent>
-                             <FormField control={control} name={`steps.${index}.body`} render={({ field }) => (<FormItem><FormControl><TiptapEditor value={field.value} onChange={field.onChange} /></FormControl><FormMessage /></FormItem>)} />
-                        </CollapsibleContent>
+                <Collapsible open={isEditorExpanded} onOpenChange={setIsEditorExpanded} className="space-y-2">
+                    <div className="flex items-center justify-between">
+                        <FormLabel>Cuerpo del Email</FormLabel>
+                        <CollapsibleTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                                {isEditorExpanded ? <Minimize className="h-4 w-4 mr-2" /> : <Maximize className="h-4 w-4 mr-2" />}
+                                {isEditorExpanded ? 'Contraer' : 'Expandir'}
+                            </Button>
+                        </CollapsibleTrigger>
                     </div>
+                     <FormField control={control} name={`steps.${index}.body`} render={({ field }) => (<FormItem><FormControl><TiptapEditor value={field.value} onChange={field.onChange} isExpanded={isEditorExpanded} /></FormControl><FormMessage /></FormItem>)} />
                 </Collapsible>
             </CardContent>
         </Card>
@@ -170,4 +167,3 @@ export default function SequenceForm({ sequenceToEdit, onSuccess, onCancel }: Se
     </Form>
   );
 }
-
