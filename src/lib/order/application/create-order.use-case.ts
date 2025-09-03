@@ -1,12 +1,17 @@
+
 // src/lib/order/application/create-order.use-case.ts
 import type { Customer, Order } from '../domain/order.entity';
 import type { OrderRepository } from '../domain/order.repository';
+import { EmailAutomationService } from '@/lib/email-sequence/domain/email-automation.service';
+import { GetSequenceByTriggerUseCase } from '@/lib/email-sequence/application/get-sequence-by-trigger.use-case';
+import { FirestoreEmailSequenceRepository } from '@/lib/email-sequence/infrastructure/persistence/firestore-email-sequence.repository';
+
 
 // Input for creating the customer part of the order
 export type CreateOrderCustomerInput = {
     userId?: string | null;
     firstName: string;
-    lastName: string; // Made optional for lead magnet forms
+    lastName: string;
     email: string;
     phone?: string;
 };
@@ -24,10 +29,20 @@ export type CreateOrderDetailsInput = {
 /**
  * Use case for creating an order.
  * It encapsulates the logic of finding or creating a customer,
- * and then creating the order associated with that customer.
+ * creating the order, and triggering any post-order automations.
  */
 export class CreateOrderUseCase {
-  constructor(private readonly orderRepository: OrderRepository) {}
+  private orderRepository: OrderRepository;
+  private emailAutomationService: EmailAutomationService;
+  private getSequenceByTriggerUseCase: GetSequenceByTriggerUseCase;
+
+  constructor(orderRepository: OrderRepository) {
+    this.orderRepository = orderRepository;
+    this.emailAutomationService = new EmailAutomationService();
+    // Instantiate dependencies for the use case directly
+    const emailSequenceRepository = new FirestoreEmailSequenceRepository();
+    this.getSequenceByTriggerUseCase = new GetSequenceByTriggerUseCase(emailSequenceRepository);
+  }
 
   async execute(
     customerInfo: CreateOrderCustomerInput,
@@ -36,7 +51,6 @@ export class CreateOrderUseCase {
     
     // Step 1: Find or create the customer.
     let customer = await this.orderRepository.findCustomerByEmail(customerInfo.email);
-
     if (!customer) {
       customer = await this.orderRepository.createCustomer({
         userId: customerInfo.userId,
@@ -51,11 +65,20 @@ export class CreateOrderUseCase {
     const orderToCreate: Omit<Order, 'id' | 'createdAt'> = {
       customerId: customer.id,
       userId: customerInfo.userId,
-      status: 'succeeded', // For lead magnets, status is always 'succeeded'
+      status: 'succeeded',
       ...orderDetails,
     };
-    
     const newOrder = await this.orderRepository.createOrder(orderToCreate);
+    
+    // Step 3: Trigger automations if applicable.
+    if (newOrder.provider === 'lead_magnet') {
+        const sequence = await this.getSequenceByTriggerUseCase.execute('on_guide_download');
+        if (sequence) {
+            await this.emailAutomationService.scheduleSequence(sequence, customer, newOrder);
+        } else {
+            console.warn(`[CreateOrderUseCase] No active email sequence found for trigger 'on_guide_download'.`);
+        }
+    }
     
     return newOrder;
   }
