@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect, useTransition } from 'react';
@@ -16,7 +17,7 @@ import { ScrollArea } from '../ui/scroll-area';
 import { Checkbox } from '../ui/checkbox';
 import Link from 'next/link';
 import type { ValeriaPlan } from '@/lib/types';
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { useRouter } from 'next/navigation';
 
 
@@ -111,25 +112,31 @@ export default function CheckoutSheet({ isOpen, onOpenChange, plan }: CheckoutSh
         defaultValues: { name: '', email: '', password: '', acceptTerms: false },
     });
 
-    // Reset sheet state when it closes
+    // Reset sheet state when it closes or user changes
     useEffect(() => {
         if (!isOpen) {
             setTimeout(() => {
                 setStep(1);
                 form.reset();
             }, 300); // Delay to allow animation
+        } else {
+            // If the sheet opens and the user is already logged in, skip to step 2
+            if (user) {
+                setStep(2);
+            } else {
+                setStep(1);
+            }
         }
-    }, [isOpen, form]);
+    }, [isOpen, user, form]);
 
     const handleSignUp = async (values: SignUpFormValues) => {
         startTransition(async () => {
-            // Sign up the user, but specify 'User' role, as Advertiser is for business profiles.
             const { error } = await signUpWithEmail(values.name, values.email, values.password, 'User');
             if (error) {
                 toast({ variant: 'destructive', title: 'Error de Registro', description: error });
             } else {
                 toast({ title: '¡Cuenta Creada!', description: 'Ahora puedes completar tu pago.' });
-                setStep(2); // Move to the next step
+                // The useEffect will detect the new user and move to step 2 automatically
             }
         });
     };
@@ -147,7 +154,6 @@ export default function CheckoutSheet({ isOpen, onOpenChange, plan }: CheckoutSh
             if (result.error) {
                 toast({ variant: 'destructive', title: 'Error al Iniciar Pago', description: result.error });
             } else if (result.sessionId) {
-                // Redirect to Stripe's hosted checkout page
                 window.location.href = `/api/stripe/checkout?sessionId=${result.sessionId}`;
             }
         });
