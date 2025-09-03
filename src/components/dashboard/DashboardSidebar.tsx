@@ -30,6 +30,7 @@ import {
   Users as UsersIcon, // Renamed to avoid conflict with User icon
   Handshake,
   HomeIcon,
+  BookOpen,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -61,6 +62,7 @@ export function DashboardSidebar() {
   const adminNav = [
     { href: "/dashboard/admin", label: "Resumen", icon: LayoutGrid },
     { href: "/dashboard/admin/users", label: "Usuarios", icon: UsersIcon },
+    { href: "/dashboard/admin/guides", label: "Guías", icon: BookOpen },
     { href: "/dashboard/jobs", label: "Empleos", icon: Briefcase },
     { href: "/dashboard/my-properties", label: "Propiedades", icon: HomeIcon },
     { href: "/dashboard/my-services", label: "Servicios", icon: Handshake },
