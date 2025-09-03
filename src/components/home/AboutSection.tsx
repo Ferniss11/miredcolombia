@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { Heart, Handshake, Users, PlayCircle, Scale } from "lucide-react";

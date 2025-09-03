@@ -4,7 +4,7 @@
 import { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Check, MessageCircle } from "lucide-react";
+import { Check, MessageCircle, PlayCircle } from "lucide-react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
@@ -15,6 +15,7 @@ import { useAuth } from "@/context/AuthContext";
 import CheckoutSheet from "@/components/checkout/CheckoutSheet";
 import type { ValeriaPlan } from '@/lib/types';
 import { useToast } from "@/hooks/use-toast";
+import VideoModal from "@/components/ui/video-modal";
 
 
 export default function ValeriaPage() {
@@ -22,10 +23,14 @@ export default function ValeriaPage() {
   const { user } = useAuth();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<ValeriaPlan | null>(null);
+  const [isVideoModalOpen, setVideoModalOpen] = useState(false);
 
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
+
+  const videoUrl = "https://firebasestorage.googleapis.com/v0/b/colombia-en-esp.firebasestorage.app/o/web%2FVideo%20de%20WhatsApp%202025-08-12%20a%20las%2014.29.54_0ca7af14.mp4?alt=media&token=ac0427e9-ff6e-4897-afba-3684d6ff5585";
+
 
   useEffect(() => {
     const paymentStatus = searchParams.get('payment');
@@ -73,10 +78,16 @@ export default function ValeriaPage() {
                 <p className="text-lg text-muted-foreground mt-2 font-body max-w-2xl mx-auto">
                     Valeria es la primera IA especializada en migración de Colombia a España. Disponible 24/7, habla tu idioma y responde al instante.
                 </p>
-                 <Button className="mt-6" size="lg" onClick={openChat}>
-                    <MessageCircle className="mr-2 h-5 w-5" />
-                    Empieza ahora con Valeria
-                </Button>
+                 <div className="mt-6 flex flex-col sm:flex-row gap-4 justify-center">
+                    <Button size="lg" onClick={openChat}>
+                        <MessageCircle className="mr-2 h-5 w-5" />
+                        Empieza ahora con Valeria
+                    </Button>
+                    <Button size="lg" variant="outline" onClick={() => setVideoModalOpen(true)}>
+                        <PlayCircle className="mr-2 h-5 w-5" />
+                        Ver Demo
+                    </Button>
+                </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto mt-16">
@@ -133,6 +144,12 @@ export default function ValeriaPage() {
         isOpen={isSheetOpen}
         onOpenChange={setIsSheetOpen}
         plan={selectedPlan}
+    />
+     <VideoModal 
+        isOpen={isVideoModalOpen}
+        setIsOpen={setVideoModalOpen}
+        videoUrl={videoUrl}
+        title="Demostración de Valeria, tu Asistente IA"
     />
     </>
   );
