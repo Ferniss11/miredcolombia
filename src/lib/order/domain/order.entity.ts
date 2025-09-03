@@ -5,7 +5,7 @@
  */
 export interface Customer {
   id: string; // Firestore document ID
-  userId?: string | null; // Link to auth user if they are registered
+  userId: string | null; // Link to auth user if they are registered
   firstName: string;
   lastName: string;
   email: string;
@@ -20,7 +20,7 @@ export interface Customer {
 export interface Order {
   id: string; // Firestore document ID
   customerId: string; // Link to the Customer entity
-  userId?: string | null; // Link to auth user if they placed the order
+  userId: string | null; // Link to auth user if they placed the order
   
   // Order Details
   itemId: string; // The ID of the product/plan purchased (e.g., plan_colombia or guide_id)

@@ -52,6 +52,7 @@ export class FirestoreOrderRepository implements OrderRepository {
         const docRef = db.collection(CUSTOMERS_COLLECTION).doc();
         const newCustomerData = {
             ...customerData,
+            userId: customerData.userId || null, // Ensure undefined becomes null
             createdAt: adminInstance!.firestore.FieldValue.serverTimestamp(),
         };
         await docRef.set(newCustomerData);
@@ -64,6 +65,7 @@ export class FirestoreOrderRepository implements OrderRepository {
         const docRef = db.collection(ORDERS_COLLECTION).doc();
         const newOrderData = {
             ...orderData,
+            userId: orderData.userId || null, // Ensure undefined becomes null
             createdAt: adminInstance!.firestore.FieldValue.serverTimestamp(),
         };
         await docRef.set(newOrderData);
