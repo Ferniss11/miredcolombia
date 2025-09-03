@@ -27,11 +27,12 @@ import {
   MessageSquare,
   Scale,
   Briefcase,
-  Users as UsersIcon, // Renamed to avoid conflict with User icon
+  Users as UsersIcon,
   Handshake,
   HomeIcon,
   BookOpen,
   Mails,
+  ChevronDown
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -39,6 +40,8 @@ import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import Image from 'next/image';
 import { ThemeToggle } from "../ui/theme-toggle";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "../ui/collapsible";
+import { cn } from "@/lib/utils";
 
 export function DashboardSidebar() {
   const pathname = usePathname();
@@ -60,29 +63,47 @@ export function DashboardSidebar() {
     { href: "/dashboard/advertiser/profile", label: "Perfil", icon: User },
   ];
 
-  // Reordered Admin Nav for better workflow
   const adminNav = [
-    // Core Management
-    { href: "/dashboard/admin", label: "Resumen", icon: LayoutGrid },
-    { href: "/dashboard/admin/users", label: "Usuarios", icon: UsersIcon },
-    // Content & Leads
-    { href: "/dashboard/admin/content", label: "Contenido IA", icon: Sparkles },
-    { href: "/dashboard/admin/blog", label: "Blog", icon: FileText },
-    { href: "/dashboard/admin/guides", label: "Guías", icon: BookOpen },
-    { href: "/dashboard/admin/email-sequences", label: "Secuencias Email", icon: Mails },
-    // AI & Monitoring
-    { href: "/dashboard/admin/agent", label: "Agente Global", icon: Bot },
-    { href: "/dashboard/admin/conversations", label: "Conversaciones", icon: MessageSquare },
-    // Portals Management
-    { href: "/dashboard/admin/directory", label: "Directorio", icon: Building },
-    { href: "/dashboard/jobs", label: "Empleos", icon: Briefcase },
-    { href: "/dashboard/my-properties", label: "Propiedades", icon: HomeIcon },
-    { href: "/dashboard/my-services", label: "Servicios", icon: Handshake },
-    // Platform Settings
-    { href: "/dashboard/admin/economics", label: "IA Económico", icon: Scale },
-    { href: "/dashboard/admin/debug", label: "Depuración", icon: Bug },
+    {
+      category: 'Principal',
+      items: [
+        { href: "/dashboard/admin", label: "Resumen", icon: LayoutGrid },
+        { href: "/dashboard/admin/users", label: "Usuarios", icon: UsersIcon },
+      ]
+    },
+    {
+      category: 'Contenido y Leads',
+      items: [
+        { href: "/dashboard/admin/content", label: "Contenido IA", icon: Sparkles },
+        { href: "/dashboard/admin/blog", label: "Blog", icon: FileText },
+        { href: "/dashboard/admin/guides", label: "Guías", icon: BookOpen },
+        { href: "/dashboard/admin/email-sequences", label: "Secuencias Email", icon: Mails },
+      ]
+    },
+    {
+      category: 'IA y Supervisión',
+      items: [
+        { href: "/dashboard/admin/agent", label: "Agente Global", icon: Bot },
+        { href: "/dashboard/admin/conversations", label: "Conversaciones", icon: MessageSquare },
+      ]
+    },
+    {
+      category: 'Gestión de Portales',
+      items: [
+        { href: "/dashboard/admin/directory", label: "Directorio", icon: Building },
+        { href: "/dashboard/jobs", label: "Empleos", icon: Briefcase },
+        { href: "/dashboard/my-properties", label: "Propiedades", icon: HomeIcon },
+        { href: "/dashboard/my-services", label: "Servicios", icon: Handshake },
+      ]
+    },
+    {
+      category: 'Plataforma',
+      items: [
+        { href: "/dashboard/admin/economics", label: "IA Económico", icon: Scale },
+        { href: "/dashboard/admin/debug", label: "Depuración", icon: Bug },
+      ]
+    },
   ];
-
 
   const userNav = [
     { href: "/dashboard", label: "Resumen", icon: LayoutGrid },
@@ -99,8 +120,11 @@ export function DashboardSidebar() {
   
   const role = userProfile?.role;
   let navItems;
+  let isGrouped = false;
+
   if (role === 'Admin' || role === 'SAdmin') {
     navItems = adminNav;
+    isGrouped = true;
   } else if (role === 'Advertiser') {
     navItems = advertiserNav;
   } else if (role === 'User') {
@@ -115,6 +139,11 @@ export function DashboardSidebar() {
     if (role === 'Advertiser') return 'Anunciante';
     return 'Usuario';
   }
+
+  const isActive = (href: string) => {
+    return pathname === href || (href !== '/dashboard' && href !== '/dashboard/admin' && href !== '/dashboard/advertiser' && pathname.startsWith(href));
+  }
+  
 
   return (
     <Sidebar>
@@ -132,20 +161,44 @@ export function DashboardSidebar() {
       </SidebarHeader>
       <SidebarContent>
         <SidebarMenu>
-          {navItems.map((item) => (
-            <SidebarMenuItem key={item.href}>
-              <Link href={item.href}>
-                <SidebarMenuButton
-                  isActive={pathname === item.href || (item.href !== '/dashboard' && item.href !== '/dashboard/admin' && item.href !== '/dashboard/advertiser' && pathname.startsWith(item.href))}
-                  icon={item.icon}
-                  tooltip={item.label}
-                  data-state={state}
+          {isGrouped ? (
+            adminNav.map((group) => (
+              <Collapsible key={group.category} defaultOpen={true}>
+                <CollapsibleTrigger
+                  className={cn("w-full", state === "collapsed" && "hidden")}
+                  disabled={state === "collapsed"}
                 >
-                  {item.label}
-                </SidebarMenuButton>
-              </Link>
-            </SidebarMenuItem>
-          ))}
+                  <div className="flex items-center justify-between p-2 hover:bg-sidebar-accent rounded-md">
+                     <h4 className="text-xs font-semibold uppercase text-muted-foreground tracking-wider">{group.category}</h4>
+                     <ChevronDown className="h-4 w-4 transition-transform [&[data-state=open]]:rotate-180" />
+                  </div>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                   <SidebarMenu className="pl-2 pr-0 pt-0 pb-1">
+                      {group.items.map((item) => (
+                          <SidebarMenuItem key={item.href}>
+                              <Link href={item.href}>
+                                  <SidebarMenuButton isActive={isActive(item.href)} icon={item.icon} tooltip={item.label} data-state={state}>
+                                      {item.label}
+                                  </SidebarMenuButton>
+                              </Link>
+                          </SidebarMenuItem>
+                      ))}
+                   </SidebarMenu>
+                </CollapsibleContent>
+              </Collapsible>
+            ))
+          ) : (
+            (navItems as { href: string; label: string; icon: React.ElementType }[]).map((item) => (
+              <SidebarMenuItem key={item.href}>
+                <Link href={item.href}>
+                  <SidebarMenuButton isActive={isActive(item.href)} icon={item.icon} tooltip={item.label} data-state={state}>
+                    {item.label}
+                  </SidebarMenuButton>
+                </Link>
+              </SidebarMenuItem>
+            ))
+          )}
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter>
