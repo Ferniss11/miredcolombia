@@ -7,7 +7,7 @@ import { z } from 'zod';
  */
 export const EmailStepSchema = z.object({
   id: z.string(), // Unique ID for the step within the sequence
-  delayMinutes: z.number().min(0), // Delay in minutes after the previous step (or trigger)
+  delayMinutes: z.coerce.number().min(0), // Delay in minutes after the previous step (or trigger)
   subject: z.string(),
   body: z.string(), // HTML or Markdown content for the email
   templateId: z.string().optional(), // Optional ID for a template in a service like SendGrid

@@ -1,3 +1,4 @@
+
 // src/app/dashboard/admin/email-sequences/page.tsx
 'use client';
 
@@ -5,7 +6,7 @@ import React, { useState, useEffect, useTransition } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -13,8 +14,8 @@ import { Plus, Edit, Trash2, MoreVertical, Loader2, Mails, ToggleRight, ToggleLe
 import type { EmailSequence } from '@/lib/email-sequence/domain/email-sequence.entity';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
-// We will create this form component in the next step.
-// import SequenceForm from './SequenceForm';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import SequenceForm from './SequenceForm';
 
 export default function AdminEmailSequencesPage() {
     const { user } = useAuth();
@@ -27,7 +28,7 @@ export default function AdminEmailSequencesPage() {
     const [editingSequence, setEditingSequence] = useState<EmailSequence | null>(null);
     const [deletingSequenceId, setDeletingSequenceId] = useState<string | null>(null);
 
-    useEffect(() => {
+    const fetchSequences = React.useCallback(() => {
         if (!user) return;
         setIsLoading(true);
         user.getIdToken().then(token => {
@@ -38,6 +39,30 @@ export default function AdminEmailSequencesPage() {
                 .finally(() => setIsLoading(false));
         });
     }, [user, toast]);
+
+    useEffect(() => {
+        fetchSequences();
+    }, [fetchSequences]);
+
+    const handleOpenSheetForCreate = () => {
+        setEditingSequence(null);
+        setIsSheetOpen(true);
+    };
+
+    const handleOpenSheetForEdit = (sequence: EmailSequence) => {
+        setEditingSequence(sequence);
+        setIsSheetOpen(true);
+    };
+
+    const handleSheetClose = () => {
+        setIsSheetOpen(false);
+        setEditingSequence(null);
+    };
+    
+    const handleFormSuccess = () => {
+        handleSheetClose();
+        fetchSequences();
+    };
 
     const handleDelete = async () => {
         if (!deletingSequenceId || !user) return;
@@ -81,7 +106,7 @@ export default function AdminEmailSequencesPage() {
                     <Mails className="w-8 h-8 text-primary" />
                     <h1 className="text-3xl font-bold font-headline">Secuencias de Email</h1>
                  </div>
-                <Button onClick={() => { /* TODO: Open Create Modal */ }}>
+                <Button onClick={handleOpenSheetForCreate}>
                     <Plus className="mr-2 h-4 w-4" /> Crear Nueva Secuencia
                 </Button>
             </div>
@@ -125,7 +150,7 @@ export default function AdminEmailSequencesPage() {
                                                  <DropdownMenu>
                                                     <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger>
                                                     <DropdownMenuContent align="end">
-                                                        <DropdownMenuItem onClick={() => { /* TODO: Open Edit Modal */ }}><Edit className="mr-2 h-4 w-4" /> Editar Pasos</DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={() => handleOpenSheetForEdit(sequence)}><Edit className="mr-2 h-4 w-4" /> Editar Pasos</DropdownMenuItem>
                                                         <DropdownMenuItem onClick={() => handleToggleStatus(sequence)} disabled={isPending}>
                                                           {sequence.isActive ? <ToggleLeft className="mr-2 h-4 w-4" /> : <ToggleRight className="mr-2 h-4 w-4" />}
                                                           {sequence.isActive ? 'Desactivar' : 'Activar'}
@@ -142,6 +167,22 @@ export default function AdminEmailSequencesPage() {
                      </div>
                 </CardContent>
             </Card>
+
+            <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+                <SheetContent className="sm:max-w-4xl w-full">
+                    <SheetHeader>
+                        <SheetTitle>{editingSequence ? 'Editar Secuencia' : 'Crear Nueva Secuencia'}</SheetTitle>
+                        <SheetDescription>
+                            Define los pasos, el contenido y los tiempos de tu automatización.
+                        </SheetDescription>
+                    </SheetHeader>
+                    <SequenceForm 
+                        sequenceToEdit={editingSequence}
+                        onSuccess={handleFormSuccess}
+                        onCancel={handleSheetClose}
+                    />
+                </SheetContent>
+            </Sheet>
 
             <AlertDialog open={!!deletingSequenceId} onOpenChange={(open) => !open && setDeletingSequenceId(null)}>
                 <AlertDialogContent>
