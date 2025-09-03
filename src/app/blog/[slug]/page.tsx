@@ -117,7 +117,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
           
           {/* Sidebar */}
           <aside className="lg:col-span-4">
-            <div className="sticky top-24 space-y-8">
+            <div className="sticky top-24 space-y-8 min-h-[400px]">
               {featuredGuide && <LeadMagnetCard guide={featuredGuide} />}
               {/* You can add more sidebar components here, like "Popular Posts" */}
             </div>

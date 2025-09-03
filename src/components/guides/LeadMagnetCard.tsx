@@ -1,7 +1,6 @@
-
 'use client';
 
-import React, { useState, useTransition } from 'react';
+import React, { useState, useTransition, useEffect } from 'react';
 import * as z from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -28,6 +27,11 @@ export default function LeadMagnetCard({ guide }: LeadMagnetCardProps) {
     const { toast } = useToast();
     const [isPending, startTransition] = useTransition();
     const [isSuccess, setIsSuccess] = useState(false);
+    const [isClient, setIsClient] = useState(false);
+
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
 
     const form = useForm<DownloadFormValues>({
         resolver: zodResolver(DownloadSchema),
@@ -61,6 +65,28 @@ export default function LeadMagnetCard({ guide }: LeadMagnetCardProps) {
             }
         });
     };
+
+    if (!isClient) {
+        // Render a placeholder or skeleton on the server and initial client render
+        return (
+            <Card className="shadow-lg border-primary/20 bg-gradient-to-br from-background to-secondary/30">
+                 <CardHeader className="text-center items-center">
+                    <div className="p-3 bg-primary/10 rounded-full mb-2">
+                       <Gift className="w-6 h-6 text-primary"/>
+                    </div>
+                    <CardTitle className="font-headline text-xl">¡Descarga Gratis!</CardTitle>
+                    <CardDescription>Consigue nuestra "{guide.title}" y recibe más consejos en tu email.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="space-y-4">
+                        <div className="h-10 bg-muted rounded-md animate-pulse"></div>
+                        <div className="h-10 bg-muted rounded-md animate-pulse"></div>
+                        <div className="h-10 bg-primary/50 rounded-md animate-pulse"></div>
+                    </div>
+                </CardContent>
+            </Card>
+        );
+    }
 
     return (
         <Card className="shadow-lg border-primary/20 bg-gradient-to-br from-background to-secondary/30">
