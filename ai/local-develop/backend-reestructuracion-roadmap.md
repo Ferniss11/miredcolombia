@@ -12,7 +12,7 @@
 
 ---
 
-## Fase 1: Cimientos y Reestructuración de la Interfaz (Core UI) <Badge variant="success">Completada</Badge>
+## Fase 1: Cimientos y Reestructuración de la Interfaz (Core UI) - COMPLETADA
 *   **Estimación:** 10 horas
 *   **Objetivo:** Establecer la nueva estructura de navegación y las páginas principales.
 *   **1.1. Actualizar Menú Principal (✓):**
@@ -31,7 +31,7 @@
 
 ---
 
-## Fase 2: Desarrollo del Ecosistema de Valeria (Monetización) <Badge variant="success">Completada</Badge>
+## Fase 2: Desarrollo del Ecosistema de Valeria (Monetización) - COMPLETADA
 *   **Estimación:** 22 horas
 *   **Objetivo:** Implementar la página de Valeria y el sistema de suscripción.
 *   **2.1. Diseñar la Página de Valeria (`/valeria`) (✓):**
@@ -51,7 +51,7 @@
 
 ---
 
-## Fase 2.5: Sistema de Órdenes y Contabilidad <Badge variant="success">Completada</Badge>
+## Fase 2.5: Sistema de Órdenes y Contabilidad - COMPLETADA
 *   **Estimación:** 12 horas
 *   **Objetivo:** Crear un registro persistente de todas las transacciones (suscripciones y pagos únicos) para la contabilidad y gestión de la plataforma.
 *   **Crear Entidades `Customer` y `Order` (✓):**
@@ -65,7 +65,7 @@
 
 ---
 
-## Fase 3: Evolución de los Portales (Modelo Freemium a Futuro) <Badge variant="success">Completada</Badge>
+## Fase 3: Evolución de los Portales (Modelo Freemium a Futuro) - COMPLETADA
 *   **Estimación:** 8 horas
 *   **Objetivo:** Adaptar los portales de Empleo, Vivienda y Directorio al nuevo modelo de negocio (gratis hasta Dic 2025, de pago después).
 *   **3.1. Portal de Empleo (`/empleo`) (✓):**
@@ -86,7 +86,7 @@
 
 ---
 
-## Fase 4: Contenido y Marketing Automation (Lead Magnets) <Badge variant="success">Completada</Badge>
+## Fase 4: Contenido y Marketing Automation (Lead Magnets) - COMPLETADA
 *   **Estimación:** 20 horas
 *   **Objetivo:** Transformar la sección de "Guías" en un motor de captación de leads, ofreciendo contenido de alto valor a cambio de datos de contacto.
 *   **4.1. Crear la Entidad `Guide` (Backend Hexagonal) (✓):**
@@ -112,7 +112,7 @@
 
 ---
 
-## Fase 5: Automatización de Marketing por Email <Badge variant="success">Completada</Badge>
+## Fase 5: Automatización de Marketing por Email - COMPLETADA
 *   **Estimación:** 25 horas
 *   **Objetivo:** Nutrir a los leads capturados mediante secuencias de email automatizadas para convertirlos en clientes.
 *   **5.1. Definir Entidades de Email (Dominio) (✓):**
@@ -142,10 +142,10 @@
 
 ---
 
-## Fase 6: Contenido Audiovisual y Refinamiento Final <Badge variant="info">En Progreso</Badge>
+## Fase 6: Contenido Audiovisual y Refinamiento Final - EN PROGRESO
 *   **Estimación:** 10 horas
 *   **Objetivo:** Integrar los nuevos vídeos y realizar los ajustes finales de la plataforma.
-*   **6.1. Integrar Vídeos (✓):**
+*   **6.1. Integrar Vídeos:**
     *   Reemplazar el vídeo actual del `HeroSection` por el nuevo vídeo de Jennifer. (✓)
     *   Añadir el vídeo demo de Valeria en la página `/valeria`. (✓)
     *   Añadir el vídeo animado de los packs en la página `/packs`. (Pausado)
@@ -156,7 +156,7 @@
 
 ---
 
-## Fase 7: Ecosistema de Partners y Servicios Avanzados <Badge variant="warning">Planificación</Badge>
+## Fase 7: Ecosistema de Partners y Servicios Avanzados - PLANIFICACIÓN
 *   **Estimación:** 30 horas
 *   **Objetivo:** Convertir las secciones "Packs" y "Trámites" en un mercado dinámico, permitiendo a profesionales verificados (partners) ofrecer sus servicios directamente a través de la plataforma.
 *   **7.1. Definir Rol y Entidades de Partner:**
