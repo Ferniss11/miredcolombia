@@ -117,26 +117,26 @@
 
 ---
 
-## Fase 5: Automatización de Marketing por Email (Próximos Pasos)
+## Fase 5: Automatización de Marketing por Email (✓ COMPLETADA)
 
 **Objetivo:** Nutrir a los leads capturados mediante secuencias de email automatizadas para convertirlos en clientes.
 
-*   **5.1. Definir Entidades de Email (Dominio):**
+*   **5.1. Definir Entidades de Email (Dominio) (✓):**
     *   Crear `email-sequence.entity.ts`: Define una secuencia (ej. "Bienvenida Guía Empadronamiento"). Tendrá un `name`, un `triggerEvent` (`on_guide_download`, `on_user_signup`), y una lista de `EmailStep`.
     *   Cada `EmailStep` tendrá: `delay` (ej. 1 hora, 2 días), `subject`, `body` (en Markdown/HTML), y una `templateId` (opcional, para plantillas de SendGrid).
 
-*   **5.2. Casos de Uso e Infraestructura (Backend):**
+*   **5.2. Casos de Uso e Infraestructura (Backend) (✓):**
     *   **Repositorio:** Crear `EmailSequenceRepository` (puerto) y su implementación en Firestore (`firestore-email-sequence.repository.ts`).
     *   **Casos de Uso:** `CreateEmailSequence`, `AddStepToSequence`, `GetSequenceByTrigger`.
     *   **API:** Crear un `EmailSequenceController` y los endpoints `/api/email/sequences` para que el admin pueda gestionar las secuencias.
 
-*   **5.3. Desarrollar el Gestor de Secuencias (Admin Dashboard):**
+*   **5.3. Desarrollar el Gestor de Secuencias (Admin Dashboard) (✓):**
     *   **UI:** Crear una nueva página en el dashboard (`/dashboard/admin/email-sequences`).
     *   **UI (MVP):** Un formulario simple, no un canvas. El admin podrá:
         *   Crear una nueva secuencia y asignarle un disparador (ej. "Descarga de Guía").
         *   Para esa secuencia, podrá añadir "Pasos". Cada paso será un formulario para definir el `retraso`, el `asunto` y el `cuerpo del email`. Los pasos se mostrarán como una lista ordenada.
 
-*   **5.4. Integración con Trigger de Email de Firebase:**
+*   **5.4. Integración con Trigger de Email de Firebase (✓):**
     *   **Adaptador:** Crear un `FirebaseEmailAdapter` que, al crear una orden de tipo `lead_magnet`, no solo guarde al `Customer`, sino que también añada un documento a una colección `mail` de Firestore.
     *   **Extensión de Firebase:** La extensión "Trigger Email" de Firebase se configura para escuchar nuevos documentos en la colección `mail`.
     *   **Lógica:** Cuando se crea la `Order`, el `CreateOrderUseCase` también buscará la secuencia de email asociada al `trigger` "Descarga de Guía". Luego, creará los documentos necesarios en la colección `mail` para cada paso de la secuencia, utilizando la función `delivery.schedule` de la extensión para programar los envíos futuros según el `delay` de cada paso.
