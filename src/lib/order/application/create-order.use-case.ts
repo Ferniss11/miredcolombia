@@ -1,4 +1,3 @@
-
 // src/lib/order/application/create-order.use-case.ts
 import type { Customer, Order } from '../domain/order.entity';
 import type { OrderRepository } from '../domain/order.repository';

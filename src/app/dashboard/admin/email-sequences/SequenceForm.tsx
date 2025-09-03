@@ -155,7 +155,7 @@ export default function SequenceForm({ sequenceToEdit, onSuccess, onCancel }: Se
                 </div>
             </ScrollArea>
 
-            <SheetFooter className="pt-4 pb-6 mt-auto border-t bg-background">
+            <SheetFooter className="pt-4 pb-10 mt-auto border-t bg-background">
                 <Button type="button" variant="outline" onClick={onCancel}>Cancelar</Button>
                 <Button type="submit" disabled={isPending}>
                     {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
