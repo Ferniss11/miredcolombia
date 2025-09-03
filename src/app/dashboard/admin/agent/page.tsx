@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useTransition } from 'react';
@@ -7,11 +8,12 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Save, Bot } from 'lucide-react';
+import { Loader2, Save, Bot, Book, Calendar, Mail, Upload, Power, Database } from 'lucide-react';
 import type { AgentConfig } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { getAgentConfigAction, saveAgentConfigAction } from '@/lib/user-actions-legacy';
+import { cn } from '@/lib/utils';
 
 type AgentType = 'global' | 'plan_colombia' | 'plan_espana';
 
@@ -29,6 +31,20 @@ const agentDetails: Record<AgentType, { name: string; description: string }> = {
         description: 'Este agente se activa para los usuarios con una suscripción activa al "Plan España".'
     }
 };
+
+// --- New ToolCard Component (Visual only for now) ---
+const ToolCard = ({ icon: Icon, title, description }: { icon: React.ElementType, title: string, description: string }) => (
+    <Card className="flex flex-col text-center items-center justify-start p-4 hover:bg-muted/50 transition-colors">
+        <div className="p-3 bg-primary/10 rounded-lg mb-2">
+            <Icon className="w-6 h-6 text-primary" />
+        </div>
+        <h4 className="font-semibold text-sm">{title}</h4>
+        <p className="text-xs text-muted-foreground mt-1 flex-grow">{description}</p>
+        <Button variant="outline" size="sm" className="mt-4 w-full" disabled>
+            <Power className="mr-2 h-4 w-4" /> Conectar
+        </Button>
+    </Card>
+);
 
 const AgentConfigForm = ({ agentId, agentType }: { agentId: AgentType, agentType: {name: string, description: string} }) => {
     const [config, setConfig] = useState<AgentConfig | null>(null);
@@ -114,6 +130,32 @@ const AgentConfigForm = ({ agentId, agentType }: { agentId: AgentType, agentType
                             <SelectItem value="googleai/gemini-2.5-flash">Gemini 2.5 Flash</SelectItem>
                         </SelectContent>
                     </Select>
+                </div>
+                 {/* New Tools Section */}
+                <div className="space-y-4 pt-4">
+                    <Label>Herramientas del Agente</Label>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                       <ToolCard 
+                            icon={Database}
+                            title="Base de Conocimiento"
+                            description="Conecta al agente a tus guías y artículos para respuestas más precisas."
+                       />
+                       <ToolCard 
+                            icon={Calendar}
+                            title="Google Calendar"
+                            description="Permite al agente agendar y consultar citas directamente en tu calendario."
+                       />
+                       <ToolCard 
+                            icon={Mail}
+                            title="Conexión Email"
+                            description="Autoriza al agente a enviar correos de seguimiento a los clientes."
+                       />
+                        <ToolCard 
+                            icon={Upload}
+                            title="Análisis de Documentos"
+                            description="Sube documentos para que el agente los analice y te dé respuestas basadas en ellos."
+                       />
+                    </div>
                 </div>
             </CardContent>
             <CardFooter>
