@@ -72,7 +72,7 @@ export async function createSubscriptionCheckoutSessionAction(input: CreateSubsc
         firebaseUID: userId,
         priceId: priceId,
       },
-      success_url: `${appUrl}/valeria/payment-success`,
+      success_url: `${appUrl}/valeria/payment-success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${appUrl}/valeria?payment=cancelled`,
     });
     
