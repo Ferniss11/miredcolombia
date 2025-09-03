@@ -14,6 +14,7 @@ import { EmailStepSchema } from '../../domain/email-sequence.entity';
 const CreateSequenceSchema = z.object({
   name: z.string().min(3, "El nombre es muy corto."),
   trigger: z.enum(['on_guide_download', 'on_user_signup', 'on_service_purchase']),
+  steps: z.array(EmailStepSchema), // Allow steps during creation
   isActive: z.boolean().default(true),
 });
 
@@ -42,8 +43,10 @@ export class EmailSequenceController {
 
   async create(req: NextRequest): Promise<ApiResponse> {
     const json = await req.json();
-    const data = CreateSequenceSchema.parse(json);
-    const sequence = await this.createUseCase.execute({ ...data, steps: [] });
+    // The schema now validates the steps from the form
+    const data = CreateSequenceSchema.parse(json); 
+    // Pass the validated data (including steps) to the use case
+    const sequence = await this.createUseCase.execute(data);
     return ApiResponse.created(sequence);
   }
   
