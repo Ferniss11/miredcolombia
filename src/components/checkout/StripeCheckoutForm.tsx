@@ -63,7 +63,8 @@ const CheckoutForm = ({ item, customerDetails }: { item: ItemProp, customerDetai
             const { error } = await stripe.confirmPayment({
                 elements,
                 confirmParams: {
-                    return_url: `${window.location.origin}/valeria/payment-success`,
+                    // Redirect to a generic success page for one-time payments
+                    return_url: `${window.location.origin}/valeria/payment-success`, // We can create a more generic page later
                     receipt_email: customerDetails.email,
                 },
             });
@@ -110,30 +111,17 @@ const StripeCheckoutForm = ({ item, prefilledUser }: CheckoutFormWrapperProps) =
 
     const form = useForm<CustomerDetailsValues>({
         resolver: zodResolver(CustomerDetailsSchema),
-        defaultValues: { name: prefilledUser?.name || '', email: prefilledUser?.email || '' },
+        defaultValues: { 
+            name: prefilledUser?.name || '', 
+            email: prefilledUser?.email || '' 
+        },
     });
     
-    // Automatically trigger payment intent creation if user is already logged in
     useEffect(() => {
-        if (prefilledUser && !clientSecret) {
-            startTransition(async () => {
-                const result = await createOneTimeCheckoutSessionAction({
-                    itemId: item.id,
-                    itemName: item.name,
-                    amount: item.price,
-                    userName: prefilledUser.name,
-                    userEmail: prefilledUser.email,
-                    userId: user?.uid,
-                });
-                if (result.clientSecret) {
-                    setClientSecret(result.clientSecret);
-                } else {
-                    console.error("Error creating payment intent:", result.error);
-                }
-            });
+        if (prefilledUser) {
+            form.reset(prefilledUser);
         }
-    }, [prefilledUser, clientSecret, item, user?.uid]);
-
+    }, [prefilledUser, form]);
 
     const handleCustomerSubmit = async (values: CustomerDetailsValues) => {
         startTransition(async () => {
@@ -150,6 +138,7 @@ const StripeCheckoutForm = ({ item, prefilledUser }: CheckoutFormWrapperProps) =
                 setClientSecret(result.clientSecret);
             } else {
                 console.error("Error creating payment intent:", result.error);
+                 toast({ variant: 'destructive', title: 'Error de Pago', description: result.error });
             }
         });
     };
@@ -165,14 +154,6 @@ const StripeCheckoutForm = ({ item, prefilledUser }: CheckoutFormWrapperProps) =
             </Elements>
         );
     }
-    
-    if (prefilledUser) {
-        return (
-            <div className="flex items-center justify-center">
-                <Loader2 className="h-6 w-6 animate-spin" />
-            </div>
-        );
-    }
 
     return (
         <Form {...form}>
@@ -180,14 +161,14 @@ const StripeCheckoutForm = ({ item, prefilledUser }: CheckoutFormWrapperProps) =
                 <FormField control={form.control} name="name" render={({ field }) => (
                     <FormItem>
                         <FormLabel>Nombre Completo</FormLabel>
-                        <FormControl><Input placeholder="Tu nombre" {...field} /></FormControl>
+                        <FormControl><Input placeholder="Tu nombre" {...field} disabled={!!prefilledUser} /></FormControl>
                         <FormMessage />
                     </FormItem>
                 )} />
                 <FormField control={form.control} name="email" render={({ field }) => (
                     <FormItem>
                         <FormLabel>Email</FormLabel>
-                        <FormControl><Input placeholder="tu@email.com" {...field} /></FormControl>
+                        <FormControl><Input placeholder="tu@email.com" {...field} disabled={!!prefilledUser} /></FormControl>
                         <FormMessage />
                     </FormItem>
                 )} />

@@ -13,13 +13,17 @@ import { useAuth } from '@/context/AuthContext';
 
 function CheckoutPageContent() {
     const params = useParams();
-    const { user, userProfile } = useAuth();
+    const { user, userProfile, loading } = useAuth(); // We need loading state
 
     const itemId = Array.isArray(params.itemId) ? params.itemId[0] : params.itemId;
     
     // Combine packages and services to find the item
     const allItems = [...migrationPackages, ...migrationServices];
     const item = allItems.find(i => i.id === itemId);
+
+    if (loading) {
+        return <div className="flex justify-center"><Loader2 className="h-8 w-8 animate-spin"/></div>;
+    }
 
     if (!item) {
         return (
@@ -90,4 +94,3 @@ export default function CheckoutPage() {
     </div>
   );
 }
-
