@@ -1,9 +1,12 @@
 
-
 'use server';
 
 import { z } from 'zod';
 import { stripe } from '@/lib/stripe';
+import { CreateOrderUseCase } from './order/application/create-order.use-case';
+import { FirestoreOrderRepository } from './order/infrastructure/persistence/firestore-order.repository';
+
+// --- SUBSCRIPTION CHECKOUT ---
 
 const createSubscriptionCheckoutSchema = z.object({
   priceId: z.string(),
@@ -60,7 +63,12 @@ export async function createSubscriptionCheckoutSessionAction(input: CreateSubsc
       cancel_url: `${appUrl}/valeria?payment=cancelled`,
     });
     
-    return { sessionId: session.id };
+    // The key change: return the full URL for redirection.
+    if (!session.url) {
+        throw new Error("Stripe did not return a checkout URL.");
+    }
+    
+    return { checkoutUrl: session.url };
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
