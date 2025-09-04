@@ -28,72 +28,41 @@ import { useAuth } from '@/context/AuthContext';
 
 
 // --- Welcome Form Sub-component ---
-const formSchema = z.object({
-  userName: z.string().min(2, { message: 'El nombre es obligatorio.' }),
-  userPhone: z.string().min(7, { message: 'El teléfono es obligatorio.' }),
-  userEmail: z.string().email({ message: 'Debe ser un email válido.' }).optional().or(z.literal('')),
-  acceptTerms: z.boolean().refine((data) => data === true, {
-    message: 'Debes aceptar los términos y condiciones.',
-  }),
+const signUpFormSchema = z.object({
+  name: z.string().min(2, { message: 'El nombre es obligatorio.' }),
+  email: z.string().email({ message: 'Debe ser un email válido.' }),
+  password: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres.')
 });
 
+type SignUpFormValues = z.infer<typeof signUpFormSchema>;
+
 type WelcomeFormProps = {
-  onSessionStarted: (sessionId: string, history: ChatMessage[]) => void;
+  onSignUpSuccess: () => void;
   isBusinessChat: boolean;
   businessContext?: { businessId: string, businessName: string };
   onLoginClick: () => void;
 }
 
-const WelcomeForm = ({ onSessionStarted, isBusinessChat, businessContext, onLoginClick }: WelcomeFormProps) => {
-    const [isPending, setIsPending] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const router = useRouter();
+const WelcomeForm = ({ onSignUpSuccess, isBusinessChat, businessContext, onLoginClick }: WelcomeFormProps) => {
+    const { signUpWithEmail } = useAuth();
+    const [isPending, startTransition] = useTransition();
+    const { toast } = useToast();
 
-    const form = useForm<z.infer<typeof formSchema>>({
-        resolver: zodResolver(formSchema),
-        defaultValues: { userName: '', userPhone: '', userEmail: '', acceptTerms: false },
+    const form = useForm<SignUpFormValues>({
+        resolver: zodResolver(signUpFormSchema),
+        defaultValues: { name: '', email: '', password: '' },
     });
 
-    const handleFormSubmit = async (values: z.infer<typeof formSchema>) => {
-        setIsPending(true);
-        setError(null);
-        try {
-            const payload: any = {
-                userName: values.userName,
-                userPhone: values.userPhone,
-            };
-            if (values.userEmail) {
-                payload.userEmail = values.userEmail;
+    const handleFormSubmit = async (values: SignUpFormValues) => {
+        startTransition(async () => {
+             const { error } = await signUpWithEmail(values.name, values.email, values.password, 'User');
+            if (error) {
+                toast({ variant: 'destructive', title: 'Error de Registro', description: error });
+            } else {
+                toast({ title: '¡Cuenta Creada!', description: 'Has iniciado sesión exitosamente.' });
+                onSignUpSuccess(); // This will trigger the parent to start the chat session
             }
-            if (isBusinessChat && businessContext?.businessId) {
-                payload.businessId = businessContext.businessId;
-            }
-
-            const response = await fetch('/api/chat/sessions', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload),
-            });
-
-            const result = await response.json();
-            
-            if (!response.ok) {
-                if (result.error?.details?.fullError) {
-                    sessionStorage.setItem('fullError', result.error.details.fullError);
-                    router.push('/errors');
-                    return;
-                }
-                throw new Error(result.error?.message || 'Error desconocido al iniciar la sesión.');
-            }
-            
-            onSessionStarted(result.sessionId, result.history);
-
-        } catch (e) {
-            const errorMessage = e instanceof Error ? e.message : 'An unknown client error occurred.';
-            setError(`${errorMessage}`);
-        } finally {
-            setIsPending(false);
-        }
+        });
     };
     
     return (
@@ -105,62 +74,37 @@ const WelcomeForm = ({ onSessionStarted, isBusinessChat, businessContext, onLogi
                     <h3 className="font-bold font-headline">{isBusinessChat ? `Asistente de ${businessContext?.businessName}` : "Asistente de Inmigración"}</h3>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                    {isBusinessChat
-                        ? `Hola, ¿listo para chatear con ${businessContext?.businessName}? Solo necesitamos unos datos para empezar.`
-                        : 'Necesitamos unos datos para poder ayudarte mejor. Si ya has hablado con nosotros, usa el mismo teléfono para continuar la conversación.'
-                    }
+                    Para empezar, crea una cuenta gratuita. Esto nos permite guardar tu conversación y darte un mejor servicio.
                 </p>
                  <Button variant="link" size="sm" className="p-0 mt-2" onClick={onLoginClick}>¿Ya tienes una cuenta? Inicia sesión</Button>
             </div>
             
             <div className="pt-6 border-t mt-6">
-                 {error && (
-                    <Alert variant="destructive" className="mb-4">
-                        <AlertCircle className="h-4 w-4" />
-                        <AlertTitle>Error al Iniciar Chat</AlertTitle>
-                        <AlertDescription>
-                            {error}
-                        </AlertDescription>
-                    </Alert>
-                )}
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
-                        <FormField control={form.control} name="userName" render={({ field }) => (
+                        <FormField control={form.control} name="name" render={({ field }) => (
                         <FormItem>
                             <FormLabel>Nombre</FormLabel>
                             <FormControl><Input placeholder="Tu nombre completo" {...field} /></FormControl>
                             <FormMessage />
                         </FormItem>
                         )} />
-                        <FormField control={form.control} name="userPhone" render={({ field }) => (
+                        <FormField control={form.control} name="email" render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Teléfono</FormLabel>
-                            <FormControl><Input placeholder="+34 600 000 000" {...field} /></FormControl>
+                            <FormLabel>Email</FormLabel>
+                            <FormControl><Input placeholder="tu@email.com" {...field} /></FormControl>
                             <FormMessage />
                         </FormItem>
                         )} />
-                         <FormField control={form.control} name="userEmail" render={({ field }) => (
+                         <FormField control={form.control} name="password" render={({ field }) => (
                             <FormItem>
-                                <FormLabel>Email (Opcional)</FormLabel>
-                                <FormControl><Input placeholder="tu@email.com" {...field} /></FormControl>
+                                <FormLabel>Contraseña</FormLabel>
+                                <FormControl><Input type="password" placeholder="Mínimo 6 caracteres" {...field} /></FormControl>
                                 <FormMessage />
                             </FormItem>
                         )} />
-                         <FormField control={form.control} name="acceptTerms" render={({ field }) => (
-                            <FormItem className="flex flex-row items-start space-x-3 space-y-0 pt-2">
-                                <FormControl>
-                                    <Checkbox checked={field.value} onCheckedChange={field.onChange} id="terms" />
-                                </FormControl>
-                                <div className="grid gap-1.5 leading-none">
-                                    <label htmlFor="terms" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                                        Acepto los <Link href="/legal/terms" target="_blank" className="underline text-primary">términos y condiciones</Link>.
-                                    </label>
-                                    <FormMessage />
-                                </div>
-                            </FormItem>
-                        )} />
                         <Button type="submit" className="w-full" disabled={isPending}>
-                            {isPending ? <Loader2 className="animate-spin" /> : "Iniciar Chat"}
+                            {isPending ? <Loader2 className="animate-spin" /> : "Crear Cuenta y Chatear"}
                         </Button>
                     </form>
                 </Form>
@@ -296,6 +240,13 @@ export default function ChatWidget() {
   const suggestionPool = isBusinessChat ? allBusinessQuestions : allGeneralQuestions;
   const proactivePool = isBusinessChat ? businessProactiveMessages : migrationProactiveMessages;
 
+  const handleSessionStarted = useCallback((newSessionId: string, history: ChatMessage[]) => {
+    setSessionId(newSessionId);
+    setMessages(history);
+    setMessageCount(history.filter(m => m.role === 'user').length);
+    setView('chat');
+  }, []);
+
   const startSessionForUser = useCallback(async () => {
     if (!user || !userProfile) return;
 
@@ -304,10 +255,10 @@ export default function ChatWidget() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
+                userId: user.uid,
                 userName: userProfile.name,
                 userPhone: userProfile.businessProfile?.phone || 'No disponible',
                 userEmail: userProfile.email,
-                userId: user.uid,
                 businessId: chatContext?.businessId
             }),
         });
@@ -320,15 +271,15 @@ export default function ChatWidget() {
         console.error("Error auto-starting session for user:", e);
         toast({ variant: 'destructive', title: 'Error', description: 'No se pudo iniciar tu sesión de chat.'});
     }
-  }, [user, userProfile, chatContext]);
+  }, [user, userProfile, chatContext, handleSessionStarted, toast]);
 
   useEffect(() => {
     if (user && userProfile && !sessionId && (isChatOpen || isInDashboard)) {
       startSessionForUser();
-    } else if (!user) {
+    } else if (!user && view === 'chat') {
       setView('welcome');
     }
-  }, [user, userProfile, sessionId, isChatOpen, isInDashboard, startSessionForUser]);
+  }, [user, userProfile, sessionId, isChatOpen, isInDashboard, startSessionForUser, view]);
 
 
   useEffect(() => {
@@ -442,13 +393,6 @@ export default function ChatWidget() {
         setIsAiResponding(false);
     }
   };
-
-  const handleSessionStarted = (newSessionId: string, history: ChatMessage[]) => {
-    setSessionId(newSessionId);
-    setMessages(history);
-    setMessageCount(history.filter(m => m.role === 'user').length);
-    setView('chat');
-  };
   
   const handleFormSubmitAndSend = (e: React.FormEvent) => {
       e.preventDefault();
@@ -481,11 +425,11 @@ export default function ChatWidget() {
   const renderChatContent = () => {
     if ((!sessionId || view !== 'chat') && !isInDashboard) {
         if (view === 'login') {
-            return <LoginForm onLoginSuccess={() => setView('chat')} onBackClick={() => setView('welcome')} />;
+            return <LoginForm onLoginSuccess={startSessionForUser} onBackClick={() => setView('welcome')} />;
         }
         return (
             <WelcomeForm 
-                onSessionStarted={handleSessionStarted} 
+                onSignUpSuccess={startSessionForUser}
                 isBusinessChat={isBusinessChat}
                 businessContext={chatContext || undefined}
                 onLoginClick={() => setView('login')}
