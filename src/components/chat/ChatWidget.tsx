@@ -2,7 +2,7 @@
 
 'use client';
 
-import { useState, useRef, useEffect, useCallback, useTransition } from 'react';
+import { useState, useRef, useEffect, useCallback, useTransition, Fragment } from 'react';
 import { useRouter } from 'next/navigation';
 import * as z from 'zod';
 import { useForm } from 'react-hook-form';
@@ -480,7 +480,7 @@ export default function ChatWidget() {
                 </Avatar>
               );
               
-              const authorName = isAdmin ? (msg.authorName || 'Admin') : isModel ? (chatContext?.businessName || 'Asistente IA') : '';
+              const authorName = isAdmin ? (msg.authorName || 'Admin') : isModel ? (chatContext?.businessName || 'Valeria') : '';
 
               return (
                 <div key={msg.id || index} className={cn("flex items-end gap-2 w-full", alignment)}>
@@ -565,7 +565,7 @@ export default function ChatWidget() {
   }
 
   return (
-    <>
+    <Fragment>
       {isMounted && (
         <TooltipProvider>
         <div className="fixed bottom-6 right-6 z-50">
@@ -618,7 +618,7 @@ export default function ChatWidget() {
                                 <AvatarFallback><Sparkles className="h-4 w-4"/></AvatarFallback>
                                </Avatar>
                             )}
-                            {isBusinessChat ? `Asistente de ${chatContext.businessName}` : "Asistente de Inmigración"}
+                            {isBusinessChat ? `Asistente de ${chatContext.businessName}` : "Valeria"}
                         </SheetTitle>
                         {sessionId && (
                             <Tooltip>
@@ -641,7 +641,7 @@ export default function ChatWidget() {
         </div>
         </TooltipProvider>
       )}
-    </>
+    </Fragment>
   );
 }
 

@@ -32,7 +32,7 @@ export class StartChatSessionUseCase {
       totalCost: 0,
     };
     
-    const welcomeMessageText = `¡Hola, ${input.userName}! Soy tu asistente virtual. ¿Cómo puedo ayudarte hoy?`;
+    const welcomeMessageText = `¡Hola, ${input.userName}! Soy Valeria, tu asistente virtual. ¿Cómo puedo ayudarte hoy?`;
     
     const { session, message } = await this.chatRepository.createSessionWithInitialMessage(
       sessionData,
