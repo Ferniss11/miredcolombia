@@ -1,4 +1,5 @@
 
+
 import type { SubscriptionPlan, MigrationPackage, MigrationService, ValeriaPlan } from './types';
 
 
@@ -162,7 +163,7 @@ export const valeriaPlans: ValeriaPlan[] = [
       variant: 'outline'
     },
     {
-      id: process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_IA_PREMIUM || 'price_default_premium',
+      id: 'valeria_premium', // Use internal plan name
       name: 'Valeria Premium',
       price: 2.99,
       priceDetails: '/ mes',
@@ -176,7 +177,7 @@ export const valeriaPlans: ValeriaPlan[] = [
        variant: 'default'
     },
     {
-      id: process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_IA_PRO || 'price_default_pro',
+      id: 'valeria_pro', // Use internal plan name
       name: 'Valeria PRO',
       price: 7.99,
       priceDetails: '/ mes',

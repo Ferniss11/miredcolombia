@@ -19,12 +19,12 @@ export class SetUserSubscriptionPlanUseCase {
       throw new Error('Firebase Admin Auth is not initialized.');
     }
     
+    // The priceId coming from our webhook is now our internal plan name
     let planName: 'valeria_premium' | 'valeria_pro' | 'free' = 'free';
 
-    // Map Stripe Price ID to our internal plan name
-    if (priceId === process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_IA_PREMIUM) {
+    if (priceId === 'valeria_premium') {
         planName = 'valeria_premium';
-    } else if (priceId === process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_IA_PRO) {
+    } else if (priceId === 'valeria_pro') {
         planName = 'valeria_pro';
     }
 

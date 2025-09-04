@@ -1,10 +1,9 @@
 
+
 'use server';
 
 import { z } from 'zod';
 import { stripe } from '@/lib/stripe';
-import { CreateOrderUseCase } from './order/application/create-order.use-case';
-import { FirestoreOrderRepository } from './order/infrastructure/persistence/firestore-order.repository';
 
 // --- SUBSCRIPTION CHECKOUT ---
 
@@ -43,6 +42,18 @@ export async function createSubscriptionCheckoutSessionAction(input: CreateSubsc
         });
         customerId = newCustomer.id;
     }
+    
+    // Map our internal plan IDs to Stripe's Price IDs from environment variables
+    let stripePriceId: string | undefined;
+    if (priceId === 'valeria_premium') {
+        stripePriceId = process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_IA_PREMIUM;
+    } else if (priceId === 'valeria_pro') {
+        stripePriceId = process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_IA_PRO;
+    }
+
+    if (!stripePriceId) {
+        throw new Error(`Stripe Price ID for plan '${priceId}' is not configured in environment variables.`);
+    }
 
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
@@ -50,20 +61,18 @@ export async function createSubscriptionCheckoutSessionAction(input: CreateSubsc
       mode: 'subscription',
       line_items: [
         {
-          price: priceId,
+          price: stripePriceId,
           quantity: 1,
         },
       ],
       metadata: {
         firebaseUID: userId,
-        priceId: priceId,
+        priceId: priceId, // Store our internal plan ID
       },
-      // The success_url now correctly points to the page that handles token refresh
       success_url: `${appUrl}/valeria/payment-success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${appUrl}/valeria?payment=cancelled`,
     });
     
-    // The key change: return the full URL for redirection.
     if (!session.url) {
         throw new Error("Stripe did not return a checkout URL.");
     }
