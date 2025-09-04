@@ -19,4 +19,7 @@ export interface ChatSession {
   totalInputTokens: number;
   totalOutputTokens: number;
   totalCost: number;
+
+  // New field to track message count for free tier
+  messageCount: number;
 }

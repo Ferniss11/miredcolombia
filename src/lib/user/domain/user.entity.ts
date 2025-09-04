@@ -52,6 +52,7 @@ export interface CandidateProfile {
 export interface ValeriaProfile {
     planId: 'valeria_premium' | 'valeria_pro' | 'free';
     planExpiresAt?: Date | null;
+    sessionId?: string; // Link to the user's primary chat session
 }
 
 

@@ -19,6 +19,7 @@ function toChatSession(doc: DocumentSnapshot<DocumentData>): ChatSession {
   return {
     id: doc.id,
     ...data,
+    messageCount: data.messageCount || 0, // Ensure messageCount defaults to 0
     createdAt: data.createdAt.toDate(),
     updatedAt: data.updatedAt?.toDate(),
   } as ChatSession;
@@ -75,6 +76,7 @@ export class FirestoreChatRepository implements ChatRepository {
       ...sessionData,
       createdAt: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),
+      messageCount: 0, // Initialize message count
     };
 
     const initialMessageData: any = {
@@ -141,6 +143,11 @@ export class FirestoreChatRepository implements ChatRepository {
         const sessionUpdate: { [key: string]: any } = {
             updatedAt: FieldValue.serverTimestamp(),
         };
+        
+        // Increment message count only for user messages
+        if (messageData.role === 'user') {
+            sessionUpdate.messageCount = FieldValue.increment(1);
+        }
         
         if (messageData.cost) {
             sessionUpdate.totalCost = FieldValue.increment(messageData.cost);
