@@ -76,7 +76,7 @@ export class FirestoreChatRepository implements ChatRepository {
       ...sessionData,
       createdAt: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),
-      messageCount: 0, // Initialize message count
+      messageCount: 0, // Explicitly initialize message count to 0
     };
 
     const initialMessageData: any = {

@@ -459,8 +459,8 @@ export default function ChatWidget() {
         );
     }
 
-    const showSuggestions = messages.length <= 1;
-    const isLimitReached = !isPremiumUser && (session?.messageCount || 0) >= 3;
+    // Ensure session is not null before calculating limit
+    const isLimitReached = session !== null && !isPremiumUser && (session.messageCount || 0) >= 3;
 
 
     return (
@@ -491,7 +491,7 @@ export default function ChatWidget() {
                 </Avatar>
               );
               
-              const authorName = isAdmin ? (msg.authorName || 'Admin') : isModel ? (chatContext?.businessName || 'Valeria') : '';
+              const authorName = isAdmin ? (msg.authorName || 'Admin') : isModel ? 'Valeria' : '';
 
               return (
                 <div key={msg.id || index} className={cn("flex items-end gap-2 w-full", alignment)}>
@@ -510,7 +510,7 @@ export default function ChatWidget() {
                 </div>
               )
             })}
-             {showSuggestions && (
+             {messages.length <= 1 && (
                 <div className="pt-4 space-y-2">
                     <p className="text-sm font-medium flex items-center gap-2 text-muted-foreground"><MessageSquareQuote className="h-4 w-4"/> O pregúntale directamente...</p>
                     {suggestions.map((q, i) => (
@@ -562,10 +562,10 @@ export default function ChatWidget() {
                     value={currentMessage}
                     onChange={(e) => setCurrentMessage(e.target.value)}
                     placeholder="Escribe tu pregunta..."
-                    disabled={isAiResponding || isLimitReached}
+                    disabled={isAiResponding || isLimitReached || !session}
                     autoComplete="off"
                     />
-                    <Button type="submit" size="icon" disabled={isAiResponding || !currentMessage.trim() || isLimitReached}>
+                    <Button type="submit" size="icon" disabled={isAiResponding || !currentMessage.trim() || isLimitReached || !session}>
                     <Send size={18} />
                     </Button>
                 </form>
