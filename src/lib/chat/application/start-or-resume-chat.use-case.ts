@@ -29,11 +29,12 @@ export class StartOrResumeChatUseCase {
   ) {}
 
   async execute(input: StartChatSessionInput & { userId?: string }): Promise<StartOrResumeChatOutput> {
-    // Priority 1: If a user ID is provided, try to find their linked session first.
+    // Priority 1: If a user ID is provided, this is a logged-in user.
     if (input.userId) {
         const userProfile = await this.userRepository.findByUid(input.userId);
         const premiumSessionId = userProfile?.valeriaProfile?.sessionId;
         
+        // If the user has a session ID linked to their profile, resume it.
         if (premiumSessionId) {
             const premiumSession = await this.getSessionByIdUseCase.execute({ sessionId: premiumSessionId });
             if (premiumSession) {
@@ -41,18 +42,25 @@ export class StartOrResumeChatUseCase {
                  return { session: premiumSession, history, isResumed: true };
             }
         }
+        
+        // If the logged-in user has no session, create a new one for them.
+        const { session, history } = await this.startChatSessionUseCase.execute(input);
+        
+        // Link the new session to their profile so we can find it next time.
+        await this.userRepository.update(input.userId, { 
+            valeriaProfile: { ...userProfile?.valeriaProfile, sessionId: session.id } as any 
+        });
+        
+        return { session, history, isResumed: false };
     }
 
-
-    // Priority 2: Find session by phone number for guests or users without a linked session.
+    // Priority 2: If no user ID, this is a guest. Find session by phone number.
     const existingSession = await this.findSessionByPhoneUseCase.execute({
         phone: input.userPhone,
         businessId: input.businessId,
     });
 
     if (existingSession) {
-      // Logic for user verification (e.g., SMS) will be added here in a future step.
-      // For now, we simply resume the session.
       const history = await this.getChatHistoryUseCase.execute({ 
           sessionId: existingSession.id,
           businessId: input.businessId,
@@ -63,16 +71,8 @@ export class StartOrResumeChatUseCase {
         isResumed: true,
       };
     } else {
-      // If no session exists, create a new one, ensuring the businessId is passed along.
+      // If no session exists for a guest, create a new one.
       const { session, history } = await this.startChatSessionUseCase.execute(input);
-      
-      // If a logged-in user starts their first session, link it to their profile.
-      if (input.userId) {
-          await this.userRepository.update(input.userId, { 
-              valeriaProfile: { sessionId: session.id } as any 
-          });
-      }
-      
       return {
         session,
         history,

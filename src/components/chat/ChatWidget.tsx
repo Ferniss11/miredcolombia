@@ -60,7 +60,10 @@ const WelcomeForm = ({ onSignUpSuccess, isBusinessChat, businessContext, onLogin
                 toast({ variant: 'destructive', title: 'Error de Registro', description: error });
             } else {
                 toast({ title: '¡Cuenta Creada!', description: 'Has iniciado sesión exitosamente.' });
-                onSignUpSuccess(); // This will trigger the parent to start the chat session
+                // The onSignUpSuccess callback is now crucial. It will trigger the
+                // startSessionForUser function in the parent, which now correctly
+                // handles session creation for the newly logged-in user.
+                onSignUpSuccess();
             }
         });
     };
@@ -215,7 +218,6 @@ export default function ChatWidget() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isAiResponding, setIsAiResponding] = useState(false);
   const [currentMessage, setCurrentMessage] = useState('');
-  const [messageCount, setMessageCount] = useState(0);
   
   const [proactiveMessage, setProactiveMessage] = useState('');
   const [showProactive, setShowProactive] = useState(false);
@@ -231,7 +233,7 @@ export default function ChatWidget() {
   const [isMounted, setIsMounted] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
-  const { user, claims, userProfile } = useAuth();
+  const { user, claims, userProfile, loading: authLoading } = useAuth();
   
   const isPremiumUser = claims?.valeria_plan === 'valeria_premium' || claims?.valeria_plan === 'valeria_pro';
   const isInDashboard = pathname.startsWith('/dashboard/valeria');
@@ -243,7 +245,6 @@ export default function ChatWidget() {
   const handleSessionStarted = useCallback((newSessionId: string, history: ChatMessage[]) => {
     setSessionId(newSessionId);
     setMessages(history);
-    setMessageCount(history.filter(m => m.role === 'user').length);
     setView('chat');
   }, []);
 
@@ -255,9 +256,9 @@ export default function ChatWidget() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                userId: user.uid,
+                userId: user.uid, // Pass the UID
                 userName: userProfile.name,
-                userPhone: userProfile.businessProfile?.phone || 'No disponible',
+                userPhone: userProfile.businessProfile?.phone || 'N/A', // Use a placeholder if no phone
                 userEmail: userProfile.email,
                 businessId: chatContext?.businessId
             }),
@@ -274,12 +275,18 @@ export default function ChatWidget() {
   }, [user, userProfile, chatContext, handleSessionStarted, toast]);
 
   useEffect(() => {
-    if (user && userProfile && !sessionId && (isChatOpen || isInDashboard)) {
-      startSessionForUser();
-    } else if (!user && view === 'chat') {
-      setView('welcome');
+    // This effect now correctly handles session start/resume for authenticated users.
+    if (!authLoading && (isChatOpen || isInDashboard)) {
+        if (user && userProfile && !sessionId) {
+            startSessionForUser();
+        } else if (!user && view === 'chat') {
+            // If user logs out while chat is open, reset to welcome view.
+            setSessionId(null);
+            setMessages([]);
+            setView('welcome');
+        }
     }
-  }, [user, userProfile, sessionId, isChatOpen, isInDashboard, startSessionForUser, view]);
+  }, [user, userProfile, sessionId, isChatOpen, isInDashboard, startSessionForUser, view, authLoading]);
 
 
   useEffect(() => {
@@ -338,6 +345,9 @@ export default function ChatWidget() {
   
   const handleSendMessage = async (messageText: string) => {
     if (!messageText.trim() || isAiResponding || !sessionId) return;
+    
+    const currentSession = await fetch(`/api/chat/sessions/${sessionId}`).then(res => res.json()).then(data => data.session);
+    const messageCount = currentSession?.messageCount || 0;
 
     if (!isPremiumUser && messageCount >= 3) {
         toast({
@@ -360,7 +370,6 @@ export default function ChatWidget() {
         authorId: user?.uid,
     };
     setMessages(prev => [...prev, userMessage]);
-    setMessageCount(prev => prev + 1);
     
     try {
         const response = await fetch(`/api/chat/sessions/${sessionId}/messages`, {
@@ -388,7 +397,6 @@ export default function ChatWidget() {
         const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
         toast({ variant: 'destructive', title: 'Error', description: errorMessage });
         setMessages(prev => prev.filter(m => m.id !== userMessage.id));
-        setMessageCount(prev => prev - 1);
     } finally {
         setIsAiResponding(false);
     }
@@ -408,10 +416,9 @@ export default function ChatWidget() {
   const handleResetSession = () => {
     setSessionId(null);
     setMessages([]);
-    setMessageCount(0);
     setSuggestions(getShuffledSample(suggestionPool, 3));
     if (user) {
-        startSessionForUser(); // Re-start session immediately for logged-in user
+        startSessionForUser();
     } else {
         setView('welcome');
     }
@@ -423,7 +430,13 @@ export default function ChatWidget() {
   }
 
   const renderChatContent = () => {
-    if ((!sessionId || view !== 'chat') && !isInDashboard) {
+    // Key change: In the dashboard, if we have a user but no session yet, we show a loader
+    // because startSessionForUser will be called by the useEffect.
+    if (isInDashboard && (!sessionId || !userProfile)) {
+        return <div className='flex-1 flex items-center justify-center'><Loader2 className='animate-spin h-8 w-8'/></div>
+    }
+
+    if (!sessionId && view !== 'chat') {
         if (view === 'login') {
             return <LoginForm onLoginSuccess={startSessionForUser} onBackClick={() => setView('welcome')} />;
         }
@@ -438,8 +451,6 @@ export default function ChatWidget() {
     }
 
     const showSuggestions = messages.length <= 1;
-    const isFreeTierLimitReached = !isPremiumUser && messageCount >= 3;
-
 
     return (
       <div className="flex flex-col h-full">
@@ -523,27 +534,19 @@ export default function ChatWidget() {
           </div>
         </ScrollArea>
         <div className="p-4 border-t bg-background rounded-b-lg">
-            {isFreeTierLimitReached ? (
-                <div className="text-center p-4 bg-primary/10 rounded-md">
-                    <p className="text-sm font-semibold">Has alcanzado el límite de mensajes gratuitos.</p>
-                    <Button asChild size="sm" className="mt-2">
-                        <Link href="/valeria">Ver Planes de Valeria</Link>
-                    </Button>
-                </div>
-            ) : (
-                <form onSubmit={handleFormSubmitAndSend} className="flex gap-2">
-                    <Input
-                    value={currentMessage}
-                    onChange={(e) => setCurrentMessage(e.target.value)}
-                    placeholder="Escribe tu pregunta..."
-                    disabled={isAiResponding}
-                    autoComplete="off"
-                    />
-                    <Button type="submit" size="icon" disabled={isAiResponding || !currentMessage.trim()}>
-                    <Send size={18} />
-                    </Button>
-                </form>
-            )}
+            {/* The logic to show the free tier limit message will be added in a subsequent step */}
+            <form onSubmit={handleFormSubmitAndSend} className="flex gap-2">
+                <Input
+                value={currentMessage}
+                onChange={(e) => setCurrentMessage(e.target.value)}
+                placeholder="Escribe tu pregunta..."
+                disabled={isAiResponding}
+                autoComplete="off"
+                />
+                <Button type="submit" size="icon" disabled={isAiResponding || !currentMessage.trim()}>
+                <Send size={18} />
+                </Button>
+            </form>
         </div>
       </div>
     );
