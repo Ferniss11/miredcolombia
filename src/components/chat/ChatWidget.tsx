@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useRef, useEffect, useCallback, useTransition, Fragment } from 'react';
@@ -439,13 +438,11 @@ export default function ChatWidget() {
   }
 
   const renderChatContent = () => {
-    // Key change: In the dashboard, if we have a user but no session yet, we show a loader
-    // because startSessionForUser will be called by the useEffect.
     if (isInDashboard && (!session || !userProfile)) {
         return <div className='flex-1 flex items-center justify-center'><Loader2 className='animate-spin h-8 w-8'/></div>
     }
 
-    if (!session && view !== 'chat') {
+    if (!session) {
         if (view === 'login') {
             return <LoginForm onLoginSuccess={startSessionForUser} onBackClick={() => setView('welcome')} />;
         }
@@ -459,9 +456,7 @@ export default function ChatWidget() {
         );
     }
 
-    // Ensure session is not null before calculating limit
-    const isLimitReached = session !== null && !isPremiumUser && (session.messageCount || 0) >= 3;
-
+    const isLimitReached = !isPremiumUser && (session.messageCount || 0) >= 3;
 
     return (
       <div className="flex flex-col h-full">
