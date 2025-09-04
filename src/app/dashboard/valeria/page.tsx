@@ -14,8 +14,8 @@ export default function ValeriaDashboardPage() {
         setIsClient(true);
     }, []);
 
-    const planName = claims?.valeria_plan === 'colombia' ? 'Plan Colombia' 
-                    : claims?.valeria_plan === 'espana' ? 'Plan España' 
+    const planName = claims?.valeria_plan === 'valeria_premium' ? 'Plan Premium' 
+                    : claims?.valeria_plan === 'valeria_pro' ? 'Plan PRO' 
                     : 'Premium';
 
     if (!isClient) {

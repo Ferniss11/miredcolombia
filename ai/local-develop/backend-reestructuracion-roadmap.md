@@ -36,7 +36,7 @@
 *   **Objetivo:** Implementar la página de Valeria y el sistema de suscripción.
 *   **2.1. Diseñar la Página de Valeria (`/valeria`) (✓):**
     *   Implementar la sección de introducción.
-    *   Diseñar las tarjetas de planes (Gratis, Plan Colombia, Plan España) con sus características y precios.
+    *   Diseñar las tarjetas de planes (Gratis, Valeria Premium, Valeria PRO) con sus características y precios.
     *   El CTA "Empieza ahora" debe llevar al usuario al flujo de registro o al chat si ya está logueado.
 
 *   **2.2. Integración con Stripe para Suscripciones (✓):**
@@ -45,7 +45,7 @@
     *   Implementar una `server action` que cree una sesión de Stripe Checkout cuando un usuario elige un plan. (✓)
 
 *   **2.3. Lógica de Acceso por Roles (Valeria) (✓):**
-    *   Modificar el `AuthContext` y el `UserController` para manejar un nuevo tipo de rol o claim `valeria_plan: 'free' | 'colombia' | 'espana'`. (✓)
+    *   Modificar el `AuthContext` y el `UserController` para manejar un nuevo tipo de rol o claim `valeria_plan: 'free' | 'valeria_premium' | 'valeria_pro'`. (✓)
     *   El webhook de Stripe debe actualizar este claim en Firebase Auth. (✓)
     *   El backend del chat de Valeria (`migration-chat-flow`) debe verificar este claim para dar respuestas básicas o extendidas. (✓)
 
@@ -161,14 +161,14 @@
 *   **Objetivo:** Crear un entorno de chat premium y configurable para los usuarios suscritos a los planes de Valeria, proporcionando al administrador las herramientas para gestionar la inteligencia de cada plan de forma independiente.
 *   **7.1. Extender el Modelo de Configuración de Agentes:**
     *   Utilizar la colección `agentConfig` existente en Firestore para manejar múltiples perfiles de agente.
-    *   Crear tres documentos distintos: `global` (para el chat público), `plan_colombia` y `plan_espana`.
+    *   Crear tres documentos distintos: `global` (para el chat público), `valeria_premium` y `valeria_pro`.
 
 *   **7.2. Rediseñar el Panel de Administración de Agentes:**
     *   La página `/dashboard/admin/agent` tendrá un selector o pestañas para elegir y configurar cada uno de los tres agentes.
     *   Actualizar la acción `saveAgentConfigAction` para que reciba el ID del agente a modificar.
 
 *   **7.3. Adaptar la Lógica del Chat:**
-    *   Actualizar el `GenkitAgentAdapter` para que cargue la configuración del agente correcta (`global`, `plan_colombia` o `plan_espana`) basándose en el `claim` de suscripción del usuario.
+    *   Actualizar el `GenkitAgentAdapter` para que cargue la configuración del agente correcta (`global`, `valeria_premium` o `valeria_pro`) basándose en el `claim` de suscripción del usuario.
 
 *   **7.4. Integrar Interfaz de Chat en el Dashboard de Valeria:**
     *   Reemplazar el contenido actual de `/dashboard/valeria` con una interfaz de chat completa, dedicada para los suscriptores.

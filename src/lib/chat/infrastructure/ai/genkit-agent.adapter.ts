@@ -1,3 +1,4 @@
+
 // src/lib/chat/infrastructure/ai/genkit-agent.adapter.ts
 import type { AgentAdapter } from './agent.adapter';
 import type { ChatMessage } from '../../domain/chat-message.entity';
@@ -64,8 +65,9 @@ export class GenkitAgentAdapter implements AgentAdapter {
             const userRecord = await adminAuth.getUser(userId);
             const plan = userRecord.customClaims?.valeria_plan;
 
-            if (plan === 'colombia' || plan === 'espana') {
-                return this.userRepository.getAgentConfig(`plan_${plan}`);
+            if (plan === 'valeria_premium' || plan === 'valeria_pro') {
+                // The agentId in Firestore is 'valeria_premium', not 'plan_valeria_premium'
+                return this.userRepository.getAgentConfig(plan);
             }
         } catch (error) {
             console.warn(`Could not get auth user for ID ${userId}, falling back to global agent.`, error);

@@ -17,20 +17,20 @@ import { cn } from '@/lib/utils';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import Link from 'next/link';
 
-type AgentType = 'global' | 'plan_colombia' | 'plan_espana';
+type AgentType = 'global' | 'valeria_premium' | 'valeria_pro';
 
 const agentDetails: Record<AgentType, { name: string; description: string }> = {
     global: {
         name: 'Agente Global',
         description: 'Este es el agente por defecto que interactúa con usuarios públicos y usuarios gratuitos.'
     },
-    plan_colombia: {
-        name: 'Agente Plan Colombia',
-        description: 'Este agente se activa para los usuarios con una suscripción activa al "Plan Colombia".'
+    valeria_premium: {
+        name: 'Agente Valeria Premium',
+        description: 'Este agente se activa para los usuarios con una suscripción activa al "Plan Premium".'
     },
-    plan_espana: {
-        name: 'Agente Plan España',
-        description: 'Este agente se activa para los usuarios con una suscripción activa al "Plan España".'
+    valeria_pro: {
+        name: 'Agente Valeria PRO',
+        description: 'Este agente se activa para los usuarios con una suscripción activa al "Plan PRO".'
     }
 };
 
@@ -192,17 +192,17 @@ export default function AgentManagementPage() {
                 <Tabs defaultValue="global" className="w-full">
                     <TabsList className="grid w-full grid-cols-3">
                         <TabsTrigger value="global">Agente Global</TabsTrigger>
-                        <TabsTrigger value="plan_colombia">Plan Colombia</TabsTrigger>
-                        <TabsTrigger value="plan_espana">Plan España</TabsTrigger>
+                        <TabsTrigger value="valeria_premium">Valeria Premium</TabsTrigger>
+                        <TabsTrigger value="valeria_pro">Valeria PRO</TabsTrigger>
                     </TabsList>
                     <TabsContent value="global">
                         <AgentConfigForm agentId="global" agentType={agentDetails.global} onToolConnectClick={() => setIsDevModalOpen(true)} />
                     </TabsContent>
-                    <TabsContent value="plan_colombia">
-                        <AgentConfigForm agentId="plan_colombia" agentType={agentDetails.plan_colombia} onToolConnectClick={() => setIsDevModalOpen(true)} />
+                    <TabsContent value="valeria_premium">
+                        <AgentConfigForm agentId="valeria_premium" agentType={agentDetails.valeria_premium} onToolConnectClick={() => setIsDevModalOpen(true)} />
                     </TabsContent>
-                    <TabsContent value="plan_espana">
-                        <AgentConfigForm agentId="plan_espana" agentType={agentDetails.plan_espana} onToolConnectClick={() => setIsDevModalOpen(true)} />
+                    <TabsContent value="valeria_pro">
+                        <AgentConfigForm agentId="valeria_pro" agentType={agentDetails.valeria_pro} onToolConnectClick={() => setIsDevModalOpen(true)} />
                     </TabsContent>
                 </Tabs>
             </div>
