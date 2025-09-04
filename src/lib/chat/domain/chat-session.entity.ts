@@ -21,5 +21,5 @@ export interface ChatSession {
   totalCost: number;
 
   // New field to track message count for free tier
-  messageCount: number;
+  messageCount?: number;
 }

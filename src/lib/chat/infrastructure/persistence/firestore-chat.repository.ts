@@ -84,6 +84,7 @@ export class FirestoreChatRepository implements ChatRepository {
       text: initialMessageText,
       role: 'model' as const,
       timestamp: FieldValue.serverTimestamp(),
+      authorName: 'Valeria',
     };
 
     // Sanitize data: Ensure `businessId` is not undefined when saving.
