@@ -11,6 +11,7 @@ import { FindSessionByPhoneUseCase } from '../../application/find-session-by-pho
 import { StartOrResumeChatUseCase } from '../../application/start-or-resume-chat.use-case';
 import { GetAllChatSessionsUseCase } from '../../application/get-all-chat-sessions.use-case';
 import { GetSessionByIdUseCase } from '../../application/get-session-by-id.use-case';
+import { FirestoreUserRepository } from '@/lib/user/infrastructure/persistence/firestore-user.repository';
 
 
 // --- Input Validation Schemas ---
@@ -19,6 +20,7 @@ const StartSessionSchema = z.object({
   userPhone: z.string().min(7),
   userEmail: z.string().email().optional().or(z.literal('')),
   businessId: z.string().optional(),
+  userId: z.string().optional(), // Added userId for logged-in users
 });
 
 const PostMessageSchema = z.object({
@@ -37,6 +39,7 @@ export class ChatController {
   constructor() {
     const chatRepository = new FirestoreChatRepository();
     const agentAdapter = new GenkitAgentAdapter();
+    const userRepository = new FirestoreUserRepository();
     
     // Instantiate all necessary use cases
     const startChatSessionUseCase = new StartChatSessionUseCase(chatRepository);
@@ -50,7 +53,9 @@ export class ChatController {
     this.startOrResumeChatUseCase = new StartOrResumeChatUseCase(
         startChatSessionUseCase,
         findSessionByPhoneUseCase,
-        this.getChatHistoryUseCase
+        this.getChatHistoryUseCase,
+        userRepository,
+        this.getSessionByIdUseCase
     );
     this.postMessageUseCase = new PostMessageUseCase(chatRepository, agentAdapter);
     this.getAllSessionsUseCase = new GetAllChatSessionsUseCase(chatRepository);

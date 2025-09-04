@@ -28,8 +28,8 @@ export class StartOrResumeChatUseCase {
 
   ) {}
 
-  async execute(input: StartChatSessionInput): Promise<StartOrResumeChatOutput> {
-    // Priority 1: If a user ID is provided, try to find their session first.
+  async execute(input: StartChatSessionInput & { userId?: string }): Promise<StartOrResumeChatOutput> {
+    // Priority 1: If a user ID is provided, try to find their linked session first.
     if (input.userId) {
         const userProfile = await this.userRepository.findByUid(input.userId);
         const premiumSessionId = userProfile?.valeriaProfile?.sessionId;
