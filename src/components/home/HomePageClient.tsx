@@ -34,10 +34,10 @@ export default function HomePageClient({ eurToCopRate, initialBusinesses, initia
     <div className="flex flex-col min-h-[100dvh]">
       <main className="flex-1">
         <HeroSection />
+        <AiAssistantSection onOpenChatModal={openChat} />
         <AboutSection />
         <HowWeHelpSection />
         <PackagesSection />
-        <AiAssistantSection onOpenChatModal={openChat} />
         <JobsCtaSection jobs={initialJobs} />
         <DirectorySection businesses={initialBusinesses.slice(0, 4)} />
         <BusinessSection businesses={initialBusinesses} />

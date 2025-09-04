@@ -162,8 +162,8 @@ export const valeriaPlans: ValeriaPlan[] = [
       variant: 'outline'
     },
     {
-      id: process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_COLOMBIA || 'price_colombia_default',
-      name: 'Plan Colombia',
+      id: process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_IA_PREMIUM || 'price_default_premium',
+      name: 'Valeria Premium',
       price: 2.99,
       priceDetails: '/ mes',
       features: [
@@ -172,21 +172,21 @@ export const valeriaPlans: ValeriaPlan[] = [
         'Acceso a checklists descargables',
         'Generación de documentos básicos en PDF',
       ],
-      cta: 'Elegir Plan Colombia',
+      cta: 'Elegir Plan Premium',
        variant: 'default'
     },
     {
-      id: process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_ESPANA || 'price_espana_default',
-      name: 'Plan España',
+      id: process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_IA_PRO || 'price_default_pro',
+      name: 'Valeria PRO',
       price: 7.99,
       priceDetails: '/ mes',
       features: [
-        'Todo lo del Plan Colombia',
+        'Todo lo del Plan Premium',
         'Alertas de empleo personalizadas',
         'Alertas de vivienda según tus criterios',
         'Acceso a todas las guías premium',
       ],
-      cta: 'Elegir Plan España',
+      cta: 'Elegir Plan PRO',
       variant: 'default'
     },
 ];

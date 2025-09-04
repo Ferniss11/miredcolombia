@@ -139,6 +139,7 @@ export type BusinessProfile = {
   verificationStatus?: 'pending' | 'approved' | 'rejected' | 'unclaimed';
   isAgentEnabled?: boolean;
   googleCalendarConnected?: boolean;
+  gcalTokens?: GoogleTokens;
   agentConfig?: import('./chat-types').BusinessAgentConfig; // Use import() for type-only imports across modules
 };
 
@@ -190,6 +191,10 @@ export type UserProfile = {
   email: string | null;
   role: UserRole;
   status: 'active' | 'deleted';
+  valeriaProfile?: {
+    planId: 'valeria_premium' | 'valeria_pro' | 'free',
+    planExpiresAt?: Date | null,
+  };
   businessProfile?: BusinessProfile;
   candidateProfile?: CandidateProfile;
 };

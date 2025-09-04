@@ -47,6 +47,15 @@ export interface CandidateProfile {
 }
 
 /**
+ * Represents the profile data for Valeria AI subscription.
+ */
+export interface ValeriaProfile {
+    planId: 'valeria_premium' | 'valeria_pro' | 'free';
+    planExpiresAt?: Date | null;
+}
+
+
+/**
  * The core User entity for the entire application.
  * It acts as a central hub for user information and can be composed
  * with specific profiles like BusinessProfile or CandidateProfile.
@@ -63,4 +72,5 @@ export interface User {
   // Optional, composite profiles. Their existence defines the user's capabilities.
   businessProfile?: BusinessProfile;
   candidateProfile?: CandidateProfile;
+  valeriaProfile?: ValeriaProfile;
 }
