@@ -49,7 +49,7 @@ export function DashboardSidebar() {
   const { toast } = useToast();
   const { state } = useSidebar();
   
-  const hasValeriaPlan = claims?.valeria_plan === 'colombia' || claims?.valeria_plan === 'espana';
+  const hasValeriaPlan = claims?.valeria_plan === 'valeria_premium' || claims?.valeria_plan === 'valeria_pro';
 
   const advertiserNav = [
     { href: "/dashboard/advertiser", label: "Resumen", icon: LayoutGrid },

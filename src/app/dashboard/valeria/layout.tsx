@@ -22,7 +22,7 @@ export default function ValeriaLayout({ children }: { children: React.ReactNode 
     }
     
     const plan = claims?.valeria_plan;
-    if (plan !== 'colombia' && plan !== 'espana') {
+    if (plan !== 'valeria_premium' && plan !== 'valeria_pro') {
       router.replace('/valeria'); // Redirect to upgrade page if no valid plan
     } else {
       setIsVerifying(false); // Verification complete, user has access
