@@ -74,7 +74,7 @@ const WelcomeForm = ({ onSignUpSuccess, isBusinessChat, businessContext, onLogin
             <div className="flex-1">
                 <div className="flex items-center gap-2 mb-2">
                     {isBusinessChat ? <Building className="h-5 w-5 text-primary"/> : <Phone className="h-5 w-5 text-primary"/>}
-                    <h3 className="font-bold font-headline">{isBusinessChat ? `Asistente de ${businessContext?.businessName}` : "Asistente de Inmigración"}</h3>
+                    <h3 className="font-bold font-headline">{isBusinessChat ? `Asistente de ${businessContext?.businessName}` : "Valeria"}</h3>
                 </div>
                 <p className="text-sm text-muted-foreground">
                     Para empezar, crea una cuenta gratuita. Esto nos permite guardar tu conversación y darte un mejor servicio.
@@ -258,7 +258,7 @@ export default function ChatWidget() {
             body: JSON.stringify({
                 userId: user.uid, // Pass the UID
                 userName: userProfile.name,
-                userPhone: userProfile.businessProfile?.phone || 'N/A', // Use a placeholder if no phone
+                userPhone: userProfile.businessProfile?.phone || '',
                 userEmail: userProfile.email,
                 businessId: chatContext?.businessId
             }),

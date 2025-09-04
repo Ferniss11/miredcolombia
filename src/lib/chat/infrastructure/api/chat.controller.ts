@@ -17,7 +17,7 @@ import { FirestoreUserRepository } from '@/lib/user/infrastructure/persistence/f
 // --- Input Validation Schemas ---
 const StartSessionSchema = z.object({
   userName: z.string().min(2),
-  userPhone: z.string().min(7),
+  userPhone: z.string().optional(),
   userEmail: z.string().email().optional().or(z.literal('')),
   businessId: z.string().optional(),
   userId: z.string().optional(), // Added userId for logged-in users
