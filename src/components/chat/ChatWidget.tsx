@@ -17,7 +17,7 @@ import { X, Send, User, Bot, Loader2, Sparkles, Phone, Building, MessageSquareQu
 import { LuBotMessageSquare } from "react-icons/lu";
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
-import type { ChatMessage } from '@/lib/chat-types';
+import type { ChatMessage, UserRole } from '@/lib/chat-types';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '../ui/sheet';
 import { useChat } from '@/context/ChatContext';
@@ -41,9 +41,10 @@ type WelcomeFormProps = {
   onSessionStarted: (sessionId: string, history: ChatMessage[]) => void;
   isBusinessChat: boolean;
   businessContext?: { businessId: string, businessName: string };
+  onLoginClick: () => void;
 }
 
-const WelcomeForm = ({ onSessionStarted, isBusinessChat, businessContext }: WelcomeFormProps) => {
+const WelcomeForm = ({ onSessionStarted, isBusinessChat, businessContext, onLoginClick }: WelcomeFormProps) => {
     const [isPending, setIsPending] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const router = useRouter();
@@ -109,6 +110,7 @@ const WelcomeForm = ({ onSessionStarted, isBusinessChat, businessContext }: Welc
                         : 'Necesitamos unos datos para poder ayudarte mejor. Si ya has hablado con nosotros, usa el mismo teléfono para continuar la conversación.'
                     }
                 </p>
+                 <Button variant="link" size="sm" className="p-0 mt-2" onClick={onLoginClick}>¿Ya tienes una cuenta? Inicia sesión</Button>
             </div>
             
             <div className="pt-6 border-t mt-6">
@@ -168,6 +170,54 @@ const WelcomeForm = ({ onSessionStarted, isBusinessChat, businessContext }: Welc
     )
 }
 
+// --- Login Form Sub-component ---
+const loginFormSchema = z.object({
+  email: z.string().email('Email inválido.'),
+  password: z.string().min(1, 'La contraseña es requerida.'),
+});
+const LoginForm = ({ onLoginSuccess, onBackClick }: { onLoginSuccess: () => void, onBackClick: () => void }) => {
+    const { loginWithEmail } = useAuth();
+    const [isPending, startTransition] = useTransition();
+    const { toast } = useToast();
+
+    const form = useForm<z.infer<typeof loginFormSchema>>({
+        resolver: zodResolver(loginFormSchema),
+        defaultValues: { email: '', password: '' },
+    });
+    
+    const handleLoginSubmit = async (values: z.infer<typeof loginFormSchema>) => {
+        startTransition(async () => {
+            const { error } = await loginWithEmail(values.email, values.password);
+            if (error) {
+                toast({ variant: 'destructive', title: 'Error de Inicio de Sesión', description: 'Credenciales inválidas.' });
+            } else {
+                toast({ title: '¡Bienvenido de vuelta!' });
+                onLoginSuccess();
+            }
+        });
+    };
+
+    return (
+        <div className="p-4">
+             <h3 className="font-bold font-headline">Inicia Sesión</h3>
+             <p className="text-sm text-muted-foreground mb-4">Introduce tus credenciales para continuar.</p>
+             <Form {...form}>
+                <form onSubmit={form.handleSubmit(handleLoginSubmit)} className="space-y-4">
+                    <FormField control={form.control} name="email" render={({ field }) => (<FormItem><FormLabel>Email</FormLabel><FormControl><Input {...field}/></FormControl><FormMessage /></FormItem>)}/>
+                    <FormField control={form.control} name="password" render={({ field }) => (<FormItem><FormLabel>Contraseña</FormLabel><FormControl><Input type="password" {...field}/></FormControl><FormMessage /></FormItem>)}/>
+                    <div className="flex gap-2">
+                        <Button variant="outline" type="button" onClick={onBackClick}>Atrás</Button>
+                        <Button type="submit" className="flex-1" disabled={isPending}>
+                            {isPending && <Loader2 className="animate-spin mr-2"/>} Iniciar Sesión
+                        </Button>
+                    </div>
+                </form>
+             </Form>
+        </div>
+    )
+}
+
+
 // --- Main Chat Widget Component ---
 const migrationProactiveMessages = [
     "Recuerda apostillar todos tus documentos oficiales en Colombia antes de viajar.",
@@ -202,7 +252,6 @@ const allBusinessQuestions = [
     "¿Cuáles son los productos más recomendados?",
 ];
 
-// Helper function to shuffle an array and return the first N items
 const getShuffledSample = (arr: string[], count: number) => {
     return arr.sort(() => 0.5 - Math.random()).slice(0, count);
 }
@@ -222,14 +271,14 @@ export default function ChatWidget() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isAiResponding, setIsAiResponding] = useState(false);
   const [currentMessage, setCurrentMessage] = useState('');
+  const [messageCount, setMessageCount] = useState(0);
   
   const [proactiveMessage, setProactiveMessage] = useState('');
   const [showProactive, setShowProactive] = useState(false);
   const [proactiveClosed, setProactiveClosed] = useState(false);
-  
   const [userHasInteracted, setUserHasInteracted] = useState(false);
-
-  // State for dynamic suggestions
+  
+  const [view, setView] = useState<'welcome' | 'login' | 'chat'>('welcome');
   const [suggestions, setSuggestions] = useState<string[]>([]);
   
   const { toast } = useToast();
@@ -238,14 +287,49 @@ export default function ChatWidget() {
   const [isMounted, setIsMounted] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
-  const { user, claims } = useAuth();
+  const { user, claims, userProfile } = useAuth();
   
-  const isPremiumUser = claims?.valeria_plan === 'colombia' || claims?.valeria_plan === 'espana';
+  const isPremiumUser = claims?.valeria_plan === 'valeria_premium' || claims?.valeria_plan === 'valeria_pro';
   const isInDashboard = pathname.startsWith('/dashboard/valeria');
 
   const isBusinessChat = !!chatContext?.businessId;
   const suggestionPool = isBusinessChat ? allBusinessQuestions : allGeneralQuestions;
   const proactivePool = isBusinessChat ? businessProactiveMessages : migrationProactiveMessages;
+
+  const startSessionForUser = useCallback(async () => {
+    if (!user || !userProfile) return;
+
+    try {
+        const response = await fetch('/api/chat/sessions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                userName: userProfile.name,
+                userPhone: userProfile.businessProfile?.phone || 'No disponible',
+                userEmail: userProfile.email,
+                userId: user.uid,
+                businessId: chatContext?.businessId
+            }),
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error?.message);
+
+        handleSessionStarted(result.sessionId, result.history);
+        
+    } catch(e) {
+        console.error("Error auto-starting session for user:", e);
+        toast({ variant: 'destructive', title: 'Error', description: 'No se pudo iniciar tu sesión de chat.'});
+    }
+  }, [user, userProfile, chatContext]);
+
+  useEffect(() => {
+    if (user && userProfile && !sessionId && (isChatOpen || isInDashboard)) {
+      startSessionForUser();
+    } else if (!user) {
+      setView('welcome');
+    }
+  }, [user, userProfile, sessionId, isChatOpen, isInDashboard, startSessionForUser]);
+
 
   useEffect(() => {
     setIsMounted(true);
@@ -295,7 +379,6 @@ export default function ChatWidget() {
   useEffect(() => {
       if(isChatOpen) {
         setShowProactive(false);
-        // Set dynamic suggestions when chat opens with a new session
         if (!sessionId) {
             setSuggestions(getShuffledSample(suggestionPool, 3));
         }
@@ -303,27 +386,30 @@ export default function ChatWidget() {
   }, [isChatOpen, sessionId, suggestionPool]);
   
   const handleSendMessage = async (messageText: string) => {
-    if (!messageText.trim() || isAiResponding) return;
-    setIsAiResponding(true);
-    setCurrentMessage('');
+    if (!messageText.trim() || isAiResponding || !sessionId) return;
 
-    // If there's no session, we can't send a message. This shouldn't happen with the new flow.
-    if (!sessionId) {
-        toast({ variant: 'destructive', title: 'Error', description: 'La sesión de chat no se ha iniciado.' });
-        setIsAiResponding(false);
+    if (!isPremiumUser && messageCount >= 3) {
+        toast({
+            title: 'Límite alcanzado',
+            description: 'Has alcanzado el límite de 3 mensajes para el plan gratuito.',
+            variant: 'destructive'
+        });
         return;
     }
 
+    setIsAiResponding(true);
+    setCurrentMessage('');
+    
     const userMessage: ChatMessage = { 
         id: `temp-user-${Date.now()}`,
         role: 'user', 
         text: messageText.trim(), 
         timestamp: new Date().toISOString(),
         replyTo: null,
-        authorId: user?.uid, // Add authorId for context
+        authorId: user?.uid,
     };
-    const newHistory = [...messages, userMessage];
-    setMessages(newHistory);
+    setMessages(prev => [...prev, userMessage]);
+    setMessageCount(prev => prev + 1);
     
     try {
         const response = await fetch(`/api/chat/sessions/${sessionId}/messages`, {
@@ -336,10 +422,7 @@ export default function ChatWidget() {
         });
         
         const result = await response.json();
-
-        if (!response.ok) {
-            throw new Error(result.error?.message || 'Error en el servidor');
-        }
+        if (!response.ok) throw new Error(result.error?.message || 'Error en el servidor');
 
         const aiMessage: ChatMessage = {
             id: `ai-${Date.now()}`,
@@ -353,8 +436,8 @@ export default function ChatWidget() {
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
         toast({ variant: 'destructive', title: 'Error', description: errorMessage });
-        // Rollback optimistic UI update on error
         setMessages(prev => prev.filter(m => m.id !== userMessage.id));
+        setMessageCount(prev => prev - 1);
     } finally {
         setIsAiResponding(false);
     }
@@ -363,6 +446,8 @@ export default function ChatWidget() {
   const handleSessionStarted = (newSessionId: string, history: ChatMessage[]) => {
     setSessionId(newSessionId);
     setMessages(history);
+    setMessageCount(history.filter(m => m.role === 'user').length);
+    setView('chat');
   };
   
   const handleFormSubmitAndSend = (e: React.FormEvent) => {
@@ -379,8 +464,13 @@ export default function ChatWidget() {
   const handleResetSession = () => {
     setSessionId(null);
     setMessages([]);
-    // Get a new set of suggestions for the new session
+    setMessageCount(0);
     setSuggestions(getShuffledSample(suggestionPool, 3));
+    if (user) {
+        startSessionForUser(); // Re-start session immediately for logged-in user
+    } else {
+        setView('welcome');
+    }
   }
 
   const formatTimestamp = (isoString?: string) => {
@@ -389,24 +479,23 @@ export default function ChatWidget() {
   }
 
   const renderChatContent = () => {
-    // If the user is logged in, has a plan, and is on the dashboard page, directly show the chat.
-    if (user && isPremiumUser && isInDashboard && !sessionId) {
-        handleSessionStarted(`premium-session-${user.uid}`, [
-            { id: 'welcome', role: 'model', text: `¡Hola ${user.displayName}! Gracias por ser suscriptor. ¿En qué te puedo ayudar hoy?`, timestamp: new Date().toISOString(), replyTo: null }
-        ]);
-    }
-    
-    if (!sessionId) {
-      return (
-        <WelcomeForm 
-            onSessionStarted={handleSessionStarted} 
-            isBusinessChat={isBusinessChat}
-            businessContext={chatContext || undefined}
-        />
-      );
+    if ((!sessionId || view !== 'chat') && !isInDashboard) {
+        if (view === 'login') {
+            return <LoginForm onLoginSuccess={() => setView('chat')} onBackClick={() => setView('welcome')} />;
+        }
+        return (
+            <WelcomeForm 
+                onSessionStarted={handleSessionStarted} 
+                isBusinessChat={isBusinessChat}
+                businessContext={chatContext || undefined}
+                onLoginClick={() => setView('login')}
+            />
+        );
     }
 
     const showSuggestions = messages.length <= 1;
+    const isFreeTierLimitReached = !isPremiumUser && messageCount >= 3;
+
 
     return (
       <div className="flex flex-col h-full">
@@ -490,18 +579,27 @@ export default function ChatWidget() {
           </div>
         </ScrollArea>
         <div className="p-4 border-t bg-background rounded-b-lg">
-          <form onSubmit={handleFormSubmitAndSend} className="flex gap-2">
-            <Input
-              value={currentMessage}
-              onChange={(e) => setCurrentMessage(e.target.value)}
-              placeholder="Escribe tu pregunta..."
-              disabled={isAiResponding}
-              autoComplete="off"
-            />
-            <Button type="submit" size="icon" disabled={isAiResponding || !currentMessage.trim()}>
-              <Send size={18} />
-            </Button>
-          </form>
+            {isFreeTierLimitReached ? (
+                <div className="text-center p-4 bg-primary/10 rounded-md">
+                    <p className="text-sm font-semibold">Has alcanzado el límite de mensajes gratuitos.</p>
+                    <Button asChild size="sm" className="mt-2">
+                        <Link href="/valeria">Ver Planes de Valeria</Link>
+                    </Button>
+                </div>
+            ) : (
+                <form onSubmit={handleFormSubmitAndSend} className="flex gap-2">
+                    <Input
+                    value={currentMessage}
+                    onChange={(e) => setCurrentMessage(e.target.value)}
+                    placeholder="Escribe tu pregunta..."
+                    disabled={isAiResponding}
+                    autoComplete="off"
+                    />
+                    <Button type="submit" size="icon" disabled={isAiResponding || !currentMessage.trim()}>
+                    <Send size={18} />
+                    </Button>
+                </form>
+            )}
         </div>
       </div>
     );
@@ -599,3 +697,5 @@ export default function ChatWidget() {
     </>
   );
 }
+
+    
