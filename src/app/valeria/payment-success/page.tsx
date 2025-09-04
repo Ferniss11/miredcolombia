@@ -53,20 +53,26 @@ export default function PaymentSuccessPage() {
 
     // Step 1: Trigger token refresh on component mount
     useEffect(() => {
+        console.log("PaymentSuccessPage: Forcing token refresh...");
         forceTokenRefresh();
     }, [forceTokenRefresh]);
 
     // Step 2: React to claims changes and redirect
     useEffect(() => {
         if (claims) {
+            console.log("PaymentSuccessPage: Claims updated", claims);
             const plan = claims?.valeria_plan;
-            if (plan === 'colombia' || plan === 'espana') {
+            if (plan === 'valeria_premium' || plan === 'valeria_pro') {
                 setStatus('¡Todo listo! Redirigiendo a tu panel...');
                 // Use a timeout to let the user see the success message
                 setTimeout(() => {
                     router.replace('/dashboard/valeria');
                 }, 1500);
+            } else {
+                 console.log(`PaymentSuccessPage: Plan is '${plan}', waiting for 'valeria_premium' or 'valeria_pro'.`);
             }
+        } else {
+            console.log("PaymentSuccessPage: Waiting for claims...");
         }
     }, [claims, router]);
 
