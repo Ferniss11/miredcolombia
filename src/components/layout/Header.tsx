@@ -23,6 +23,7 @@ const navLinks = [
   { href: "/guias", label: "Guías" },
   { href: "/directorio", label: "Directorio" },
   { href: "/servicios", label: "Servicios" },
+  { href: "/quienes-somos", label: "Quiénes Somos"}
 ];
 
 export default function Header() {

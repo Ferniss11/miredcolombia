@@ -6,43 +6,37 @@ import type { PlaceDetails, BlogPost, JobsCtaSectionProps } from '@/lib/types';
 
 // Import sections directly
 import HeroSection from './HeroSection';
-import AboutSection from './AboutSection';
 import StepsSection from './StepsSection';
 import AiAssistantSection from './AiAssistantSection';
 import BlogSection from './BlogSection';
-import BusinessSection from './BusinessSection';
 import TestimonialsSection from './TestimonialsSection';
-import DirectorySection from './DirectorySection';
-import JobsCtaSection from './JobsCtaSection';
 import { useChat } from '@/context/ChatContext';
 import HowWeHelpSection from './HowWeHelpSection';
 import PackagesSection from './PackagesSection';
+import GuidesSection from './GuidesSection';
+import { Guide } from '@/lib/guide/domain/guide.entity';
 
 
 type HomePageClientProps = {
   eurToCopRate: number;
-  initialBusinesses: PlaceDetails[];
-  initialJobs: JobsCtaSectionProps['jobs'];
   initialPosts: BlogPost[];
+  initialGuides: Guide[];
 }
 
 
-export default function HomePageClient({ eurToCopRate, initialBusinesses, initialJobs, initialPosts }: HomePageClientProps) {
+export default function HomePageClient({ eurToCopRate, initialPosts, initialGuides }: HomePageClientProps) {
   const { openChat } = useChat();
 
   return (
     <div className="flex flex-col min-h-[100dvh]">
       <main className="flex-1">
         <HeroSection />
-        <AiAssistantSection onOpenChatModal={openChat} />
-        <AboutSection />
         <HowWeHelpSection />
+        <AiAssistantSection onOpenChatModal={openChat} />
         <PackagesSection />
-        <JobsCtaSection jobs={initialJobs} />
-        <DirectorySection businesses={initialBusinesses.slice(0, 4)} />
-        <BusinessSection businesses={initialBusinesses} />
-        <BlogSection posts={initialPosts} />
         <TestimonialsSection />
+        <GuidesSection guides={initialGuides} />
+        <BlogSection posts={initialPosts} />
       </main>
     </div>
   );
