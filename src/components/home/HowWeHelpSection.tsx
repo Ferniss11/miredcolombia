@@ -33,14 +33,14 @@ const features = [
 export default function HowWeHelpSection() {
     return (
         <section className="w-full py-12 md:py-24 lg:py-32 bg-background">
-            <div className="container px-4 md:px-6">
+            <div className="container px-4 md:px-6 max-w-6xl">
                 <div className="flex flex-col items-center justify-center space-y-4 text-center mb-12">
                     <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl font-headline">Tu Ecosistema Digital para Empezar en España</h2>
                     <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed font-body">
                         Te ofrecemos todas las herramientas en un solo lugar. Empleo, vivienda, servicios y una comunidad dispuesta a ayudarte para que tu llegada y establecimiento en España sea un éxito.
                     </p>
                 </div>
-                <div className="mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 max-w-7xl">
+                <div className="mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
                     {features.map((feature) => (
                         <Link key={feature.title} href={feature.link} className="group">
                              <Card className="h-full overflow-hidden shadow-lg hover:shadow-primary/20 hover:border-primary/50 transition-all duration-300 transform hover:-translate-y-2">

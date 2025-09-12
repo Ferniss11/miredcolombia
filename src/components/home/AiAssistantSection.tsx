@@ -13,26 +13,15 @@ export default function AiAssistantSection({ onOpenChatModal }: { onOpenChatModa
             <div className="container px-4 md:px-6 max-w-6xl">
                 <div className="mx-auto grid lg:grid-cols-2 gap-12 items-center">
                     {/* Left Side: Image */}
-                    <div className="relative w-full h-80 rounded-xl overflow-hidden shadow-lg group">
-                       <Image 
-                         src="https://images.unsplash.com/photo-1593430985552-41445f1b2d3f?q=80&w=1887&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
-                         alt="Persona interactuando con un asistente de IA en una pantalla"
-                         layout="fill"
-                         data-ai-hint="AI assistant chat"
-                         objectFit="cover"
-                         className="transition-transform duration-500 group-hover:scale-105"
-                       />
-                       <div className="absolute inset-0 bg-black/30"></div>
-                        <div className="absolute top-6 left-6 p-1 bg-white/20 backdrop-blur-sm rounded-full">
-                           <div className="w-20 h-20 rounded-full overflow-hidden p-1 bg-primary/20 inline-flex ring-4 ring-primary/30">
-                               <Image 
-                                 src="https://firebasestorage.googleapis.com/v0/b/colombia-en-esp.firebasestorage.app/o/web%2FImagen%20de%20WhatsApp%202025-08-09%20a%20las%2018.20.39_3c2b6161.jpg?alt=media&token=41ebe34a-f846-41fc-937f-4141f1240ee8"
-                                 alt="Avatar de Valeria, la asistente IA"
-                                 width={80}
-                                 height={80}
-                                 className="rounded-full object-cover"
-                               />
-                            </div>
+                    <div className="flex justify-center items-center">
+                        <div className="relative">
+                            <Image 
+                                src="https://firebasestorage.googleapis.com/v0/b/colombia-en-esp.firebasestorage.app/o/web%2FImagen%20de%20WhatsApp%202025-08-09%20a%20las%2018.20.39_3c2b6161.jpg?alt=media&token=41ebe34a-f846-41fc-937f-4141f1240ee8"
+                                alt="Avatar de Valeria, la asistente IA"
+                                width={200}
+                                height={200}
+                                className="rounded-full object-cover border-4 border-primary/30 shadow-2xl"
+                            />
                         </div>
                     </div>
 

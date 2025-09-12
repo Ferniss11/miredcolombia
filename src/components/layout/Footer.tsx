@@ -9,6 +9,8 @@ import ChatWidget from "../chat/ChatWidget";
 import { useChat } from "@/context/ChatContext";
 import RealTimeClocks from "./RealTimeClocks";
 import { useEffect, useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { Clock } from "lucide-react";
 
 const TikTokIcon = () => (
     <svg 
@@ -62,10 +64,9 @@ export default function Footer() {
     <footer className="bg-white dark:bg-gray-900 border-t">
       <div className="container mx-auto py-12 px-4 sm:px-6 lg:px-8">
         
-         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-8">
-            <RealTimeClocks variant="minimal" country="Colombia" />
-            <RealTimeClocks variant="minimal" country="Spain" />
-             <div className="border rounded-lg p-4 bg-background/50 overflow-hidden relative min-h-[72px]">
+         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12 max-w-4xl mx-auto">
+            <RealTimeClocks />
+             <div className="border rounded-lg p-4 bg-background/50 overflow-hidden relative min-h-[72px] flex items-center shadow-lg">
                 <div key={animationKey} className="animate-slide-in-up">
                     <div className="flex items-start gap-3">
                         <Lightbulb className="w-5 h-5 text-yellow-500 mt-1 flex-shrink-0" />

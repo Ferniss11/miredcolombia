@@ -56,14 +56,14 @@ export default function PackagesSection() {
     return (
         <>
             <section id="packages-home" className="w-full py-12 md:py-24 lg:py-32 bg-gray-50 dark:bg-card">
-                <div className="container px-4 md:px-6">
+                <div className="container px-4 md:px-6 max-w-6xl">
                      <div className="flex flex-col items-center justify-center space-y-4 text-center mb-12">
                         <h1 className="text-3xl font-bold tracking-tighter sm:text-5xl font-headline">Nuestros Packs de Servicios</h1>
                         <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed font-body">
                             Soluciones integrales y personalizadas, ofrecidas por nuestros partners expertos, para garantizar una transición a España sin contratiempos. Elige un punto de partida o solicita un presupuesto a medida.
                         </p>
                     </div>
-                    <div className="mx-auto grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl">
+                    <div className="mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
                         {packages.map((pkg) => (
                             <Card key={pkg.title} className="flex flex-col overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 group">
                                  <div className={cn("h-2 w-full", pkg.color)}></div>
