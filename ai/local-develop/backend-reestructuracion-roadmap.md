@@ -171,18 +171,27 @@
     *   **Adaptar `payment-actions.ts`:** Asegurar que la acción `createSubscriptionCheckoutSessionAction` utilice la nueva variable de entorno al recibir la petición para el plan premium. (✓)
     *   **Adaptar `AuthContext.tsx`:** Simplificar la lógica de `custom claims` para manejar solo `valeria_plan: 'free'` y `valeria_plan: 'premium'`. (✓)
 
-*   **7.3. Gestión Avanzada de Agentes (Admin Dashboard):**
-    *   **Panel Multi-Agente:** Refactorizar `/dashboard/admin/agent` para gestionar configuraciones de agentes separadas en Firestore: `global` (para el plan gratuito) y `valeria_premium`.
-    *   **Adaptador Inteligente:** Actualizar el `GenkitAgentAdapter` para que cargue la configuración (`systemPrompt`, `model`) correcta basándose en el `claim` del usuario.
+*   **7.3. Gestión Avanzada de Agentes (Admin Dashboard) (✓ COMPLETADA):**
+    *   **Panel Multi-Agente:** Refactorizar `/dashboard/admin/agent` para gestionar configuraciones de agentes separadas en Firestore: `global` (para el plan gratuito) y `valeria_premium`. (✓)
+    *   **Adaptador Inteligente:** Actualizar el `GenkitAgentAdapter` para que cargue la configuración (`systemPrompt`, `model`) correcta basándose en el `claim` del usuario. (✓)
+    
+*   **7.4. Laboratorio de Agentes (Admin Playground):**
+    *   **Objetivo:** Construir un "banco de pruebas" en el panel de administrador para probar el comportamiento de los diferentes agentes de IA en un entorno controlado.
+    *   **UI:** Crear una nueva página (`/dashboard/admin/agent-lab`) que contenga:
+        *   Un selector para elegir qué agente probar (`Global`, `Premium`, `Agente de Negocio`).
+        *   Un área de chat para interactuar con el agente seleccionado.
+        *   Un panel de metadatos que muestre el coste, tokens, y `system prompt` exacto usado en la última respuesta.
+        *   (Para Premium y Negocio) Un campo para subir un documento o seleccionar un negocio para añadir contexto a la prueba.
+    *   **Backend:** Crear un nuevo `ChatController` o endpoint que reciba el nombre del agente a simular y el contexto adicional, y devuelva no solo la respuesta, sino también los metadatos de depuración.
 
-*   **7.4. Análisis de Documentos en Sesión (Valeria Premium):**
+*   **7.5. Análisis de Documentos en Sesión (Valeria Premium):**
     *   **Objetivo:** Permitir a los usuarios Premium subir un documento (PDF) y conversar con la IA sobre su contenido.
     *   **UI:** Añadir un botón para subir archivos (`<input type="file">`) en la interfaz de chat de `/dashboard/valeria`.
     *   **Backend (API):** Adaptar la ruta `POST /api/chat/sessions/[id]/messages` para que acepte `FormData` (texto y archivo).
     *   **Backend (Lógica):** Instalar `pdf-parse`. En el `ChatController` o en el `PostMessageUseCase`, al recibir un archivo, usar la librería para extraer su contenido a texto plano.
     *   **Backend (Adaptador y Prompt):** Modificar el `GenkitAgentAdapter` para que, si recibe texto de un documento, lo inyecte en un nuevo campo `documentText` del `prompt` del agente `valeria_premium`, dándole a la IA el contexto necesario para responder preguntas sobre ese documento.
 
-*   **7.5. Implementación de Base de Conocimiento (RAG - Research-Augmented Generation):**
+*   **7.6. Implementación de Base de Conocimiento (RAG - Research-Augmented Generation):**
     *   **(Tarea Manual): Configuración de Consolas (Google Cloud & Firebase):**
         *   **Activar APIs de Google Cloud:** En la consola de Google Cloud, asegurarse de que las APIs `Cloud Build`, `Cloud Run`, y `Artifact Registry` estén habilitadas para el proyecto.
         *   **Instalar Extensión "Vector Search":** En la consola de Firebase, ir a la sección "Build > Extensions" e instalar la extensión **Vector Search**.

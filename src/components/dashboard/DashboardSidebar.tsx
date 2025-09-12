@@ -32,7 +32,8 @@ import {
   HomeIcon,
   BookOpen,
   Mails,
-  ChevronDown
+  ChevronDown,
+  TestTube2
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -84,6 +85,7 @@ export function DashboardSidebar() {
       category: 'IA y Supervisión',
       items: [
         { href: "/dashboard/admin/agent", label: "Gestión de Agentes", icon: Bot },
+        { href: "/dashboard/admin/agent-lab", label: "Laboratorio IA", icon: TestTube2 },
         { href: "/dashboard/admin/conversations", label: "Conversaciones", icon: MessageSquare },
       ]
     },
