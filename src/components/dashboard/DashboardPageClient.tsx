@@ -54,6 +54,8 @@ export default function DashboardPageClient() {
     }
   }, [user, userProfile, loading, router, customToken]);
 
+  // This is the key change: show a full-screen loader while authentication is in progress
+  // OR if a user exists but we are waiting for their profile to load for role-based redirection.
   if (loading || customToken || !userProfile || userProfile.role !== 'User') {
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm z-50">
@@ -62,6 +64,7 @@ export default function DashboardPageClient() {
     );
   }
 
+  // This content is only rendered once we are sure the user is a 'User' role.
   return (
     <div className="space-y-6">
       <Card className="bg-gradient-to-br from-primary/5 to-transparent border-primary/20">
