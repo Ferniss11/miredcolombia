@@ -49,7 +49,7 @@ export default async function HomePage() {
   // Filter and slice the posts here in the server component
   const latestPosts = allPosts
     .filter(post => post.status === 'Published')
-    .slice(0, 3); // We only want 3 posts for the home page
+    .slice(0, 5); // We now want 5 posts for the home page
 
   const featuredGuides = allGuides.slice(0, 4);
 
