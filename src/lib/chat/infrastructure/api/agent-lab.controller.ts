@@ -1,4 +1,3 @@
-
 // src/lib/chat/infrastructure/api/agent-lab.controller.ts
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
