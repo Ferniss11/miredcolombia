@@ -143,12 +143,12 @@
 ---
 
 ## Fase 6: Contenido Audiovisual y Refinamiento Final - EN PROGRESO
-*   **Estimación:** 10 horas
+*   **Estimación:** 6 horas
 *   **Objetivo:** Integrar los nuevos vídeos y realizar los ajustes finales de la plataforma.
-*   **6.1. Integrar Vídeos:**
+*   **6.1. Integrar Vídeos (✓):**
     *   Reemplazar el vídeo actual del `HeroSection` por el nuevo vídeo de Jennifer. (✓)
     *   Añadir el vídeo demo de Valeria en la página `/valeria`. (✓)
-    *   Añadir el vídeo animado de los packs en la página `/packs`. (Pausado)
+    *   Añadir el vídeo animado de los packs en la página `/packs`. (✓)
 
 *   **6.2. Tracking y Analítica (Próximos Pasos):**
     *   Implementar Google Analytics 4 y el Píxel de Meta.
@@ -156,22 +156,33 @@
 
 ---
 
-## Fase 7: Ecosistema de Asistentes IA "Valeria"
-*   **Estimación:** 12 horas
-*   **Objetivo:** Crear un entorno de chat premium y configurable para los usuarios suscritos a los planes de Valeria, proporcionando al administrador las herramientas para gestionar la inteligencia de cada plan de forma independiente.
-*   **7.1. Extender el Modelo de Configuración de Agentes:**
-    *   Utilizar la colección `agentConfig` existente en Firestore para manejar múltiples perfiles de agente.
-    *   Crear tres documentos distintos: `global` (para el chat público), `valeria_premium` y `valeria_pro`.
+## Fase 7: Ecosistema de Asistentes IA "Valeria" (Freemium y RAG) - PLANIFICACIÓN
+*   **Estimación:** 45 horas
+*   **Objetivo:** Transformar a Valeria en un ecosistema de asistentes IA personalizables, simplificando la oferta a un modelo Freemium y sentando las bases para una base de conocimiento vectorial propia (RAG).
 
-*   **7.2. Rediseñar el Panel de Administración de Agentes:**
-    *   La página `/dashboard/admin/agent` tendrá un selector o pestañas para elegir y configurar cada uno de los tres agentes.
-    *   Actualizar la acción `saveAgentConfigAction` para que reciba el ID del agente a modificar.
+*   **7.1. Refactorización de la Oferta y Comunicación (Frontend):**
+    *   **Simplificar Planes:** Actualizar la UI en `/valeria` para reflejar un modelo de dos niveles: `Gratis` y `Premium` (€4,99/mes), eliminando el plan PRO.
+    *   **Comunicar Valor:** Rediseñar la página `/valeria` para comparar visualmente los beneficios y justificar el salto a Premium (ej. comparativa de respuestas, visualización de guías bloqueadas).
+    *   **Potenciar Home:** Mover la sección de Valeria justo después del Hero, rediseñarla para ser más impactante y mover los elementos dinámicos (relojes, tips) al footer para dar un toque de elegancia global.
 
-*   **7.3. Adaptar la Lógica del Chat:**
-    *   Actualizar el `GenkitAgentAdapter` para que cargue la configuración del agente correcta (`global`, `valeria_premium` o `valeria_pro`) basándose en el `claim` de suscripción del usuario.
+*   **7.2. Ajuste del Flujo de Suscripción (Backend):**
+    *   **(Tarea Manual):** Crear el nuevo producto "Suscripción Valeria Premium" en Stripe y obtener su Price ID.
+    *   **(Tarea Manual):** Añadir el nuevo Price ID a las variables de entorno (`.env`).
+    *   **Adaptar `payment-actions.ts`:** Asegurar que la acción `createSubscriptionCheckoutSessionAction` utilice la nueva variable de entorno al recibir la petición para el plan premium.
+    *   **Adaptar `AuthContext.tsx`:** Simplificar la lógica de `custom claims` para manejar solo `valeria_plan: 'free'` y `valeria_plan: 'premium'`.
 
-*   **7.4. Integrar Interfaz de Chat en el Dashboard de Valeria:**
-    *   Reemplazar el contenido actual de `/dashboard/valeria` con una interfaz de chat completa, dedicada para los suscriptores.
+*   **7.3. Gestión Avanzada de Agentes (Admin Dashboard):**
+    *   **Panel Multi-Agente:** Refactorizar `/dashboard/admin/agent` para gestionar configuraciones de agentes separadas en Firestore: `global` (para el plan gratuito) y `valeria_premium`.
+    *   **Adaptador Inteligente:** Actualizar el `GenkitAgentAdapter` para que cargue la configuración (`systemPrompt`, `model`) correcta basándose en el `claim` del usuario.
+
+*   **7.4. Implementación de Base de Conocimiento (RAG - Research-Augmented Generation):**
+    *   **Configurar Vector Store:** Utilizar la extensión **Vector Search de Firebase** para almacenar embeddings de documentos directamente en Firestore.
+    *   **Flujo de Ingestión (Cloud Function):**
+        *   Crear una Cloud Function que se active al subir un archivo (PDF, MD) a una carpeta específica en Firebase Storage.
+        *   La función leerá el documento, lo dividirá en trozos (chunks), generará un vector (embedding) para cada chunk usando un modelo como `text-embedding-004`, y guardará `{ content, embedding, source }` en una nueva colección `knowledge_base`.
+    *   **Herramienta de Búsqueda Vectorial (Genkit):**
+        *   Crear una nueva `tool` de Genkit (`knowledgeBaseSearch`) que use el operador `findNeighbors` de Firestore para buscar en la `knowledge_base`.
+    *   **Actualizar Agente Premium:** Modificar el `systemPrompt` del agente `valeria_premium` para que priorice el uso de la herramienta `knowledgeBaseSearch` antes de usar su conocimiento general, asegurando respuestas basadas en nuestros documentos.
 
 ---
 
@@ -205,3 +216,4 @@
 *   **Notas de IVA y Facturación:** Añadir el texto "Precios sin IVA. Se emite factura automáticamente." en todas las páginas donde se muestren precios de servicios de pago (Valeria, Empleo, Vivienda, Directorio).
 *   **Hosting y SSL:** Revisar la configuración actual del hosting para asegurar que puede soportar el aumento de tráfico y que el certificado SSL está correctamente configurado para toda la web.
 *   **Widget de Valeria:** Integrar el chat de Valeria de forma global en la web, asegurándose de que no interfiera con otros elementos de la UI.
+
