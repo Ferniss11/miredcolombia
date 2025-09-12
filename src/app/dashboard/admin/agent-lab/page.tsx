@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Bot, User, Send, Loader2, TestTube2, RotateCcw, BrainCircuit, FileUp, X, Paperclip } from 'lucide-react';
+import { Bot, User, Send, Loader2, TestTube2, RotateCcw, BrainCircuit, FileUp, X, Paperclip, Clock } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
