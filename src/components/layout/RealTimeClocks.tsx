@@ -16,8 +16,11 @@ const RealTimeClocks = ({ variant = 'default' }: RealTimeClocksProps) => {
     colombia: '',
     spain: '',
   });
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
+    // This will only run on the client, after the component has mounted.
+    setIsClient(true);
     const updateClocks = () => {
         setTime({
             colombia: new Date().toLocaleTimeString('es-CO', {
@@ -62,7 +65,7 @@ const RealTimeClocks = ({ variant = 'default' }: RealTimeClocksProps) => {
             </CardHeader>
             <CardContent>
                 <p className="text-4xl md:text-5xl font-bold font-mono tracking-wider">
-                    {time.colombia || 'Cargando...'}
+                    {isClient ? time.colombia : 'Cargando...'}
                 </p>
                     <p className="text-sm text-muted-foreground mt-2">
                     (COT)
@@ -83,7 +86,7 @@ const RealTimeClocks = ({ variant = 'default' }: RealTimeClocksProps) => {
             </CardHeader>
             <CardContent>
                     <p className="text-4xl md:text-5xl font-bold font-mono tracking-wider">
-                    {time.spain || 'Cargando...'}
+                    {isClient ? time.spain : 'Cargando...'}
                 </p>
                     <p className="text-sm text-muted-foreground mt-2">
                     (CET/CEST)
