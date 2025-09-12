@@ -156,20 +156,20 @@
 
 ---
 
-## Fase 7: Ecosistema de Asistentes IA "Valeria" (Freemium y RAG) - PLANIFICACIÓN
+## Fase 7: Ecosistema de Asistentes IA "Valeria" (Freemium y RAG) - EN PROGRESO
 *   **Estimación:** 45 horas
 *   **Objetivo:** Transformar a Valeria en un ecosistema de asistentes IA personalizables, simplificando la oferta a un modelo Freemium y sentando las bases para una base de conocimiento vectorial propia (RAG).
 
-*   **7.1. Refactorización de la Oferta y Comunicación (Frontend):**
-    *   **Simplificar Planes:** Actualizar la UI en `/valeria` para reflejar un modelo de dos niveles: `Gratis` y `Premium` (€4,99/mes), eliminando el plan PRO.
-    *   **Comunicar Valor:** Rediseñar la página `/valeria` para comparar visualmente los beneficios y justificar el salto a Premium (ej. comparativa de respuestas, visualización de guías bloqueadas).
-    *   **Potenciar Home:** Mover la sección de Valeria justo después del Hero, rediseñarla para ser más impactante y mover los elementos dinámicos (relojes, tips) al footer para dar un toque de elegancia global.
+*   **7.1. Refactorización de la Oferta y Comunicación (Frontend) (✓):**
+    *   **Simplificar Planes:** Actualizar la UI en `/valeria` para reflejar un modelo de dos niveles: `Gratis` y `Premium` (€4,99/mes), eliminando el plan PRO. (✓)
+    *   **Comunicar Valor:** Rediseñar la página `/valeria` para comparar visualmente los beneficios y justificar el salto a Premium (ej. comparativa de respuestas, visualización de guías bloqueadas). (✓)
+    *   **Potenciar Home:** Mover la sección de Valeria justo después del Hero, rediseñarla para ser más impactante y mover los elementos dinámicos (relojes, tips) al footer para dar un toque de elegancia global. (✓)
 
-*   **7.2. Ajuste del Flujo de Suscripción (Backend):**
-    *   **(Tarea Manual):** Crear el nuevo producto "Suscripción Valeria Premium" en Stripe y obtener su Price ID.
-    *   **(Tarea Manual):** Añadir el nuevo Price ID a las variables de entorno (`.env`).
-    *   **Adaptar `payment-actions.ts`:** Asegurar que la acción `createSubscriptionCheckoutSessionAction` utilice la nueva variable de entorno al recibir la petición para el plan premium.
-    *   **Adaptar `AuthContext.tsx`:** Simplificar la lógica de `custom claims` para manejar solo `valeria_plan: 'free'` y `valeria_plan: 'premium'`.
+*   **7.2. Ajuste del Flujo de Suscripción (Backend) (✓):**
+    *   **(Tarea Manual - Realizada):** Crear el nuevo producto "Suscripción Valeria Premium" en Stripe y obtener su Price ID. (✓)
+    *   **(Tarea Manual - Realizada):** Añadir el nuevo Price ID a las variables de entorno (`.env`). (✓)
+    *   **Adaptar `payment-actions.ts`:** Asegurar que la acción `createSubscriptionCheckoutSessionAction` utilice la nueva variable de entorno al recibir la petición para el plan premium. (✓)
+    *   **Adaptar `AuthContext.tsx`:** Simplificar la lógica de `custom claims` para manejar solo `valeria_plan: 'free'` y `valeria_plan: 'premium'`. (✓)
 
 *   **7.3. Gestión Avanzada de Agentes (Admin Dashboard):**
     *   **Panel Multi-Agente:** Refactorizar `/dashboard/admin/agent` para gestionar configuraciones de agentes separadas en Firestore: `global` (para el plan gratuito) y `valeria_premium`.
