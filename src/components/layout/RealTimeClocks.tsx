@@ -1,25 +1,22 @@
 
+
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Clock } from 'lucide-react';
-import { cn } from '@/lib/utils';
 
-interface RealTimeClocksProps {
-    variant?: 'default' | 'minimal';
-    country?: 'Colombia' | 'Spain';
-}
-
-const RealTimeClocks = ({ variant = 'default' }: RealTimeClocksProps) => {
+const RealTimeClocks = () => {
   const [time, setTime] = useState({
-    colombia: '',
-    spain: '',
+    colombia: '--:--',
+    spain: '--:--',
   });
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
-    // This will only run on the client, after the component has mounted.
+    // This function will only run on the client side, after the component has mounted.
+    // This prevents the hydration mismatch error because the server sends a placeholder,
+    // and the client initially renders the same placeholder. The actual time is then
+    // calculated and displayed only on the client.
     setIsClient(true);
     const updateClocks = () => {
         setTime({
@@ -38,61 +35,54 @@ const RealTimeClocks = ({ variant = 'default' }: RealTimeClocksProps) => {
         });
     }
 
-    updateClocks();
-    const timer = setInterval(updateClocks, 1000);
+    updateClocks(); // Initial update
+    const timer = setInterval(updateClocks, 1000 * 30); // Update every 30 seconds
 
     return () => clearInterval(timer);
   }, []);
-  
-  if (variant === 'minimal') {
-      // This variant is no longer used in the footer, but kept for potential future use.
-      return null;
+
+  if (!isClient) {
+    // Render a lightweight, static placeholder on the server.
+    return (
+      <div className="flex justify-around items-center h-full text-muted-foreground p-4 border rounded-lg bg-background/50 shadow-lg">
+          <div className="text-center">
+              <h4 className="font-semibold text-sm">Colombia</h4>
+              <p className="font-mono text-lg">--:--</p>
+          </div>
+           <div className="text-center">
+              <h4 className="font-semibold text-sm">España</h4>
+              <p className="font-mono text-lg">--:--</p>
+          </div>
+      </div>
+    );
   }
 
+  // Render the full component only on the client side.
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <Card className="text-center shadow-lg overflow-hidden">
-            <div className="h-1.5 flex w-full">
-                <div className="w-1/2 bg-[#FFCD00]"></div>
-                <div className="w-1/4 bg-[#003893]"></div>
-                <div className="w-1/4 bg-[#C70039]"></div>
+    <div className="border rounded-lg p-4 bg-background/50 shadow-lg h-full">
+        <div className="h-1 flex w-full rounded-t-md overflow-hidden absolute top-0 left-0 right-0">
+            <div className="w-1/2 bg-[#FFCD00]" />
+            <div className="w-1/4 bg-[#003893]" />
+            <div className="w-1/4 bg-[#C70039]" />
+        </div>
+        <div className="h-1 flex w-full rounded-t-md overflow-hidden absolute top-0 left-0 right-0" style={{ transform: 'rotate(180deg)' }}>
+            <div className="w-1/4 bg-[#AA151B]" />
+            <div className="w-1/2 bg-[#F1BF00]" />
+            <div className="w-1/4 bg-[#AA151B]" />
+        </div>
+
+        <div className="flex justify-around items-center h-full pt-2">
+            <div className="text-center">
+                <h4 className="font-semibold text-sm">Colombia</h4>
+                <p className="font-mono text-xl font-bold tracking-wider">{time.colombia}</p>
+                <p className="text-xs text-muted-foreground">(COT)</p>
             </div>
-            <CardHeader>
-                <CardTitle className="flex items-center justify-center gap-2 text-2xl font-headline">
-                    <Clock className="w-6 h-6"/>
-                    Hora en Colombia
-                </CardTitle>
-            </CardHeader>
-            <CardContent>
-                <p className="text-4xl md:text-5xl font-bold font-mono tracking-wider">
-                    {isClient ? time.colombia : 'Cargando...'}
-                </p>
-                    <p className="text-sm text-muted-foreground mt-2">
-                    (COT)
-                </p>
-            </CardContent>
-        </Card>
-        <Card className="text-center shadow-lg overflow-hidden">
-            <div className="h-1.5 flex w-full">
-                <div className="w-1/4 bg-[#AA151B]"></div>
-                <div className="w-1/2 bg-[#F1BF00]"></div>
-                <div className="w-1/4 bg-[#AA151B]"></div>
+            <div className="text-center">
+                <h4 className="font-semibold text-sm">España</h4>
+                <p className="font-mono text-xl font-bold tracking-wider">{time.spain}</p>
+                <p className="text-xs text-muted-foreground">(CET)</p>
             </div>
-            <CardHeader>
-                <CardTitle className="flex items-center justify-center gap-2 text-2xl font-headline">
-                    <Clock className="w-6 h-6"/>
-                    Hora en España
-                </CardTitle>
-            </CardHeader>
-            <CardContent>
-                    <p className="text-4xl md:text-5xl font-bold font-mono tracking-wider">
-                    {isClient ? time.spain : 'Cargando...'}
-                </p>
-                    <p className="text-sm text-muted-foreground mt-2">
-                    (CET/CEST)
-                </p>
-            </CardContent>
-        </Card>
+        </div>
     </div>
   );
 };
