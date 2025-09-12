@@ -176,10 +176,19 @@
     *   **Adaptador Inteligente:** Actualizar el `GenkitAgentAdapter` para que cargue la configuración (`systemPrompt`, `model`) correcta basándose en el `claim` del usuario.
 
 *   **7.4. Implementación de Base de Conocimiento (RAG - Research-Augmented Generation):**
-    *   **Configurar Vector Store:** Utilizar la extensión **Vector Search de Firebase** para almacenar embeddings de documentos directamente en Firestore.
+    *   **(Tarea Manual): Configuración de Consolas (Google Cloud & Firebase):**
+        *   **Activar APIs de Google Cloud:** En la consola de Google Cloud, asegurarse de que las APIs `Cloud Build`, `Cloud Run`, y `Artifact Registry` estén habilitadas para el proyecto.
+        *   **Instalar Extensión "Vector Search":** En la consola de Firebase, ir a la sección "Build > Extensions" e instalar la extensión **Vector Search**.
+        *   **Configurar Extensión:** Durante la instalación, configurar los siguientes parámetros:
+            *   **Cloud Function location:** `europe-west1` (o la región que prefieras).
+            *   **Cloud Storage bucket for embeddings:** Apuntar al bucket por defecto de Firebase Storage.
+            *   **Collection path:** `knowledge_base` (la colección donde se almacenarán los vectores).
+            *   **Vector field path:** `embedding`.
+            *   **Vector dimensions:** `768` (correspondiente al modelo `text-embedding-004`).
+            *   **Distance measure:** `COSINE`.
     *   **Flujo de Ingestión (Cloud Function):**
         *   Crear una Cloud Function que se active al subir un archivo (PDF, MD) a una carpeta específica en Firebase Storage.
-        *   La función leerá el documento, lo dividirá en trozos (chunks), generará un vector (embedding) para cada chunk usando un modelo como `text-embedding-004`, y guardará `{ content, embedding, source }` en una nueva colección `knowledge_base`.
+        *   La función leerá el documento, lo dividirá en trozos (chunks), generará un vector (embedding) para cada chunk usando un modelo como `text-embedding-004`, y guardará `{ content, embedding, source }` en la colección `knowledge_base`.
     *   **Herramienta de Búsqueda Vectorial (Genkit):**
         *   Crear una nueva `tool` de Genkit (`knowledgeBaseSearch`) que use el operador `findNeighbors` de Firestore para buscar en la `knowledge_base`.
     *   **Actualizar Agente Premium:** Modificar el `systemPrompt` del agente `valeria_premium` para que priorice el uso de la herramienta `knowledgeBaseSearch` antes de usar su conocimiento general, asegurando respuestas basadas en nuestros documentos.
@@ -216,4 +225,3 @@
 *   **Notas de IVA y Facturación:** Añadir el texto "Precios sin IVA. Se emite factura automáticamente." en todas las páginas donde se muestren precios de servicios de pago (Valeria, Empleo, Vivienda, Directorio).
 *   **Hosting y SSL:** Revisar la configuración actual del hosting para asegurar que puede soportar el aumento de tráfico y que el certificado SSL está correctamente configurado para toda la web.
 *   **Widget de Valeria:** Integrar el chat de Valeria de forma global en la web, asegurándose de que no interfiera con otros elementos de la UI.
-
