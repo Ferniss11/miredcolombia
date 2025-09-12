@@ -141,7 +141,7 @@ export default function CheckoutSheet({ isOpen, onOpenChange, plan }: CheckoutSh
         }
         startTransition(async () => {
             const result = await createSubscriptionCheckoutSessionAction({
-                priceId: plan.id,
+                planId: plan.id, // <-- FIX: Changed from priceId to planId
                 userId: user.uid,
                 userEmail: user.email!,
             });
