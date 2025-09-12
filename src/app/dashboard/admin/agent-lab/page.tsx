@@ -2,23 +2,20 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, FormEvent, KeyboardEvent, useRef } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Bot, User, Send, Loader2, TestTube2, RotateCcw, BrainCircuit, ChevronDown, UserCog, Clock } from 'lucide-react';
+import { Bot, User, Send, Loader2, TestTube2, RotateCcw, BrainCircuit, FileUp, X, Paperclip } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import { Label } from '@/components/ui/label';
 
-type AgentId = 'global' | 'valeria_premium' | 'business'; // Future: 'business'
+type AgentId = 'global' | 'valeria_premium' | 'business';
 
 const AGENT_AVATAR_URL = "https://firebasestorage.googleapis.com/v0/b/colombia-en-esp.firebasestorage.app/o/web%2FImagen%20de%20WhatsApp%202025-08-09%20a%20las%2018.20.39_3c2b6161.jpg?alt=media&token=41ebe34a-f846-41fc-937f-4141f1240ee8";
 
@@ -37,7 +34,9 @@ export default function AgentLabPage() {
   const [isResponding, setIsResponding] = useState(false);
   const [messages, setMessages] = useState<SimulatedMessage[]>([]);
   const [currentMessage, setCurrentMessage] = useState('');
+  const [contextFile, setContextFile] = useState<File | null>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
 
   useEffect(() => {
@@ -64,14 +63,18 @@ export default function AgentLabPage() {
 
     try {
         const idToken = await user.getIdToken();
+        const formData = new FormData();
+        formData.append('agentId', selectedAgent);
+        formData.append('currentMessage', userMessageText);
+        formData.append('chatHistory', JSON.stringify(messages));
+        if (contextFile) {
+            formData.append('contextFile', contextFile);
+        }
+
         const response = await fetch('/api/agent-lab/chat', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
-            body: JSON.stringify({
-                agentId: selectedAgent,
-                currentMessage: userMessageText,
-                chatHistory: messages,
-            })
+            headers: { Authorization: `Bearer ${idToken}` },
+            body: formData,
         });
 
         const result = await response.json();
@@ -82,7 +85,7 @@ export default function AgentLabPage() {
         const aiMessage: SimulatedMessage = {
             id: `model-${Date.now()}`,
             role: 'model',
-            text: result.response.response,
+            text: result.response, // The actual text response is now nested
             timestamp: new Date().toISOString(),
         };
 
@@ -107,12 +110,25 @@ export default function AgentLabPage() {
   const handleResetSession = () => {
     setMessages([]);
     setCurrentMessage('');
+    setContextFile(null);
+    if(fileInputRef.current) fileInputRef.current.value = '';
   };
   
    const formatTimestamp = (isoString?: string) => {
     if (!isoString) return '';
     return new Date(isoString).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
   }
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+        if (file.type !== 'application/pdf') {
+            toast({ variant: 'destructive', title: 'Formato no válido', description: 'Por favor, sube solo archivos PDF.' });
+            return;
+        }
+        setContextFile(file);
+    }
+  };
 
 
   return (
@@ -215,6 +231,33 @@ export default function AgentLabPage() {
                         </Select>
                         {messages.length > 0 && <p className="text-xs text-muted-foreground mt-2">Reinicia la sesión para cambiar de agente.</p>}
                     </div>
+                    {selectedAgent === 'valeria_premium' && (
+                        <div>
+                             <Label>Documento de Contexto</Label>
+                            {contextFile ? (
+                                <div className="flex items-center justify-between p-2 border rounded-md bg-muted">
+                                    <p className="text-sm truncate flex-1 flex items-center gap-2"><Paperclip className="h-4 w-4" />{contextFile.name}</p>
+                                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => { setContextFile(null); if(fileInputRef.current) fileInputRef.current.value = ''; }}>
+                                        <X className="h-4 w-4"/>
+                                    </Button>
+                                </div>
+                            ) : (
+                                <Button variant="outline" className="w-full" onClick={() => fileInputRef.current?.click()}>
+                                    <FileUp className="mr-2 h-4 w-4"/>
+                                    Adjuntar Documento (PDF)
+                                </Button>
+                            )}
+                             <Input 
+                                type="file" 
+                                className="hidden" 
+                                ref={fileInputRef} 
+                                onChange={handleFileChange}
+                                accept=".pdf"
+                                disabled={messages.length > 0}
+                            />
+                             {messages.length > 0 && <p className="text-xs text-muted-foreground mt-2">Reinicia la sesión para cambiar el documento.</p>}
+                        </div>
+                    )}
                 </CardContent>
             </Card>
             <Card>

@@ -3,39 +3,52 @@
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
 import { ApiResponse } from '@/lib/platform/api/api-response';
-import { FirestoreChatRepository } from '../persistence/firestore-chat.repository';
 import { GenkitAgentAdapter } from '../ai/genkit-agent.adapter';
 import { SimulateAgentResponseUseCase } from '../../application/simulate-agent-response.use-case';
 import { ChatMessageSchema } from '@/lib/chat-types';
+import pdf from 'pdf-parse';
 
-const SimulateChatSchema = z.object({
-  agentId: z.enum(['global', 'valeria_premium', 'business']),
-  currentMessage: z.string().min(1),
-  chatHistory: z.array(ChatMessageSchema),
-  businessId: z.string().optional(),
-});
-
+// The schema is no longer needed as we are processing FormData directly.
 
 export class AgentLabController {
   private simulateAgentResponseUseCase: SimulateAgentResponseUseCase;
 
   constructor() {
-    // For simulation, we don't need a repository, just the agent adapter.
     const agentAdapter = new GenkitAgentAdapter();
     this.simulateAgentResponseUseCase = new SimulateAgentResponseUseCase(agentAdapter);
   }
 
   async simulateChat(req: NextRequest): Promise<ApiResponse> {
-    const json = await req.json();
-    const input = SimulateChatSchema.parse(json);
+    const formData = await req.formData();
+    
+    const agentId = formData.get('agentId') as 'global' | 'valeria_premium' | 'business';
+    const currentMessage = formData.get('currentMessage') as string;
+    const chatHistory = JSON.parse(formData.get('chatHistory') as string);
+    const businessId = formData.get('businessId') as string | undefined;
+    const contextFile = formData.get('contextFile') as File | null;
+    
+    let documentText: string | undefined = undefined;
+
+    if (contextFile) {
+        try {
+            const buffer = Buffer.from(await contextFile.arrayBuffer());
+            const data = await pdf(buffer);
+            documentText = data.text;
+        } catch(error) {
+            console.error("Error parsing PDF in AgentLabController:", error);
+            return ApiResponse.badRequest('Failed to parse the uploaded PDF file.');
+        }
+    }
 
     const output = await this.simulateAgentResponseUseCase.execute({
-      agentId: input.agentId,
-      chatHistory: input.chatHistory,
-      currentMessage: input.currentMessage,
-      businessId: input.businessId,
+      agentId,
+      chatHistory,
+      currentMessage,
+      businessId,
+      documentText,
     });
-
-    return ApiResponse.success({ response: output });
+    
+    // The use case now returns { response, usage }. We only need to return the response text.
+    return ApiResponse.success({ response: output.response });
   }
 }

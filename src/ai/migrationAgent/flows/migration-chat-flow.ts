@@ -24,6 +24,7 @@ const MigrationChatInputSchema = z.object({
     text: z.string(),
   })).describe("The history of the conversation so far, including user, AI (model), and admin messages."),
   currentMessage: z.string().describe("The user's latest message."),
+  documentText: z.string().optional().describe("Text content extracted from a user-uploaded document for analysis."),
 });
 export type MigrationChatInput = z.infer<typeof MigrationChatInputSchema>;
 
@@ -43,8 +44,17 @@ const prompt = ai.definePrompt({
     output: { schema: ChatOutputSchema },
     tools: [knowledgeBaseSearch],
     prompt: `{{{systemPrompt}}}
-
 ---
+{{#if documentText}}
+### CONTEXTO DEL DOCUMENTO ANALIZADO
+A continuación se muestra el contenido de un documento subido por el usuario. Basa tus respuestas principalmente en este texto si la pregunta del usuario parece estar relacionada con él.
+
+\`\`\`
+{{{documentText}}}
+\`\`\`
+---
+{{/if}}
+
 TASK: Based on the conversation history, generate the next response.
 
 CONVERSATION:

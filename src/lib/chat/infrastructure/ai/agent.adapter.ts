@@ -1,3 +1,4 @@
+
 // src/lib/chat/infrastructure/ai/agent.adapter.ts
 import type { ChatMessage } from '../../domain/chat-message.entity';
 import type { TokenUsage } from '@/lib/chat-types';
@@ -12,5 +13,7 @@ export interface AgentAdapter {
     chatHistory: ChatMessage[];
     currentMessage: string;
     businessId?: string; // Context to decide which agent to use
+    agentId?: 'global' | 'valeria_premium' | 'business'; // For explicit agent selection in labs
+    documentText?: string; // For document analysis feature
   }): Promise<{ response: string; usage: TokenUsage, cost: number }>;
 }

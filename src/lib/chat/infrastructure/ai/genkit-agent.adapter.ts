@@ -61,7 +61,8 @@ export class GenkitAgentAdapter implements AgentAdapter {
     chatHistory: ChatMessage[];
     currentMessage: string;
     businessId?: string;
-    agentId?: 'global' | 'valeria_premium' | 'business'; // Added for agent lab
+    agentId?: 'global' | 'valeria_premium' | 'business';
+    documentText?: string; // Added for document analysis
   }): Promise<{ response: string; usage: TokenUsage; cost: number; }> {
     
     const chatHistoryForAI = input.chatHistory.map(m => ({
@@ -69,16 +70,13 @@ export class GenkitAgentAdapter implements AgentAdapter {
       text: m.role === 'admin' ? `[Mensaje del Administrador: ${m.text}]` : m.text,
     }));
     
-    // If an explicit agentId is provided (from the Agent Lab), use it.
+    // --- Logic for explicit agent selection (Agent Lab) ---
     if (input.agentId) {
         let agentConfig: AgentConfig;
         if (input.agentId === 'business') {
-            // Business agent logic
             if (!input.businessId) throw new Error("BusinessId is required for business agent simulation.");
             agentConfig = await this.userRepository.getAgentConfig(`business_${input.businessId}`);
-            // ... (rest of the business logic, similar to below)
         } else {
-            // Global or Premium agent simulation
             agentConfig = await this.userRepository.getAgentConfig(input.agentId);
         }
 
@@ -87,6 +85,8 @@ export class GenkitAgentAdapter implements AgentAdapter {
             systemPrompt: agentConfig.systemPrompt || DEFAULT_GLOBAL_PROMPT,
             chatHistory: chatHistoryForAI,
             currentMessage: input.currentMessage,
+            // Pass document text if available
+            ...(input.documentText && { documentText: input.documentText }),
         });
 
         const usage = aiResponse.usage || { inputTokens: 0, outputTokens: 0, totalTokens: 0 };
@@ -103,7 +103,6 @@ export class GenkitAgentAdapter implements AgentAdapter {
       }
       
       const agentConfig = await this.userRepository.getAgentConfig(`business_${input.businessId}`);
-
       const businessContext = `Nombre: ${businessDetails.displayName}\nCategoría: ${businessDetails.category}\nDirección: ${businessDetails.formattedAddress}\nTeléfono: ${businessDetails.internationalPhoneNumber}\nDescripción: ${businessDetails.editorialSummary || ''}`;
 
       const aiResponse = await businessChat({
@@ -128,6 +127,7 @@ export class GenkitAgentAdapter implements AgentAdapter {
         systemPrompt: agentConfig.systemPrompt || DEFAULT_GLOBAL_PROMPT,
         chatHistory: chatHistoryForAI,
         currentMessage: input.currentMessage,
+        ...(input.documentText && { documentText: input.documentText }),
       });
       
       const usage = aiResponse.usage || { inputTokens: 0, outputTokens: 0, totalTokens: 0 };

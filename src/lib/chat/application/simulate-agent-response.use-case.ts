@@ -8,6 +8,7 @@ export type SimulateAgentInput = {
   chatHistory: ChatMessage[];
   currentMessage: string;
   businessId?: string; // For business agent simulation
+  documentText?: string; // For premium agent document analysis
 };
 
 export type SimulateAgentOutput = {
@@ -30,9 +31,8 @@ export class SimulateAgentResponseUseCase {
         chatHistory: input.chatHistory,
         currentMessage: input.currentMessage,
         businessId: input.agentId === 'business' ? input.businessId : undefined,
-        // We need a way to tell the adapter which agent to use explicitly
-        // This is a simplified call, the adapter implementation will be key.
         agentId: input.agentId,
+        documentText: input.documentText, // Pass document text to the adapter
     });
     
     return { response, usage };

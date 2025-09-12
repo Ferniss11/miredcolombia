@@ -7,6 +7,7 @@ import { NextRequest } from 'next/server';
 const controller = new AgentLabController();
 
 // This endpoint is protected for admins only.
-export const POST = apiHandler((req: NextRequest) =>
-  controller.simulateChat(req)
-, ['Admin', 'SAdmin']);
+// It can handle both JSON and FormData requests.
+export const POST = apiHandler(async (req: NextRequest) => {
+    return controller.simulateChat(req);
+}, ['Admin', 'SAdmin']);
