@@ -160,12 +160,12 @@
 *   **Estimación:** 45 horas
 *   **Objetivo:** Transformar a Valeria en un ecosistema de asistentes IA personalizables, simplificando la oferta a un modelo Freemium y sentando las bases para una base de conocimiento vectorial propia (RAG).
 
-*   **7.1. Refactorización de la Oferta y Comunicación (Frontend) (✓):**
+*   **7.1. Refactorización de la Oferta y Comunicación (Frontend) (✓ COMPLETADA):**
     *   **Simplificar Planes:** Actualizar la UI en `/valeria` para reflejar un modelo de dos niveles: `Gratis` y `Premium` (€4,99/mes), eliminando el plan PRO. (✓)
     *   **Comunicar Valor:** Rediseñar la página `/valeria` para comparar visualmente los beneficios y justificar el salto a Premium (ej. comparativa de respuestas, visualización de guías bloqueadas). (✓)
     *   **Potenciar Home:** Mover la sección de Valeria justo después del Hero, rediseñarla para ser más impactante y mover los elementos dinámicos (relojes, tips) al footer para dar un toque de elegancia global. (✓)
 
-*   **7.2. Ajuste del Flujo de Suscripción (Backend) (✓):**
+*   **7.2. Ajuste del Flujo de Suscripción (Backend) (✓ COMPLETADA):**
     *   **(Tarea Manual - Realizada):** Crear el nuevo producto "Suscripción Valeria Premium" en Stripe y obtener su Price ID. (✓)
     *   **(Tarea Manual - Realizada):** Añadir el nuevo Price ID a las variables de entorno (`.env`). (✓)
     *   **Adaptar `payment-actions.ts`:** Asegurar que la acción `createSubscriptionCheckoutSessionAction` utilice la nueva variable de entorno al recibir la petición para el plan premium. (✓)
@@ -175,7 +175,14 @@
     *   **Panel Multi-Agente:** Refactorizar `/dashboard/admin/agent` para gestionar configuraciones de agentes separadas en Firestore: `global` (para el plan gratuito) y `valeria_premium`.
     *   **Adaptador Inteligente:** Actualizar el `GenkitAgentAdapter` para que cargue la configuración (`systemPrompt`, `model`) correcta basándose en el `claim` del usuario.
 
-*   **7.4. Implementación de Base de Conocimiento (RAG - Research-Augmented Generation):**
+*   **7.4. Análisis de Documentos en Sesión (Valeria Premium):**
+    *   **Objetivo:** Permitir a los usuarios Premium subir un documento (PDF) y conversar con la IA sobre su contenido.
+    *   **UI:** Añadir un botón para subir archivos (`<input type="file">`) en la interfaz de chat de `/dashboard/valeria`.
+    *   **Backend (API):** Adaptar la ruta `POST /api/chat/sessions/[id]/messages` para que acepte `FormData` (texto y archivo).
+    *   **Backend (Lógica):** Instalar `pdf-parse`. En el `ChatController` o en el `PostMessageUseCase`, al recibir un archivo, usar la librería para extraer su contenido a texto plano.
+    *   **Backend (Adaptador y Prompt):** Modificar el `GenkitAgentAdapter` para que, si recibe texto de un documento, lo inyecte en un nuevo campo `documentText` del `prompt` del agente `valeria_premium`, dándole a la IA el contexto necesario para responder preguntas sobre ese documento.
+
+*   **7.5. Implementación de Base de Conocimiento (RAG - Research-Augmented Generation):**
     *   **(Tarea Manual): Configuración de Consolas (Google Cloud & Firebase):**
         *   **Activar APIs de Google Cloud:** En la consola de Google Cloud, asegurarse de que las APIs `Cloud Build`, `Cloud Run`, y `Artifact Registry` estén habilitadas para el proyecto.
         *   **Instalar Extensión "Vector Search":** En la consola de Firebase, ir a la sección "Build > Extensions" e instalar la extensión **Vector Search**.
