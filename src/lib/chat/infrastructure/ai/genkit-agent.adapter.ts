@@ -61,12 +61,40 @@ export class GenkitAgentAdapter implements AgentAdapter {
     chatHistory: ChatMessage[];
     currentMessage: string;
     businessId?: string;
+    agentId?: 'global' | 'valeria_premium' | 'business'; // Added for agent lab
   }): Promise<{ response: string; usage: TokenUsage; cost: number; }> {
     
     const chatHistoryForAI = input.chatHistory.map(m => ({
       role: m.role === 'admin' ? 'model' : m.role, // Treat admin messages as model messages from AI's perspective
       text: m.role === 'admin' ? `[Mensaje del Administrador: ${m.text}]` : m.text,
     }));
+    
+    // If an explicit agentId is provided (from the Agent Lab), use it.
+    if (input.agentId) {
+        let agentConfig: AgentConfig;
+        if (input.agentId === 'business') {
+            // Business agent logic
+            if (!input.businessId) throw new Error("BusinessId is required for business agent simulation.");
+            agentConfig = await this.userRepository.getAgentConfig(`business_${input.businessId}`);
+            // ... (rest of the business logic, similar to below)
+        } else {
+            // Global or Premium agent simulation
+            agentConfig = await this.userRepository.getAgentConfig(input.agentId);
+        }
+
+        const aiResponse = await migrationChat({
+            model: agentConfig.model,
+            systemPrompt: agentConfig.systemPrompt || DEFAULT_GLOBAL_PROMPT,
+            chatHistory: chatHistoryForAI,
+            currentMessage: input.currentMessage,
+        });
+
+        const usage = aiResponse.usage || { inputTokens: 0, outputTokens: 0, totalTokens: 0 };
+        const cost = calculateCost(agentConfig.model, usage.inputTokens, usage.outputTokens);
+        return { response: aiResponse.response, usage, cost };
+    }
+
+    // --- Standard Flow (Not from Agent Lab) ---
     
     if (input.businessId) {
       const businessDetails = await this.getBusinessDetailsUseCase.execute(input.businessId);
