@@ -64,7 +64,8 @@ const migrationChatFlow = ai.defineFlow(
         outputSchema: ChatOutputSchema,
     },
     async (input) => {
-        const { output, usage } = await prompt(input);
+        // Dynamically set the model for the prompt execution
+        const { output, usage } = await prompt(input, { model: input.model as any });
 
         if (!output) {
             throw new Error('La respuesta de la IA fue vacía.');
