@@ -62,14 +62,14 @@ export default function PaymentSuccessPage() {
         if (claims) {
             console.log("PaymentSuccessPage: Claims updated", claims);
             const plan = claims?.valeria_plan;
-            if (plan === 'valeria_premium' || plan === 'valeria_pro') {
+            if (plan === 'valeria_premium') {
                 setStatus('¡Todo listo! Redirigiendo a tu panel...');
                 // Use a timeout to let the user see the success message
                 setTimeout(() => {
                     router.replace('/dashboard/valeria');
                 }, 1500);
             } else {
-                 console.log(`PaymentSuccessPage: Plan is '${plan}', waiting for 'valeria_premium' or 'valeria_pro'.`);
+                 console.log(`PaymentSuccessPage: Plan is '${plan}', waiting for 'valeria_premium'.`);
             }
         } else {
             console.log("PaymentSuccessPage: Waiting for claims...");

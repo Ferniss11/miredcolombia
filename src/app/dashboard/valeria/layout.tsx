@@ -21,9 +21,10 @@ export default function ValeriaLayout({ children }: { children: React.ReactNode 
       return;
     }
     
+    // Check for the simplified premium plan
     const plan = claims?.valeria_plan;
-    if (plan !== 'valeria_premium' && plan !== 'valeria_pro') {
-      router.replace('/valeria'); // Redirect to upgrade page if no valid plan
+    if (plan !== 'valeria_premium') {
+      router.replace('/valeria'); // Redirect to upgrade page if not premium
     } else {
       setIsVerifying(false); // Verification complete, user has access
     }

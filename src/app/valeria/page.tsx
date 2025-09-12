@@ -64,7 +64,7 @@ export default function ValeriaPage() {
     } else {
         // User is logged in, proceed to Stripe checkout
         const result = await createSubscriptionCheckoutSessionAction({
-            priceId: plan.id,
+            planId: plan.id, // Pass our internal plan id (e.g., 'valeria_premium')
             userId: user.uid,
             userEmail: user.email!,
         });
@@ -75,8 +75,9 @@ export default function ValeriaPage() {
                 title: 'Error al Iniciar Pago',
                 description: result.error,
             });
-        } else if (result.sessionId) {
-            window.location.href = `/api/stripe/checkout?sessionId=${result.sessionId}`;
+        } else if (result.checkoutUrl) {
+            // Redirect to Stripe's hosted checkout page
+            window.location.href = result.checkoutUrl;
         }
     }
   };
@@ -110,16 +111,16 @@ export default function ValeriaPage() {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto mt-16">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto mt-16">
                 {valeriaPlans.map((plan) => (
                 <Card 
                     key={plan.name} 
                     className={cn(
                         "flex flex-col shadow-lg hover:shadow-2xl transition-shadow duration-300", 
-                        plan.name === "Plan Colombia" && "border-primary border-2 shadow-primary/20"
+                        plan.name === "Valeria Premium" && "border-primary border-2 shadow-primary/20"
                     )}
                 >
-                    {plan.name === "Plan Colombia" && (
+                    {plan.name === "Valeria Premium" && (
                     <div className="bg-primary text-primary-foreground text-center py-1.5 text-sm font-semibold">
                         Recomendado
                     </div>

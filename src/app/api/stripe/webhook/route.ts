@@ -1,3 +1,4 @@
+
 // src/app/api/stripe/webhook/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe';
@@ -17,16 +18,16 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
   if (session.mode !== 'subscription') return;
 
   const userId = session.metadata?.firebaseUID;
-  const priceId = session.metadata?.priceId;
+  const planId = session.metadata?.planId; // We now receive our internal planId
   const customerDetails = session.customer_details;
 
-  if (session.payment_status === 'paid' && userId && priceId) {
-    console.log(`[Stripe Webhook] Subscription checkout session completed for user ${userId} with price ${priceId}.`);
+  if (session.payment_status === 'paid' && userId && planId) {
+    console.log(`[Stripe Webhook] Subscription checkout session completed for user ${userId} with plan ${planId}.`);
     
     // 1. Update user's plan via the Use Case
     const userRepository = new FirestoreUserRepository();
     const setPlanUseCase = new SetUserSubscriptionPlanUseCase(userRepository);
-    await setPlanUseCase.execute({ userId, priceId });
+    await setPlanUseCase.execute({ userId, planId });
     
     // 2. Create a "succeeded" Order record for accounting
     if (customerDetails?.email && session.amount_total !== null) {
@@ -44,7 +45,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
             lastName: customerDetails.name?.split(' ').slice(1).join(' ') || '',
           },
           {
-            itemId: priceId,
+            itemId: planId, // Use our internal planId for the order record
             itemName: itemName,
             amount: session.amount_total / 100, // Amount is in cents
             currency: session.currency || 'eur',
@@ -113,4 +114,3 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({ received: true });
 }
-

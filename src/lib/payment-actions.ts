@@ -8,7 +8,7 @@ import { stripe } from '@/lib/stripe';
 // --- SUBSCRIPTION CHECKOUT ---
 
 const createSubscriptionCheckoutSchema = z.object({
-  priceId: z.string(),
+  planId: z.string(), // Changed from priceId to our internal planId
   userId: z.string(),
   userEmail: z.string(),
 });
@@ -19,7 +19,7 @@ type CreateSubscriptionCheckoutInput = z.infer<typeof createSubscriptionCheckout
 export async function createSubscriptionCheckoutSessionAction(input: CreateSubscriptionCheckoutInput) {
   try {
     const validatedInput = createSubscriptionCheckoutSchema.parse(input);
-    const { priceId, userId, userEmail } = validatedInput;
+    const { planId, userId, userEmail } = validatedInput;
 
     if (!stripe) {
       throw new Error('Stripe is not configured.');
@@ -45,14 +45,16 @@ export async function createSubscriptionCheckoutSessionAction(input: CreateSubsc
     
     // Map our internal plan IDs to Stripe's Price IDs from environment variables
     let stripePriceId: string | undefined;
-    if (priceId === 'valeria_premium') {
-        stripePriceId = process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_IA_PREMIUM;
-    } else if (priceId === 'valeria_pro') {
-        stripePriceId = process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_IA_PRO;
-    }
+    if (planId === 'valeria_premium') {
+        stripePriceId = process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_VALERIA_PREMIUM;
+    } 
+    // Add other plans here in the future if needed
+    // else if (planId === 'valeria_pro') {
+    //     stripePriceId = process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_IA_PRO;
+    // }
 
     if (!stripePriceId) {
-        throw new Error(`Stripe Price ID for plan '${priceId}' is not configured in environment variables.`);
+        throw new Error(`Stripe Price ID for plan '${planId}' is not configured in environment variables.`);
     }
 
     const session = await stripe.checkout.sessions.create({
@@ -67,7 +69,7 @@ export async function createSubscriptionCheckoutSessionAction(input: CreateSubsc
       ],
       metadata: {
         firebaseUID: userId,
-        priceId: priceId, // Store our internal plan ID
+        planId: planId, // Store our internal plan ID
       },
       success_url: `${appUrl}/valeria/payment-success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${appUrl}/valeria?payment=cancelled`,

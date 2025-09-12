@@ -165,29 +165,16 @@ export const valeriaPlans: ValeriaPlan[] = [
     {
       id: 'valeria_premium', // Use internal plan name
       name: 'Valeria Premium',
-      price: 2.99,
+      price: 4.99,
       priceDetails: '/ mes',
       features: [
         'Consultas ilimitadas',
         'Respuestas extendidas y detalladas',
         'Acceso a checklists descargables',
         'Generación de documentos básicos en PDF',
+        'Alertas de empleo y vivienda',
       ],
       cta: 'Elegir Plan Premium',
        variant: 'default'
-    },
-    {
-      id: 'valeria_pro', // Use internal plan name
-      name: 'Valeria PRO',
-      price: 7.99,
-      priceDetails: '/ mes',
-      features: [
-        'Todo lo del Plan Premium',
-        'Alertas de empleo personalizadas',
-        'Alertas de vivienda según tus criterios',
-        'Acceso a todas las guías premium',
-      ],
-      cta: 'Elegir Plan PRO',
-      variant: 'default'
     },
 ];

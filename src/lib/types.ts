@@ -192,8 +192,9 @@ export type UserProfile = {
   role: UserRole;
   status: 'active' | 'deleted';
   valeriaProfile?: {
-    planId: 'valeria_premium' | 'valeria_pro' | 'free',
+    planId: 'valeria_premium' | 'free', // Simplified plans
     planExpiresAt?: Date | null,
+    sessionId?: string; // Link to the user's primary chat session
   };
   businessProfile?: BusinessProfile;
   candidateProfile?: CandidateProfile;
