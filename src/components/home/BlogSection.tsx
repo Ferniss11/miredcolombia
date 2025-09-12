@@ -7,11 +7,16 @@ import { ArrowRight, Newspaper, Calendar, User } from "lucide-react";
 import Image from "next/image";
 import { BlogPost } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { BlogPostCard } from "../blog/BlogPostCard";
 
 export default function BlogSection({ posts }: { posts: BlogPost[] }) {
-    const latestPosts = posts || [];
-    const firstRowPosts = latestPosts.slice(0, 2);
-    const secondRowPosts = latestPosts.slice(2, 5);
+    if (!posts || posts.length === 0) {
+        return null;
+    }
+    
+    // We expect 5 posts for this layout
+    const mainPosts = posts.slice(0, 2);
+    const secondaryPosts = posts.slice(2, 5);
 
     return (
         <section className="w-full py-12 md:py-24 lg:py-32">
@@ -26,92 +31,21 @@ export default function BlogSection({ posts }: { posts: BlogPost[] }) {
                     </div>
                 </div>
 
-                {latestPosts.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 py-12">
-                        {/* First Row */}
-                        {firstRowPosts.map((post) => (
-                           <div key={post.id} className="lg:col-span-3 lg:grid lg:grid-cols-2 lg:gap-8">
-                                <Card className="flex flex-col overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 h-full">
-                                    {post.featuredImageUrl && (
-                                        <Link href={`/blog/${post.slug}`} className="block">
-                                            <Image
-                                                src={post.featuredImageUrl}
-                                                alt={post.title}
-                                                width={600}
-                                                height={340}
-                                                data-ai-hint={post.featuredImageHint || "blog post topic"}
-                                                className="w-full object-cover h-64"
-                                            />
-                                        </Link>
-                                    )}
-                                    <CardHeader>
-                                        <Link href={`/blog/${post.slug}`} className="hover:text-primary">
-                                            <CardTitle className="font-headline line-clamp-2 text-2xl h-16">{post.title}</CardTitle>
-                                        </Link>
-                                        <div className="flex items-center space-x-4 text-xs text-muted-foreground pt-2">
-                                            <div className="flex items-center">
-                                                <Calendar className="w-4 h-4 mr-1.5" />
-                                                {new Date(post.date).toLocaleDateString('es-ES')}
-                                            </div>
-                                            <div className="flex items-center">
-                                                <User className="w-4 h-4 mr-1.5" />
-                                                {post.author}
-                                            </div>
-                                        </div>
-                                    </CardHeader>
-                                    <CardContent className="flex-grow">
-                                        <p className="text-muted-foreground line-clamp-3">{post.introduction}</p>
-                                    </CardContent>
-                                    <CardFooter>
-                                        <Button asChild variant="link" className="text-foreground p-0 h-auto font-semibold">
-                                            <Link href={`/blog/${post.slug}`}>
-                                                Leer Más <ArrowRight className="ml-2 h-4 w-4" />
-                                            </Link>
-                                        </Button>
-                                    </CardFooter>
-                                </Card>
-                           </div>
-                        ))}
-                         {/* Second Row */}
-                        {secondRowPosts.map((post) => (
-                            <div key={post.id}>
-                                <Card className="flex flex-col overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 h-full">
-                                    {post.featuredImageUrl && (
-                                        <Link href={`/blog/${post.slug}`} className="block">
-                                            <Image
-                                                src={post.featuredImageUrl}
-                                                alt={post.title}
-                                                width={400}
-                                                height={200}
-                                                data-ai-hint={post.featuredImageHint || "blog post topic"}
-                                                className="w-full object-cover h-48"
-                                            />
-                                        </Link>
-                                    )}
-                                    <CardHeader>
-                                        <Link href={`/blog/${post.slug}`} className="hover:text-primary">
-                                            <CardTitle className="font-headline line-clamp-2 text-xl h-14">{post.title}</CardTitle>
-                                        </Link>
-                                    </CardHeader>
-                                    <CardContent className="flex-grow">
-                                        <p className="text-muted-foreground line-clamp-3">{post.introduction}</p>
-                                    </CardContent>
-                                    <CardFooter>
-                                        <Button asChild variant="link" className="text-foreground p-0 h-auto font-semibold">
-                                            <Link href={`/blog/${post.slug}`}>
-                                                Leer Más <ArrowRight className="ml-2 h-4 w-4" />
-                                            </Link>
-                                        </Button>
-                                    </CardFooter>
-                                </Card>
-                            </div>
-                        ))}
-                    </div>
-                ) : (
-                    <div className="text-center py-12 text-muted-foreground">
-                        <p>No hay artículos recientes. ¡Vuelve pronto!</p>
-                    </div>
-                )}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-8 py-12">
+                    {/* First Row: 2 larger posts */}
+                    {mainPosts.map(post => (
+                        <div key={post.id} className="lg:col-span-3">
+                            <BlogPostCard post={post} className="h-full" />
+                        </div>
+                    ))}
+                    
+                    {/* Second Row: 3 smaller posts */}
+                    {secondaryPosts.map(post => (
+                         <div key={post.id} className="md:col-span-1 lg:col-span-2">
+                            <BlogPostCard post={post} className="h-full" />
+                        </div>
+                    ))}
+                </div>
                 
                 <div className="flex justify-center">
                     <Button asChild>

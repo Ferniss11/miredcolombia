@@ -17,7 +17,7 @@ const testimonials = [
     location: "desde Madrid",
     avatar: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=100&h=100&fit=crop&q=80",
     rating: 5,
-    text: "No sabía por dónde empezar con la homologación de mi título. El equipo de Colombia en España me guió perfectamente y gracias a ellos pude empezar a trabajar mucho antes de lo que esperaba.",
+    text: "No sabía por dónde empezar con la homologación de mi título. El equipo de Mi Red Colombia me guió perfectamente y gracias a ellos pude empezar a trabajar mucho antes de lo que esperaba.",
   },
   {
     name: "Isabella Cruz",
