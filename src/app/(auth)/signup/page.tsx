@@ -7,6 +7,8 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Suspense } from "react";
+import { Loader2 } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 
 function SignUpPageComponent() {
   const { user, userProfile, loading } = useAuth();
@@ -19,8 +21,8 @@ function SignUpPageComponent() {
     }
   }, [user, userProfile, loading, router]);
   
-  // Show skeleton loader while loading OR if we have a user but are waiting for the profile to load before redirecting
-  if (loading || (user && !userProfile)) {
+  // Show skeleton loader while initial auth state is loading
+  if (loading) {
       return (
           <div className="w-full max-w-md mx-auto space-y-8">
               <Skeleton className="h-10 w-3/4 mx-auto" />
@@ -30,11 +32,20 @@ function SignUpPageComponent() {
       )
   }
 
-  // Don't render the form if the user is already logged in and has a profile (they will be redirected soon)
-  if (user && userProfile) {
-    return null;
+  // After signup, when we have a user but are waiting for profile/redirect, show a specific loader.
+  if (user) {
+    return (
+        <Card className="w-full max-w-md mx-auto">
+            <CardContent className="pt-6 text-center space-y-4">
+                <Loader2 className="mx-auto h-12 w-12 animate-spin text-primary" />
+                <h2 className="text-xl font-semibold">¡Cuenta Creada!</h2>
+                <p className="text-muted-foreground">Te estamos redirigiendo a tu panel...</p>
+            </CardContent>
+        </Card>
+    );
   }
 
+  // If no user, show the signup form
   return (
     <div className="w-full max-w-md mx-auto">
       <h1 className="text-3xl font-bold text-center mb-2 font-headline">Crear una Cuenta</h1>
