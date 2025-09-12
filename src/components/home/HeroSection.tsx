@@ -1,3 +1,6 @@
+
+'use client';
+
 import { Button } from "@/components/ui/button";
 import { Package, MessageCircle } from "lucide-react";
 import Image from "next/image";
@@ -26,7 +29,7 @@ export default function HeroSection() {
                   width={100}
                   height={100}
                   alt="Mi Red Colombia Logo"
-                  className="mb-6 p-2 rounded-2xl shadow-lg"
+                  className="mb-6 rounded-2xl shadow-lg"
                 />
                 <h1 className="text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl lg:text-7xl font-headline">
                     Tu puente de Colombia a España: empleo, vivienda y papeles en regla sin perderte en el camino.
@@ -50,3 +53,4 @@ export default function HeroSection() {
         </section>
     );
 }
+

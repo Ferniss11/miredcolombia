@@ -1,62 +1,30 @@
 
 'use client';
 
-import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Bot, MessageCircle, Lightbulb, PlayCircle, Package } from "lucide-react";
-import RealTimeClocks from "@/components/layout/RealTimeClocks";
-import { cn } from "@/lib/utils";
+import { Bot, MessageCircle, Package } from "lucide-react";
 import Image from 'next/image';
-import VideoModal from "../ui/video-modal";
 import Link from "next/link";
 
-const migrationTips = [
-    "Recuerda apostillar todos tus documentos oficiales en Colombia antes de viajar.",
-    "El empadronamiento es el primer trámite y el más importante al llegar a España. ¡No lo dejes para después!",
-    "Si vienes con visa de estudiante, puedes trabajar hasta 30 horas semanales con un permiso de trabajo.",
-    "Abre una cuenta bancaria tan pronto como tengas tu NIE. Facilitará todos los demás trámites.",
-    "Investiga sobre el sistema de transporte público de tu ciudad, suele ser muy eficiente y económico.",
-    "El seguro médico es obligatorio. Asegúrate de que tenga cobertura completa sin copagos.",
-    "La 'TIE' (Tarjeta de Identidad de Extranjero) es tu documento de identificación físico en España.",
-    "Guarda copias digitales de todos tus documentos importantes en la nube.",
-    "No tengas miedo de preguntar. Los españoles suelen ser amables y dispuestos a ayudar.",
-    "Para homologar tu título, el proceso puede tardar. ¡Inícialo cuanto antes!",
-    "Conoce las diferencias culturales en los horarios de comida y de las tiendas."
-];
-
 export default function AiAssistantSection({ onOpenChatModal }: { onOpenChatModal: () => void }) {
-    const [randomTip, setRandomTip] = useState('');
-    const [animationKey, setAnimationKey] = useState(0);
-    const [isVideoModalOpen, setVideoModalOpen] = useState(false);
-    const videoUrl = "https://firebasestorage.googleapis.com/v0/b/colombia-en-esp.firebasestorage.app/o/web%2FVideo%20de%20WhatsApp%202025-08-12%20a%20las%2014.29.54_0ca7af14.mp4?alt=media&token=ac0427e9-ff6e-4897-afba-3684d6ff5585";
-
-
-    useEffect(() => {
-        const getNextTip = () => {
-            setRandomTip(prevTip => {
-                let newTip;
-                do {
-                    newTip = migrationTips[Math.floor(Math.random() * migrationTips.length)];
-                } while (newTip === prevTip);
-                return newTip;
-            });
-            setAnimationKey(prevKey => prevKey + 1);
-        };
-        
-        getNextTip();
-        const tipInterval = setInterval(getNextTip, 5000); // Rotate tip every 5 seconds
-        
-        return () => clearInterval(tipInterval);
-    }, []);
 
     return (
-        <>
-            <section id="asistente-ia" className="w-full py-12 md:py-24 lg:py-32 bg-secondary dark:bg-card">
-                <div className="container px-4 md:px-6 max-w-6xl">
-                    <div className="mx-auto grid lg:grid-cols-2 gap-12 items-center">
-                        {/* Left Side: Main CTA and Text */}
-                        <div className="flex flex-col items-start space-y-6">
-                            <div className="w-20 h-20 rounded-full overflow-hidden p-1 bg-primary/20 inline-flex ring-4 ring-primary/30">
+        <section id="asistente-ia" className="w-full py-12 md:py-24 lg:py-32 bg-secondary dark:bg-card">
+            <div className="container px-4 md:px-6 max-w-6xl">
+                <div className="mx-auto grid lg:grid-cols-2 gap-12 items-center">
+                    {/* Left Side: Image */}
+                    <div className="relative w-full h-80 rounded-xl overflow-hidden shadow-lg group">
+                       <Image 
+                         src="https://images.unsplash.com/photo-1593430985552-41445f1b2d3f?q=80&w=1887&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+                         alt="Persona interactuando con un asistente de IA en una pantalla"
+                         layout="fill"
+                         data-ai-hint="AI assistant chat"
+                         objectFit="cover"
+                         className="transition-transform duration-500 group-hover:scale-105"
+                       />
+                       <div className="absolute inset-0 bg-black/30"></div>
+                        <div className="absolute top-6 left-6 p-1 bg-white/20 backdrop-blur-sm rounded-full">
+                           <div className="w-20 h-20 rounded-full overflow-hidden p-1 bg-primary/20 inline-flex ring-4 ring-primary/30">
                                <Image 
                                  src="https://firebasestorage.googleapis.com/v0/b/colombia-en-esp.firebasestorage.app/o/web%2FImagen%20de%20WhatsApp%202025-08-09%20a%20las%2018.20.39_3c2b6161.jpg?alt=media&token=41ebe34a-f846-41fc-937f-4141f1240ee8"
                                  alt="Avatar de Valeria, la asistente IA"
@@ -65,66 +33,33 @@ export default function AiAssistantSection({ onOpenChatModal }: { onOpenChatModa
                                  className="rounded-full object-cover"
                                />
                             </div>
-                            <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl font-headline">
-                                Con Valeria nunca estarás solo
-                            </h2>
-                            <p className="max-w-xl text-muted-foreground md:text-xl/relaxed font-body">
-                                Tu asesora IA 24/7. Gratis para empezar, y con planes Premium que incluyen alertas de empleo, vivienda y guías exclusivas para que tu proceso sea aún más fácil.
-                            </p>
-                            <div className="flex flex-col sm:flex-row gap-4">
-                                <Button size="lg" variant="outline" onClick={onOpenChatModal}>
-                                    <MessageCircle className="mr-2 h-5 w-5" />
-                                    Probar Gratis
-                                </Button>
-                                 <Button asChild size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground">
-                                    <Link href="/valeria">
-                                        <Package className="mr-2 h-5 w-5" />
-                                        Ver planes de Valeria
-                                    </Link>
-                                </Button>
-                            </div>
                         </div>
+                    </div>
 
-                        {/* Right Side: Minimalist Clocks and Tips */}
-                         <div className="space-y-4">
-                            <div className="border rounded-lg bg-background/50 overflow-hidden">
-                                <div className="h-1 flex w-full">
-                                    <div className="w-1/2 bg-[#FFCD00]"></div>
-                                    <div className="w-1/4 bg-[#003893]"></div>
-                                    <div className="w-1/4 bg-[#C70039]"></div>
-                                </div>
-                                <RealTimeClocks variant="minimal" country="Colombia" />
-                            </div>
-                             <div className="border rounded-lg bg-background/50 overflow-hidden">
-                                <div className="h-1 flex w-full">
-                                    <div className="w-1/2 bg-[#AA151B]"></div>
-                                    <div className="w-1/2 bg-[#F1BF00]"></div>
-                                </div>
-                                <RealTimeClocks variant="minimal" country="Spain" />
-                            </div>
-                            <div className="border rounded-lg p-4 bg-background/50 overflow-hidden relative h-[110px]">
-                                <div key={animationKey} className="animate-slide-in-up">
-                                    <div className="flex items-start gap-4">
-                                        <Lightbulb className="w-5 h-5 text-yellow-500 mt-1 flex-shrink-0" />
-                                        <div>
-                                            <h4 className="font-bold font-headline text-md">Tip del Día</h4>
-                                            <p className="text-muted-foreground text-sm mt-1 h-12">
-                                                {randomTip || 'Cargando tip...'}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                    {/* Right Side: Main CTA and Text */}
+                    <div className="flex flex-col items-start space-y-6">
+                        <div className="inline-block rounded-lg bg-primary/10 px-3 py-1 text-sm font-semibold text-primary">Asistente IA</div>
+                        <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl font-headline">
+                            Con Valeria nunca estarás solo
+                        </h2>
+                        <p className="max-w-xl text-muted-foreground md:text-xl/relaxed font-body">
+                            Tu asesora IA 24/7. Gratis para empezar, y con planes Premium que incluyen alertas de empleo, vivienda y guías exclusivas para que tu proceso sea aún más fácil.
+                        </p>
+                        <div className="flex flex-col sm:flex-row gap-4">
+                            <Button size="lg" variant="outline" onClick={onOpenChatModal}>
+                                <MessageCircle className="mr-2 h-5 w-5" />
+                                Probar Gratis
+                            </Button>
+                             <Button asChild size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground">
+                                <Link href="/valeria">
+                                    <Package className="mr-2 h-5 w-5" />
+                                    Ver planes de Valeria
+                                </Link>
+                            </Button>
                         </div>
                     </div>
                 </div>
-            </section>
-             <VideoModal 
-                isOpen={isVideoModalOpen}
-                setIsOpen={setVideoModalOpen}
-                videoUrl={videoUrl}
-                title="Presentación de Valeria, tu Asistente IA"
-            />
-        </>
+            </div>
+        </section>
     );
 }

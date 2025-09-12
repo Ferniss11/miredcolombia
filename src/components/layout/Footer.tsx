@@ -2,11 +2,13 @@
 
 'use client';
 
-import { Instagram, Youtube } from "lucide-react";
+import { Instagram, Youtube, Lightbulb } from "lucide-react";
 import Link from "next/link";
 import Image from 'next/image';
 import ChatWidget from "../chat/ChatWidget";
 import { useChat } from "@/context/ChatContext";
+import RealTimeClocks from "./RealTimeClocks";
+import { useEffect, useState } from "react";
 
 const TikTokIcon = () => (
     <svg 
@@ -21,15 +23,64 @@ const TikTokIcon = () => (
     </svg>
 );
 
+const migrationTips = [
+    "Recuerda apostillar todos tus documentos oficiales en Colombia antes de viajar.",
+    "El empadronamiento es el primer trámite y el más importante al llegar a España.",
+    "Si vienes con visa de estudiante, puedes trabajar hasta 30 horas semanales con permiso.",
+    "Abre una cuenta bancaria tan pronto como tengas tu NIE para facilitar trámites.",
+    "Investiga sobre el sistema de transporte público de tu ciudad, es muy eficiente.",
+    "Guarda copias digitales de todos tus documentos importantes en la nube."
+];
+
 
 export default function Footer() {
   const { chatContext, isChatOpen, setChatOpen } = useChat();
+  const [randomTip, setRandomTip] = useState('');
+  const [animationKey, setAnimationKey] = useState(0);
+
+  useEffect(() => {
+    const getNextTip = () => {
+        setRandomTip(prevTip => {
+            let newTip;
+            do {
+                newTip = migrationTips[Math.floor(Math.random() * migrationTips.length)];
+            } while (newTip === prevTip);
+            return newTip;
+        });
+        setAnimationKey(prevKey => prevKey + 1);
+    };
+    
+    getNextTip();
+    const tipInterval = setInterval(getNextTip, 7000); // Rotate tip every 7 seconds
+    
+    return () => clearInterval(tipInterval);
+  }, []);
+
   
   return (
     <>
     <footer className="bg-white dark:bg-gray-900 border-t">
       <div className="container mx-auto py-12 px-4 sm:px-6 lg:px-8">
-        <div className="xl:grid xl:grid-cols-3 xl:gap-8">
+        
+         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-8">
+            <RealTimeClocks variant="minimal" country="Colombia" />
+            <RealTimeClocks variant="minimal" country="Spain" />
+             <div className="border rounded-lg p-4 bg-background/50 overflow-hidden relative min-h-[72px]">
+                <div key={animationKey} className="animate-slide-in-up">
+                    <div className="flex items-start gap-3">
+                        <Lightbulb className="w-5 h-5 text-yellow-500 mt-1 flex-shrink-0" />
+                        <div>
+                            <h4 className="font-bold font-headline text-md">Tip del Día</h4>
+                            <p className="text-muted-foreground text-sm mt-1">
+                                {randomTip || 'Cargando tip...'}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+         </div>
+
+        <div className="xl:grid xl:grid-cols-3 xl:gap-8 border-t pt-8">
           <div className="space-y-8 xl:col-span-1">
              <Link href="/" className="flex items-center space-x-2">
                 <Image src="https://firebasestorage.googleapis.com/v0/b/colombia-en-esp.firebasestorage.app/o/web%2FLOGO.png?alt=media&token=86f8e9f6-587a-4cb6-bae1-15b0c815f22b" alt="Mi Red Colombia Logo" width={32} height={32} />

@@ -31,8 +31,8 @@ export default function HomePageClient({ eurToCopRate, initialPosts, initialGuid
     <div className="flex flex-col min-h-[100dvh]">
       <main className="flex-1">
         <HeroSection />
-        <HowWeHelpSection />
         <AiAssistantSection onOpenChatModal={openChat} />
+        <HowWeHelpSection />
         <PackagesSection />
         <TestimonialsSection />
         <GuidesSection guides={initialGuides} />
