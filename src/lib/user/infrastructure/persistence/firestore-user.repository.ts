@@ -1,3 +1,4 @@
+
 // infrastructure/persistence/firestore-user.repository.ts
 import type { User } from '../../domain/user.entity';
 import type { UserRepository } from '../../domain/user.repository';
@@ -104,9 +105,12 @@ export class FirestoreUserRepository implements UserRepository {
   // Agent Specific Methods
   async getAgentConfig(agentId: string = 'global'): Promise<AgentConfig> {
     if (!adminDb) throw new Error('Firestore not initialized');
-    const doc = await adminDb.collection('agentConfig').doc(agentId).get();
+    const docRef = adminDb.collection('agentConfig').doc(agentId);
+    console.log(`[FirestoreRepo] Fetching agent config from: ${docRef.path}`);
+    const doc = await docRef.get();
+    
     if (!doc.exists) {
-        // Return a default config if none exists, to avoid crashing the UI
+        console.warn(`[FirestoreRepo] No agent config found for '${agentId}'. Returning default.`);
         return {
             model: 'googleai/gemini-1.5-flash-latest',
             systemPrompt: 'Eres un asistente de IA para Mi Red Colombia. Ayuda a los usuarios con sus preguntas sobre inmigración y servicios.'

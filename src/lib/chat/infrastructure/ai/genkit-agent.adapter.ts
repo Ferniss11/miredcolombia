@@ -2,8 +2,8 @@
 // src/lib/chat/infrastructure/ai/genkit-agent.adapter.ts
 import type { AgentAdapter } from './agent.adapter';
 import type { ChatMessage } from '../../domain/chat-message.entity';
-import type { TokenUsage, BusinessAgentConfig, AgentConfig } from '@/lib/chat-types';
-import { adminAuth, adminDb } from '@/lib/firebase/admin-config';
+import type { TokenUsage, AgentConfig } from '@/lib/chat-types';
+import { adminAuth } from '@/lib/firebase/admin-config';
 import { calculateCost } from '@/lib/ai-costs';
 
 // Import the specific Genkit flows
@@ -17,28 +17,6 @@ import { FirestoreCacheAdapter } from '@/lib/directory/infrastructure/cache/fire
 
 
 const DEFAULT_GLOBAL_PROMPT = 'Eres un asistente de IA para Mi Red Colombia. Ayuda a los usuarios con sus preguntas sobre inmigración y servicios.';
-
-const DEFAULT_BUSINESS_PROMPT = `### CONTEXTO
-Eres un asistente de inteligencia artificial amigable, profesional y extremadamente eficiente para un negocio específico. Tu misión es responder a las preguntas de los clientes y gestionar citas basándote ÚNICAMENTE en la información proporcionada por tus herramientas y el contexto del negocio que se te facilita.
-
-### PROCESO DE RESPUESTA OBLIGATORIO Y SECUENCIAL
-1.  **IDENTIFICAR INTENCIÓN:** Analiza el mensaje del usuario.
-    - Si es una pregunta general sobre el negocio (horarios, dirección, servicios), usa la información del bloque "INFORMACIÓN DEL NEGOCIO" para responder.
-    - Si es sobre agendar o consultar citas, ve al paso 2.
-
-2.  **CONSULTAR DISPONIBILIDAD (SIEMPRE PRIMERO):**
-    - Una vez deducida la fecha, DEBES usar la herramienta \`getAvailableSlots\` con esa fecha para ver los huecos libres.
-    - Basa tu respuesta ESTRICTAMENTE en la salida de la herramienta \`getAvailableSlots\`.
-
-3.  **CREAR CITA (SÓLO TRAS CONFIRMACIÓN):**
-    - Si el usuario elige un horario, pregunta para confirmar.
-    - SOLO si el usuario responde afirmativamente, DEBES usar la herramienta \`createAppointment\`.
-    - Después de que la herramienta se ejecute con éxito, confirma la cita al usuario.
-
-### POLÍTICAS
-- **PROHIBIDO CONFIRMAR SIN USAR LA HERRAMIENTA:** NUNCA digas que una cita está confirmada si no has usado la herramienta \`createAppointment\`.
-- **NO INVENTES DISPONIBILIDAD:** Tu única fuente de verdad sobre los horarios es la herramienta \`getAvailableSlots\`.`;
-
 
 /**
  * An adapter that uses Genkit to provide AI agent completions.
@@ -63,18 +41,18 @@ export class GenkitAgentAdapter implements AgentAdapter {
     if (userId && adminAuth) {
         try {
             const userRecord = await adminAuth.getUser(userId);
-            const plan = userRecord.customClaims?.valeria_plan;
+            const plan = userRecord.customClaims?.valeria_plan as 'valeria_premium' | undefined;
 
-            if (plan === 'valeria_premium' || plan === 'valeria_pro') {
-                // The agentId in Firestore is 'valeria_premium', not 'plan_valeria_premium'
-                return this.userRepository.getAgentConfig(plan);
+            // If the user has a premium plan, load that specific agent config
+            if (plan === 'valeria_premium') {
+                return this.userRepository.getAgentConfig('valeria_premium');
             }
         } catch (error) {
-            console.warn(`Could not get auth user for ID ${userId}, falling back to global agent.`, error);
+            console.warn(`[GenkitAgentAdapter] Could not get auth user for ID ${userId}, falling back to global agent.`, error);
         }
     }
     
-    // Default to global agent
+    // Default to global agent for guests or free users
     return this.userRepository.getAgentConfig('global');
   }
 

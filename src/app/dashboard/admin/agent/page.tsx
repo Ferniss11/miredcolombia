@@ -17,20 +17,16 @@ import { cn } from '@/lib/utils';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import Link from 'next/link';
 
-type AgentType = 'global' | 'valeria_premium' | 'valeria_pro';
+type AgentType = 'global' | 'valeria_premium';
 
 const agentDetails: Record<AgentType, { name: string; description: string }> = {
     global: {
-        name: 'Agente Global',
-        description: 'Este es el agente por defecto que interactúa con usuarios públicos y usuarios gratuitos.'
+        name: 'Agente Global (Gratis)',
+        description: 'Este es el agente por defecto que interactúa con usuarios públicos y del plan gratuito.'
     },
     valeria_premium: {
         name: 'Agente Valeria Premium',
-        description: 'Este agente se activa para los usuarios con una suscripción activa al "Plan Premium".'
-    },
-    valeria_pro: {
-        name: 'Agente Valeria PRO',
-        description: 'Este agente se activa para los usuarios con una suscripción activa al "Plan PRO".'
+        description: 'Este agente se activa para los usuarios con una suscripción "Premium" activa.'
     }
 };
 
@@ -129,9 +125,6 @@ const AgentConfigForm = ({ agentId, agentType, onToolConnectClick }: { agentId: 
                                 <SelectContent>
                                     <SelectItem value="googleai/gemini-1.5-flash-latest">Gemini 1.5 Flash (Rápido)</SelectItem>
                                     <SelectItem value="googleai/gemini-1.5-pro-latest">Gemini 1.5 Pro (Potente)</SelectItem>
-                                    <SelectItem value="googleai/gemini-2.5-flash-lite">Gemini 2.5 Flash Lite</SelectItem>
-                                    <SelectItem value="googleai/gemini-2.5-pro">Gemini 2.5 Pro</SelectItem>
-                                    <SelectItem value="googleai/gemini-2.5-flash">Gemini 2.5 Flash</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -190,19 +183,15 @@ export default function AgentManagementPage() {
                 </div>
 
                 <Tabs defaultValue="global" className="w-full">
-                    <TabsList className="grid w-full grid-cols-3">
-                        <TabsTrigger value="global">Agente Global</TabsTrigger>
+                    <TabsList className="grid w-full grid-cols-2">
+                        <TabsTrigger value="global">Agente Global (Gratis)</TabsTrigger>
                         <TabsTrigger value="valeria_premium">Valeria Premium</TabsTrigger>
-                        <TabsTrigger value="valeria_pro">Valeria PRO</TabsTrigger>
                     </TabsList>
                     <TabsContent value="global">
                         <AgentConfigForm agentId="global" agentType={agentDetails.global} onToolConnectClick={() => setIsDevModalOpen(true)} />
                     </TabsContent>
                     <TabsContent value="valeria_premium">
                         <AgentConfigForm agentId="valeria_premium" agentType={agentDetails.valeria_premium} onToolConnectClick={() => setIsDevModalOpen(true)} />
-                    </TabsContent>
-                    <TabsContent value="valeria_pro">
-                        <AgentConfigForm agentId="valeria_pro" agentType={agentDetails.valeria_pro} onToolConnectClick={() => setIsDevModalOpen(true)} />
                     </TabsContent>
                 </Tabs>
             </div>
