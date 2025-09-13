@@ -5,7 +5,8 @@ import { ApiResponse } from '@/lib/platform/api/api-response';
 import { GenkitAgentAdapter } from '../ai/genkit-agent.adapter';
 import { SimulateAgentResponseUseCase } from '../../application/simulate-agent-response.use-case';
 import { ChatMessageSchema } from '@/lib/chat-types';
-import pdf from 'pdf-parse';
+// DO NOT import pdf-parse at the top level. It causes build errors in Vercel.
+// import pdf from 'pdf-parse';
 
 // The schema is no longer needed as we are processing FormData directly.
 
@@ -30,6 +31,8 @@ export class AgentLabController {
 
     if (contextFile) {
         try {
+            // Dynamically import pdf-parse only when it's needed.
+            const pdf = (await import('pdf-parse')).default;
             const buffer = Buffer.from(await contextFile.arrayBuffer());
             const data = await pdf(buffer);
             documentText = data.text;
