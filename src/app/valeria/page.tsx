@@ -1,10 +1,10 @@
 
 'use client';
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Check, MessageCircle, PlayCircle } from "lucide-react";
+import { Check, MessageCircle, PlayCircle, Loader2 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
@@ -18,8 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import VideoModal from "@/components/ui/video-modal";
 import { createSubscriptionCheckoutSessionAction } from "@/lib/payment-actions";
 
-
-export default function ValeriaPage() {
+function ValeriaPageContent() {
   const { openChat } = useChat();
   const { user } = useAuth();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
@@ -174,4 +173,12 @@ export default function ValeriaPage() {
     />
     </>
   );
+}
+
+export default function ValeriaPage() {
+    return (
+        <Suspense fallback={<div className="flex justify-center p-12"><Loader2 className="h-8 w-8 animate-spin text-primary"/></div>}>
+            <ValeriaPageContent />
+        </Suspense>
+    );
 }

@@ -87,7 +87,7 @@ function CheckoutPageContent() {
 export default function CheckoutPage() {
   return (
     <div className="container mx-auto px-4 py-12 md:px-6">
-        <Suspense fallback={<div className="flex justify-center"><Loader2 className="h-8 w-8 animate-spin"/></div>}>
+        <Suspense fallback={<div className="flex justify-center p-12"><Loader2 className="h-8 w-8 animate-spin"/></div>}>
             <CheckoutPageContent />
         </Suspense>
     </div>
