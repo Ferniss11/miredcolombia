@@ -8,12 +8,10 @@ import type { PlaceDetails, BlogPost, JobsCtaSectionProps } from '@/lib/types';
 import { GetAllGuidesUseCase } from '@/lib/guide/application/get-all-guides.use-case';
 import { FirestoreGuideRepository } from '@/lib/guide/infrastructure/persistence/firestore-guide.repository';
 
-// Correctly import the Use Case and Repository from the hexagonal architecture
 import { GetAllBlogPostsUseCase } from '@/lib/blog/application/get-all-blog-posts.use-case';
 import { FirestoreBlogPostRepository } from '@/lib/blog/infrastructure/persistence/firestore-blog.repository';
 
 
-// Helper function to shuffle an array (Fisher-Yates shuffle)
 function shuffleArray<T>(array: T[]): T[] {
   let currentIndex = array.length,  randomIndex;
   // While there remain elements to shuffle.
