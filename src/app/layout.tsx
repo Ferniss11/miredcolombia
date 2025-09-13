@@ -7,7 +7,6 @@ import LayoutProvider from '@/components/layout/LayoutProvider';
 import { ThemeProvider } from '@/components/ui/theme-provider';
 import { ChatProvider } from '@/context/ChatContext';
 
-
 export const metadata: Metadata = {
   title: 'Mi Red Colombia',
   description: 'Tu guía para vivir, trabajar y conectar en España.',
