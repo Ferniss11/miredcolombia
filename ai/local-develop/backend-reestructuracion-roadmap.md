@@ -209,6 +209,23 @@
         *   Crear una nueva `tool` de Genkit (`knowledgeBaseSearch`) que use el operador `findNeighbors` de Firestore para buscar en la `knowledge_base`.
     *   **Actualizar Agente Premium:** Modificar el `systemPrompt` del agente `valeria_premium` para que priorice el uso de la herramienta `knowledgeBaseSearch` antes de usar su conocimiento general, asegurando respuestas basadas en nuestros documentos.
 
+*   **7.7. Síntesis de Voz (Text-to-Speech):**
+    *   **Objetivo:** Permitir que las respuestas de Valeria puedan ser escuchadas además de leídas.
+    *   **Backend (Genkit Flow):** Crear un nuevo flujo `textToSpeechFlow` que reciba un texto y devuelva una URL de datos de audio (`data:audio/wav;base64,...`).
+        *   Este flujo usará el modelo `gemini-2.5-flash-preview-tts`.
+        *   Instalar y usar la librería `wav` para convertir el audio PCM de Gemini a formato WAV.
+    *   **API:** Crear un nuevo endpoint, por ejemplo `POST /api/audio/tts`, que exponga este flujo.
+    *   **UI:** En el `ChatWidget`, añadir un botón de "Play" junto a cada mensaje de la IA. Al hacer clic, se llamará al nuevo endpoint y se reproducirá el audio resultante en un elemento `<audio>`.
+
+*   **7.8. Reconocimiento de Voz (Speech-to-Text):**
+    *   **Objetivo:** Permitir a los usuarios hablarle a Valeria en lugar de escribir.
+    *   **UI:** Añadir un botón de "Grabar" en la barra de entrada del `ChatWidget`.
+        *   Al pulsarlo, usar la API `MediaRecorder` del navegador para grabar el audio del micrófono del usuario.
+        *   Al detener la grabación, se obtiene un `Blob` de audio.
+    *   **Backend (Genkit Flow):** El flujo `migrationChat` debe ser adaptado para aceptar opcionalmente un `audioDataUri` además del `currentMessage`.
+        *   Si se recibe audio, Genkit lo transcribirá automáticamente a texto antes de procesar el prompt.
+    *   **API y Controller:** Modificar la ruta `POST /api/chat/sessions/[id]/messages` y el `ChatController` para que acepten `FormData` con un campo de texto y un campo de audio opcional.
+
 ---
 
 ## Fase 8: Ecosistema de Partners y Servicios Avanzados - PLANIFICACIÓN
