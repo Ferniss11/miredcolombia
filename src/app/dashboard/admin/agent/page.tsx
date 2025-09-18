@@ -16,6 +16,8 @@ import { getAgentConfigAction, saveAgentConfigAction } from '@/lib/user-actions-
 import { cn } from '@/lib/utils';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import Link from 'next/link';
+import { useAuth } from '@/context/AuthContext';
+
 
 type AgentType = 'global' | 'valeria_premium';
 
@@ -30,23 +32,24 @@ const agentDetails: Record<AgentType, { name: string; description: string }> = {
     }
 };
 
-const ToolCard = ({ icon: Icon, title, description, onConnect }: { icon: React.ElementType, title: string, description: string, onConnect: () => void }) => (
+const ToolCard = ({ icon: Icon, title, description, onConnect, isConnecting, isConnected }: { icon: React.ElementType, title: string, description: string, onConnect: () => void, isConnecting?: boolean, isConnected?: boolean }) => (
     <Card className="flex flex-col text-center items-center justify-start p-4 hover:bg-muted/50 transition-colors">
         <div className="p-3 bg-primary/10 rounded-lg mb-2">
             <Icon className="w-6 h-6 text-primary" />
         </div>
         <h4 className="font-semibold text-sm">{title}</h4>
         <p className="text-xs text-muted-foreground mt-1 flex-grow">{description}</p>
-        <Button variant="outline" size="sm" className="mt-4 w-full" onClick={onConnect}>
-            <Power className="mr-2 h-4 w-4" /> Conectar
+        <Button variant="outline" size="sm" className="mt-4 w-full" onClick={onConnect} disabled={isConnecting || isConnected}>
+            {isConnecting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Power className="mr-2 h-4 w-4" />}
+            {isConnected ? 'Conectado' : (isConnecting ? 'Conectando...' : 'Conectar')}
         </Button>
     </Card>
 );
 
-const AgentConfigForm = ({ agentId, agentType, onToolConnectClick }: { agentId: AgentType, agentType: {name: string, description: string}, onToolConnectClick: () => void }) => {
+const AgentConfigForm = ({ agentId, agentType, onToolConnectClick }: { agentId: AgentType, agentType: {name: string, description: string}, onToolConnectClick: (toolName: 'kb' | 'gcal' | 'email' | 'docs') => void }) => {
     const [config, setConfig] = useState<AgentConfig | null>(null);
     const [isLoading, setIsLoading] = useState(true);
-    const [isSaving, startTransition] = useTransition();
+    const [isSaving, startSavingTransition] = useTransition();
     const { toast } = useToast();
 
     useEffect(() => {
@@ -69,7 +72,7 @@ const AgentConfigForm = ({ agentId, agentType, onToolConnectClick }: { agentId: 
 
     const handleSave = () => {
         if (!config) return;
-        startTransition(async () => {
+        startSavingTransition(async () => {
             const result = await saveAgentConfigAction(agentId, config);
             if (result.error) {
                 toast({ variant: 'destructive', title: 'Error al Guardar', description: result.error });
@@ -137,25 +140,25 @@ const AgentConfigForm = ({ agentId, agentType, onToolConnectClick }: { agentId: 
                                 icon={Database}
                                 title="Base de Conocimiento"
                                 description="Conecta al agente a tus guías y artículos."
-                                onConnect={onToolConnectClick}
+                                onConnect={() => onToolConnectClick('kb')}
                            />
                            <ToolCard 
                                 icon={Calendar}
                                 title="Google Calendar"
                                 description="Permite al agente agendar citas."
-                                onConnect={onToolConnectClick}
+                                onConnect={() => onToolConnectClick('gcal')}
                            />
                            <ToolCard 
                                 icon={Mail}
                                 title="Conexión Email"
                                 description="Autoriza al agente a enviar correos."
-                                onConnect={onToolConnectClick}
+                                onConnect={() => onToolConnectClick('email')}
                            />
                             <ToolCard 
                                 icon={Upload}
                                 title="Análisis de Docs"
                                 description="Sube PDFs para que el agente los analice."
-                                onConnect={onToolConnectClick}
+                                onConnect={() => onToolConnectClick('docs')}
                            />
                         </div>
                     </div>
@@ -172,7 +175,53 @@ const AgentConfigForm = ({ agentId, agentType, onToolConnectClick }: { agentId: 
 }
 
 export default function AgentManagementPage() {
+    const { user } = useAuth();
+    const { toast } = useToast();
     const [isDevModalOpen, setIsDevModalOpen] = useState(false);
+    const [isIndexing, startIndexingTransition] = useTransition();
+
+    const handleToolConnection = (toolName: 'kb' | 'gcal' | 'email' | 'docs') => {
+        if (toolName === 'kb') {
+            startIndexing();
+        } else {
+            setIsDevModalOpen(true);
+        }
+    };
+    
+    const startIndexing = () => {
+        if (!user) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Debes estar autenticado.' });
+            return;
+        }
+
+        startIndexingTransition(async () => {
+            try {
+                toast({ title: 'Iniciando indexación...', description: 'Este proceso puede tardar unos minutos. Te notificaremos cuando termine.' });
+                
+                const token = await user.getIdToken();
+                const response = await fetch('/api/indexing/start', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!response.ok) {
+                    const result = await response.json();
+                    throw new Error(result.error?.message || 'Error desconocido del servidor.');
+                }
+                
+                const result = await response.json();
+                toast({
+                    title: '¡Indexación completada!',
+                    description: `Se han procesado ${result.indexedGuides} guías y ${result.indexedPosts} artículos.`,
+                });
+
+            } catch (error) {
+                const errorMessage = error instanceof Error ? error.message : 'Error inesperado.';
+                toast({ variant: 'destructive', title: 'Error de Indexación', description: errorMessage });
+            }
+        });
+    };
+
 
     return (
         <>
@@ -188,10 +237,10 @@ export default function AgentManagementPage() {
                         <TabsTrigger value="valeria_premium">Valeria Premium</TabsTrigger>
                     </TabsList>
                     <TabsContent value="global">
-                        <AgentConfigForm agentId="global" agentType={agentDetails.global} onToolConnectClick={() => setIsDevModalOpen(true)} />
+                        <AgentConfigForm agentId="global" agentType={agentDetails.global} onToolConnectClick={handleToolConnection} />
                     </TabsContent>
                     <TabsContent value="valeria_premium">
-                        <AgentConfigForm agentId="valeria_premium" agentType={agentDetails.valeria_premium} onToolConnectClick={() => setIsDevModalOpen(true)} />
+                        <AgentConfigForm agentId="valeria_premium" agentType={agentDetails.valeria_premium} onToolConnectClick={handleToolConnection} />
                     </TabsContent>
                 </Tabs>
             </div>
@@ -204,7 +253,7 @@ export default function AgentManagementPage() {
                             Función en Desarrollo
                         </AlertDialogTitle>
                         <AlertDialogDescription>
-                            La conexión de herramientas avanzadas como la base de conocimiento vectorial y la integración con Google Calendar está en nuestra hoja de ruta. ¡Estamos trabajando para traerla pronto!
+                            La conexión de esta herramienta está planificada en nuestra hoja de ruta. ¡Estamos trabajando para traerla pronto!
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -218,3 +267,4 @@ export default function AgentManagementPage() {
         </>
     );
 }
+
