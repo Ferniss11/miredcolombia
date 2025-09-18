@@ -142,7 +142,7 @@
 
 ---
 
-## Fase 6: Contenido Audiovisual y Refinamiento Final - EN PROGRESO
+## Fase 6: Contenido Audiovisual y Refinamiento Final - COMPLETADA
 *   **Estimación:** 6 horas
 *   **Objetivo:** Integrar los nuevos vídeos y realizar los ajustes finales de la plataforma.
 *   **6.1. Integrar Vídeos (✓):**
@@ -157,6 +157,7 @@
 ---
 
 ## Fase 7: Ecosistema de Asistentes IA "Valeria" (Freemium y RAG) - EN PROGRESO
+
 *   **Estimación:** 45 horas
 *   **Objetivo:** Transformar a Valeria en un ecosistema de asistentes IA personalizables, implementando una base de conocimiento vectorial propia (RAG) para ofrecer respuestas precisas y basadas en datos, y habilitando el análisis de documentos en tiempo real para usuarios Premium.
 
@@ -191,21 +192,18 @@
     *   **Lógica del Controlador:** En el `ChatController`, si se recibe un archivo, usar `pdf-parse` para extraer su contenido a texto plano.
     *   **Adaptador de Agente:** Modificar el `GenkitAgentAdapter` para que, si recibe texto de un documento, lo inyecte en un nuevo campo del `prompt` del agente, dándole el contexto necesario para esa respuesta específica.
 
-*   **7.6. Implementación de Base de Conocimiento (RAG - Research-Augmented Generation):**
+*   **7.6. Implementación de Base de Conocimiento (RAG):**
     *   **Objetivo:** Crear una base de conocimiento vectorial permanente a partir de nuestros propios documentos (guías, artículos de blog) para que Valeria pueda dar respuestas precisas y basadas en contenido curado por nosotros.
-    *   **(TAREA MANUAL) Configuración de Consolas (Google Cloud & Firebase):**
-        *   **Activar APIs de Google Cloud:** En la consola de Google Cloud, asegurarse de que las APIs `Cloud Build`, `Cloud Run`, y `Artifact Registry` estén habilitadas para el proyecto.
-        *   **Instalar Extensión "Vector Search":** En la consola de Firebase, ir a la sección "Build > Extensions" e instalar la extensión **Vector Search**.
-        *   **Configurar Extensión:** Durante la instalación, configurar los siguientes parámetros:
-            *   **Cloud Function location:** `europe-west1` (o la región que prefieras).
-            *   **Cloud Storage bucket for embeddings:** Apuntar al bucket por defecto de Firebase Storage.
-            *   **Collection path:** `knowledge_base` (la colección donde se almacenarán los vectores).
-            *   **Vector field path:** `embedding`.
-            *   **Vector dimensions:** `768` (correspondiente al modelo `text-embedding-004`).
-            *   **Distance measure:** `COSINE`.
-    *   **Flujo de Ingestión (Cloud Function):**
-        *   Crear una Cloud Function que se active al subir un archivo (PDF, MD) a una carpeta específica en Firebase Storage (ej. `/knowledge_base_source/`).
-        *   La función leerá el documento, lo dividirá en trozos (chunks), generará un vector (embedding) para cada chunk usando un modelo como `text-embedding-004`, y guardará `{ content, embedding, source }` en la colección `knowledge_base` con metadatos `{ source: 'admin_kb', doc_id: '...' }`.
+    *   **(TAREA MANUAL) Configuración de Infraestructura Vectorial:**
+        *   **Activar APIs de Google Cloud:** Asegurarse de que las APIs `Cloud Build`, `Cloud Run`, y `Artifact Registry` estén habilitadas.
+        *   **Instalar Extensión en Firebase:** En la consola de Firebase, instalar la extensión `firebase/firestore-vector-search`.
+        *   **Configurar Extensión:** Durante la instalación, se te pedirán principalmente dos cosas:
+            1.  **Collection Path:** `knowledge_base` (Aquí es donde guardaremos los textos).
+            2.  **Input field name:** `content` (El nombre del campo que contendrá el texto a vectorizar).
+            La extensión creará automáticamente el campo `embedding` para almacenar el vector y gestionará la Cloud Function por su cuenta.
+    *   **Flujo de Ingestión (Backend):**
+        *   En lugar de una Cloud Function separada, el proceso será: Cuando un admin suba una guía, nuestro backend leerá el documento, lo dividirá en fragmentos (`chunks`), y para cada `chunk`, escribirá un nuevo documento en la colección `knowledge_base` con la estructura `{ content: "texto del fragmento...", metadata: { source: 'admin_kb', doc_id: '...' } }`.
+        *   La extensión de Vector Search detectará estos nuevos documentos y automáticamente llenará el campo `embedding` para cada uno.
     *   **Herramienta de Búsqueda Vectorial (Genkit):**
         *   Crear una nueva `tool` de Genkit (`knowledgeBaseSearch`) que use el operador `findNeighbors` de Firestore para buscar en la `knowledge_base`.
         *   La herramienta aceptará la consulta del usuario y un `sessionId` opcional para poder filtrar por `source = 'user_session'` o `source = 'admin_kb'`.
