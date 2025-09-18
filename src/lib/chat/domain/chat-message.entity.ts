@@ -15,6 +15,7 @@ export interface ChatMessage {
   timestamp: Date;
   usage?: TokenUsage;
   cost?: number;
+  authorId?: string; // UID of the user if the role is 'user'
   authorName?: string; // Used for model messages sent by an admin/owner
   replyTo?: {
     messageId: string;

@@ -3,7 +3,7 @@ import type { User } from '../domain/user.entity';
 import type { UserRepository } from '../domain/user.repository';
 
 type UpdateProfileInput = {
-    name: string;
+    name?: string;
     // Add other updatable basic fields here in the future
 }
 

@@ -12,7 +12,7 @@ import { StartOrResumeChatUseCase } from '../../application/start-or-resume-chat
 import { GetAllChatSessionsUseCase } from '../../application/get-all-chat-sessions.use-case';
 import { GetSessionByIdUseCase } from '../../application/get-session-by-id.use-case';
 import { FirestoreUserRepository } from '@/lib/user/infrastructure/persistence/firestore-user.repository';
-
+import { adminAuth } from '@/lib/firebase/admin-config';
 
 // --- Input Validation Schemas ---
 const StartSessionSchema = z.object({
@@ -22,12 +22,6 @@ const StartSessionSchema = z.object({
   businessId: z.string().optional(),
   userId: z.string().optional(), // Added userId for logged-in users
 });
-
-const PostMessageSchema = z.object({
-  userMessage: z.string().min(1),
-  businessId: z.string().optional(),
-});
-
 
 export class ChatController {
   private startOrResumeChatUseCase: StartOrResumeChatUseCase;
@@ -69,12 +63,11 @@ export class ChatController {
     const json = await req.json();
     const input = StartSessionSchema.parse(json);
 
-    const { session, history, isResumed } = await this.startOrResumeChatUseCase.execute(input);
+    const { session, history } = await this.startOrResumeChatUseCase.execute(input);
 
     return ApiResponse.success({
-        sessionId: session.id,
+        session: { ...session, createdAt: session.createdAt.toISOString() },
         history: history.map(m => ({ ...m, timestamp: m.timestamp.toISOString() })),
-        isResumed,
     });
   }
   
@@ -84,20 +77,50 @@ export class ChatController {
    */
   async postMessage(req: NextRequest, { params }: { params: { sessionId: string } }): Promise<ApiResponse> {
     const { sessionId } = params;
-    const json = await req.json();
-    const { userMessage, businessId } = PostMessageSchema.parse(json);
 
-    const chatHistory = await this.getChatHistoryUseCase.execute({ sessionId, businessId });
+    let userId: string | undefined = undefined;
+    const idToken = req.headers.get('Authorization')?.split('Bearer ')[1];
+    if (idToken && adminAuth) {
+      try {
+        const decodedToken = await adminAuth.verifyIdToken(idToken);
+        userId = decodedToken.uid;
+      } catch (error) {
+        console.log("Could not verify token for message posting (guest user).");
+      }
+    }
+    
+    const contentType = req.headers.get('content-type');
+    let userMessage: string;
+    let documentText: string | undefined = undefined;
+
+    if (contentType?.includes('multipart/form-data')) {
+        const formData = await req.formData();
+        userMessage = formData.get('userMessage') as string;
+        const file = formData.get('document') as File | null;
+        if (file) {
+            const pdf = (await import('pdf-parse')).default;
+            const buffer = Buffer.from(await file.arrayBuffer());
+            const data = await pdf(buffer);
+            documentText = data.text;
+        }
+    } else {
+        const json = await req.json();
+        userMessage = json.userMessage;
+    }
+
+    const businessId = new URL(req.url).searchParams.get('businessId') || undefined;
 
     const output = await this.postMessageUseCase.execute({
       sessionId,
       userMessage,
-      chatHistory,
+      userId,
       businessId,
+      documentText,
     });
 
     return ApiResponse.success(output);
   }
+
 
   /**
    * Handles retrieving all chat sessions for the admin panel.
@@ -105,7 +128,7 @@ export class ChatController {
    */
   async getAllSessions(req: NextRequest): Promise<ApiResponse> {
     const sessions = await this.getAllSessionsUseCase.execute();
-    return ApiResponse.success(sessions);
+    return ApiResponse.success(sessions.map(s => ({ ...s, createdAt: s.createdAt.toISOString() })));
   }
 
   /**
@@ -124,7 +147,7 @@ export class ChatController {
       const messages = await this.getChatHistoryUseCase.execute({ sessionId, businessId });
 
       return ApiResponse.success({
-          session,
+          session: { ...session, createdAt: session.createdAt.toISOString() },
           messages: messages.map(m => ({ ...m, timestamp: m.timestamp.toISOString() })),
       });
   }

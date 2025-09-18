@@ -9,8 +9,9 @@ import type { TokenUsage } from '@/lib/chat-types';
 export type PostMessageInput = {
   sessionId: string;
   userMessage: string;
-  chatHistory: ChatMessage[];
+  userId?: string;
   businessId?: string; // Optional context for business-specific agents
+  documentText?: string; // Added for document analysis
 };
 
 export type PostMessageOutput = {
@@ -28,25 +29,34 @@ export class PostMessageUseCase {
     private readonly agentAdapter: AgentAdapter
   ) {}
 
-  async execute({ sessionId, userMessage, chatHistory, businessId }: PostMessageInput): Promise<PostMessageOutput> {
-    // 1. Persist the user's message
+  async execute({ sessionId, userMessage, userId, businessId, documentText }: PostMessageInput): Promise<PostMessageOutput> {
+    
+    // 1. Get the conversation history. This must be done first.
+    const chatHistory = await this.chatRepository.getHistory(sessionId, businessId);
+
+    // 2. Persist the user's message
     const userMsgEntity: Omit<ChatMessage, 'id'> = {
       sessionId,
       businessId,
       text: userMessage,
       role: 'user',
       timestamp: new Date(),
+      authorId: userId,
     };
     await this.chatRepository.saveMessage(userMsgEntity);
+
+    // Create a new history array that includes the newly saved user message for the AI
+    const updatedChatHistory = [...chatHistory, userMsgEntity as ChatMessage];
     
-    // 2. Invoke the AI agent via the adapter to get a response
+    // 3. Invoke the AI agent via the adapter to get a response
     const { response, usage, cost } = await this.agentAdapter.getCompletion({
-        chatHistory,
+        chatHistory: updatedChatHistory, // Pass the most up-to-date history
         currentMessage: userMessage,
-        businessId
+        businessId,
+        documentText, // Pass document text to the adapter
     });
 
-    // 3. Persist the AI's response
+    // 4. Persist the AI's response
     const aiMsgEntity: Omit<ChatMessage, 'id'> = {
       sessionId,
       businessId,

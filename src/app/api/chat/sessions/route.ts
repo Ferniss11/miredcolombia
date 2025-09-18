@@ -6,9 +6,11 @@ import { NextRequest } from 'next/server';
 const chatController = new ChatController();
 
 // This endpoint is public for starting a new chat session.
+// The use case will handle logic for both guests and logged-in users.
 export const POST = apiHandler((req: NextRequest) =>
   chatController.startSession(req)
 );
+
 
 // This endpoint is protected for admins to get all sessions.
 export const GET = apiHandler((req: NextRequest) =>

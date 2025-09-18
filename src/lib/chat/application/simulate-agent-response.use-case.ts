@@ -1,4 +1,3 @@
-
 // src/lib/chat/application/simulate-agent-response.use-case.ts
 import type { ChatMessage, TokenUsage } from '@/lib/chat-types';
 import type { AgentAdapter } from '../infrastructure/ai/agent.adapter';

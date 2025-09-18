@@ -1,4 +1,3 @@
-
 // src/lib/chat/infrastructure/ai/genkit-agent.adapter.ts
 import type { AgentAdapter } from './agent.adapter';
 import type { ChatMessage } from '../../domain/chat-message.entity';
