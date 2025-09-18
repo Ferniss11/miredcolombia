@@ -158,7 +158,7 @@
 
 ## Fase 7: Ecosistema de Asistentes IA "Valeria" (Freemium y RAG) - EN PROGRESO
 *   **Estimación:** 45 horas
-*   **Objetivo:** Transformar a Valeria en un ecosistema de asistentes IA personalizables, simplificando la oferta a un modelo Freemium y sentando las bases para una base de conocimiento vectorial propia (RAG).
+*   **Objetivo:** Transformar a Valeria en un ecosistema de asistentes IA personalizables, implementando una base de conocimiento vectorial propia (RAG) para ofrecer respuestas precisas y basadas en datos, y habilitando el análisis de documentos en tiempo real para usuarios Premium.
 
 *   **7.1. Refactorización de la Oferta y Comunicación (Frontend) (✓ COMPLETADA):**
     *   **Simplificar Planes:** Actualizar la UI en `/valeria` para reflejar un modelo de dos niveles: `Gratis` y `Premium` (€4,99/mes), eliminando el plan PRO. (✓)
@@ -185,14 +185,15 @@
     *   **Backend:** Crear un nuevo `ChatController` o endpoint que reciba el nombre del agente a simular y el contexto adicional, y devuelva no solo la respuesta, sino también los metadatos de depuración.
 
 *   **7.5. Análisis de Documentos en Sesión (Valeria Premium):**
-    *   **Objetivo:** Permitir a los usuarios Premium subir un documento (PDF) y conversar con la IA sobre su contenido.
-    *   **UI:** Añadir un botón para subir archivos (`<input type="file">`) en la interfaz de chat de `/dashboard/valeria`.
-    *   **Backend (API):** Adaptar la ruta `POST /api/chat/sessions/[id]/messages` para que acepte `FormData` (texto y archivo).
-    *   **Backend (Lógica):** Instalar `pdf-parse`. En el `ChatController` o en el `PostMessageUseCase`, al recibir un archivo, usar la librería para extraer su contenido a texto plano.
-    *   **Backend (Adaptador y Prompt):** Modificar el `GenkitAgentAdapter` para que, si recibe texto de un documento, lo inyecte en un nuevo campo `documentText` del `prompt` del agente `valeria_premium`, dándole a la IA el contexto necesario para responder preguntas sobre ese documento.
+    *   **Objetivo:** Permitir a los usuarios Premium subir un documento (PDF) y conversar con la IA sobre su contenido. Este proceso es *stateless* a nivel de persistencia de vectores: el documento se procesa en cada petición.
+    *   **UI:** Añadir un botón para subir archivos (`<input type="file">`) en la interfaz de chat del dashboard de Valeria (`/dashboard/valeria`).
+    *   **API:** Adaptar la ruta `POST /api/chat/sessions/[id]/messages` para que acepte `FormData` (texto y archivo opcional).
+    *   **Lógica del Controlador:** En el `ChatController`, si se recibe un archivo, usar `pdf-parse` para extraer su contenido a texto plano.
+    *   **Adaptador de Agente:** Modificar el `GenkitAgentAdapter` para que, si recibe texto de un documento, lo inyecte en un nuevo campo del `prompt` del agente, dándole el contexto necesario para esa respuesta específica.
 
 *   **7.6. Implementación de Base de Conocimiento (RAG - Research-Augmented Generation):**
-    *   **(Tarea Manual): Configuración de Consolas (Google Cloud & Firebase):**
+    *   **Objetivo:** Crear una base de conocimiento vectorial permanente a partir de nuestros propios documentos (guías, artículos de blog) para que Valeria pueda dar respuestas precisas y basadas en contenido curado por nosotros.
+    *   **(TAREA MANUAL) Configuración de Consolas (Google Cloud & Firebase):**
         *   **Activar APIs de Google Cloud:** En la consola de Google Cloud, asegurarse de que las APIs `Cloud Build`, `Cloud Run`, y `Artifact Registry` estén habilitadas para el proyecto.
         *   **Instalar Extensión "Vector Search":** En la consola de Firebase, ir a la sección "Build > Extensions" e instalar la extensión **Vector Search**.
         *   **Configurar Extensión:** Durante la instalación, configurar los siguientes parámetros:
@@ -203,10 +204,11 @@
             *   **Vector dimensions:** `768` (correspondiente al modelo `text-embedding-004`).
             *   **Distance measure:** `COSINE`.
     *   **Flujo de Ingestión (Cloud Function):**
-        *   Crear una Cloud Function que se active al subir un archivo (PDF, MD) a una carpeta específica en Firebase Storage.
-        *   La función leerá el documento, lo dividirá en trozos (chunks), generará un vector (embedding) para cada chunk usando un modelo como `text-embedding-004`, y guardará `{ content, embedding, source }` en la colección `knowledge_base`.
+        *   Crear una Cloud Function que se active al subir un archivo (PDF, MD) a una carpeta específica en Firebase Storage (ej. `/knowledge_base_source/`).
+        *   La función leerá el documento, lo dividirá en trozos (chunks), generará un vector (embedding) para cada chunk usando un modelo como `text-embedding-004`, y guardará `{ content, embedding, source }` en la colección `knowledge_base` con metadatos `{ source: 'admin_kb', doc_id: '...' }`.
     *   **Herramienta de Búsqueda Vectorial (Genkit):**
         *   Crear una nueva `tool` de Genkit (`knowledgeBaseSearch`) que use el operador `findNeighbors` de Firestore para buscar en la `knowledge_base`.
+        *   La herramienta aceptará la consulta del usuario y un `sessionId` opcional para poder filtrar por `source = 'user_session'` o `source = 'admin_kb'`.
     *   **Actualizar Agente Premium:** Modificar el `systemPrompt` del agente `valeria_premium` para que priorice el uso de la herramienta `knowledgeBaseSearch` antes de usar su conocimiento general, asegurando respuestas basadas en nuestros documentos.
 
 *   **7.7. Síntesis de Voz (Text-to-Speech):**
