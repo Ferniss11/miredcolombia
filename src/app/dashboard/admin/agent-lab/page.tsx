@@ -14,6 +14,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import { Label } from '@/components/ui/label';
+import { Progress } from '@/components/ui/progress';
 
 type AgentId = 'global' | 'valeria_premium' | 'business';
 
@@ -35,6 +36,7 @@ export default function AgentLabPage() {
   const [messages, setMessages] = useState<SimulatedMessage[]>([]);
   const [currentMessage, setCurrentMessage] = useState('');
   const [contextFile, setContextFile] = useState<File | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -44,12 +46,24 @@ export default function AgentLabPage() {
         scrollAreaRef.current.scrollTo({ top: scrollAreaRef.current.scrollHeight, behavior: 'smooth' });
     }
   }, [messages]);
+  
+   useEffect(() => {
+    if (isResponding && uploadProgress < 90) {
+      const timer = setTimeout(() => setUploadProgress(p => p + 10), 100);
+      return () => clearTimeout(timer);
+    }
+    if(!isResponding) {
+        setUploadProgress(0);
+    }
+  }, [isResponding, uploadProgress]);
+
 
   const handleSendMessage = async (e?: FormEvent) => {
     e?.preventDefault();
     if (!currentMessage.trim() || isResponding || !user) return;
     
     setIsResponding(true);
+    setUploadProgress(10);
     const userMessageText = currentMessage;
     setCurrentMessage('');
 
@@ -76,6 +90,8 @@ export default function AgentLabPage() {
             headers: { Authorization: `Bearer ${idToken}` },
             body: formData,
         });
+
+        setUploadProgress(100);
 
         const result = await response.json();
         if (!response.ok) {
@@ -192,6 +208,14 @@ export default function AgentLabPage() {
                             )}
                         </div>
                      </ScrollArea>
+                      {isResponding && (
+                        <div className="p-4 pt-0">
+                          <Progress value={uploadProgress} className="h-1 w-full" />
+                          <p className="text-xs text-muted-foreground text-center mt-1">
+                            {uploadProgress < 100 ? 'Procesando documento...' : 'Generando respuesta...'}
+                          </p>
+                        </div>
+                      )}
                      <div className="p-4 border-t">
                         <form onSubmit={handleSendMessage} className="flex items-center gap-2">
                             <Input 

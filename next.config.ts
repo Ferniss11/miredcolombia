@@ -40,19 +40,13 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'maps.googleapis.com',
-        port: '',
-        pathname: '/**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'lh3.googleusercontent.com',
+        hostname: '**.googleusercontent.com',
         port: '',
         pathname: '/**',
       }
     ],
   },
-  serverExternalPackages: ['firebase-admin', 'teeny-request', 'google-auth-library'],
+  serverExternalPackages: ['firebase-admin', 'teeny-request', 'google-auth-library', 'pdf-parse'],
 };
 
 export default nextConfig;
