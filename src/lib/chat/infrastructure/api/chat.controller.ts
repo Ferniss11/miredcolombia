@@ -3,7 +3,7 @@ import { NextRequest } from 'next/server';
 import { z } from 'zod';
 import { ApiResponse } from '@/lib/platform/api/api-response';
 import { FirestoreChatRepository } from '../persistence/firestore-chat.repository';
-import { GenkitAgentAdapter } from '../ai/agent.adapter';
+import { GenkitAgentAdapter } from '../infrastructure/ai/agent.adapter';
 import { StartChatSessionUseCase } from '../../application/start-chat-session.use-case';
 import { PostMessageUseCase } from '../../application/post-message.use-case';
 import { GetChatHistoryUseCase } from '../../application/get-chat-history.use-case';
@@ -84,10 +84,10 @@ export type PostMessagePayload = {
     userMessage: string;
     userId?: string;
     businessId?: string;
-    sessionId?: string; // Add sessionId to the payload
     document?: File | null;
     isLabMode?: boolean;
     agentId?: 'global' | 'valeria_premium' | 'business';
+    sessionId: string;
 };
 
 
@@ -130,11 +130,9 @@ export class ChatController {
     });
   }
   
-  async postMessage(payload: PostMessagePayload, { params }: { params: { sessionId?: string } }): Promise<ApiResponse> {
-    const sessionIdFromParams = params?.sessionId;
-    let { userMessage, userId, businessId, document, isLabMode, agentId, sessionId: sessionIdFromPayload } = payload;
+  async postMessage(payload: PostMessagePayload, { params }: { params: {} }): Promise<ApiResponse> {
+    let { userMessage, userId, businessId, document, isLabMode, agentId, sessionId } = payload;
     
-    const sessionId = sessionIdFromParams || sessionIdFromPayload;
     if (!sessionId) {
         return ApiResponse.badRequest("Session ID is missing.");
     }
@@ -152,15 +150,6 @@ export class ChatController {
     
     // --- LAB MODE LOGIC ---
     if (isLabMode && agentId) {
-        const session = await this.getSessionByIdUseCase.execute({ sessionId });
-        if (!session) {
-            await new StartChatSessionUseCase(new FirestoreChatRepository()).execute({
-                userName: 'Lab User',
-                userPhone: '000000000',
-                userId: userId,
-            });
-        }
-        
         const history = await this.getChatHistoryUseCase.execute({ sessionId });
         const output = await this.simulateAgentResponseUseCase.execute({
             agentId,
