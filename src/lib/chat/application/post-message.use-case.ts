@@ -1,3 +1,4 @@
+
 // src/lib/chat/application/post-message.use-case.ts
 import type { ChatMessage, ChatMessageRole } from '../domain/chat-message.entity';
 import type { ChatRepository } from '../domain/chat.repository';
@@ -11,7 +12,7 @@ export type PostMessageInput = {
   userMessage: string;
   userId?: string;
   businessId?: string; // Optional context for business-specific agents
-  documentText?: string; // Added for document analysis
+  // documentText is no longer needed here. The agent will use the tool.
 };
 
 export type PostMessageOutput = {
@@ -29,7 +30,7 @@ export class PostMessageUseCase {
     private readonly agentAdapter: AgentAdapter
   ) {}
 
-  async execute({ sessionId, userMessage, userId, businessId, documentText }: PostMessageInput): Promise<PostMessageOutput> {
+  async execute({ sessionId, userMessage, userId, businessId }: PostMessageInput): Promise<PostMessageOutput> {
     
     // 1. Get the conversation history. This must be done first.
     const chatHistory = await this.chatRepository.getHistory(sessionId, businessId);
@@ -53,7 +54,7 @@ export class PostMessageUseCase {
         chatHistory: updatedChatHistory, // Pass the most up-to-date history
         currentMessage: userMessage,
         businessId,
-        documentText, // Pass document text to the adapter
+        sessionId, // Pass the sessionId to the adapter for context
     });
 
     // 4. Persist the AI's response

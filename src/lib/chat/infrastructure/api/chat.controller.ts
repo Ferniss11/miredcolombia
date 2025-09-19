@@ -1,3 +1,4 @@
+
 // src/lib/chat/infrastructure/api/chat.controller.ts
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
@@ -12,8 +13,63 @@ import { StartOrResumeChatUseCase } from '../../application/start-or-resume-chat
 import { GetAllChatSessionsUseCase } from '../../application/get-all-chat-sessions.use-case';
 import { GetSessionByIdUseCase } from '../../application/get-session-by-id.use-case';
 import { FirestoreUserRepository } from '@/lib/user/infrastructure/persistence/firestore-user.repository';
-import { adminAuth } from '@/lib/firebase/admin-config';
+import { adminAuth, adminDb } from '@/lib/firebase/admin-config';
 import pdf from 'pdf-parse';
+
+
+// --- Helper function for session document ingestion ---
+const chunkText = (text: string, chunkSize = 1500, overlap = 200): string[] => {
+    const chunks: string[] = [];
+    if (!text) return chunks;
+    let i = 0;
+    while (i < text.length) {
+        const end = Math.min(i + chunkSize, text.length);
+        chunks.push(text.slice(i, end));
+        i += chunkSize - overlap;
+    }
+    return chunks;
+};
+
+async function ingestSessionDocument(file: File, sessionId: string, userId: string) {
+    if (!adminDb) {
+        throw new Error('Firestore not initialized for document ingestion.');
+    }
+    
+    let textContent = '';
+    try {
+        const buffer = Buffer.from(await file.arrayBuffer());
+        const data = await pdf(buffer);
+        textContent = data.text.replace(/\s+/g, ' ').trim();
+    } catch (e) {
+        console.error(`[ChatController] Failed to parse PDF for session ${sessionId}`, e);
+        throw new Error('Could not read the provided PDF file.');
+    }
+    
+    if (!textContent) {
+        throw new Error('The uploaded document appears to be empty.');
+    }
+
+    const chunks = chunkText(textContent);
+    const batch = adminDb.batch();
+    const collectionRef = adminDb.collection('knowledge_base');
+
+    chunks.forEach((chunk, index) => {
+        const docRef = collectionRef.doc(); // Auto-generate ID
+        batch.set(docRef, {
+            content: chunk,
+            metadata: {
+                source: 'user_session',
+                sessionId,
+                userId,
+                doc_title: file.name,
+                chunk_number: index + 1,
+            }
+        });
+    });
+
+    await batch.commit();
+    console.log(`[ChatController] Indexed ${chunks.length} chunks for session ${sessionId}.`);
+}
 
 
 // --- Input Validation Schemas ---
@@ -91,14 +147,20 @@ export class ChatController {
     let userMessage: string;
     let documentText: string | undefined = undefined;
 
+    // --- Vectorization on-the-fly logic ---
     if (contentType?.includes('multipart/form-data')) {
         const formData = await req.formData();
         userMessage = formData.get('userMessage') as string;
         const file = formData.get('document') as File | null;
-        if (file) {
-            const buffer = Buffer.from(await file.arrayBuffer());
-            const data = await pdf(buffer);
-            documentText = data.text.replace(/\s+/g, ' ').trim();
+        
+        if (file && userId) {
+            // This is the core logic: Ingest the document into the vector store for this session
+            await ingestSessionDocument(file, sessionId, userId);
+            
+            // If the user didn't type a message, create one for them.
+            if (!userMessage) {
+                userMessage = `Acabo de subir el documento "${file.name}". ¿Puedes resumirlo por mí?`;
+            }
         }
     } else {
         const json = await req.json();
@@ -112,7 +174,7 @@ export class ChatController {
       userMessage,
       userId,
       businessId,
-      documentText,
+      // We no longer pass documentText directly. The agent will find it via the search tool.
     });
 
     return ApiResponse.success(output);

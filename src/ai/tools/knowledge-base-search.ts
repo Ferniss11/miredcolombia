@@ -3,6 +3,8 @@
 
 /**
  * @fileOverview Defines a Genkit tool for searching the knowledge base vector store.
+ * This tool is now context-aware and can search both the admin's knowledge base
+ * and documents uploaded during a specific user session.
  */
 import { ai } from '@/ai/genkit';
 import { adminDb } from '@/lib/firebase/admin-config';
@@ -16,16 +18,17 @@ const KnowledgeSearchResultSchema = z.object({
 export const knowledgeBaseSearch = ai.defineTool(
   {
     name: 'knowledgeBaseSearch',
-    description: 'Searches the knowledge base for information relevant to a user\'s query about immigration to Spain. This should be the first step for answering any user question.',
+    description: 'Searches the knowledge base for information relevant to a user\'s query. This should be the first step for answering any user question. It can search the general knowledge base and/or documents specific to the current user session.',
     inputSchema: z.object({
       query: z.string().describe('The user\'s question or topic to search for.'),
+      sessionId: z.string().optional().describe('The ID of the current chat session. If provided, the search will also include documents uploaded by the user in this session.'),
     }),
     outputSchema: z.object({
       results: z.array(KnowledgeSearchResultSchema).describe('A list of relevant knowledge base chunks.'),
     }),
   },
-  async ({ query }) => {
-    console.log(`[Knowledge Base] Searching for: "${query}"`);
+  async ({ query, sessionId }) => {
+    console.log(`[Knowledge Base] Searching for: "${query}" (Session: ${sessionId || 'None'})`);
 
     if (!adminDb) {
       console.error("[Knowledge Base] Firestore not initialized.");
@@ -34,10 +37,20 @@ export const knowledgeBaseSearch = ai.defineTool(
 
     try {
       // The Firebase Vector Search extension makes documents searchable via the findNeighbors operator.
+      // We can add a filter to search within a specific context (admin_kb or user_session).
+      
+      const filters: any[] = [{ field: 'metadata.source', op: '==', value: 'admin_kb' }];
+      if (sessionId) {
+        filters.push({ field: 'metadata.sessionId', op: '==', value: sessionId });
+      }
+
       const results = await adminDb.collection('knowledge_base').findNeighbors('embedding', {
         query: query,
-        limit: 5, // Retrieve the top 5 most relevant chunks
+        limit: 5,
         distanceMeasure: 'COSINE',
+        // If a sessionId is provided, search in BOTH admin docs AND session docs.
+        // If not, just search admin docs.
+        filter: sessionId ? { or: filters } : { and: filters }
       });
 
       if (!results || results.length === 0) {
@@ -60,8 +73,6 @@ export const knowledgeBaseSearch = ai.defineTool(
       console.error("[Knowledge Base] Error performing vector search:", error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       
-      // It's better to return an empty result than to throw, so the AI can handle it gracefully.
-      // We can add more robust error logging/reporting here in a real application.
       return { results: [] };
     }
   }

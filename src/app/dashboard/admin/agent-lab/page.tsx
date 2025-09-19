@@ -14,12 +14,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import { Label } from '@/components/ui/label';
-import { Progress } from '@/components/ui/progress';
-
-type AgentId = 'global' | 'valeria_premium' | 'business';
-
-const AGENT_AVATAR_URL = "https://firebasestorage.googleapis.com/v0/b/colombia-en-esp.firebasestorage.app/o/web%2FImagen%20de%20WhatsApp%202025-08-09%20a%20las%2018.20.39_3c2b6161.jpg?alt=media&token=41ebe34a-f846-41fc-937f-4141f1240ee8";
-
+import { v4 as uuidv4 } from 'uuid'; // For generating session ID
 
 interface SimulatedMessage {
   id: string;
@@ -28,15 +23,25 @@ interface SimulatedMessage {
   timestamp: string;
 }
 
+interface ResponseMetadata {
+    inputTokens: number;
+    outputTokens: number;
+    totalTokens: number;
+}
+
 export default function AgentLabPage() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [selectedAgent, setSelectedAgent] = useState<AgentId>('global');
+  const [selectedAgent, setSelectedAgent] = useState<'global' | 'valeria_premium'>('global');
   const [isResponding, setIsResponding] = useState(false);
   const [messages, setMessages] = useState<SimulatedMessage[]>([]);
   const [currentMessage, setCurrentMessage] = useState('');
   const [contextFile, setContextFile] = useState<File | null>(null);
-  const [uploadProgress, setUploadProgress] = useState(0);
+  const [lastResponseMeta, setLastResponseMeta] = useState<ResponseMetadata | null>(null);
+  
+  // Create a unique session ID for this lab instance
+  const [sessionId] = useState(uuidv4());
+  
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -46,24 +51,13 @@ export default function AgentLabPage() {
         scrollAreaRef.current.scrollTo({ top: scrollAreaRef.current.scrollHeight, behavior: 'smooth' });
     }
   }, [messages]);
-  
-   useEffect(() => {
-    if (isResponding && uploadProgress < 90) {
-      const timer = setTimeout(() => setUploadProgress(p => p + 10), 100);
-      return () => clearTimeout(timer);
-    }
-    if(!isResponding) {
-        setUploadProgress(0);
-    }
-  }, [isResponding, uploadProgress]);
-
 
   const handleSendMessage = async (e?: FormEvent) => {
     e?.preventDefault();
     if (!currentMessage.trim() || isResponding || !user) return;
     
     setIsResponding(true);
-    setUploadProgress(10);
+    setLastResponseMeta(null);
     const userMessageText = currentMessage;
     setCurrentMessage('');
 
@@ -81,8 +75,15 @@ export default function AgentLabPage() {
         formData.append('agentId', selectedAgent);
         formData.append('currentMessage', userMessageText);
         formData.append('chatHistory', JSON.stringify(messages));
+        formData.append('userId', user.uid); // Pass user ID
+        formData.append('sessionId', sessionId); // Pass session ID
+        
+        // The document is only sent ONCE with the message that asks about it.
+        // It's processed and indexed server-side. Subsequent messages don't need it.
         if (contextFile) {
             formData.append('contextFile', contextFile);
+            setContextFile(null); // Clear the file after sending
+            if(fileInputRef.current) fileInputRef.current.value = '';
         }
 
         const response = await fetch('/api/agent-lab/chat', {
@@ -90,9 +91,7 @@ export default function AgentLabPage() {
             headers: { Authorization: `Bearer ${idToken}` },
             body: formData,
         });
-
-        setUploadProgress(100);
-
+        
         const result = await response.json();
         if (!response.ok) {
             throw new Error(result.error?.message || 'Error del servidor');
@@ -101,16 +100,17 @@ export default function AgentLabPage() {
         const aiMessage: SimulatedMessage = {
             id: `model-${Date.now()}`,
             role: 'model',
-            text: result.response, // The actual text response is now nested
+            text: result.response,
             timestamp: new Date().toISOString(),
         };
 
         setMessages(prev => [...prev, aiMessage]);
+        setLastResponseMeta(result.usage);
 
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
         toast({ variant: 'destructive', title: 'Error en la Simulación', description: errorMessage });
-        setMessages(prev => prev.filter(m => m.id !== userMessage.id)); // Rollback optimistic update
+        setMessages(prev => prev.filter(m => m.id !== userMessage.id));
     } finally {
         setIsResponding(false);
     }
@@ -127,7 +127,9 @@ export default function AgentLabPage() {
     setMessages([]);
     setCurrentMessage('');
     setContextFile(null);
+    setLastResponseMeta(null);
     if(fileInputRef.current) fileInputRef.current.value = '';
+    // A new session ID is generated on page load, so this effectively resets the context.
   };
   
    const formatTimestamp = (isoString?: string) => {
@@ -172,16 +174,14 @@ export default function AgentLabPage() {
                         <div className="space-y-4">
                              {messages.length === 0 && (
                                 <div className="text-center py-16 text-muted-foreground">
-                                    <p>La conversación está vacía. Selecciona un agente y envía un mensaje para empezar.</p>
+                                    <p>Selecciona un agente y envía un mensaje para empezar.</p>
                                 </div>
                             )}
                             {messages.map((msg) => {
                                 const isUser = msg.role === 'user';
                                 const alignment = isUser ? 'justify-end' : 'justify-start';
                                 const bgColor = isUser ? 'bg-primary text-primary-foreground' : 'bg-muted';
-                                const avatar = isUser ? <User size={18} /> : <Bot size={18}/>;
-
-                                 return (
+                                return (
                                     <div key={msg.id} className={cn("group flex items-end gap-2 w-full", alignment)}>
                                     {!isUser && <Avatar className="w-8 h-8 flex-shrink-0"><AvatarFallback className="bg-primary/10"><Bot size={18} /></AvatarFallback></Avatar>}
                                         <div className="flex flex-col gap-1 w-full max-w-lg">
@@ -208,14 +208,14 @@ export default function AgentLabPage() {
                             )}
                         </div>
                      </ScrollArea>
-                      {isResponding && contextFile && (
-                        <div className="p-4 pt-0">
-                          <Progress value={uploadProgress} className="h-1 w-full" />
-                          <p className="text-xs text-muted-foreground text-center mt-1">
-                            {uploadProgress < 100 ? 'Procesando documento...' : 'Generando respuesta...'}
-                          </p>
+                     {contextFile && (
+                        <div className="p-4 border-t flex items-center justify-between text-sm bg-muted/50">
+                            <p className="truncate flex-1 flex items-center gap-2"><Paperclip className="h-4 w-4" />{contextFile.name}</p>
+                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => { setContextFile(null); if(fileInputRef.current) fileInputRef.current.value = ''; }}>
+                                <X className="h-4 w-4"/>
+                            </Button>
                         </div>
-                      )}
+                     )}
                      <div className="p-4 border-t">
                         <form onSubmit={handleSendMessage} className="flex items-center gap-2">
                             <Input 
@@ -225,9 +225,21 @@ export default function AgentLabPage() {
                                 onKeyDown={handleKeyDown}
                                 disabled={isResponding}
                             />
+                             {selectedAgent === 'valeria_premium' && (
+                                <Button type="button" variant="ghost" size="icon" onClick={() => fileInputRef.current?.click()} disabled={isResponding}>
+                                    <Paperclip className="h-5 w-5"/>
+                                </Button>
+                             )}
                             <Button type="submit" size="icon" disabled={isResponding || !currentMessage.trim()}>
                                 <Send className="h-4 w-4" />
                             </Button>
+                             <Input 
+                                type="file" 
+                                className="hidden" 
+                                ref={fileInputRef} 
+                                onChange={handleFileChange}
+                                accept=".pdf"
+                            />
                         </form>
                     </div>
                 </CardContent>
@@ -243,45 +255,17 @@ export default function AgentLabPage() {
                 <CardContent className="space-y-4">
                      <div>
                         <Label htmlFor="agent-selector">Seleccionar Agente a Probar</Label>
-                        <Select value={selectedAgent} onValueChange={(value: AgentId) => setSelectedAgent(value)} disabled={messages.length > 0}>
+                        <Select value={selectedAgent} onValueChange={(value: 'global' | 'valeria_premium') => setSelectedAgent(value)} disabled={messages.length > 0}>
                             <SelectTrigger id="agent-selector">
                                 <SelectValue placeholder="Selecciona un agente" />
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="global">Agente Global (Gratis)</SelectItem>
                                 <SelectItem value="valeria_premium">Valeria Premium</SelectItem>
-                                <SelectItem value="business" disabled>Agente de Negocio (Próximamente)</SelectItem>
                             </SelectContent>
                         </Select>
                         {messages.length > 0 && <p className="text-xs text-muted-foreground mt-2">Reinicia la sesión para cambiar de agente.</p>}
                     </div>
-                    {selectedAgent === 'valeria_premium' && (
-                        <div>
-                             <Label>Documento de Contexto</Label>
-                            {contextFile ? (
-                                <div className="flex items-center justify-between p-2 border rounded-md bg-muted">
-                                    <p className="text-sm truncate flex-1 flex items-center gap-2"><Paperclip className="h-4 w-4" />{contextFile.name}</p>
-                                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => { setContextFile(null); if(fileInputRef.current) fileInputRef.current.value = ''; }}>
-                                        <X className="h-4 w-4"/>
-                                    </Button>
-                                </div>
-                            ) : (
-                                <Button variant="outline" className="w-full" onClick={() => fileInputRef.current?.click()}>
-                                    <FileUp className="mr-2 h-4 w-4"/>
-                                    Adjuntar Documento (PDF)
-                                </Button>
-                            )}
-                             <Input 
-                                type="file" 
-                                className="hidden" 
-                                ref={fileInputRef} 
-                                onChange={handleFileChange}
-                                accept=".pdf"
-                                disabled={messages.length > 0}
-                            />
-                             {messages.length > 0 && <p className="text-xs text-muted-foreground mt-2">Reinicia la sesión para cambiar el documento.</p>}
-                        </div>
-                    )}
                 </CardContent>
             </Card>
             <Card>
@@ -290,9 +274,18 @@ export default function AgentLabPage() {
                     <CardDescription>Información de depuración de la última respuesta.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                     <div className="text-center py-8 text-muted-foreground">
-                        (Próximamente)
-                    </div>
+                     {lastResponseMeta ? (
+                        <div className="space-y-2 text-sm">
+                            <div className="flex justify-between"><span>Tokens de Entrada:</span> <span className="font-mono">{lastResponseMeta.inputTokens}</span></div>
+                            <div className="flex justify-between"><span>Tokens de Salida:</span> <span className="font-mono">{lastResponseMeta.outputTokens}</span></div>
+                            <Separator />
+                            <div className="flex justify-between font-bold"><span>Tokens Totales:</span> <span className="font-mono">{lastResponseMeta.totalTokens}</span></div>
+                        </div>
+                     ) : (
+                         <div className="text-center py-8 text-muted-foreground">
+                            (Esperando una respuesta para mostrar metadatos)
+                        </div>
+                     )}
                 </CardContent>
             </Card>
         </div>

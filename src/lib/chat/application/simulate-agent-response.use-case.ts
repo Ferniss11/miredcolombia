@@ -1,3 +1,4 @@
+
 // src/lib/chat/application/simulate-agent-response.use-case.ts
 import type { ChatMessage, TokenUsage } from '@/lib/chat-types';
 import type { AgentAdapter } from '../infrastructure/ai/agent.adapter';
@@ -7,7 +8,7 @@ export type SimulateAgentInput = {
   chatHistory: ChatMessage[];
   currentMessage: string;
   businessId?: string; // For business agent simulation
-  documentText?: string; // For premium agent document analysis
+  sessionId: string; // Session ID is now mandatory for context
 };
 
 export type SimulateAgentOutput = {
@@ -29,9 +30,11 @@ export class SimulateAgentResponseUseCase {
         currentMessage: input.currentMessage,
         businessId: input.agentId === 'business' ? input.businessId : undefined,
         agentId: input.agentId,
-        documentText: input.documentText, // Pass document text to the adapter
+        sessionId: input.sessionId, // Pass session ID to the adapter
     });
     
+    // In a real scenario, we might want to track the cost of lab simulations.
+    // For now, we just return the response and usage stats.
     return { response, usage };
   }
 }

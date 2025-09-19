@@ -1,3 +1,4 @@
+
 // src/lib/chat/infrastructure/ai/genkit-agent.adapter.ts
 import type { AgentAdapter } from './agent.adapter';
 import type { ChatMessage } from '../../domain/chat-message.entity';
@@ -60,8 +61,8 @@ export class GenkitAgentAdapter implements AgentAdapter {
     chatHistory: ChatMessage[];
     currentMessage: string;
     businessId?: string;
+    sessionId?: string; // Session ID is now received
     agentId?: 'global' | 'valeria_premium' | 'business';
-    documentText?: string; // Added for document analysis
   }): Promise<{ response: string; usage: TokenUsage; cost: number; }> {
     
     const chatHistoryForAI = input.chatHistory.map(m => ({
@@ -83,8 +84,7 @@ export class GenkitAgentAdapter implements AgentAdapter {
             systemPrompt: agentConfig.systemPrompt || DEFAULT_GLOBAL_PROMPT,
             chatHistory: chatHistoryForAI,
             currentMessage: input.currentMessage,
-            // Pass document text if available
-            ...(input.documentText && { documentText: input.documentText }),
+            sessionId: input.sessionId, // Pass sessionId to the flow
         });
 
         const usage = aiResponse.usage || { inputTokens: 0, outputTokens: 0, totalTokens: 0 };
@@ -125,7 +125,7 @@ export class GenkitAgentAdapter implements AgentAdapter {
         systemPrompt: agentConfig.systemPrompt || DEFAULT_GLOBAL_PROMPT,
         chatHistory: chatHistoryForAI,
         currentMessage: input.currentMessage,
-        ...(input.documentText && { documentText: input.documentText }),
+        sessionId: input.sessionId, // Pass sessionId to the flow
       });
       
       const usage = aiResponse.usage || { inputTokens: 0, outputTokens: 0, totalTokens: 0 };

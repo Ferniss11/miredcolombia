@@ -1,3 +1,4 @@
+
 // src/lib/chat/infrastructure/api/agent-lab.controller.ts
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
@@ -5,9 +6,63 @@ import { ApiResponse } from '@/lib/platform/api/api-response';
 import { GenkitAgentAdapter } from '../ai/genkit-agent.adapter';
 import { SimulateAgentResponseUseCase } from '../../application/simulate-agent-response.use-case';
 import { ChatMessageSchema } from '@/lib/chat-types';
-import pdf from 'pdf-parse';
+import { adminDb } from '@/lib/firebase/admin-config';
 
-// The schema is no longer needed as we are processing FormData directly.
+// Helper function to handle document ingestion for the lab session
+const chunkText = (text: string, chunkSize = 1500, overlap = 200): string[] => {
+    const chunks: string[] = [];
+    if (!text) return chunks;
+    let i = 0;
+    while (i < text.length) {
+        const end = Math.min(i + chunkSize, text.length);
+        chunks.push(text.slice(i, end));
+        i += chunkSize - overlap;
+    }
+    return chunks;
+};
+
+async function ingestLabDocument(file: File, sessionId: string, userId: string) {
+    if (!adminDb) {
+        throw new Error('Firestore not initialized for document ingestion.');
+    }
+
+    let textContent = '';
+    try {
+        const pdfParse = (await import('pdf-parse')).default;
+        const buffer = Buffer.from(await file.arrayBuffer());
+        const data = await pdfParse(buffer);
+        textContent = data.text.replace(/\s+/g, ' ').trim();
+    } catch (e) {
+        console.error(`[AgentLab] Failed to parse PDF for lab session ${sessionId}`, e);
+        throw new Error('Could not read the provided PDF file.');
+    }
+
+    if (!textContent) {
+        throw new Error('The uploaded document appears to be empty.');
+    }
+
+    const chunks = chunkText(textContent);
+    const batch = adminDb.batch();
+    const collectionRef = adminDb.collection('knowledge_base');
+
+    chunks.forEach((chunk, index) => {
+        const docRef = collectionRef.doc();
+        batch.set(docRef, {
+            content: chunk,
+            metadata: {
+                source: 'user_session', // We use 'user_session' to simulate the user flow
+                sessionId,
+                userId,
+                doc_title: file.name,
+                chunk_number: index + 1,
+            }
+        });
+    });
+
+    await batch.commit();
+    console.log(`[AgentLab] Indexed ${chunks.length} chunks for lab session ${sessionId}.`);
+}
+
 
 export class AgentLabController {
   private simulateAgentResponseUseCase: SimulateAgentResponseUseCase;
@@ -25,17 +80,16 @@ export class AgentLabController {
     const chatHistory = JSON.parse(formData.get('chatHistory') as string);
     const businessId = formData.get('businessId') as string | undefined;
     const contextFile = formData.get('contextFile') as File | null;
+    const userId = formData.get('userId') as string; // We'll need the user ID for metadata
+    const sessionId = formData.get('sessionId') as string; // And a session ID
     
-    let documentText: string | undefined = undefined;
-
+    // --- New Ingestion Logic ---
     if (contextFile) {
         try {
-            const buffer = Buffer.from(await contextFile.arrayBuffer());
-            const data = await pdf(buffer);
-            documentText = data.text.replace(/\s+/g, ' ').trim(); // Normalize whitespace
-        } catch(error) {
-            console.error("Error parsing PDF in AgentLabController:", error);
-            return ApiResponse.badRequest('Failed to parse the uploaded PDF file.');
+            await ingestLabDocument(contextFile, sessionId, userId);
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error during ingestion.';
+            return ApiResponse.error(`Failed to process document: ${errorMessage}`);
         }
     }
 
@@ -44,10 +98,9 @@ export class AgentLabController {
       chatHistory,
       currentMessage,
       businessId,
-      documentText,
+      sessionId, // Pass the session ID to the use case
     });
     
-    // The use case now returns { response, usage }. We only need to return the response text.
-    return ApiResponse.success({ response: output.response });
+    return ApiResponse.success({ response: output.response, usage: output.usage });
   }
 }

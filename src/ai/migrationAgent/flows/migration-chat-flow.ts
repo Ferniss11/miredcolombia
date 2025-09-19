@@ -24,7 +24,7 @@ const MigrationChatInputSchema = z.object({
     text: z.string(),
   })).describe("The history of the conversation so far, including user, AI (model), and admin messages."),
   currentMessage: z.string().describe("The user's latest message."),
-  documentText: z.string().optional().describe("Text content extracted from a user-uploaded document for analysis."),
+  sessionId: z.string().optional().describe("The unique ID of the current chat session. Used for retrieving session-specific documents."),
 });
 export type MigrationChatInput = z.infer<typeof MigrationChatInputSchema>;
 
@@ -45,17 +45,7 @@ const prompt = ai.definePrompt({
     tools: [knowledgeBaseSearch],
     prompt: `{{{systemPrompt}}}
 ---
-{{#if documentText}}
-### CONTEXTO DEL DOCUMENTO ANALIZADO
-A continuación se muestra el contenido de un documento subido por el usuario. Basa tus respuestas principalmente en este texto si la pregunta del usuario parece estar relacionada con él.
-
-\`\`\`
-{{{documentText}}}
-\`\`\`
----
-{{/if}}
-
-TASK: Based on the conversation history and the provided context (if any), generate the next response for the 'model'.
+TASK: Based on the conversation history and using your tools to search for information, generate the next response for the 'model'. If the user's question seems related to a document they may have uploaded, be sure to use the 'sessionId' when searching the knowledge base.
 
 CONVERSATION:
 {{#each chatHistory}}
@@ -75,7 +65,11 @@ const migrationChatFlow = ai.defineFlow(
     },
     async (input) => {
         // Dynamically set the model for the prompt execution
-        const { output, usage } = await prompt(input, { model: input.model as any });
+        // Pass the session ID to the tool through the prompt context
+        const { output, usage } = await prompt(input, { 
+            model: input.model as any,
+            context: { sessionId: input.sessionId } 
+        });
 
         if (!output) {
             throw new Error('La respuesta de la IA fue vacía.');
