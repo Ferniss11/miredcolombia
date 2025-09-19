@@ -3,7 +3,7 @@ import { NextRequest } from 'next/server';
 import { z } from 'zod';
 import { ApiResponse } from '@/lib/platform/api/api-response';
 import { FirestoreChatRepository } from '../persistence/firestore-chat.repository';
-import { GenkitAgentAdapter } from '../infrastructure/ai/agent.adapter';
+import { GenkitAgentAdapter } from '../ai/genkit-agent.adapter';
 import { StartChatSessionUseCase } from '../../application/start-chat-session.use-case';
 import { PostMessageUseCase } from '../../application/post-message.use-case';
 import { GetChatHistoryUseCase } from '../../application/get-chat-history.use-case';
@@ -130,13 +130,33 @@ export class ChatController {
     });
   }
   
-  async postMessage(payload: PostMessagePayload, { params }: { params: {} }): Promise<ApiResponse> {
+  async postMessage(payload: PostMessagePayload, { params }: { params: { sessionId?: string } }): Promise<ApiResponse> {
     let { userMessage, userId, businessId, document, isLabMode, agentId, sessionId } = payload;
     
+    sessionId = sessionId || params.sessionId;
+
     if (!sessionId) {
         return ApiResponse.badRequest("Session ID is missing.");
     }
-
+    
+    // In lab mode, if the session doesn't exist, create it.
+    if (isLabMode) {
+      const chatRepository = new FirestoreChatRepository();
+      const existingSession = await chatRepository.findSessionById(sessionId);
+      if (!existingSession) {
+        await chatRepository.createSessionWithInitialMessage({
+          userName: 'Lab User',
+          userPhone: '',
+          userId: userId || 'lab-user-id',
+          createdAt: new Date(),
+          totalTokens: 0,
+          totalInputTokens: 0,
+          totalOutputTokens: 0,
+          totalCost: 0,
+        }, 'Inicio de sesión de laboratorio.');
+      }
+    }
+    
     if (document && userId) {
         await ingestSessionDocument(document, sessionId, userId);
         if (!userMessage) {
