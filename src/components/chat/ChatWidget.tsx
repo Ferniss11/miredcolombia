@@ -227,6 +227,7 @@ export default function ChatWidget({ isLabMode = false, labConfig, onReset, onMe
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isAiResponding, setIsAiResponding] = useState(false);
   const [currentMessage, setCurrentMessage] = useState('');
+  const [attachedFile, setAttachedFile] = useState<File | null>(null);
   
   const [proactiveMessage, setProactiveMessage] = useState('');
   const [showProactive, setShowProactive] = useState(false);
@@ -369,7 +370,7 @@ export default function ChatWidget({ isLabMode = false, labConfig, onReset, onMe
       }
   }, [isChatOpen, isLabMode, session, suggestionPool]);
   
-  const handleSendMessage = async (messageText: string, file?: File) => {
+  const handleSendMessage = async (messageText: string, file?: File | null) => {
     if ((!messageText.trim() && !file) || isAiResponding || (!session && !isLabMode)) return;
 
     if (!isLabMode) {
@@ -382,14 +383,18 @@ export default function ChatWidget({ isLabMode = false, labConfig, onReset, onMe
     
     const tempId = `temp-${Date.now()}`;
     const userMessage: ChatMessage = { id: tempId, role: 'user', text: messageText.trim(), timestamp: new Date().toISOString(), replyTo: null, authorId: user?.uid };
-    setMessages(prev => [...prev, userMessage]);
-
-    // Create file processing message if a file is attached
+    
+    // Add user message optimistically
+    if (userMessage.text) {
+        setMessages(prev => [...prev, userMessage]);
+    }
+    
+    // Add file processing message if a file is attached
     if (file) {
         const fileMessage: ChatMessage = {
             id: `file-${tempId}`,
             role: 'user',
-            text: '',
+            text: '', // Text is optional for file messages
             timestamp: new Date().toISOString(),
             replyTo: null,
             file: { name: file.name, status: 'processing', progress: 0 }
@@ -399,21 +404,26 @@ export default function ChatWidget({ isLabMode = false, labConfig, onReset, onMe
 
     setIsAiResponding(true);
     setCurrentMessage('');
+    setAttachedFile(null); // Clear the preview
     if (fileInputRef.current) fileInputRef.current.value = '';
 
     const formData = new FormData();
-    formData.append('userMessage', messageText.trim());
+    formData.append('currentMessage', messageText.trim());
     if (file) {
       formData.append('document', file);
+    }
+    
+    // Filter out the file processing message from history sent to backend
+    const historyForBackend = messages.filter(m => !m.file);
+    if(userMessage.text) {
+      historyForBackend.push(userMessage);
     }
 
     if (isLabMode && labConfig) {
         formData.append('agentId', labConfig.agentId);
         formData.append('sessionId', labConfig.sessionId);
         formData.append('userId', user?.uid || 'lab-user');
-        // The lab endpoint expects chatHistory, so we'll stringify it.
-        // We exclude the new file message from the history sent to the backend.
-        formData.append('chatHistory', JSON.stringify(messages.filter(m => m.id !== `file-${tempId}`)));
+        formData.append('chatHistory', JSON.stringify(historyForBackend));
     } else if (session) {
         if (chatContext?.businessId) {
             formData.append('businessId', chatContext.businessId);
@@ -433,7 +443,7 @@ export default function ChatWidget({ isLabMode = false, labConfig, onReset, onMe
         const result = await response.json();
         if (!response.ok) throw new Error(result.error?.message || 'Error en el servidor');
 
-        // Update file message status to 'ready'
+        // Update file message status to 'ready' if it exists
         if (file) {
             setMessages(prev => prev.map(m => m.id === `file-${tempId}` ? { ...m, file: { ...m.file!, status: 'ready' } } : m));
         }
@@ -459,10 +469,20 @@ export default function ChatWidget({ isLabMode = false, labConfig, onReset, onMe
     }
   };
   
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+        if (file.size > 10 * 1024 * 1024) { // 10 MB limit
+            toast({ variant: 'destructive', title: 'Archivo Demasiado Grande', description: 'El tamaño máximo del archivo es 10MB.' });
+            return;
+        }
+        setAttachedFile(file);
+    }
+  }
+
   const handleFormSubmit = (e: React.FormEvent) => {
       e.preventDefault();
-      const file = fileInputRef.current?.files?.[0];
-      handleSendMessage(currentMessage, file);
+      handleSendMessage(currentMessage, attachedFile);
   }
   
   const handleProactiveMessageClose = (e: React.MouseEvent) => {
@@ -580,12 +600,31 @@ export default function ChatWidget({ isLabMode = false, labConfig, onReset, onMe
             {isLimitReached ? (
                  <Alert><Package className="h-4 w-4" /><AlertTitle>Límite Gratuito Alcanzado</AlertTitle><AlertDescription className="flex flex-col gap-2">Has usado tus 3 mensajes gratis. ¡Actualiza tu plan para seguir chateando con Valeria!<Button asChild size="sm"><Link href="/valeria">Ver Planes de Valeria</Link></Button></AlertDescription></Alert>
             ) : (
+                <>
+                {attachedFile && (
+                    <div className="relative flex items-center gap-2 p-2 mb-2 border rounded-lg bg-muted">
+                        <FileText className="h-5 w-5 flex-shrink-0 text-muted-foreground" />
+                        <p className="text-sm text-muted-foreground truncate flex-grow">{attachedFile.name}</p>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 flex-shrink-0"
+                            onClick={() => {
+                                setAttachedFile(null);
+                                if (fileInputRef.current) fileInputRef.current.value = '';
+                            }}
+                        >
+                            <X className="h-4 w-4" />
+                        </Button>
+                    </div>
+                )}
                  <form onSubmit={handleFormSubmit} className="flex gap-2">
                     <Input value={currentMessage} onChange={(e) => setCurrentMessage(e.target.value)} placeholder="Escribe tu pregunta..." disabled={isAiResponding || isLimitReached} autoComplete="off" />
                     {canUploadFile && <Button type="button" variant="ghost" size="icon" onClick={() => fileInputRef.current?.click()} disabled={isAiResponding}><Paperclip className="h-5 w-5"/></Button>}
-                    <Button type="submit" size="icon" disabled={isAiResponding || (!currentMessage.trim() && !fileInputRef.current?.files?.length) || isLimitReached}><Send size={18} /></Button>
-                    <Input type="file" className="hidden" ref={fileInputRef} accept=".pdf" onChange={() => setCurrentMessage(prev => prev || `Analiza este documento.`)} />
+                    <Button type="submit" size="icon" disabled={isAiResponding || (!currentMessage.trim() && !attachedFile) || isLimitReached}><Send size={18} /></Button>
+                    <Input type="file" className="hidden" ref={fileInputRef} accept=".pdf" onChange={handleFileChange} />
                 </form>
+                </>
             )}
         </div>
       </div>

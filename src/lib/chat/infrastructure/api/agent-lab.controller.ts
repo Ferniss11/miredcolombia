@@ -1,4 +1,3 @@
-
 // src/lib/chat/infrastructure/api/agent-lab.controller.ts
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
@@ -76,21 +75,28 @@ export class AgentLabController {
     const formData = await req.formData();
     
     const agentId = formData.get('agentId') as 'global' | 'valeria_premium' | 'business';
-    const currentMessage = formData.get('currentMessage') as string;
+    let currentMessage = formData.get('currentMessage') as string;
     const chatHistory = JSON.parse(formData.get('chatHistory') as string);
     const businessId = formData.get('businessId') as string | undefined;
     const contextFile = formData.get('document') as File | null;
-    const userId = formData.get('userId') as string; // We'll need the user ID for metadata
-    const sessionId = formData.get('sessionId') as string; // And a session ID
+    const userId = formData.get('userId') as string;
+    const sessionId = formData.get('sessionId') as string;
     
-    // --- New Ingestion Logic ---
     if (contextFile && userId && sessionId) {
         try {
             await ingestLabDocument(contextFile, sessionId, userId);
+            // If user only uploaded a file without a message, create a default one.
+            if (!currentMessage) {
+                currentMessage = `Acabo de subir el documento "${contextFile.name}". ¿Puedes resumirlo por mí?`;
+            }
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Unknown error during ingestion.';
             return ApiResponse.error(`Failed to process document: ${errorMessage}`);
         }
+    }
+
+    if (currentMessage === null || currentMessage === undefined) {
+      return ApiResponse.badRequest("currentMessage cannot be null.");
     }
 
     const output = await this.simulateAgentResponseUseCase.execute({
@@ -98,7 +104,7 @@ export class AgentLabController {
       chatHistory,
       currentMessage,
       businessId,
-      sessionId, // Pass the session ID to the use case
+      sessionId,
     });
     
     return ApiResponse.success({ response: output.response, usage: output.usage });
