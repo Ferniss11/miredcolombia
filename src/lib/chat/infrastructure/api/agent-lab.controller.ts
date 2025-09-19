@@ -79,12 +79,12 @@ export class AgentLabController {
     const currentMessage = formData.get('currentMessage') as string;
     const chatHistory = JSON.parse(formData.get('chatHistory') as string);
     const businessId = formData.get('businessId') as string | undefined;
-    const contextFile = formData.get('contextFile') as File | null;
+    const contextFile = formData.get('document') as File | null;
     const userId = formData.get('userId') as string; // We'll need the user ID for metadata
     const sessionId = formData.get('sessionId') as string; // And a session ID
     
     // --- New Ingestion Logic ---
-    if (contextFile) {
+    if (contextFile && userId && sessionId) {
         try {
             await ingestLabDocument(contextFile, sessionId, userId);
         } catch (error) {

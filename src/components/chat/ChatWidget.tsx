@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useRef, useEffect, useCallback, useTransition, Fragment } from 'react';
@@ -12,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Checkbox } from '@/components/ui/checkbox';
-import { X, Send, User, Bot, Loader2, Sparkles, Phone, Building, MessageSquareQuote, UserCog, Clock, RotateCcw, AlertCircle, Package } from 'lucide-react';
+import { X, Send, User, Bot, Loader2, Sparkles, Phone, Building, MessageSquareQuote, UserCog, Clock, RotateCcw, AlertCircle, Package, Paperclip, FileText, CheckCircle } from 'lucide-react';
 import { LuBotMessageSquare } from "react-icons/lu";
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
@@ -205,7 +204,18 @@ const getShuffledSample = (arr: string[], count: number) => {
 const AGENT_AVATAR_URL = "https://firebasestorage.googleapis.com/v0/b/colombia-en-esp.firebasestorage.app/o/web%2FImagen%20de%20WhatsApp%202025-08-09%20a%20las%2018.20.39_3c2b6161.jpg?alt=media&token=41ebe34a-f846-41fc-937f-4141f1240ee8";
 
 
-export default function ChatWidget() {
+interface ChatWidgetProps {
+    isLabMode?: boolean;
+    labConfig?: {
+        agentId: 'global' | 'valeria_premium';
+        sessionId: string;
+    };
+    onReset?: () => void;
+    onMessageReceived?: (message: ChatMessage) => void;
+}
+
+
+export default function ChatWidget({ isLabMode = false, labConfig, onReset, onMessageReceived }: ChatWidgetProps) {
   const { 
     isChatOpen, 
     setChatOpen, 
@@ -223,18 +233,19 @@ export default function ChatWidget() {
   const [proactiveClosed, setProactiveClosed] = useState(false);
   const [userHasInteracted, setUserHasInteracted] = useState(false);
   
-  const [view, setView] = useState<'welcome' | 'login' | 'chat'>('welcome');
+  const [view, setView] = useState<'welcome' | 'login' | 'chat'>('chat');
   const [suggestions, setSuggestions] = useState<string[]>([]);
   
   const { toast } = useToast();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isMounted, setIsMounted] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
   const { user, claims, userProfile, loading: authLoading } = useAuth();
   
-  const isPremiumUser = claims?.valeria_plan === 'valeria_premium' || claims?.valeria_plan === 'valeria_pro';
+  const isPremiumUser = claims?.valeria_plan === 'valeria_premium';
   const isInDashboard = pathname.startsWith('/dashboard/valeria');
 
   const isBusinessChat = !!chatContext?.businessId;
@@ -249,18 +260,27 @@ export default function ChatWidget() {
 
   const startSessionForUser = useCallback(async () => {
     if (!user || !userProfile) return;
+    
+    let endpoint = '/api/chat/sessions';
+    let body: any = {
+        userId: user.uid,
+        userName: userProfile.name,
+        userPhone: userProfile.businessProfile?.phone,
+        userEmail: userProfile.email,
+        businessId: chatContext?.businessId
+    };
+
+    if (isLabMode && labConfig) {
+        endpoint = '/api/agent-lab/chat-session'; // A new endpoint for lab sessions if needed, or adjust existing. For now, we use a flag.
+        body.isLabSession = true;
+        body.labSessionId = labConfig.sessionId;
+    }
 
     try {
-        const response = await fetch('/api/chat/sessions', {
+        const response = await fetch(endpoint, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                userId: user.uid,
-                userName: userProfile.name,
-                userPhone: userProfile.businessProfile?.phone,
-                userEmail: userProfile.email,
-                businessId: chatContext?.businessId
-            }),
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${await user.getIdToken()}`},
+            body: JSON.stringify(body),
         });
         const result = await response.json();
         if (!response.ok) throw new Error(result.error?.message);
@@ -268,25 +288,34 @@ export default function ChatWidget() {
         handleSessionStarted(result.session, result.history);
         
     } catch(e) {
-        console.error("Error auto-starting session for user:", e);
         const errorMessage = e instanceof Error ? e.message : 'No se pudo iniciar tu sesión de chat.';
         toast({ variant: 'destructive', title: 'Error', description: errorMessage});
     }
-  }, [user, userProfile, chatContext, handleSessionStarted, toast]);
+  }, [user, userProfile, chatContext, handleSessionStarted, toast, isLabMode, labConfig]);
 
   useEffect(() => {
-    // This effect now correctly handles session start/resume for authenticated users.
-    if (!authLoading && (isChatOpen || isInDashboard)) {
-        if (user && userProfile && !session) {
-            startSessionForUser();
-        } else if (!user && view === 'chat') {
-            // If user logs out while chat is open, reset to welcome view.
-            setSession(null);
-            setMessages([]);
-            setView('welcome');
-        }
+    if (!isLabMode) {
+      if (!authLoading && (isChatOpen || isInDashboard)) {
+          if (user && userProfile && !session) {
+              startSessionForUser();
+          } else if (!user && view === 'chat') {
+              setSession(null);
+              setMessages([]);
+              setView('welcome');
+          }
+      }
     }
-  }, [user, userProfile, session, isChatOpen, isInDashboard, startSessionForUser, view, authLoading]);
+  }, [user, userProfile, session, isChatOpen, isInDashboard, startSessionForUser, view, authLoading, isLabMode]);
+  
+  // Effect for lab mode session management
+  useEffect(() => {
+    if (isLabMode && labConfig) {
+        setSession({ id: labConfig.sessionId } as ChatSession);
+        setMessages([]);
+        setView('chat');
+        setSuggestions(getShuffledSample(suggestionPool, 3));
+    }
+  }, [isLabMode, labConfig, suggestionPool])
 
 
   useEffect(() => {
@@ -309,7 +338,7 @@ export default function ChatWidget() {
   }, []);
 
   useEffect(() => {
-      if (!isMounted || isChatOpen || proactiveClosed || showProactive) return;
+      if (!isMounted || isChatOpen || proactiveClosed || showProactive || isLabMode) return;
       let timeoutId: NodeJS.Timeout;
       const scheduleNextMessage = () => {
           timeoutId = setTimeout(() => {
@@ -320,7 +349,7 @@ export default function ChatWidget() {
       };
       scheduleNextMessage();
       return () => clearTimeout(timeoutId);
-  }, [isMounted, isChatOpen, proactiveClosed, proactivePool, showProactive]);
+  }, [isMounted, isChatOpen, proactiveClosed, proactivePool, showProactive, isLabMode]);
   
   useEffect(() => {
       if (showProactive && userHasInteracted && audioRef.current) {
@@ -335,84 +364,105 @@ export default function ChatWidget() {
   }, [messages]);
 
   useEffect(() => {
-      if(isChatOpen) {
-        setShowProactive(false);
-        if (!session) {
-            setSuggestions(getShuffledSample(suggestionPool, 3));
-        }
+      if((isChatOpen || isLabMode) && !session) {
+        setSuggestions(getShuffledSample(suggestionPool, 3));
       }
-  }, [isChatOpen, session, suggestionPool]);
+  }, [isChatOpen, isLabMode, session, suggestionPool]);
   
-  const handleSendMessage = async (messageText: string) => {
-    if (!messageText.trim() || isAiResponding || !session) return;
-    
-    const currentMessageCount = session.messageCount || 0;
+  const handleSendMessage = async (messageText: string, file?: File) => {
+    if ((!messageText.trim() && !file) || isAiResponding || (!session && !isLabMode)) return;
 
-    if (!isPremiumUser && currentMessageCount >= 3) {
-        toast({
-            title: 'Límite Gratuito Alcanzado',
-            description: 'Has usado tus 3 mensajes. ¡Actualiza a un plan premium para continuar!',
-            variant: 'destructive'
-        });
-        return;
+    if (!isLabMode) {
+      const currentMessageCount = session?.messageCount || 0;
+      if (!isPremiumUser && currentMessageCount >= 3) {
+          toast({ title: 'Límite Gratuito Alcanzado', description: 'Actualiza a un plan premium para continuar.', variant: 'destructive' });
+          return;
+      }
+    }
+    
+    const tempId = `temp-${Date.now()}`;
+    const userMessage: ChatMessage = { id: tempId, role: 'user', text: messageText.trim(), timestamp: new Date().toISOString(), replyTo: null, authorId: user?.uid };
+    setMessages(prev => [...prev, userMessage]);
+
+    // Create file processing message if a file is attached
+    if (file) {
+        const fileMessage: ChatMessage = {
+            id: `file-${tempId}`,
+            role: 'user',
+            text: '',
+            timestamp: new Date().toISOString(),
+            replyTo: null,
+            file: { name: file.name, status: 'processing', progress: 0 }
+        };
+        setMessages(prev => [...prev, fileMessage]);
     }
 
     setIsAiResponding(true);
     setCurrentMessage('');
-    
-    // Optimistically update the message count
-    if (!isPremiumUser) {
-        setSession(prev => prev ? ({...prev, messageCount: (prev.messageCount || 0) + 1}) : null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+
+    const formData = new FormData();
+    formData.append('userMessage', messageText.trim());
+    if (file) {
+      formData.append('document', file);
+    }
+
+    if (isLabMode && labConfig) {
+        formData.append('agentId', labConfig.agentId);
+        formData.append('sessionId', labConfig.sessionId);
+        formData.append('userId', user?.uid || 'lab-user');
+        // The lab endpoint expects chatHistory, so we'll stringify it.
+        // We exclude the new file message from the history sent to the backend.
+        formData.append('chatHistory', JSON.stringify(messages.filter(m => m.id !== `file-${tempId}`)));
+    } else if (session) {
+        if (chatContext?.businessId) {
+            formData.append('businessId', chatContext.businessId);
+        }
     }
     
-    const userMessage: ChatMessage = { 
-        id: `temp-user-${Date.now()}`,
-        role: 'user', 
-        text: messageText.trim(), 
-        timestamp: new Date().toISOString(),
-        replyTo: null,
-        authorId: user?.uid,
-    };
-    setMessages(prev => [...prev, userMessage]);
-    
     try {
-        const response = await fetch(`/api/chat/sessions/${session.id}/messages`, {
+        const endpoint = isLabMode ? '/api/agent-lab/chat' : `/api/chat/sessions/${session!.id}/messages`;
+        const idToken = await user?.getIdToken();
+
+        const response = await fetch(endpoint, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                userMessage: messageText.trim(),
-                businessId: chatContext?.businessId
-            }),
+            headers: { ...(idToken && { 'Authorization': `Bearer ${idToken}` }) },
+            body: formData,
         });
         
         const result = await response.json();
         if (!response.ok) throw new Error(result.error?.message || 'Error en el servidor');
 
+        // Update file message status to 'ready'
+        if (file) {
+            setMessages(prev => prev.map(m => m.id === `file-${tempId}` ? { ...m, file: { ...m.file!, status: 'ready' } } : m));
+        }
+
         const aiMessage: ChatMessage = {
             id: `ai-${Date.now()}`,
             role: 'model',
-            text: result.aiResponse,
+            text: result.response || result.aiResponse,
             timestamp: new Date().toISOString(),
             replyTo: null,
+            usage: result.usage,
         };
         setMessages(prev => [...prev, aiMessage]);
+        onMessageReceived?.(aiMessage); // Callback for lab mode
 
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
         toast({ variant: 'destructive', title: 'Error', description: errorMessage });
-        setMessages(prev => prev.filter(m => m.id !== userMessage.id));
-        // Rollback optimistic update on error
-        if (!isPremiumUser) {
-            setSession(prev => prev ? ({...prev, messageCount: (prev.messageCount || 1) - 1}) : null);
-        }
+        // Remove optimistic messages on error
+        setMessages(prev => prev.filter(m => m.id !== tempId && m.id !== `file-${tempId}`));
     } finally {
         setIsAiResponding(false);
     }
   };
   
-  const handleFormSubmitAndSend = (e: React.FormEvent) => {
+  const handleFormSubmit = (e: React.FormEvent) => {
       e.preventDefault();
-      handleSendMessage(currentMessage);
+      const file = fileInputRef.current?.files?.[0];
+      handleSendMessage(currentMessage, file);
   }
   
   const handleProactiveMessageClose = (e: React.MouseEvent) => {
@@ -421,14 +471,13 @@ export default function ChatWidget() {
     setProactiveClosed(true);
   };
   
-  const handleResetSession = () => {
-    setSession(null);
-    setMessages([]);
-    setSuggestions(getShuffledSample(suggestionPool, 3));
-    if (user) {
-        startSessionForUser();
-    } else {
-        setView('welcome');
+  const handleReset = () => {
+    if (onReset) onReset(); // For lab mode
+    else {
+        setSession(null);
+        setMessages([]);
+        if (user) startSessionForUser();
+        else setView('welcome');
     }
   }
 
@@ -438,54 +487,57 @@ export default function ChatWidget() {
   }
 
   const renderChatContent = () => {
-    if (isInDashboard && (!session || !userProfile)) {
+    if (isInDashboard && !isLabMode && (!session || !userProfile)) {
         return <div className='flex-1 flex items-center justify-center'><Loader2 className='animate-spin h-8 w-8'/></div>
     }
 
-    if (!session) {
-        if (view === 'login') {
-            return <LoginForm onLoginSuccess={startSessionForUser} onBackClick={() => setView('welcome')} />;
-        }
-        return (
-            <WelcomeForm 
-                onSignUpSuccess={startSessionForUser}
-                isBusinessChat={isBusinessChat}
-                businessContext={chatContext || undefined}
-                onLoginClick={() => setView('login')}
-            />
-        );
+    if (!isLabMode && !session) {
+        if (view === 'login') return <LoginForm onLoginSuccess={startSessionForUser} onBackClick={() => setView('welcome')} />;
+        return <WelcomeForm onSignUpSuccess={startSessionForUser} isBusinessChat={isBusinessChat} businessContext={chatContext || undefined} onLoginClick={() => setView('login')} />;
     }
 
-    const isLimitReached = !isPremiumUser && (session.messageCount || 0) >= 3;
+    const isLimitReached = !isLabMode && !isPremiumUser && (session?.messageCount || 0) >= 3;
+    const canUploadFile = isPremiumUser || isLabMode;
 
     return (
       <div className="flex flex-col h-full">
         <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
           <div className="space-y-4">
             {messages.map((msg, index) => {
+              // --- File Message Card ---
+              if (msg.file) {
+                 const { status, name } = msg.file;
+                 let icon = <Loader2 className="animate-spin h-5 w-5 text-muted-foreground" />;
+                 let statusText = 'Procesando documento...';
+                 if (status === 'ready') {
+                    icon = <CheckCircle className="h-5 w-5 text-green-500" />;
+                    statusText = 'Documento listo para consulta.';
+                 }
+                 return (
+                    <div key={msg.id} className="flex justify-end">
+                       <div className="p-3 rounded-lg shadow-sm bg-primary text-primary-foreground max-w-lg w-fit ml-auto rounded-br-none">
+                           <div className="flex items-center gap-3">
+                              <FileText className="h-6 w-6"/>
+                              <div className="overflow-hidden">
+                                  <p className="text-sm font-semibold truncate">{name}</p>
+                                  <div className="flex items-center gap-1.5 text-xs opacity-90">
+                                      {icon}
+                                      <span>{statusText}</span>
+                                  </div>
+                              </div>
+                           </div>
+                       </div>
+                    </div>
+                 );
+              }
+              // --- Regular Text Message ---
               const isUser = msg.role === 'user';
               const isAdmin = msg.role === 'admin';
               const isModel = msg.role === 'model';
-              
               const alignment = isUser ? 'justify-end' : 'justify-start';
               const bgColor = isUser ? 'bg-primary text-primary-foreground' : isAdmin ? 'bg-yellow-100 dark:bg-yellow-900/50' : 'bg-muted';
-              
-              const avatar = isUser ? (
-                  <Avatar className="w-8 h-8 flex-shrink-0">
-                    <AvatarFallback className="bg-muted"><User size={18} /></AvatarFallback>
-                  </Avatar>
-              ) : (
-                <Avatar className="w-8 h-8 flex-shrink-0">
-                  {!isBusinessChat ? (
-                    <AvatarImage src={AGENT_AVATAR_URL} alt="Avatar de Valeria" className="object-cover" />
-                  ) : (
-                    <AvatarFallback className={cn(isAdmin ? 'bg-yellow-400 text-black' : 'bg-primary/10 text-primary')}>
-                      {isAdmin ? <UserCog size={18} /> : <Bot size={18} />}
-                    </AvatarFallback>
-                  )}
-                </Avatar>
-              );
-              
+              const avatar = isUser ? (<Avatar className="w-8 h-8 flex-shrink-0"><AvatarFallback className="bg-muted"><User size={18} /></AvatarFallback></Avatar>) 
+                                     : (<Avatar className="w-8 h-8 flex-shrink-0">{!isBusinessChat ? (<AvatarImage src={AGENT_AVATAR_URL} alt="Avatar de Valeria" className="object-cover" />) : (<AvatarFallback className={cn(isAdmin ? 'bg-yellow-400 text-black' : 'bg-primary/10 text-primary')}>{isAdmin ? <UserCog size={18} /> : <Bot size={18} />}</AvatarFallback>)}</Avatar>);
               const authorName = isAdmin ? (msg.authorName || 'Admin') : isModel ? 'Valeria' : '';
 
               return (
@@ -505,32 +557,17 @@ export default function ChatWidget() {
                 </div>
               )
             })}
-             {messages.length <= 1 && (
+             {messages.length === 0 && (
                 <div className="pt-4 space-y-2">
                     <p className="text-sm font-medium flex items-center gap-2 text-muted-foreground"><MessageSquareQuote className="h-4 w-4"/> O pregúntale directamente...</p>
                     {suggestions.map((q, i) => (
-                        <Button
-                            key={i}
-                            variant="outline"
-                            size="sm"
-                            className="w-full text-left justify-start h-auto whitespace-normal"
-                            onClick={() => handleSendMessage(q)}
-                            disabled={isAiResponding}
-                        >
-                            {q}
-                        </Button>
+                        <Button key={i} variant="outline" size="sm" className="w-full text-left justify-start h-auto whitespace-normal" onClick={() => handleSendMessage(q)} disabled={isAiResponding}>{q}</Button>
                     ))}
                 </div>
             )}
             {isAiResponding && (
                 <div className="flex items-end gap-2 justify-start">
-                    <Avatar className="w-8 h-8 flex-shrink-0">
-                      {!isBusinessChat ? (
-                        <AvatarImage src={AGENT_AVATAR_URL} alt="Avatar de Valeria" className="object-cover" />
-                      ) : (
-                        <AvatarFallback className='bg-primary/10 text-primary'><Bot size={18} /></AvatarFallback>
-                      )}
-                    </Avatar>
+                    <Avatar className="w-8 h-8 flex-shrink-0">{!isBusinessChat ? (<AvatarImage src={AGENT_AVATAR_URL} alt="Avatar de Valeria" className="object-cover" />) : (<AvatarFallback className='bg-primary/10 text-primary'><Bot size={18} /></AvatarFallback>)}</Avatar>
                     <div className="bg-muted rounded-xl px-4 py-3 rounded-bl-none flex items-center gap-2">
                         <Loader2 className="animate-spin h-4 w-4" />
                         <span className="text-sm text-muted-foreground">Escribiendo...</span>
@@ -541,28 +578,13 @@ export default function ChatWidget() {
         </ScrollArea>
         <div className="p-4 border-t bg-background rounded-b-lg">
             {isLimitReached ? (
-                 <Alert>
-                    <Package className="h-4 w-4" />
-                    <AlertTitle>Límite Gratuito Alcanzado</AlertTitle>
-                    <AlertDescription className="flex flex-col gap-2">
-                        Has usado tus 3 mensajes gratis. ¡Actualiza tu plan para seguir chateando con Valeria!
-                        <Button asChild size="sm">
-                            <Link href="/valeria">Ver Planes de Valeria</Link>
-                        </Button>
-                    </AlertDescription>
-                 </Alert>
+                 <Alert><Package className="h-4 w-4" /><AlertTitle>Límite Gratuito Alcanzado</AlertTitle><AlertDescription className="flex flex-col gap-2">Has usado tus 3 mensajes gratis. ¡Actualiza tu plan para seguir chateando con Valeria!<Button asChild size="sm"><Link href="/valeria">Ver Planes de Valeria</Link></Button></AlertDescription></Alert>
             ) : (
-                 <form onSubmit={handleFormSubmitAndSend} className="flex gap-2">
-                    <Input
-                    value={currentMessage}
-                    onChange={(e) => setCurrentMessage(e.target.value)}
-                    placeholder="Escribe tu pregunta..."
-                    disabled={isAiResponding || isLimitReached || !session}
-                    autoComplete="off"
-                    />
-                    <Button type="submit" size="icon" disabled={isAiResponding || !currentMessage.trim() || isLimitReached || !session}>
-                    <Send size={18} />
-                    </Button>
+                 <form onSubmit={handleFormSubmit} className="flex gap-2">
+                    <Input value={currentMessage} onChange={(e) => setCurrentMessage(e.target.value)} placeholder="Escribe tu pregunta..." disabled={isAiResponding || isLimitReached} autoComplete="off" />
+                    {canUploadFile && <Button type="button" variant="ghost" size="icon" onClick={() => fileInputRef.current?.click()} disabled={isAiResponding}><Paperclip className="h-5 w-5"/></Button>}
+                    <Button type="submit" size="icon" disabled={isAiResponding || (!currentMessage.trim() && !fileInputRef.current?.files?.length) || isLimitReached}><Send size={18} /></Button>
+                    <Input type="file" className="hidden" ref={fileInputRef} accept=".pdf" onChange={() => setCurrentMessage(prev => prev || `Analiza este documento.`)} />
                 </form>
             )}
         </div>
@@ -570,12 +592,8 @@ export default function ChatWidget() {
     );
   };
   
-  if (isInDashboard) {
-      return (
-        <div className="flex flex-col h-full rounded-lg border bg-card">
-            {renderChatContent()}
-        </div>
-      )
+  if (isInDashboard || isLabMode) {
+      return renderChatContent();
   }
 
   if (!isChatVisible) {
@@ -597,59 +615,28 @@ export default function ChatWidget() {
                          <div className="relative bg-background dark:bg-card shadow-lg rounded-lg p-3 text-sm group">
                             <p>{proactiveMessage}</p>
                             <div className="absolute right-3 -bottom-1.5 w-3 h-3 bg-background dark:bg-card transform rotate-45"></div>
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                className="absolute top-0 right-0 h-6 w-6 text-muted-foreground hover:text-foreground"
-                                onClick={handleProactiveMessageClose}
-                            >
-                                <X className="h-4 w-4" />
-                            </Button>
+                            <Button variant="ghost" size="icon" className="absolute top-0 right-0 h-6 w-6 text-muted-foreground hover:text-foreground" onClick={handleProactiveMessageClose}><X className="h-4 w-4" /></Button>
                         </div>
                     </div>
                 </div>
             )}
              <Sheet open={isChatOpen} onOpenChange={setChatOpen}>
                 <SheetTrigger asChild>
-                     <Button
-                        className="w-16 h-16 rounded-full shadow-lg flex items-center justify-center p-0"
-                        size="icon"
-                        id="global-chat-trigger"
-                    >
+                     <Button className="w-16 h-16 rounded-full shadow-lg flex items-center justify-center p-0" size="icon" id="global-chat-trigger">
                        {isChatOpen ? <X size={32} /> : 
                        <Avatar className="w-full h-full">
                            <AvatarImage src={AGENT_AVATAR_URL} alt="Avatar de Valeria, asistente IA" className="object-cover" />
                            <AvatarFallback><Bot size={40}/></AvatarFallback>
-                       </Avatar>
-                       }
+                       </Avatar>}
                     </Button>
                 </SheetTrigger>
-                <SheetContent 
-                    className="w-full sm:max-w-md p-0 flex flex-col h-full"
-                    side="right"
-                >
+                <SheetContent className="w-full sm:max-w-md p-0 flex flex-col h-full" side="right">
                     <SheetHeader className="p-4 border-b flex-row items-center justify-between">
                         <SheetTitle className="flex items-center gap-2 font-headline text-lg">
-                            {isBusinessChat ? <Building className="h-6 w-6 text-primary" /> : (
-                               <Avatar className="w-8 h-8">
-                                <AvatarImage src={AGENT_AVATAR_URL} alt="Avatar de Valeria" className="object-cover"/>
-                                <AvatarFallback><Sparkles className="h-4 w-4"/></AvatarFallback>
-                               </Avatar>
-                            )}
+                            {isBusinessChat ? <Building className="h-6 w-6 text-primary" /> : (<Avatar className="w-8 h-8"><AvatarImage src={AGENT_AVATAR_URL} alt="Avatar de Valeria" className="object-cover"/><AvatarFallback><Sparkles className="h-4 w-4"/></AvatarFallback></Avatar>)}
                             {isBusinessChat ? `Asistente de ${chatContext.businessName}` : "Valeria"}
                         </SheetTitle>
-                        {session && (
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleResetSession}>
-                                        <RotateCcw className="h-4 w-4" />
-                                    </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                    <p>Empezar de nuevo</p>
-                                </TooltipContent>
-                            </Tooltip>
-                        )}
+                        {(session || isLabMode) && (<Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleReset}><RotateCcw className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent><p>Empezar de nuevo</p></TooltipContent></Tooltip>)}
                     </SheetHeader>
                     <div className="flex-1 min-h-0">
                       {isMounted ? renderChatContent() : <div className='flex-1 flex items-center justify-center'><Loader2 className='animate-spin'/></div>}
@@ -662,5 +649,3 @@ export default function ChatWidget() {
     </Fragment>
   );
 }
-
-    
