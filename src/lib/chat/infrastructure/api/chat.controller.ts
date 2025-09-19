@@ -83,6 +83,7 @@ const StartSessionSchema = z.object({
 export type PostMessagePayload = {
     userMessage: string;
     userId?: string;
+    sessionId?: string;
     businessId?: string;
     document?: File | null;
     isLabMode?: boolean;
@@ -114,7 +115,7 @@ export class ChatController {
     );
     this.postMessageUseCase = new PostMessageUseCase(chatRepository, agentAdapter);
     this.simulateAgentResponseUseCase = new SimulateAgentResponseUseCase(agentAdapter);
-    this.getAllSessionsUseCase = new GetAllSessionsUseCase(chatRepository);
+    this.getAllSessionsUseCase = new GetAllChatSessionsUseCase(chatRepository);
   }
 
   async startSession(req: NextRequest): Promise<ApiResponse> {
@@ -129,45 +130,46 @@ export class ChatController {
     });
   }
   
-  async postMessage(payload: PostMessagePayload, { params }: { params: { sessionId: string } }): Promise<ApiResponse> {
-    let { userMessage, userId, businessId, document, isLabMode, agentId } = payload;
-    let sessionId = params.sessionId;
+  async postMessage(payload: PostMessagePayload, params: { params: { sessionId?: string } }): Promise<ApiResponse> {
+      let { userMessage, userId, sessionId, businessId, document, isLabMode, agentId } = payload;
+      
+      // If sessionId is not in payload, get it from params
+      if (!sessionId) {
+          sessionId = params.params.sessionId;
+      }
+      if (!sessionId) {
+          return ApiResponse.badRequest('Session ID is missing.');
+      }
 
-    if (!sessionId) {
-        return ApiResponse.badRequest("Session ID is missing.");
-    }
-    
-    if (document && userId) {
-        await ingestSessionDocument(document, sessionId, userId);
-        if (!userMessage) {
-            userMessage = `Acabo de subir el documento "${document.name}". ¿Puedes resumirlo por mí?`;
-        }
-    }
-    
-    if (userMessage === null || userMessage === undefined) {
-      return ApiResponse.badRequest("currentMessage cannot be null.");
-    }
-    
-    if (isLabMode && agentId) {
-        const history = await this.getChatHistoryUseCase.execute({ sessionId });
-        const output = await this.simulateAgentResponseUseCase.execute({
-            agentId,
-            chatHistory: history,
-            currentMessage: userMessage,
-            sessionId: sessionId,
-            businessId: businessId
-        });
-        return ApiResponse.success(output);
-    }
-    
-    const output = await this.postMessageUseCase.execute({
-      sessionId,
-      userMessage,
-      userId,
-      businessId,
-    });
+      if (document && userId) {
+          await ingestSessionDocument(document, sessionId, userId);
+          if (!userMessage) {
+              userMessage = `Acabo de subir el documento "${document.name}". ¿Puedes resumirlo por mí?`;
+          }
+      }
 
-    return ApiResponse.success(output);
+      if (isLabMode && agentId) {
+          // Lab mode: just get the AI response without persisting much
+          const history = await this.getChatHistoryUseCase.execute({ sessionId, businessId });
+          const output = await this.simulateAgentResponseUseCase.execute({
+              agentId,
+              chatHistory: history,
+              currentMessage: userMessage,
+              sessionId: sessionId,
+              businessId: businessId
+          });
+          return ApiResponse.success(output);
+      }
+
+      // Regular chat mode: persist messages and get response
+      const output = await this.postMessageUseCase.execute({
+          sessionId,
+          userMessage,
+          userId,
+          businessId,
+      });
+
+      return ApiResponse.success(output);
   }
 
   async getAllSessions(req: NextRequest): Promise<ApiResponse> {
