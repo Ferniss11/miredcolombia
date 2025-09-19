@@ -10,26 +10,22 @@ const controller = new ChatController();
 export const POST = apiHandler(async (req: NextRequest) => {
     
     const formData = await req.formData();
-    const sessionId = formData.get('sessionId') as string;
     const document = formData.get('document') as File | null;
     let userMessage = formData.get('currentMessage') as string;
-    const agentId = formData.get('agentId') as 'global' | 'valeria_premium' | 'business';
-    const businessId = formData.get('businessId') as string | undefined;
-
-    const token = req.headers.get('Authorization')?.split('Bearer ')[1];
-    if (!token) return apiHandler.unauthorized();
-    const { uid: userId } = await adminAuth.verifyIdToken(token);
-
+    
     const payload = { 
         userMessage, 
-        userId, 
-        businessId, 
         document,
+        // The controller will now get these from the form data
+        sessionId: formData.get('sessionId') as string,
+        userId: formData.get('userId') as string,
+        businessId: formData.get('businessId') as string | undefined,
+        agentId: formData.get('agentId') as 'global' | 'valeria_premium' | 'business',
         isLabMode: true, // Flag to indicate this is a lab session
-        agentId: agentId,
     };
 
     // The main postMessage controller now handles both lab and real chats
-    return controller.postMessage(payload, { params: { sessionId } });
+    // The sessionId is now part of the payload, not the URL params for this route.
+    return controller.postMessage(payload, { params: {} });
 
 }, ['Admin', 'SAdmin']);

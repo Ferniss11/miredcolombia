@@ -84,6 +84,7 @@ export type PostMessagePayload = {
     userMessage: string;
     userId?: string;
     businessId?: string;
+    sessionId?: string; // Add sessionId to the payload
     document?: File | null;
     isLabMode?: boolean;
     agentId?: 'global' | 'valeria_premium' | 'business';
@@ -129,10 +130,15 @@ export class ChatController {
     });
   }
   
-  async postMessage(payload: PostMessagePayload, { params }: { params: { sessionId: string } }): Promise<ApiResponse> {
-    const { sessionId } = params;
-    let { userMessage, userId, businessId, document, isLabMode, agentId } = payload;
+  async postMessage(payload: PostMessagePayload, { params }: { params: { sessionId?: string } }): Promise<ApiResponse> {
+    const sessionIdFromParams = params?.sessionId;
+    let { userMessage, userId, businessId, document, isLabMode, agentId, sessionId: sessionIdFromPayload } = payload;
     
+    const sessionId = sessionIdFromParams || sessionIdFromPayload;
+    if (!sessionId) {
+        return ApiResponse.badRequest("Session ID is missing.");
+    }
+
     if (document && userId) {
         await ingestSessionDocument(document, sessionId, userId);
         if (!userMessage) {
@@ -146,10 +152,8 @@ export class ChatController {
     
     // --- LAB MODE LOGIC ---
     if (isLabMode && agentId) {
-        // For lab mode, we ensure a session document exists before proceeding.
         const session = await this.getSessionByIdUseCase.execute({ sessionId });
         if (!session) {
-            // If it doesn't exist, create it. This is the fix.
             await new StartChatSessionUseCase(new FirestoreChatRepository()).execute({
                 userName: 'Lab User',
                 userPhone: '000000000',
