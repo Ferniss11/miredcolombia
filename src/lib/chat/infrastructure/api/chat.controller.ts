@@ -7,13 +7,13 @@ import { GenkitAgentAdapter } from '../ai/agent.adapter';
 import { StartChatSessionUseCase } from '../../application/start-chat-session.use-case';
 import { PostMessageUseCase } from '../../application/post-message.use-case';
 import { GetChatHistoryUseCase } from '../../application/get-chat-history.use-case';
-import { FindSessionByPhoneUseCase } from '../../application/find-session-by-phone.use-case';
-import { StartOrResumeChatUseCase } from '../../application/start-or-resume-chat.use-case';
 import { GetAllChatSessionsUseCase } from '../../application/get-all-chat-sessions.use-case';
 import { GetSessionByIdUseCase } from '../../application/get-session-by-id.use-case';
 import { FirestoreUserRepository } from '@/lib/user/infrastructure/persistence/firestore-user.repository';
 import { adminAuth, adminDb } from '@/lib/firebase/admin-config';
 import pdf from 'pdf-parse';
+import { StartOrResumeChatUseCase } from '../../application/start-or-resume-chat.use-case';
+import { SimulateAgentResponseUseCase } from '../../application/simulate-agent-response.use-case';
 
 
 // --- Helper function for session document ingestion ---
@@ -85,12 +85,15 @@ export type PostMessagePayload = {
     userId?: string;
     businessId?: string;
     document?: File | null;
+    isLabMode?: boolean;
+    agentId?: 'global' | 'valeria_premium' | 'business';
 };
 
 
 export class ChatController {
   private startOrResumeChatUseCase: StartOrResumeChatUseCase;
   private postMessageUseCase: PostMessageUseCase;
+  private simulateAgentResponseUseCase: SimulateAgentResponseUseCase;
   private getAllSessionsUseCase: GetAllChatSessionsUseCase;
   private getSessionByIdUseCase: GetSessionByIdUseCase;
   private getChatHistoryUseCase: GetChatHistoryUseCase;
@@ -100,12 +103,9 @@ export class ChatController {
     const agentAdapter = new GenkitAgentAdapter();
     const userRepository = new FirestoreUserRepository();
     
-    // Instantiate all necessary use cases
     const startChatSessionUseCase = new StartChatSessionUseCase(chatRepository);
     this.getChatHistoryUseCase = new GetChatHistoryUseCase(chatRepository);
     this.getSessionByIdUseCase = new GetSessionByIdUseCase(chatRepository);
-
-    // Main use cases for the controller
     this.startOrResumeChatUseCase = new StartOrResumeChatUseCase(
         startChatSessionUseCase,
         this.getChatHistoryUseCase,
@@ -113,13 +113,10 @@ export class ChatController {
         this.getSessionByIdUseCase
     );
     this.postMessageUseCase = new PostMessageUseCase(chatRepository, agentAdapter);
-    this.getAllSessionsUseCase = new GetAllChatSessionsUseCase(chatRepository);
+    this.simulateAgentResponseUseCase = new SimulateAgentResponseUseCase(agentAdapter);
+    this.getAllSessionsUseCase = new GetAllSessionsUseCase(chatRepository);
   }
 
-  /**
-   * Handles starting a new chat session or resuming an existing one.
-   * Linked to POST /api/chat/sessions
-   */
   async startSession(req: NextRequest): Promise<ApiResponse> {
     const json = await req.json();
     const input = StartSessionSchema.parse(json);
@@ -132,13 +129,9 @@ export class ChatController {
     });
   }
   
-  /**
-   * Handles posting a new message to a session.
-   * Now receives pre-parsed data instead of the full request.
-   */
   async postMessage(payload: PostMessagePayload, { params }: { params: { sessionId: string } }): Promise<ApiResponse> {
     const { sessionId } = params;
-    let { userMessage, userId, businessId, document } = payload;
+    let { userMessage, userId, businessId, document, isLabMode, agentId } = payload;
     
     if (document && userId) {
         await ingestSessionDocument(document, sessionId, userId);
@@ -150,7 +143,32 @@ export class ChatController {
     if (userMessage === null || userMessage === undefined) {
       return ApiResponse.badRequest("currentMessage cannot be null.");
     }
-
+    
+    // --- LAB MODE LOGIC ---
+    if (isLabMode && agentId) {
+        // For lab mode, we ensure a session document exists before proceeding.
+        const session = await this.getSessionByIdUseCase.execute({ sessionId });
+        if (!session) {
+            // If it doesn't exist, create it. This is the fix.
+            await new StartChatSessionUseCase(new FirestoreChatRepository()).execute({
+                userName: 'Lab User',
+                userPhone: '000000000',
+                userId: userId,
+            });
+        }
+        
+        const history = await this.getChatHistoryUseCase.execute({ sessionId });
+        const output = await this.simulateAgentResponseUseCase.execute({
+            agentId,
+            chatHistory: history,
+            currentMessage: userMessage,
+            sessionId: sessionId,
+            businessId: businessId
+        });
+        return ApiResponse.success(output);
+    }
+    
+    // --- NORMAL USER LOGIC ---
     const output = await this.postMessageUseCase.execute({
       sessionId,
       userMessage,
@@ -161,20 +179,11 @@ export class ChatController {
     return ApiResponse.success(output);
   }
 
-
-  /**
-   * Handles retrieving all chat sessions for the admin panel.
-   * Linked to GET /api/chat/sessions
-   */
   async getAllSessions(req: NextRequest): Promise<ApiResponse> {
     const sessions = await this.getAllSessionsUseCase.execute();
     return ApiResponse.success(sessions.map(s => ({ ...s, createdAt: s.createdAt.toISOString() })));
   }
 
-  /**
-   * Handles retrieving a single chat session with its full message history.
-   * Linked to GET /api/chat/sessions/[sessionId]
-   */
   async getSessionDetails(req: NextRequest, { params }: { params: { sessionId: string } }): Promise<ApiResponse> {
       const { sessionId } = params;
       const businessId = req.nextUrl.searchParams.get('businessId') || undefined;
