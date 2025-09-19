@@ -129,8 +129,9 @@ export class ChatController {
    * Linked to POST /api/chat/sessions/[sessionId]/messages
    */
   async postMessage(req: NextRequest, { params }: { params: { sessionId: string } }): Promise<ApiResponse> {
-    // Clone the request so it can be read by both this function and the apiHandler
-    const reqClone = req.clone();
+    // Clone the request to be able to read its body multiple times if needed by different middlewares.
+    const reqClone = new NextRequest(req.url, { headers: new Headers(req.headers), method: req.method, body: req.body });
+
     const { sessionId } = params;
 
     let userId: string | undefined = undefined;

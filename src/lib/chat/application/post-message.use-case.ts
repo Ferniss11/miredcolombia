@@ -1,4 +1,3 @@
-
 // src/lib/chat/application/post-message.use-case.ts
 import type { ChatMessage, ChatMessageRole } from '../domain/chat-message.entity';
 import type { ChatRepository } from '../domain/chat.repository';
@@ -12,7 +11,6 @@ export type PostMessageInput = {
   userMessage: string;
   userId?: string;
   businessId?: string; // Optional context for business-specific agents
-  // documentText is no longer needed here. The agent will use the tool.
 };
 
 export type PostMessageOutput = {
