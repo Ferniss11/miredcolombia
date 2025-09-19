@@ -145,17 +145,20 @@ export class ChatController {
     
     const contentType = req.headers.get('content-type');
     let userMessage: string;
-    let documentText: string | undefined = undefined;
 
     // --- Vectorization on-the-fly logic ---
     if (contentType?.includes('multipart/form-data')) {
         const formData = await req.formData();
-        userMessage = formData.get('userMessage') as string;
+        userMessage = formData.get('currentMessage') as string;
         const file = formData.get('document') as File | null;
         
-        if (file && userId) {
-            // This is the core logic: Ingest the document into the vector store for this session
-            await ingestSessionDocument(file, sessionId, userId);
+        if (file) {
+            // Use the userId from the token, or from FormData if present (for lab mode)
+            const finalUserId = userId || formData.get('userId') as string;
+            if (!finalUserId) {
+                return ApiResponse.badRequest('User ID is required for document uploads.');
+            }
+            await ingestSessionDocument(file, sessionId, finalUserId);
             
             // If the user didn't type a message, create one for them.
             if (!userMessage) {
@@ -166,6 +169,10 @@ export class ChatController {
         const json = await req.json();
         userMessage = json.userMessage;
     }
+    
+    if (userMessage === null || userMessage === undefined) {
+      return ApiResponse.badRequest("currentMessage cannot be null.");
+    }
 
     const businessId = new URL(req.url).searchParams.get('businessId') || undefined;
 
@@ -174,7 +181,6 @@ export class ChatController {
       userMessage,
       userId,
       businessId,
-      // We no longer pass documentText directly. The agent will find it via the search tool.
     });
 
     return ApiResponse.success(output);
