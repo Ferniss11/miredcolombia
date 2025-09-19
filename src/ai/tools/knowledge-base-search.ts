@@ -34,7 +34,7 @@ export const knowledgeBaseSearch = ai.defineTool(
 
     try {
       // The Firebase Vector Search extension makes documents searchable via the findNeighbors operator.
-      const results = await adminDb.collection('knowledge').findNeighbors('embedding', {
+      const results = await adminDb.collection('knowledge_base').findNeighbors('embedding', {
         query: query,
         limit: 5, // Retrieve the top 5 most relevant chunks
         distanceMeasure: 'COSINE',
@@ -49,7 +49,7 @@ export const knowledgeBaseSearch = ai.defineTool(
         const data = neighbor.document.data();
         return {
           content: data.content || '', // The text chunk
-          source: data.source || 'Fuente desconocida', // The source of the info
+          source: data.metadata?.doc_title || 'Fuente desconocida', // The source of the info
         };
       });
       
