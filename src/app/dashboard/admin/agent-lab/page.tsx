@@ -208,7 +208,7 @@ export default function AgentLabPage() {
                             )}
                         </div>
                      </ScrollArea>
-                      {isResponding && (
+                      {isResponding && contextFile && (
                         <div className="p-4 pt-0">
                           <Progress value={uploadProgress} className="h-1 w-full" />
                           <p className="text-xs text-muted-foreground text-center mt-1">
