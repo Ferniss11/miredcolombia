@@ -32,7 +32,7 @@ export class AgentLabController {
         try {
             const buffer = Buffer.from(await contextFile.arrayBuffer());
             const data = await pdf(buffer);
-            documentText = data.text;
+            documentText = data.text.replace(/\s+/g, ' ').trim(); // Normalize whitespace
         } catch(error) {
             console.error("Error parsing PDF in AgentLabController:", error);
             return ApiResponse.badRequest('Failed to parse the uploaded PDF file.');

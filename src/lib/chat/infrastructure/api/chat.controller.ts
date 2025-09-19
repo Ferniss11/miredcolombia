@@ -13,6 +13,8 @@ import { GetAllChatSessionsUseCase } from '../../application/get-all-chat-sessio
 import { GetSessionByIdUseCase } from '../../application/get-session-by-id.use-case';
 import { FirestoreUserRepository } from '@/lib/user/infrastructure/persistence/firestore-user.repository';
 import { adminAuth } from '@/lib/firebase/admin-config';
+import pdf from 'pdf-parse';
+
 
 // --- Input Validation Schemas ---
 const StartSessionSchema = z.object({
@@ -37,16 +39,12 @@ export class ChatController {
     
     // Instantiate all necessary use cases
     const startChatSessionUseCase = new StartChatSessionUseCase(chatRepository);
-    const findSessionByPhoneUseCase = new FindSessionByPhoneUseCase(chatRepository);
-    
-    // Use cases that will be called directly by the controller methods
     this.getChatHistoryUseCase = new GetChatHistoryUseCase(chatRepository);
     this.getSessionByIdUseCase = new GetSessionByIdUseCase(chatRepository);
 
     // Main use cases for the controller
     this.startOrResumeChatUseCase = new StartOrResumeChatUseCase(
         startChatSessionUseCase,
-        findSessionByPhoneUseCase,
         this.getChatHistoryUseCase,
         userRepository,
         this.getSessionByIdUseCase
@@ -98,10 +96,9 @@ export class ChatController {
         userMessage = formData.get('userMessage') as string;
         const file = formData.get('document') as File | null;
         if (file) {
-            const pdf = (await import('pdf-parse')).default;
             const buffer = Buffer.from(await file.arrayBuffer());
             const data = await pdf(buffer);
-            documentText = data.text;
+            documentText = data.text.replace(/\s+/g, ' ').trim();
         }
     } else {
         const json = await req.json();

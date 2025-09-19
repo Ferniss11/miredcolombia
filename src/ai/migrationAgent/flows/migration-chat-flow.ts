@@ -55,7 +55,7 @@ A continuación se muestra el contenido de un documento subido por el usuario. B
 ---
 {{/if}}
 
-TASK: Based on the conversation history, generate the next response.
+TASK: Based on the conversation history and the provided context (if any), generate the next response for the 'model'.
 
 CONVERSATION:
 {{#each chatHistory}}
@@ -91,4 +91,3 @@ const migrationChatFlow = ai.defineFlow(
         };
     }
 );
-

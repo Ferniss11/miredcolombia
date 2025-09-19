@@ -72,11 +72,10 @@ export class GenkitAgentAdapter implements AgentAdapter {
     // --- Logic for explicit agent selection (Agent Lab) ---
     if (input.agentId) {
         let agentConfig: AgentConfig;
-        if (input.agentId === 'business') {
-            if (!input.businessId) throw new Error("BusinessId is required for business agent simulation.");
-            agentConfig = await this.userRepository.getAgentConfig(`business_${input.businessId}`);
+        if (input.agentId === 'business' && input.businessId) {
+             agentConfig = await this.userRepository.getAgentConfig(`business_${input.businessId}`);
         } else {
-            agentConfig = await this.userRepository.getAgentConfig(input.agentId);
+             agentConfig = await this.userRepository.getAgentConfig(input.agentId);
         }
 
         const aiResponse = await migrationChat({

@@ -24,8 +24,6 @@ export class SimulateAgentResponseUseCase {
 
   async execute(input: SimulateAgentInput): Promise<SimulateAgentOutput> {
     
-    // The adapter needs to be modified to accept an explicit agentId.
-    // For now, we'll assume it can differentiate based on the input.
     const { response, usage, cost } = await this.agentAdapter.getCompletion({
         chatHistory: input.chatHistory,
         currentMessage: input.currentMessage,
