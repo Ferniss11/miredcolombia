@@ -129,9 +129,6 @@ export class ChatController {
    * Linked to POST /api/chat/sessions/[sessionId]/messages
    */
   async postMessage(req: NextRequest, { params }: { params: { sessionId: string } }): Promise<ApiResponse> {
-    // Clone the request to be able to read its body multiple times if needed by different middlewares.
-    const reqClone = new NextRequest(req.url, { headers: new Headers(req.headers), method: req.method, body: req.body });
-
     const { sessionId } = params;
 
     let userId: string | undefined = undefined;
@@ -145,12 +142,12 @@ export class ChatController {
       }
     }
     
-    const contentType = reqClone.headers.get('content-type');
+    const contentType = req.headers.get('content-type');
     let userMessage: string;
 
     // --- Vectorization on-the-fly logic ---
     if (contentType?.includes('multipart/form-data')) {
-        const formData = await reqClone.formData();
+        const formData = await req.formData();
         userMessage = formData.get('currentMessage') as string;
         const file = formData.get('document') as File | null;
         
@@ -168,7 +165,7 @@ export class ChatController {
             }
         }
     } else {
-        const json = await reqClone.json();
+        const json = await req.json();
         userMessage = json.userMessage;
     }
     

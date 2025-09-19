@@ -48,6 +48,7 @@ export function apiHandler(handler: Handler<any>, allowedRoles?: UserRole[]) {
       }
 
       // --- Execute Controller Logic ---
+      // We pass the original `req` object, which the controller can now read without conflicts.
       return await handler(req, params);
 
     } catch (err: any) {
