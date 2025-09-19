@@ -26,7 +26,7 @@ export function apiHandler(handler: Handler<any>, allowedRoles?: UserRole[]) {
           return ApiResponse.error('Authentication service not configured.', 503);
         }
 
-        // --- Authentication & Authorization ---
+        // --- Authentication & Authorization (Headers/Cookies ONLY) ---
         const sessionCookie = cookies().get('session')?.value;
         let idToken: string | undefined = req.headers.get('Authorization')?.split('Bearer ')[1];
         let decodedToken;
@@ -48,7 +48,7 @@ export function apiHandler(handler: Handler<any>, allowedRoles?: UserRole[]) {
       }
 
       // --- Execute Controller Logic ---
-      // We pass the original `req` object, which the controller can now read without conflicts.
+      // We pass the original `req` object. Any body reading must be done inside the handler.
       return await handler(req, params);
 
     } catch (err: any) {

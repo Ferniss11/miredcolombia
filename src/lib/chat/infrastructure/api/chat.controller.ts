@@ -80,6 +80,14 @@ const StartSessionSchema = z.object({
   userId: z.string().optional(), // Added userId for logged-in users
 });
 
+export type PostMessagePayload = {
+    userMessage: string;
+    userId?: string;
+    businessId?: string;
+    document?: File | null;
+};
+
+
 export class ChatController {
   private startOrResumeChatUseCase: StartOrResumeChatUseCase;
   private postMessageUseCase: PostMessageUseCase;
@@ -126,54 +134,22 @@ export class ChatController {
   
   /**
    * Handles posting a new message to a session.
-   * Linked to POST /api/chat/sessions/[sessionId]/messages
+   * Now receives pre-parsed data instead of the full request.
    */
-  async postMessage(req: NextRequest, { params }: { params: { sessionId: string } }): Promise<ApiResponse> {
+  async postMessage(payload: PostMessagePayload, { params }: { params: { sessionId: string } }): Promise<ApiResponse> {
     const { sessionId } = params;
-
-    let userId: string | undefined = undefined;
-    const idToken = req.headers.get('Authorization')?.split('Bearer ')[1];
-    if (idToken && adminAuth) {
-      try {
-        const decodedToken = await adminAuth.verifyIdToken(idToken);
-        userId = decodedToken.uid;
-      } catch (error) {
-        console.log("Could not verify token for message posting (guest user).");
-      }
-    }
+    let { userMessage, userId, businessId, document } = payload;
     
-    const contentType = req.headers.get('content-type');
-    let userMessage: string;
-
-    // --- Vectorization on-the-fly logic ---
-    if (contentType?.includes('multipart/form-data')) {
-        const formData = await req.formData();
-        userMessage = formData.get('currentMessage') as string;
-        const file = formData.get('document') as File | null;
-        
-        if (file) {
-            // Use the userId from the token, or from FormData if present (for lab mode)
-            const finalUserId = userId || formData.get('userId') as string;
-            if (!finalUserId) {
-                return ApiResponse.badRequest('User ID is required for document uploads.');
-            }
-            await ingestSessionDocument(file, sessionId, finalUserId);
-            
-            // If the user didn't type a message, create one for them.
-            if (!userMessage) {
-                userMessage = `Acabo de subir el documento "${file.name}". ¿Puedes resumirlo por mí?`;
-            }
+    if (document && userId) {
+        await ingestSessionDocument(document, sessionId, userId);
+        if (!userMessage) {
+            userMessage = `Acabo de subir el documento "${document.name}". ¿Puedes resumirlo por mí?`;
         }
-    } else {
-        const json = await req.json();
-        userMessage = json.userMessage;
     }
     
     if (userMessage === null || userMessage === undefined) {
       return ApiResponse.badRequest("currentMessage cannot be null.");
     }
-
-    const businessId = new URL(req.url).searchParams.get('businessId') || undefined;
 
     const output = await this.postMessageUseCase.execute({
       sessionId,

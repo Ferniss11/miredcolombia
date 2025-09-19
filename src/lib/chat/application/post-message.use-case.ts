@@ -52,7 +52,7 @@ export class PostMessageUseCase {
         chatHistory: updatedChatHistory, // Pass the most up-to-date history
         currentMessage: userMessage,
         businessId,
-        sessionId: sessionId, // Pass the sessionId to the adapter for context
+        sessionId: sessionId,
     });
 
     // 4. Persist the AI's response
