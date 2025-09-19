@@ -41,7 +41,13 @@ export const POST = apiHandler(async (req: NextRequest, { params }: RouteContext
     const businessId = req.nextUrl.searchParams.get('businessId') || undefined;
     
     // --- Pass Parsed Data to Controller ---
-    const payload = { userMessage, userId, businessId, document };
-    return chatController.postMessage(payload, { params });
+    const payload = { 
+        userMessage, 
+        userId, 
+        businessId, 
+        document,
+        sessionId: params.sessionId,
+    };
+    return chatController.postMessage(payload);
 
 });

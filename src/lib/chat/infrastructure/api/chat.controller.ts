@@ -130,15 +130,29 @@ export class ChatController {
     });
   }
   
-  async postMessage(payload: PostMessagePayload, params: { params: { sessionId?: string } }): Promise<ApiResponse> {
+  async postMessage(payload: PostMessagePayload): Promise<ApiResponse> {
       let { userMessage, userId, sessionId, businessId, document, isLabMode, agentId } = payload;
       
-      // If sessionId is not in payload, get it from params
-      if (!sessionId) {
-          sessionId = params.params.sessionId;
-      }
       if (!sessionId) {
           return ApiResponse.badRequest('Session ID is missing.');
+      }
+      
+      // If we are in Lab mode, but no session document exists, we must create one.
+      if (isLabMode) {
+          const chatRepository = new FirestoreChatRepository();
+          let existingSession = await chatRepository.findSessionById(sessionId);
+          if (!existingSession) {
+              await chatRepository.createSessionWithInitialMessage({
+                  userName: 'Lab User',
+                  userPhone: '',
+                  userId: userId || 'lab-user-id',
+                  createdAt: new Date(),
+                  totalTokens: 0,
+                  totalInputTokens: 0,
+                  totalOutputTokens: 0,
+                  totalCost: 0,
+              }, `Inicio de sesión de laboratorio: ${sessionId}`);
+          }
       }
 
       if (document && userId) {
