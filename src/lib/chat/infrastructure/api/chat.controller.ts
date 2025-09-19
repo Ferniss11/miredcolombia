@@ -1,10 +1,9 @@
-
 // src/lib/chat/infrastructure/api/chat.controller.ts
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
 import { ApiResponse } from '@/lib/platform/api/api-response';
 import { FirestoreChatRepository } from '../persistence/firestore-chat.repository';
-import { GenkitAgentAdapter } from '../ai/genkit-agent.adapter';
+import { GenkitAgentAdapter } from '../ai/agent.adapter';
 import { StartChatSessionUseCase } from '../../application/start-chat-session.use-case';
 import { PostMessageUseCase } from '../../application/post-message.use-case';
 import { GetChatHistoryUseCase } from '../../application/get-chat-history.use-case';
@@ -130,6 +129,8 @@ export class ChatController {
    * Linked to POST /api/chat/sessions/[sessionId]/messages
    */
   async postMessage(req: NextRequest, { params }: { params: { sessionId: string } }): Promise<ApiResponse> {
+    // Clone the request so it can be read by both this function and the apiHandler
+    const reqClone = req.clone();
     const { sessionId } = params;
 
     let userId: string | undefined = undefined;
@@ -143,12 +144,12 @@ export class ChatController {
       }
     }
     
-    const contentType = req.headers.get('content-type');
+    const contentType = reqClone.headers.get('content-type');
     let userMessage: string;
 
     // --- Vectorization on-the-fly logic ---
     if (contentType?.includes('multipart/form-data')) {
-        const formData = await req.formData();
+        const formData = await reqClone.formData();
         userMessage = formData.get('currentMessage') as string;
         const file = formData.get('document') as File | null;
         
@@ -166,7 +167,7 @@ export class ChatController {
             }
         }
     } else {
-        const json = await req.json();
+        const json = await reqClone.json();
         userMessage = json.userMessage;
     }
     
