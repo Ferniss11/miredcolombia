@@ -87,7 +87,6 @@ export type PostMessagePayload = {
     document?: File | null;
     isLabMode?: boolean;
     agentId?: 'global' | 'valeria_premium' | 'business';
-    sessionId: string;
 };
 
 
@@ -130,31 +129,12 @@ export class ChatController {
     });
   }
   
-  async postMessage(payload: PostMessagePayload, { params }: { params: { sessionId?: string } }): Promise<ApiResponse> {
-    let { userMessage, userId, businessId, document, isLabMode, agentId, sessionId } = payload;
-    
-    sessionId = sessionId || params.sessionId;
+  async postMessage(payload: PostMessagePayload, { params }: { params: { sessionId: string } }): Promise<ApiResponse> {
+    let { userMessage, userId, businessId, document, isLabMode, agentId } = payload;
+    let sessionId = params.sessionId;
 
     if (!sessionId) {
         return ApiResponse.badRequest("Session ID is missing.");
-    }
-    
-    // In lab mode, if the session doesn't exist, create it.
-    if (isLabMode) {
-      const chatRepository = new FirestoreChatRepository();
-      const existingSession = await chatRepository.findSessionById(sessionId);
-      if (!existingSession) {
-        await chatRepository.createSessionWithInitialMessage({
-          userName: 'Lab User',
-          userPhone: '',
-          userId: userId || 'lab-user-id',
-          createdAt: new Date(),
-          totalTokens: 0,
-          totalInputTokens: 0,
-          totalOutputTokens: 0,
-          totalCost: 0,
-        }, 'Inicio de sesión de laboratorio.');
-      }
     }
     
     if (document && userId) {
@@ -168,7 +148,6 @@ export class ChatController {
       return ApiResponse.badRequest("currentMessage cannot be null.");
     }
     
-    // --- LAB MODE LOGIC ---
     if (isLabMode && agentId) {
         const history = await this.getChatHistoryUseCase.execute({ sessionId });
         const output = await this.simulateAgentResponseUseCase.execute({
@@ -181,7 +160,6 @@ export class ChatController {
         return ApiResponse.success(output);
     }
     
-    // --- NORMAL USER LOGIC ---
     const output = await this.postMessageUseCase.execute({
       sessionId,
       userMessage,
