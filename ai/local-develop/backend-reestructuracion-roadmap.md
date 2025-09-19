@@ -175,25 +175,37 @@
 *   **7.3. Gestión Avanzada de Agentes (Admin Dashboard) (✓ COMPLETADA):**
     *   **Panel Multi-Agente:** Refactorizar `/dashboard/admin/agent` para gestionar configuraciones de agentes separadas en Firestore: `global` (para el plan gratuito) y `valeria_premium`. (✓)
     *   **Adaptador Inteligente:** Actualizar el `GenkitAgentAdapter` para que cargue la configuración (`systemPrompt`, `model`) correcta basándose en el `claim` del usuario. (✓)
-    
-*   **7.4. Laboratorio de Agentes (Admin Playground):**
+
+*   **7.4. Gestión de Base de Conocimiento (Admin):**
+    *   **Objetivo:** Permitir al administrador subir, ver y eliminar los documentos que forman la base de conocimiento principal de Valeria.
+    *   **UI:** Crear una nueva página (`/dashboard/admin/knowledge-base`) que contenga:
+        *   Un formulario para subir archivos (PDF, Markdown, TXT). Al subir un archivo, se llamará a una nueva API que iniciará el proceso de indexación.
+        *   Una tabla que liste los documentos actualmente en la base de conocimiento (ej. `guia-empadronamiento.pdf`, `articulo-blog-123.md`, `decreto-ley-xyz.pdf`).
+        *   Un botón para eliminar cada documento, lo que dispararía un proceso para borrar sus fragmentos y vectores correspondientes.
+    *   **Backend:**
+        *   Crear un nuevo endpoint (`POST /api/knowledge-base/upload`) para manejar la subida de estos documentos. Este endpoint reutilizará la lógica de la Tarea 7.6 (Flujo de Ingestión) para procesar y vectorizar el archivo.
+        *   Crear endpoints para listar (`GET /api/knowledge-base/documents`) y eliminar (`DELETE /api/knowledge-base/documents/[docId]`) los documentos.
+
+*   **7.5. Laboratorio de Agentes (Admin Playground):**
     *   **Objetivo:** Construir un "banco de pruebas" en el panel de administrador para probar el comportamiento de los diferentes agentes de IA en un entorno controlado.
     *   **UI:** Crear una nueva página (`/dashboard/admin/agent-lab`) que contenga:
         *   Un selector para elegir qué agente probar (`Global`, `Premium`, `Agente de Negocio`).
         *   Un área de chat para interactuar con el agente seleccionado.
         *   Un panel de metadatos que muestre el coste, tokens, y `system prompt` exacto usado en la última respuesta.
-        *   (Para Premium y Negocio) Un campo para subir un documento o seleccionar un negocio para añadir contexto a la prueba.
+        *   Un campo para subir un documento o seleccionar un negocio para añadir contexto a la prueba (para agentes `Premium` y `Business`).
     *   **Backend:** Crear un nuevo `ChatController` o endpoint que reciba el nombre del agente a simular y el contexto adicional, y devuelva no solo la respuesta, sino también los metadatos de depuración.
 
-*   **7.5. Análisis de Documentos en Sesión (Valeria Premium):**
-    *   **Objetivo:** Permitir a los usuarios Premium subir un documento (PDF) y conversar con la IA sobre su contenido. Este proceso es *stateless* a nivel de persistencia de vectores: el documento se procesa en cada petición.
+*   **7.6. Análisis de Documentos en Sesión (Valeria Premium):**
+    *   **Objetivo:** Permitir a los usuarios Premium subir un documento (PDF) y conversar con la IA sobre su contenido, sin que este se mezcle con la base de conocimiento principal.
     *   **UI:** Añadir un botón para subir archivos (`<input type="file">`) en la interfaz de chat del dashboard de Valeria (`/dashboard/valeria`).
-    *   **API:** Adaptar la ruta `POST /api/chat/sessions/[id]/messages` para que acepte `FormData` (texto y archivo opcional).
-    *   **Lógica del Controlador:** En el `ChatController`, si se recibe un archivo, usar `pdf-parse` para extraer su contenido a texto plano.
-    *   **Adaptador de Agente:** Modificar el `GenkitAgentAdapter` para que, si recibe texto de un documento, lo inyecte en un nuevo campo del `prompt` del agente, dándole el contexto necesario para esa respuesta específica.
+    *   **Backend:**
+        *   Modificar el `ChatController` para que, cuando reciba un archivo junto a un mensaje, lo procese en tiempo real.
+        *   El texto extraído del PDF se fragmentará y vectorizará, guardándose en la base de datos vectorial con metadatos específicos de la sesión (`source: 'user_session'`, `sessionId: 'xyz'`).
+        *   Estos vectores serán eliminados automáticamente después de un tiempo (ej. 24h) para mantener la privacidad y los costes.
+    *   **Actualizar Agente Premium:** La herramienta `knowledgeBaseSearch` deberá ser capaz de buscar tanto en `source: 'admin_kb'` como en `source: 'user_session' AND sessionId: 'xyz'`.
 
-*   **7.6. Implementación de Base de Conocimiento (RAG):**
-    *   **Objetivo:** Crear una base de conocimiento vectorial permanente a partir de nuestros propios documentos (guías, artículos de blog) para que Valeria pueda dar respuestas precisas y basadas en contenido curado por nosotros.
+*   **7.7. Implementación de Base de Conocimiento (RAG):**
+    *   **Objetivo:** Crear la infraestructura central para que Valeria pueda consultar nuestros propios documentos.
     *   **(TAREA MANUAL) Configuración de Infraestructura Vectorial:**
         *   **Activar APIs de Google Cloud:** Asegurarse de que las APIs `Cloud Build`, `Cloud Run`, y `Artifact Registry` estén habilitadas.
         *   **Instalar Extensión en Firebase:** En la consola de Firebase, instalar la extensión `firebase/firestore-vector-search`.
@@ -202,29 +214,25 @@
             2.  **Input field name:** `content` (El nombre del campo que contendrá el texto a vectorizar).
             La extensión creará automáticamente el campo `embedding` para almacenar el vector y gestionará la Cloud Function por su cuenta.
     *   **Flujo de Ingestión (Backend):**
-        *   En lugar de una Cloud Function separada, el proceso será: Cuando un admin suba una guía, nuestro backend leerá el documento, lo dividirá en fragmentos (`chunks`), y para cada `chunk`, escribirá un nuevo documento en la colección `knowledge_base` con la estructura `{ content: "texto del fragmento...", metadata: { source: 'admin_kb', doc_id: '...' } }`.
+        *   Cuando el administrador sube un documento (ya sea una guía, un artículo o un archivo ad-hoc desde la Tarea 7.4), nuestro backend será responsable de:
+            1. Leer el documento y dividirlo en fragmentos (`chunks`).
+            2. Para cada `chunk`, escribir un nuevo documento en la colección `knowledge_base` con la estructura `{ content: "texto del fragmento...", metadata: { source: 'admin_kb', doc_id: '...' } }`.
         *   La extensión de Vector Search detectará estos nuevos documentos y automáticamente llenará el campo `embedding` para cada uno.
     *   **Herramienta de Búsqueda Vectorial (Genkit):**
         *   Crear una nueva `tool` de Genkit (`knowledgeBaseSearch`) que use el operador `findNeighbors` de Firestore para buscar en la `knowledge_base`.
         *   La herramienta aceptará la consulta del usuario y un `sessionId` opcional para poder filtrar por `source = 'user_session'` o `source = 'admin_kb'`.
     *   **Actualizar Agente Premium:** Modificar el `systemPrompt` del agente `valeria_premium` para que priorice el uso de la herramienta `knowledgeBaseSearch` antes de usar su conocimiento general, asegurando respuestas basadas en nuestros documentos.
 
-*   **7.7. Síntesis de Voz (Text-to-Speech):**
+*   **7.8. Síntesis de Voz (Text-to-Speech):**
     *   **Objetivo:** Permitir que las respuestas de Valeria puedan ser escuchadas además de leídas.
     *   **Backend (Genkit Flow):** Crear un nuevo flujo `textToSpeechFlow` que reciba un texto y devuelva una URL de datos de audio (`data:audio/wav;base64,...`).
-        *   Este flujo usará el modelo `gemini-2.5-flash-preview-tts`.
-        *   Instalar y usar la librería `wav` para convertir el audio PCM de Gemini a formato WAV.
     *   **API:** Crear un nuevo endpoint, por ejemplo `POST /api/audio/tts`, que exponga este flujo.
-    *   **UI:** En el `ChatWidget`, añadir un botón de "Play" junto a cada mensaje de la IA. Al hacer clic, se llamará al nuevo endpoint y se reproducirá el audio resultante en un elemento `<audio>`.
+    *   **UI:** En el `ChatWidget`, añadir un botón de "Play" junto a cada mensaje de la IA.
 
-*   **7.8. Reconocimiento de Voz (Speech-to-Text):**
+*   **7.9. Reconocimiento de Voz (Speech-to-Text):**
     *   **Objetivo:** Permitir a los usuarios hablarle a Valeria en lugar de escribir.
-    *   **UI:** Añadir un botón de "Grabar" en la barra de entrada del `ChatWidget`.
-        *   Al pulsarlo, usar la API `MediaRecorder` del navegador para grabar el audio del micrófono del usuario.
-        *   Al detener la grabación, se obtiene un `Blob` de audio.
-    *   **Backend (Genkit Flow):** El flujo `migrationChat` debe ser adaptado para aceptar opcionalmente un `audioDataUri` además del `currentMessage`.
-        *   Si se recibe audio, Genkit lo transcribirá automáticamente a texto antes de procesar el prompt.
-    *   **API y Controller:** Modificar la ruta `POST /api/chat/sessions/[id]/messages` y el `ChatController` para que acepten `FormData` con un campo de texto y un campo de audio opcional.
+    *   **UI:** Añadir un botón de "Grabar" en la barra de entrada del `ChatWidget` y usar `MediaRecorder`.
+    *   **Backend (Genkit Flow):** El flujo de chat debe ser adaptado para aceptar opcionalmente un `audioDataUri` y transcribirlo a texto.
 
 ---
 
