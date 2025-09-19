@@ -451,7 +451,7 @@ export default function ChatWidget({ isLabMode = false, labConfig, onReset, onMe
         const aiMessage: ChatMessage = {
             id: `ai-${Date.now()}`,
             role: 'model',
-            text: result.response || result.aiResponse,
+            text: result.response, // Adjusted to match the unified response structure
             timestamp: new Date().toISOString(),
             replyTo: null,
             usage: result.usage,
@@ -622,7 +622,7 @@ export default function ChatWidget({ isLabMode = false, labConfig, onReset, onMe
                     <Input value={currentMessage} onChange={(e) => setCurrentMessage(e.target.value)} placeholder="Escribe tu pregunta..." disabled={isAiResponding || isLimitReached} autoComplete="off" />
                     {canUploadFile && <Button type="button" variant="ghost" size="icon" onClick={() => fileInputRef.current?.click()} disabled={isAiResponding}><Paperclip className="h-5 w-5"/></Button>}
                     <Button type="submit" size="icon" disabled={isAiResponding || (!currentMessage.trim() && !attachedFile) || isLimitReached}><Send size={18} /></Button>
-                    <Input type="file" className="hidden" ref={fileInputRef} accept=".pdf" onChange={handleFileChange} />
+                    <Input type="file" className="hidden" ref={fileInputRef} accept=".pdf,.txt,.md" onChange={handleFileChange} />
                 </form>
                 </>
             )}
@@ -688,3 +688,5 @@ export default function ChatWidget({ isLabMode = false, labConfig, onReset, onMe
     </Fragment>
   );
 }
+
+    
