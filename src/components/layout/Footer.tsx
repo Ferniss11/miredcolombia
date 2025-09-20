@@ -1,15 +1,12 @@
 
-
 'use client';
 
-import { Instagram, Youtube, Lightbulb } from "lucide-react";
+import { Instagram, Youtube } from "lucide-react";
 import Link from "next/link";
 import Image from 'next/image';
 import ChatWidget from "../chat/ChatWidget";
 import { useChat } from "@/context/ChatContext";
 import { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
-import { Clock } from "lucide-react";
 
 const TikTokIcon = () => (
     <svg 
@@ -24,55 +21,15 @@ const TikTokIcon = () => (
     </svg>
 );
 
-const migrationTips = [
-    "Recuerda apostillar todos tus documentos oficiales en Colombia antes de viajar.",
-    "El empadronamiento es el primer trámite y el más importante al llegar a España.",
-    "Si vienes con visa de estudiante, puedes trabajar hasta 30 horas semanales con permiso.",
-    "Abre una cuenta bancaria tan pronto como tengas tu NIE para facilitar trámites.",
-    "Investiga sobre el sistema de transporte público de tu ciudad, es muy eficiente.",
-    "Guarda copias digitales de todos tus documentos importantes en la nube."
-];
-
 
 export default function Footer() {
   const { chatContext, isChatOpen, setChatOpen } = useChat();
-  const [randomTip, setRandomTip] = useState(migrationTips[0]);
-
-  useEffect(() => {
-    const tipInterval = setInterval(() => {
-      setRandomTip((currentTip) => {
-        let newTip;
-        do {
-          newTip = migrationTips[Math.floor(Math.random() * migrationTips.length)];
-        } while (newTip === currentTip);
-        return newTip;
-      });
-    }, 7000);
-
-    return () => clearInterval(tipInterval);
-  }, []); // Empty dependency array ensures this effect runs only once on mount
   
   return (
     <>
     <footer className="bg-white dark:bg-gray-900 border-t">
       <div className="container mx-auto py-12 px-4 sm:px-6 lg:px-8">
         
-         <div className="grid grid-cols-1 md:grid-cols-1 gap-8 mb-12 max-w-2xl mx-auto">
-             <div className="border rounded-lg p-4 bg-background/50 overflow-hidden relative min-h-[72px] flex items-center shadow-lg">
-                <div className="animate-slide-in-up">
-                    <div className="flex items-start gap-3">
-                        <Lightbulb className="w-5 h-5 text-yellow-500 mt-1 flex-shrink-0" />
-                        <div>
-                            <h4 className="font-bold font-headline text-md">Tip del Día</h4>
-                            <p className="text-muted-foreground text-sm mt-1">
-                                {randomTip}
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-         </div>
-
         <div className="xl:grid xl:grid-cols-3 xl:gap-8 border-t pt-8">
           <div className="space-y-8 xl:col-span-1">
              <Link href="/" className="flex items-center space-x-2">
