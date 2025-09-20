@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useTransition } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -8,10 +8,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { BrainCircuit, TestTube2, RotateCcw, Bot, LogIn } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Label } from '@/components/ui/label';
-import { v4 as uuidv4 } from 'uuid';
-import ChatWidget from '@/components/chat/ChatWidget'; // Import the main ChatWidget
+import ChatWidget from '@/components/chat/ChatWidget';
 import type { ChatMessage, TokenUsage } from '@/lib/chat-types';
 import { Button } from '@/components/ui/button';
+import { Loader2 } from 'lucide-react';
 
 interface ResponseMetadata {
     inputTokens: number;
@@ -23,20 +23,49 @@ export default function AgentLabPage() {
   const [selectedAgent, setSelectedAgent] = useState<'global' | 'valeria_premium'>('global');
   const [lastResponseMeta, setLastResponseMeta] = useState<ResponseMetadata | null>(null);
   const [isSessionActive, setIsSessionActive] = useState(false);
-  
-  // Create a unique session ID for this lab instance that changes on reset
-  const [sessionId, setSessionId] = useState(uuidv4());
-  
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [isLoading, startLoadingTransition] = useTransition();
+
+  const { user } = useAuth();
+  const { toast } = useToast();
+
   const handleStartSession = () => {
-    // Reset metadata and create a new session ID, then activate the chat view
-    setLastResponseMeta(null);
-    setSessionId(uuidv4());
-    setIsSessionActive(true);
+    if (!user) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Debes estar autenticado.' });
+        return;
+    }
+
+    startLoadingTransition(async () => {
+        try {
+            const token = await user.getIdToken();
+            const response = await fetch('/api/chat/sessions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                body: JSON.stringify({
+                    userName: 'Lab User',
+                    userPhone: '000000000',
+                    userEmail: 'lab@miredcolombia.com',
+                    userId: user.uid,
+                    isLabSession: true, // Flag to identify this as a special session
+                }),
+            });
+            if (!response.ok) {
+                const result = await response.json();
+                throw new Error(result.error?.message || 'Failed to create lab session.');
+            }
+            const { session } = await response.json();
+            setSessionId(session.id);
+            setLastResponseMeta(null);
+            setIsSessionActive(true);
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Error', description: error instanceof Error ? error.message : 'Error desconocido' });
+        }
+    });
   };
 
   const handleResetSession = () => {
-    // This will bring the user back to the "Start Session" screen
     setIsSessionActive(false);
+    setSessionId(null);
   };
   
   const handleMessageReceived = (message: ChatMessage) => {
@@ -63,7 +92,7 @@ export default function AgentLabPage() {
                     </div>
                 </CardHeader>
                 <CardContent className="flex-1 overflow-hidden p-0">
-                    {isSessionActive ? (
+                    {isSessionActive && sessionId ? (
                         <ChatWidget
                             isLabMode={true}
                             labConfig={{ agentId: selectedAgent, sessionId: sessionId }}
@@ -72,10 +101,16 @@ export default function AgentLabPage() {
                         />
                     ) : (
                         <div className="h-full flex flex-col items-center justify-center text-center p-4">
-                            <Bot className="h-16 w-16 text-muted-foreground mb-4" />
-                            <h3 className="text-xl font-semibold">Sesión de Prueba Terminada</h3>
+                            {isLoading ? (
+                                <Loader2 className="h-12 w-12 animate-spin text-primary mb-4"/>
+                            ) : (
+                                <Bot className="h-16 w-16 text-muted-foreground mb-4" />
+                            )}
+                            <h3 className="text-xl font-semibold">
+                                {isLoading ? 'Creando sesión de prueba...' : 'Sesión de Prueba Terminada'}
+                            </h3>
                             <p className="text-muted-foreground mt-2">
-                                Para iniciar una nueva conversación de prueba, selecciona un agente y haz clic en "Iniciar Sesión de Prueba".
+                                {isLoading ? 'Por favor, espera un momento.' : 'Para iniciar una nueva conversación de prueba, selecciona un agente y haz clic en "Iniciar Sesión de Prueba".'}
                             </p>
                         </div>
                     )}
@@ -92,7 +127,7 @@ export default function AgentLabPage() {
                 <CardContent className="space-y-4">
                      <div>
                         <Label htmlFor="agent-selector">Seleccionar Agente a Probar</Label>
-                        <Select value={selectedAgent} onValueChange={(value: 'global' | 'valeria_premium') => setSelectedAgent(value)}>
+                        <Select value={selectedAgent} onValueChange={(value: 'global' | 'valeria_premium') => setSelectedAgent(value)} disabled={isSessionActive}>
                             <SelectTrigger id="agent-selector">
                                 <SelectValue placeholder="Selecciona un agente" />
                             </SelectTrigger>
@@ -102,8 +137,8 @@ export default function AgentLabPage() {
                             </SelectContent>
                         </Select>
                     </div>
-                    <Button className="w-full" onClick={handleStartSession}>
-                        <LogIn className="mr-2 h-4 w-4" />
+                    <Button className="w-full" onClick={handleStartSession} disabled={isSessionActive || isLoading}>
+                        {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LogIn className="mr-2 h-4 w-4" />}
                         Iniciar Sesión de Prueba
                     </Button>
                 </CardContent>

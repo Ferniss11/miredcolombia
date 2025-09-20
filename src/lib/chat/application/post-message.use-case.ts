@@ -11,6 +11,7 @@ export type PostMessageInput = {
   userMessage: string;
   userId?: string;
   businessId?: string; // Optional context for business-specific agents
+  agentId?: 'global' | 'valeria_premium' | 'business'; // For lab mode
 };
 
 export type PostMessageOutput = {
@@ -28,7 +29,7 @@ export class PostMessageUseCase {
     private readonly agentAdapter: AgentAdapter
   ) {}
 
-  async execute({ sessionId, userMessage, userId, businessId }: PostMessageInput): Promise<PostMessageOutput> {
+  async execute({ sessionId, userMessage, userId, businessId, agentId }: PostMessageInput): Promise<PostMessageOutput> {
     
     // 1. Get the conversation history. This must be done first.
     const chatHistory = await this.chatRepository.getHistory(sessionId, businessId);
@@ -52,6 +53,7 @@ export class PostMessageUseCase {
         currentMessage: userMessage,
         businessId,
         sessionId: sessionId,
+        agentId,
     });
 
     // 4. Persist the AI's response

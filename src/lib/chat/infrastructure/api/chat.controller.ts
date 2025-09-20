@@ -13,8 +13,6 @@ import { FirestoreUserRepository } from '@/lib/user/infrastructure/persistence/f
 import { adminAuth, adminDb } from '@/lib/firebase/admin-config';
 import pdf from 'pdf-parse';
 import { StartOrResumeChatUseCase } from '../../application/start-or-resume-chat.use-case';
-import { SimulateAgentResponseUseCase } from '../../application/simulate-agent-response.use-case';
-
 
 // --- Helper function for session document ingestion ---
 const chunkText = (text: string, chunkSize = 1500, overlap = 200): string[] => {
@@ -77,16 +75,16 @@ const StartSessionSchema = z.object({
   userPhone: z.string().optional(),
   userEmail: z.string().email().optional().or(z.literal('')),
   businessId: z.string().optional(),
-  userId: z.string().optional(), // Added userId for logged-in users
+  userId: z.string().optional(),
+  isLabSession: z.boolean().optional(),
 });
 
 export type PostMessagePayload = {
     userMessage: string;
     userId?: string;
-    sessionId: string; // Session ID is now always expected in the payload
+    sessionId: string;
     businessId?: string;
     document?: File | null;
-    isLabMode?: boolean;
     agentId?: 'global' | 'valeria_premium' | 'business';
 };
 
@@ -94,7 +92,6 @@ export type PostMessagePayload = {
 export class ChatController {
   private startOrResumeChatUseCase: StartOrResumeChatUseCase;
   private postMessageUseCase: PostMessageUseCase;
-  private simulateAgentResponseUseCase: SimulateAgentResponseUseCase;
   private getAllSessionsUseCase: GetAllChatSessionsUseCase;
   private getSessionByIdUseCase: GetSessionByIdUseCase;
   private getChatHistoryUseCase: GetChatHistoryUseCase;
@@ -114,7 +111,6 @@ export class ChatController {
         this.getSessionByIdUseCase
     );
     this.postMessageUseCase = new PostMessageUseCase(chatRepository, agentAdapter);
-    this.simulateAgentResponseUseCase = new SimulateAgentResponseUseCase(agentAdapter);
     this.getAllSessionsUseCase = new GetAllChatSessionsUseCase(chatRepository);
   }
 
@@ -122,6 +118,18 @@ export class ChatController {
     const json = await req.json();
     const input = StartSessionSchema.parse(json);
 
+    // If it's a lab session, we just need to create it without resuming logic.
+    if (input.isLabSession) {
+        const chatRepository = new FirestoreChatRepository();
+        const startChatSessionUseCase = new StartChatSessionUseCase(chatRepository);
+        const { session, history } = await startChatSessionUseCase.execute(input);
+        return ApiResponse.success({
+            session: { ...session, createdAt: session.createdAt.toISOString() },
+            history: history.map(m => ({ ...m, timestamp: m.timestamp.toISOString() })),
+        });
+    }
+
+    // For regular users, use the full start-or-resume logic.
     const { session, history } = await this.startOrResumeChatUseCase.execute(input);
 
     return ApiResponse.success({
@@ -131,31 +139,12 @@ export class ChatController {
   }
   
   async postMessage(payload: PostMessagePayload): Promise<ApiResponse> {
-      let { userMessage, userId, sessionId, businessId, document, isLabMode, agentId } = payload;
+      let { userMessage, userId, sessionId, businessId, document, agentId } = payload;
       
       if (!sessionId) {
           return ApiResponse.badRequest('Session ID is missing.');
       }
       
-      const chatRepository = new FirestoreChatRepository();
-      
-      // If we are in Lab mode, but no session document exists, we must create one.
-      if (isLabMode) {
-          let existingSession = await chatRepository.findSessionById(sessionId);
-          if (!existingSession) {
-              await chatRepository.createSessionWithInitialMessage({
-                  userName: 'Lab User',
-                  userPhone: '',
-                  userId: userId || 'lab-user-id',
-                  createdAt: new Date(),
-                  totalTokens: 0,
-                  totalInputTokens: 0,
-                  totalOutputTokens: 0,
-                  totalCost: 0,
-              }, `Inicio de sesión de laboratorio: ${sessionId}`);
-          }
-      }
-
       if (document && userId) {
           await ingestSessionDocument(document, sessionId, userId);
           if (!userMessage) {
@@ -163,23 +152,13 @@ export class ChatController {
           }
       }
 
-      if (isLabMode && agentId) {
-          // Lab mode now also persists messages to allow for a continuous conversation.
-          const output = await this.postMessageUseCase.execute({
-              sessionId,
-              userMessage,
-              userId: userId || 'lab-user-id',
-              businessId
-          });
-          return ApiResponse.success(output);
-      }
-
-      // Regular chat mode: persist messages and get response
       const output = await this.postMessageUseCase.execute({
           sessionId,
           userMessage,
           userId,
           businessId,
+          // Pass the lab-specific agentId if it exists
+          agentId
       });
 
       return ApiResponse.success(output);

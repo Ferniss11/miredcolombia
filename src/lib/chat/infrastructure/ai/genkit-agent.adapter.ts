@@ -34,16 +34,15 @@ export class GenkitAgentAdapter implements AgentAdapter {
     this.getBusinessDetailsUseCase = new GetBusinessDetailsUseCase(directoryRepository, searchAdapter, cacheAdapter);
   }
 
-  private async getAgentConfigForUser(chatHistory: ChatMessage[]): Promise<AgentConfig> {
+  private async getAgentConfigForUser(chatHistory: Omit<ChatMessage, 'id' | 'timestamp'>[]): Promise<AgentConfig> {
     const lastUserMessage = chatHistory.findLast(m => m.role === 'user');
-    const userId = lastUserMessage?.authorId; // Assuming authorId is set on user messages
+    const userId = lastUserMessage?.authorId;
     
     if (userId && adminAuth) {
         try {
             const userRecord = await adminAuth.getUser(userId);
             const plan = userRecord.customClaims?.valeria_plan as 'valeria_premium' | undefined;
 
-            // If the user has a premium plan, load that specific agent config
             if (plan === 'valeria_premium') {
                 return this.userRepository.getAgentConfig('valeria_premium');
             }
@@ -52,24 +51,23 @@ export class GenkitAgentAdapter implements AgentAdapter {
         }
     }
     
-    // Default to global agent for guests or free users
     return this.userRepository.getAgentConfig('global');
   }
 
 
   async getCompletion(input: {
-    chatHistory: ChatMessage[];
+    chatHistory: Omit<ChatMessage, 'id' | 'timestamp'>[];
     currentMessage: string;
     businessId?: string;
-    sessionId?: string; // Session ID is now received
+    sessionId?: string;
     agentId?: 'global' | 'valeria_premium' | 'business';
   }): Promise<{ response: string; usage: TokenUsage; cost: number; }> {
     
     const chatHistoryForAI = input.chatHistory.map(m => ({
-      role: m.role === 'admin' ? 'model' : m.role, // Treat admin messages as model messages from AI's perspective
+      role: m.role === 'admin' ? 'model' : m.role,
       text: m.role === 'admin' ? `[Mensaje del Administrador: ${m.text}]` : m.text,
     }));
-    
+
     // --- Logic for explicit agent selection (Agent Lab) ---
     if (input.agentId) {
         let agentConfig: AgentConfig;
@@ -84,7 +82,7 @@ export class GenkitAgentAdapter implements AgentAdapter {
             systemPrompt: agentConfig.systemPrompt || DEFAULT_GLOBAL_PROMPT,
             chatHistory: chatHistoryForAI,
             currentMessage: input.currentMessage,
-            sessionId: input.sessionId, // Pass sessionId to the flow
+            sessionId: input.sessionId,
         });
 
         const usage = aiResponse.usage || { inputTokens: 0, outputTokens: 0, totalTokens: 0 };
@@ -125,7 +123,7 @@ export class GenkitAgentAdapter implements AgentAdapter {
         systemPrompt: agentConfig.systemPrompt || DEFAULT_GLOBAL_PROMPT,
         chatHistory: chatHistoryForAI,
         currentMessage: input.currentMessage,
-        sessionId: input.sessionId, // Pass sessionId to the flow
+        sessionId: input.sessionId,
       });
       
       const usage = aiResponse.usage || { inputTokens: 0, outputTokens: 0, totalTokens: 0 };
