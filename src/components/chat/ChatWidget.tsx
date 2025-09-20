@@ -418,12 +418,12 @@ export default function ChatWidget({ isLabMode = false, labConfig, onReset, onMe
     let headers: HeadersInit = {};
     const idToken = await user?.getIdToken();
 
-    if (isLabMode && labConfig) {
+    if (isLabMode && labConfig && idToken) {
         endpoint = '/api/agent-lab/chat';
         formData.append('agentId', labConfig.agentId);
         formData.append('sessionId', labConfig.sessionId);
         formData.append('userId', user?.uid || 'lab-user-id');
-        if (idToken) headers['Authorization'] = `Bearer ${idToken}`;
+        headers['Authorization'] = `Bearer ${idToken}`;
     } else if (session) {
         endpoint = `/api/chat/sessions/${session.id}/messages`;
         if (chatContext?.businessId) {
@@ -518,7 +518,8 @@ export default function ChatWidget({ isLabMode = false, labConfig, onReset, onMe
     }
 
     const isLimitReached = !isLabMode && !isPremiumUser && (session?.messageCount || 0) >= 3;
-    const canUploadFile = (isPremiumUser || (isLabMode && labConfig?.agentId === 'valeria_premium'));
+    const canUploadFile = isLabMode ? labConfig?.agentId === 'valeria_premium' : isPremiumUser;
+
 
     return (
       <div className="flex flex-col h-full">
