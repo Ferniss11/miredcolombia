@@ -36,25 +36,21 @@ const migrationTips = [
 
 export default function Footer() {
   const { chatContext, isChatOpen, setChatOpen } = useChat();
-  const [randomTip, setRandomTip] = useState(migrationTips[0]); // Initialize with a deterministic value
-  const [animationKey, setAnimationKey] = useState(0);
+  const [randomTip, setRandomTip] = useState(migrationTips[0]);
 
   useEffect(() => {
-    // The logic to rotate tips now runs only on the client, after hydration
     const tipInterval = setInterval(() => {
-        setRandomTip(prevTip => {
-            let newTip;
-            do {
-                newTip = migrationTips[Math.floor(Math.random() * migrationTips.length)];
-            } while (newTip === prevTip);
-            return newTip;
-        });
-        setAnimationKey(prevKey => prevKey + 1);
+      setRandomTip((currentTip) => {
+        let newTip;
+        do {
+          newTip = migrationTips[Math.floor(Math.random() * migrationTips.length)];
+        } while (newTip === currentTip);
+        return newTip;
+      });
     }, 7000);
 
     return () => clearInterval(tipInterval);
-  }, []); // Empty dependency array ensures this runs only once on the client
-
+  }, []); // Empty dependency array ensures this effect runs only once on mount
   
   return (
     <>
@@ -63,13 +59,13 @@ export default function Footer() {
         
          <div className="grid grid-cols-1 md:grid-cols-1 gap-8 mb-12 max-w-2xl mx-auto">
              <div className="border rounded-lg p-4 bg-background/50 overflow-hidden relative min-h-[72px] flex items-center shadow-lg">
-                <div key={animationKey} className="animate-slide-in-up">
+                <div className="animate-slide-in-up">
                     <div className="flex items-start gap-3">
                         <Lightbulb className="w-5 h-5 text-yellow-500 mt-1 flex-shrink-0" />
                         <div>
                             <h4 className="font-bold font-headline text-md">Tip del Día</h4>
                             <p className="text-muted-foreground text-sm mt-1">
-                                {randomTip || 'Cargando tip...'}
+                                {randomTip}
                             </p>
                         </div>
                     </div>
