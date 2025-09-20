@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect, useTransition } from 'react';
@@ -24,6 +25,7 @@ export default function AgentLabPage() {
   const [lastResponseMeta, setLastResponseMeta] = useState<ResponseMetadata | null>(null);
   const [isSessionActive, setIsSessionActive] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [initialHistory, setInitialHistory] = useState<ChatMessage[]>([]);
   const [isLoading, startLoadingTransition] = useTransition();
 
   const { user } = useAuth();
@@ -53,8 +55,9 @@ export default function AgentLabPage() {
                 const result = await response.json();
                 throw new Error(result.error?.message || 'Failed to create lab session.');
             }
-            const { session } = await response.json();
+            const { session, history } = await response.json();
             setSessionId(session.id);
+            setInitialHistory(history); // Pass initial history to the widget
             setLastResponseMeta(null);
             setIsSessionActive(true);
         } catch (error) {
@@ -66,6 +69,7 @@ export default function AgentLabPage() {
   const handleResetSession = () => {
     setIsSessionActive(false);
     setSessionId(null);
+    setInitialHistory([]);
   };
   
   const handleMessageReceived = (message: ChatMessage) => {
@@ -98,6 +102,7 @@ export default function AgentLabPage() {
                             labConfig={{ agentId: selectedAgent, sessionId: sessionId }}
                             onReset={handleResetSession}
                             onMessageReceived={handleMessageReceived}
+                            initialHistory={initialHistory} // Pass initial history
                         />
                     ) : (
                         <div className="h-full flex flex-col items-center justify-center text-center p-4">

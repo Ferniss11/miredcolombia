@@ -213,10 +213,11 @@ interface ChatWidgetProps {
     };
     onReset?: () => void;
     onMessageReceived?: (message: ChatMessage) => void;
+    initialHistory?: ChatMessage[];
 }
 
 
-export default function ChatWidget({ isLabMode = false, labConfig, onReset, onMessageReceived }: ChatWidgetProps) {
+export default function ChatWidget({ isLabMode = false, labConfig, onReset, onMessageReceived, initialHistory = [] }: ChatWidgetProps) {
   const { 
     isChatOpen, 
     setChatOpen, 
@@ -225,7 +226,7 @@ export default function ChatWidget({ isLabMode = false, labConfig, onReset, onMe
   } = useChat();
 
   const [session, setSession] = useState<ChatSession | null>(null);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>(initialHistory);
   const [isAiResponding, setIsAiResponding] = useState(false);
   const [currentMessage, setCurrentMessage] = useState('');
   const [attachedFile, setAttachedFile] = useState<File | null>(null);
@@ -263,25 +264,17 @@ export default function ChatWidget({ isLabMode = false, labConfig, onReset, onMe
   const startSessionForUser = useCallback(async () => {
     if (!user || !userProfile) return;
     
-    let endpoint = '/api/chat/sessions';
-    let body: any = {
-        userId: user.uid,
-        userName: userProfile.name,
-        userPhone: userProfile.businessProfile?.phone,
-        userEmail: userProfile.email,
-        businessId: chatContext?.businessId
-    };
-
-    if (isLabMode && labConfig) {
-        endpoint = '/api/chat/sessions'; 
-        body.isLabSession = true;
-    }
-
     try {
-        const response = await fetch(endpoint, {
+        const response = await fetch('/api/chat/sessions', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${await user.getIdToken()}`},
-            body: JSON.stringify(body),
+            body: JSON.stringify({
+                 userId: user.uid,
+                userName: userProfile.name,
+                userPhone: userProfile.businessProfile?.phone,
+                userEmail: userProfile.email,
+                businessId: chatContext?.businessId
+            }),
         });
         const result = await response.json();
         if (!response.ok) throw new Error(result.error?.message);
@@ -292,7 +285,7 @@ export default function ChatWidget({ isLabMode = false, labConfig, onReset, onMe
         const errorMessage = e instanceof Error ? e.message : 'No se pudo iniciar tu sesión de chat.';
         toast({ variant: 'destructive', title: 'Error', description: errorMessage});
     }
-  }, [user, userProfile, chatContext, handleSessionStarted, toast, isLabMode, labConfig]);
+  }, [user, userProfile, chatContext, handleSessionStarted, toast]);
 
   useEffect(() => {
     if (!isLabMode) {
@@ -312,11 +305,11 @@ export default function ChatWidget({ isLabMode = false, labConfig, onReset, onMe
   useEffect(() => {
     if (isLabMode && labConfig) {
         setSession({ id: labConfig.sessionId } as ChatSession);
-        setMessages([]);
+        setMessages(initialHistory); // Use initialHistory from props
         setView('chat');
         setSuggestions(getShuffledSample(suggestionPool, 3));
     }
-  }, [isLabMode, labConfig, suggestionPool])
+  }, [isLabMode, labConfig, suggestionPool, initialHistory])
 
 
   useEffect(() => {
@@ -418,7 +411,7 @@ export default function ChatWidget({ isLabMode = false, labConfig, onReset, onMe
         const result = await response.json();
         if (!response.ok) throw new Error(result.error?.message || 'Error en el servidor');
 
-        // The API now returns the full history.
+        // The API now returns the full history. Let's use it as the source of truth.
         setMessages(result.history || []);
         
         // Find the last message (which should be the AI response) to pass to the callback.
