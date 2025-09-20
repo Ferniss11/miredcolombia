@@ -334,7 +334,7 @@ export default function ChatWidget({ isLabMode = false, labConfig, onReset, onMe
     }
   }, [user, userProfile, chatContext, toast]);
   
-  // Triggers session management
+  // Triggers session management logic
   useEffect(() => {
     if (isLabMode) {
       setSession({ id: labConfig?.sessionId } as ChatSession);
@@ -342,16 +342,16 @@ export default function ChatWidget({ isLabMode = false, labConfig, onReset, onMe
       return;
     }
     
-    if (!authLoading) {
-      if ((isChatOpen || isInDashboard) && user && userProfile && !session) {
+    if (!authLoading && (isChatOpen || isInDashboard)) {
+      if (user && userProfile && !session) {
         startSessionForUser();
-      } else if (!user && (isChatOpen || isInDashboard)) {
+      } else if (!user) {
         setSession(null);
         setMessages([]);
         setView('welcome');
       }
     }
-  }, [isLabMode, labConfig, authLoading, isChatOpen, isInDashboard, user, userProfile, session, startSessionForUser]);
+  }, [isChatOpen, isInDashboard, user, authLoading, userProfile, session, isLabMode, labConfig, startSessionForUser]);
 
 
   // --- Event Handlers ---
@@ -419,8 +419,10 @@ export default function ChatWidget({ isLabMode = false, labConfig, onReset, onMe
         const result = await response.json();
         if (!response.ok) throw new Error(result.error?.message || 'Error en el servidor');
         
-        // Replace messages with the authoritative history from the server
-        setMessages(result.history || []);
+        // This is the key fix: Replace the entire message history with the server's response.
+        if (result.history) {
+            setMessages(result.history);
+        }
 
         if (onMessageReceived && result.history?.length > 0) {
           onMessageReceived(result.history[result.history.length - 1]);
@@ -430,7 +432,7 @@ export default function ChatWidget({ isLabMode = false, labConfig, onReset, onMe
         const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
         toast({ variant: 'destructive', title: 'Error', description: errorMessage });
         // Revert optimistic update on error
-        setMessages(prev => prev.filter(m => !m.id.startsWith('temp_')));
+        setMessages(prev => prev.filter(m => m.id !== optimisticUserMessage.id));
     } finally {
         setIsAiResponding(false);
     }
@@ -631,5 +633,3 @@ export default function ChatWidget({ isLabMode = false, labConfig, onReset, onMe
     </Fragment>
   );
 }
-
-    
