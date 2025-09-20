@@ -303,7 +303,7 @@ export default function ChatWidget({ isLabMode = false, labConfig, onReset, onMe
       if ((isChatOpen || isLabMode) && messages.length <= 1) { // Show if only welcome msg exists
         setSuggestions(getShuffledSample(suggestionPool, 3));
       }
-  }, [isChatOpen, isLabMode, messages, suggestionPool]);
+  }, [isChatOpen, isLabMode, messages.length, suggestionPool]);
 
   // Main session management logic
   const startSessionForUser = useCallback(async () => {
@@ -343,14 +343,12 @@ export default function ChatWidget({ isLabMode = false, labConfig, onReset, onMe
     }
     
     if (!authLoading) {
-      if (isChatOpen || isInDashboard) {
-        if (user && userProfile && !session) {
-          startSessionForUser();
-        } else if (!user) {
-          setSession(null);
-          setMessages([]);
-          setView('welcome');
-        }
+      if ((isChatOpen || isInDashboard) && user && userProfile && !session) {
+        startSessionForUser();
+      } else if (!user && (isChatOpen || isInDashboard)) {
+        setSession(null);
+        setMessages([]);
+        setView('welcome');
       }
     }
   }, [isLabMode, labConfig, authLoading, isChatOpen, isInDashboard, user, userProfile, session, startSessionForUser]);
@@ -378,8 +376,10 @@ export default function ChatWidget({ isLabMode = false, labConfig, onReset, onMe
       authorId: user?.uid,
       replyTo: null,
     };
-    setMessages(prev => [...prev, optimisticUserMessage]);
     
+    // Optimistic UI Update
+    setMessages(prev => [...prev, optimisticUserMessage]);
+
     if (file) {
       const optimisticFileMessage: ChatMessage = {
         id: `temp_file_${Date.now()}`,
@@ -418,8 +418,10 @@ export default function ChatWidget({ isLabMode = false, labConfig, onReset, onMe
         
         const result = await response.json();
         if (!response.ok) throw new Error(result.error?.message || 'Error en el servidor');
-
+        
+        // Replace messages with the authoritative history from the server
         setMessages(result.history || []);
+
         if (onMessageReceived && result.history?.length > 0) {
           onMessageReceived(result.history[result.history.length - 1]);
         }
@@ -427,6 +429,7 @@ export default function ChatWidget({ isLabMode = false, labConfig, onReset, onMe
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
         toast({ variant: 'destructive', title: 'Error', description: errorMessage });
+        // Revert optimistic update on error
         setMessages(prev => prev.filter(m => !m.id.startsWith('temp_')));
     } finally {
         setIsAiResponding(false);
@@ -628,3 +631,5 @@ export default function ChatWidget({ isLabMode = false, labConfig, onReset, onMe
     </Fragment>
   );
 }
+
+    
