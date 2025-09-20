@@ -1,4 +1,3 @@
-
 // infrastructure/persistence/firestore-user.repository.ts
 import type { User } from '../../domain/user.entity';
 import type { UserRepository } from '../../domain/user.repository';
