@@ -376,11 +376,24 @@ export default function ChatWidget({ isLabMode = false, labConfig, onReset, onMe
       }
     }
     
-    setIsAiResponding(true);
+    // --- Optimistic UI Update ---
+    const tempId = `temp_${Date.now()}`;
+    const optimisticUserMessage: ChatMessage = {
+      id: tempId,
+      text: messageText,
+      role: 'user',
+      timestamp: new Date().toISOString(),
+      authorId: user?.uid,
+      replyTo: null,
+    };
+    setMessages(prev => [...prev, optimisticUserMessage]);
+    
     setCurrentMessage('');
     setAttachedFile(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
+    setIsAiResponding(true);
 
+    // --- API Call ---
     const formData = new FormData();
     formData.append('currentMessage', messageText.trim());
     if (file) {
@@ -411,22 +424,19 @@ export default function ChatWidget({ isLabMode = false, labConfig, onReset, onMe
         const result = await response.json();
         if (!response.ok) throw new Error(result.error?.message || 'Error en el servidor');
 
-        // The API now returns the full history. This is the single source of truth.
+        // --- Replace state with server's source of truth ---
         setMessages(result.history || []);
         
-        // Find the last message (which should be the AI response) to pass to the callback.
-        if (result.history && result.history.length > 0) {
-            const lastMessage = result.history[result.history.length - 1];
-            if (lastMessage) onMessageReceived?.(lastMessage);
+        const lastMessage = result.history?.[result.history.length - 1];
+        if (lastMessage) {
+          onMessageReceived?.(lastMessage);
         }
 
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
-        if (errorMessage.includes("<!DOCTYPE")) {
-            toast({ variant: 'destructive', title: 'Error de Comunicación', description: 'La respuesta del servidor no fue válida. Inténtalo de nuevo.' });
-        } else {
-            toast({ variant: 'destructive', title: 'Error', description: errorMessage });
-        }
+        toast({ variant: 'destructive', title: 'Error', description: errorMessage });
+        // Revert the optimistic update on error
+        setMessages(prev => prev.filter(m => m.id !== tempId));
     } finally {
         setIsAiResponding(false);
     }
@@ -652,5 +662,3 @@ export default function ChatWidget({ isLabMode = false, labConfig, onReset, onMe
     </Fragment>
   );
 }
-
-    
