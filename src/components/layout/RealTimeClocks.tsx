@@ -1,8 +1,7 @@
 
-
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { Clock } from 'lucide-react';
 
 const RealTimeClocks = () => {
@@ -12,30 +11,31 @@ const RealTimeClocks = () => {
   });
   const [isClient, setIsClient] = useState(false);
 
-  const updateClocks = useCallback(() => {
-    setTime({
-      colombia: new Date().toLocaleTimeString('es-CO', {
-        timeZone: 'America/Bogota',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true,
-      }),
-      spain: new Date().toLocaleTimeString('es-ES', {
-        timeZone: 'Europe/Madrid',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false,
-      }),
-    });
-  }, []); // El array vacío asegura que la función no se recree
-
   useEffect(() => {
     setIsClient(true);
+    
+    const updateClocks = () => {
+      setTime({
+        colombia: new Date().toLocaleTimeString('es-CO', {
+          timeZone: 'America/Bogota',
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true,
+        }),
+        spain: new Date().toLocaleTimeString('es-ES', {
+          timeZone: 'Europe/Madrid',
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false,
+        }),
+      });
+    };
+
     updateClocks(); // Initial update
     const timer = setInterval(updateClocks, 1000 * 30); // Update every 30 seconds
 
     return () => clearInterval(timer);
-  }, [updateClocks]); // Ahora la dependencia es estable
+  }, []); // Empty dependency array ensures this runs only once
 
   if (!isClient) {
     // Render a lightweight, static placeholder on the server.
