@@ -411,12 +411,13 @@ export default function ChatWidget({ isLabMode = false, labConfig, onReset, onMe
         const result = await response.json();
         if (!response.ok) throw new Error(result.error?.message || 'Error en el servidor');
 
-        // The API now returns the full history. Let's use it as the source of truth.
+        // The API now returns the full history. This is the single source of truth.
         setMessages(result.history || []);
         
         // Find the last message (which should be the AI response) to pass to the callback.
         if (result.history && result.history.length > 0) {
-            onMessageReceived?.(result.history[result.history.length - 1]);
+            const lastMessage = result.history[result.history.length - 1];
+            if (lastMessage) onMessageReceived?.(lastMessage);
         }
 
     } catch (error) {
@@ -651,3 +652,5 @@ export default function ChatWidget({ isLabMode = false, labConfig, onReset, onMe
     </Fragment>
   );
 }
+
+    
