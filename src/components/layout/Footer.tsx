@@ -36,10 +36,11 @@ const migrationTips = [
 
 export default function Footer() {
   const { chatContext, isChatOpen, setChatOpen } = useChat();
-  const [randomTip, setRandomTip] = useState(() => migrationTips[Math.floor(Math.random() * migrationTips.length)]);
+  const [randomTip, setRandomTip] = useState(migrationTips[0]); // Initialize with a deterministic value
   const [animationKey, setAnimationKey] = useState(0);
 
   useEffect(() => {
+    // The logic to rotate tips now runs only on the client, after hydration
     const tipInterval = setInterval(() => {
         setRandomTip(prevTip => {
             let newTip;
@@ -52,7 +53,7 @@ export default function Footer() {
     }, 7000);
 
     return () => clearInterval(tipInterval);
-  }, []);
+  }, []); // Empty dependency array ensures this runs only once on the client
 
   
   return (
