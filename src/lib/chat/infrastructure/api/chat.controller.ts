@@ -55,7 +55,7 @@ async function ingestSessionDocument(file: File, sessionId: string, userId: stri
         batch.set(docRef, {
             content: chunk,
             metadata: {
-                source: 'user_session',
+                source: 'user_session', // Distinguishes from admin-uploaded content
                 sessionId,
                 userId,
                 doc_title: file.name,
@@ -157,7 +157,6 @@ export class ChatController {
           userMessage,
           userId,
           businessId,
-          // Pass the lab-specific agentId if it exists
           agentId
       });
 

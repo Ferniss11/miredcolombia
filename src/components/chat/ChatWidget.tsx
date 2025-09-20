@@ -411,8 +411,6 @@ export default function ChatWidget({ isLabMode = false, labConfig, onReset, onMe
       formData.append('document', file);
     }
     
-    const historyForBackend = [...messages, userMessage];
-
     const endpoint = `/api/chat/sessions/${effectiveSessionId}/messages`;
     let headers: HeadersInit = {};
     const idToken = await user?.getIdToken();
@@ -445,7 +443,7 @@ export default function ChatWidget({ isLabMode = false, labConfig, onReset, onMe
         const aiMessage: ChatMessage = {
             id: `ai-${Date.now()}`,
             role: 'model',
-            text: result.response,
+            text: result.response || '',
             timestamp: new Date().toISOString(),
             replyTo: null,
             usage: result.usage,
@@ -564,7 +562,7 @@ export default function ChatWidget({ isLabMode = false, labConfig, onReset, onMe
                     <div className="flex flex-col gap-1 w-full max-w-lg">
                         {authorName && <span className={cn("text-xs text-muted-foreground", isUser ? 'text-right' : 'text-left')}>{authorName}</span>}
                         <div className={cn('p-3 rounded-lg shadow-sm w-fit', bgColor, isUser ? 'ml-auto rounded-br-none' : 'mr-auto rounded-bl-none')}>
-                            <p className="text-sm whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: msg.text.replace(/\\n/g, '<br />') }} />
+                            <p className="text-sm whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: (msg.text || '').replace(/\\n/g, '<br />') }} />
                         </div>
                         <div className={cn("flex items-center gap-1.5 text-xs text-muted-foreground pr-2", isUser && "justify-end")}>
                             <Clock className="h-3 w-3" />
