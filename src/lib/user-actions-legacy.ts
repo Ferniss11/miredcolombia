@@ -1,17 +1,19 @@
-// src/lib/user-actions-legacy.ts
+'use server';
 
 // This file is intended for actions that have not yet been refactored
 // into the full hexagonal architecture. Over time, functions in this
 // file should be migrated and the file eventually removed.
 
-'use server';
-
 import { revalidatePath } from 'next/cache';
 import { FirestoreUserRepository } from './user/infrastructure/persistence/firestore-user.repository';
 import type { AgentConfig } from './types';
 
-
-export async function getAgentConfigAction(agentId: string = 'global') {
+/**
+ * Gets the configuration for a specific agent from the `agentConfig` collection.
+ * @param agentId The ID of the agent config to fetch (e.g., 'global', 'valeria_premium').
+ * @returns The agent configuration object or an error.
+ */
+export async function getAgentConfigAction(agentId: 'global' | 'valeria_premium' = 'global') {
     try {
         const repo = new FirestoreUserRepository();
         const config = await repo.getAgentConfig(agentId);
@@ -23,6 +25,12 @@ export async function getAgentConfigAction(agentId: string = 'global') {
     }
 }
 
+/**
+ * Saves the configuration for a specific agent to the `agentConfig` collection.
+ * @param agentId The ID of the agent config to save.
+ * @param config The configuration data to save.
+ * @returns A success or error object.
+ */
 export async function saveAgentConfigAction(agentId: string, config: AgentConfig) {
     try {
         const repo = new FirestoreUserRepository();
