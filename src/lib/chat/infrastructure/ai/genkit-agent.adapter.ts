@@ -72,7 +72,8 @@ export class GenkitAgentAdapter implements AgentAdapter {
     if (input.agentId) {
         let agentConfig: AgentConfig;
         if (input.agentId === 'business' && input.businessId) {
-             agentConfig = await this.userRepository.getAgentConfig(`business_${input.businessId}`);
+             const user = await this.userRepository.findUserByBusinessId(input.businessId);
+             agentConfig = user?.businessProfile?.agentConfig || await this.userRepository.getAgentConfig('global');
         } else {
              agentConfig = await this.userRepository.getAgentConfig(input.agentId);
         }
@@ -98,7 +99,8 @@ export class GenkitAgentAdapter implements AgentAdapter {
         throw new Error(`Business with ID ${input.businessId} not found or has no owner.`);
       }
       
-      const agentConfig = await this.userRepository.getAgentConfig(`business_${input.businessId}`);
+      const owner = await this.userRepository.findByUid(businessDetails.ownerUid);
+      const agentConfig = owner?.businessProfile?.agentConfig || await this.userRepository.getAgentConfig('global');
       const businessContext = `Nombre: ${businessDetails.displayName}\nCategoría: ${businessDetails.category}\nDirección: ${businessDetails.formattedAddress}\nTeléfono: ${businessDetails.internationalPhoneNumber}\nDescripción: ${businessDetails.editorialSummary || ''}`;
 
       const aiResponse = await businessChat({
