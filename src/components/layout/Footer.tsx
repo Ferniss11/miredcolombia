@@ -7,7 +7,6 @@ import Link from "next/link";
 import Image from 'next/image';
 import ChatWidget from "../chat/ChatWidget";
 import { useChat } from "@/context/ChatContext";
-import RealTimeClocks from "./RealTimeClocks";
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Clock } from "lucide-react";
@@ -64,8 +63,7 @@ export default function Footer() {
     <footer className="bg-white dark:bg-gray-900 border-t">
       <div className="container mx-auto py-12 px-4 sm:px-6 lg:px-8">
         
-         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12 max-w-4xl mx-auto">
-            <RealTimeClocks />
+         <div className="grid grid-cols-1 md:grid-cols-1 gap-8 mb-12 max-w-2xl mx-auto">
              <div className="border rounded-lg p-4 bg-background/50 overflow-hidden relative min-h-[72px] flex items-center shadow-lg">
                 <div key={animationKey} className="animate-slide-in-up">
                     <div className="flex items-start gap-3">
