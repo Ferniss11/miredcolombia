@@ -218,7 +218,7 @@ export default function ChatWidget({ isLabMode = false, labConfig, onReset, onMe
   const pathname = usePathname();
   
   const [session, setSession] = useState<ChatSession | null>(null);
-  const [messages, setMessages] = useState<ChatMessage[]>(initialHistory);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isAiResponding, setIsAiResponding] = useState(false);
   const [currentMessage, setCurrentMessage] = useState('');
   const [attachedFile, setAttachedFile] = useState<File | null>(null);
@@ -306,18 +306,16 @@ export default function ChatWidget({ isLabMode = false, labConfig, onReset, onMe
   }, [isChatOpen, isLabMode, messages.length, suggestionPool]);
 
   // Main session management logic
-  const startSessionForUser = useCallback(async () => {
-    if (!user || !userProfile) return;
-    
+  const startSessionForUser = useCallback(async (firebaseUser: User, profile: UserProfile) => {
     try {
         const response = await fetch('/api/chat/sessions', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${await user.getIdToken()}`},
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${await firebaseUser.getIdToken()}`},
             body: JSON.stringify({
-                userId: user.uid,
-                userName: userProfile.name,
-                userPhone: userProfile.businessProfile?.phone,
-                userEmail: userProfile.email,
+                userId: firebaseUser.uid,
+                userName: profile.name,
+                userPhone: profile.businessProfile?.phone,
+                userEmail: profile.email,
                 businessId: chatContext?.businessId
             }),
         });
@@ -327,32 +325,44 @@ export default function ChatWidget({ isLabMode = false, labConfig, onReset, onMe
         setSession(result.session);
         setMessages(result.history);
         setView('chat');
-        
     } catch(e) {
         const errorMessage = e instanceof Error ? e.message : 'No se pudo iniciar tu sesión de chat.';
         toast({ variant: 'destructive', title: 'Error', description: errorMessage});
     }
-  }, [user, userProfile, chatContext, toast]);
-  
-  // Triggers session management logic
+  }, [chatContext?.businessId, toast]);
+
+  // Effect to handle session logic based on auth state
   useEffect(() => {
     if (isLabMode) {
-      setSession({ id: labConfig?.sessionId } as ChatSession);
-      setView('chat');
-      return;
+      if (labConfig?.sessionId) {
+        setSession({ id: labConfig.sessionId } as ChatSession);
+        setMessages(initialHistory); // Use initial history from props
+        setView('chat');
+      }
+      return; // Lab mode has its own session management
     }
-    
-    if (!authLoading && (isChatOpen || isInDashboard)) {
-      if (user && userProfile && !session) {
-        startSessionForUser();
-      } else if (!user) {
+
+    if (!authLoading) {
+      if (user && userProfile) {
+        if (!session || session.userId !== user.uid) { // Start session only if needed
+          startSessionForUser(user, userProfile);
+        }
+      } else {
         setSession(null);
         setMessages([]);
         setView('welcome');
       }
     }
-  }, [isChatOpen, isInDashboard, user, authLoading, userProfile, session, isLabMode, labConfig, startSessionForUser]);
-
+  }, [
+    user, 
+    userProfile, 
+    authLoading, 
+    session, 
+    startSessionForUser, 
+    isLabMode, 
+    labConfig,
+    initialHistory
+  ]);
 
   // --- Event Handlers ---
 
@@ -465,7 +475,7 @@ export default function ChatWidget({ isLabMode = false, labConfig, onReset, onMe
     else {
         setSession(null);
         setMessages([]);
-        if (user) startSessionForUser();
+        if (user && userProfile) startSessionForUser(user, userProfile);
         else setView('welcome');
     }
   }
@@ -482,8 +492,8 @@ export default function ChatWidget({ isLabMode = false, labConfig, onReset, onMe
     }
 
     if (!isLabMode && !session) {
-        if (view === 'login') return <LoginForm onLoginSuccess={startSessionForUser} onBackClick={() => setView('welcome')} />;
-        return <WelcomeForm onSignUpSuccess={startSessionForUser} isBusinessChat={isBusinessChat} businessContext={chatContext || undefined} onLoginClick={() => setView('login')} />;
+        if (view === 'login') return <LoginForm onLoginSuccess={() => user && userProfile && startSessionForUser(user, userProfile)} onBackClick={() => setView('welcome')} />;
+        return <WelcomeForm onSignUpSuccess={() => user && userProfile && startSessionForUser(user, userProfile)} isBusinessChat={isBusinessChat} businessContext={chatContext || undefined} onLoginClick={() => setView('login')} />;
     }
 
     const isLimitReached = !isLabMode && !isPremiumUser && messages.filter(m => m.role === 'user').length >= 3;
