@@ -365,18 +365,16 @@ export default function ChatWidget({ isLabMode = false, labConfig, onReset, onMe
   
   const handleSendMessage = async (messageText: string, file?: File | null) => {
     const effectiveSessionId = isLabMode ? labConfig?.sessionId : session?.id;
-
     if ((!messageText.trim() && !file) || isAiResponding || !effectiveSessionId) return;
 
     if (!isLabMode) {
       const currentMessageCount = session?.messageCount || 0;
       if (!isPremiumUser && currentMessageCount >= 3) {
-          toast({ title: 'Límite Gratuito Alcanzado', description: 'Actualiza a un plan premium para continuar.', variant: 'destructive' });
-          return;
+        toast({ title: 'Límite Gratuito Alcanzado', description: 'Actualiza a un plan premium para continuar.', variant: 'destructive' });
+        return;
       }
     }
     
-    // --- Optimistic UI Update ---
     const tempId = `temp_${Date.now()}`;
     const optimisticUserMessage: ChatMessage = {
       id: tempId,
@@ -393,7 +391,6 @@ export default function ChatWidget({ isLabMode = false, labConfig, onReset, onMe
     if (fileInputRef.current) fileInputRef.current.value = '';
     setIsAiResponding(true);
 
-    // --- API Call ---
     const formData = new FormData();
     formData.append('currentMessage', messageText.trim());
     if (file) {
@@ -403,15 +400,14 @@ export default function ChatWidget({ isLabMode = false, labConfig, onReset, onMe
     const endpoint = `/api/chat/sessions/${effectiveSessionId}/messages`;
     let headers: HeadersInit = {};
     const idToken = await user?.getIdToken();
-
     if (idToken) {
-        headers['Authorization'] = `Bearer ${idToken}`;
+      headers['Authorization'] = `Bearer ${idToken}`;
     }
 
     if (isLabMode && labConfig) {
-        formData.append('agentId', labConfig.agentId);
+      formData.append('agentId', labConfig.agentId);
     } else if (chatContext?.businessId) {
-        formData.append('businessId', chatContext.businessId);
+      formData.append('businessId', chatContext.businessId);
     }
     
     try {
@@ -424,18 +420,18 @@ export default function ChatWidget({ isLabMode = false, labConfig, onReset, onMe
         const result = await response.json();
         if (!response.ok) throw new Error(result.error?.message || 'Error en el servidor');
 
-        // --- Replace state with server's source of truth ---
         setMessages(result.history || []);
         
-        const lastMessage = result.history?.[result.history.length - 1];
-        if (lastMessage) {
-          onMessageReceived?.(lastMessage);
+        if (result.history && result.history.length > 0) {
+          const lastMessage = result.history[result.history.length - 1];
+          if (lastMessage) {
+            onMessageReceived?.(lastMessage);
+          }
         }
 
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
         toast({ variant: 'destructive', title: 'Error', description: errorMessage });
-        // Revert the optimistic update on error
         setMessages(prev => prev.filter(m => m.id !== tempId));
     } finally {
         setIsAiResponding(false);
@@ -662,3 +658,5 @@ export default function ChatWidget({ isLabMode = false, labConfig, onReset, onMe
     </Fragment>
   );
 }
+
+    
