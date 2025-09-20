@@ -36,11 +36,11 @@ const migrationTips = [
 
 export default function Footer() {
   const { chatContext, isChatOpen, setChatOpen } = useChat();
-  const [randomTip, setRandomTip] = useState('');
+  const [randomTip, setRandomTip] = useState(() => migrationTips[Math.floor(Math.random() * migrationTips.length)]);
   const [animationKey, setAnimationKey] = useState(0);
 
   useEffect(() => {
-    const getNextTip = () => {
+    const tipInterval = setInterval(() => {
         setRandomTip(prevTip => {
             let newTip;
             do {
@@ -49,11 +49,8 @@ export default function Footer() {
             return newTip;
         });
         setAnimationKey(prevKey => prevKey + 1);
-    };
-    
-    getNextTip();
-    const tipInterval = setInterval(getNextTip, 7000); // Rotate tip every 7 seconds
-    
+    }, 7000);
+
     return () => clearInterval(tipInterval);
   }, []);
 
