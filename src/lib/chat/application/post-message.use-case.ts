@@ -34,12 +34,11 @@ export class PostMessageUseCase {
     const chatHistory = await this.chatRepository.getHistory(sessionId, businessId);
 
     // 2. Persist the user's message
-    const userMsgEntity: Omit<ChatMessage, 'id'> = {
+    const userMsgEntity: Omit<ChatMessage, 'id' | 'timestamp'> = {
       sessionId,
       businessId,
       text: userMessage,
       role: 'user',
-      timestamp: new Date(),
       authorId: userId,
     };
     await this.chatRepository.saveMessage(userMsgEntity);
@@ -56,12 +55,11 @@ export class PostMessageUseCase {
     });
 
     // 4. Persist the AI's response
-    const aiMsgEntity: Omit<ChatMessage, 'id'> = {
+    const aiMsgEntity: Omit<ChatMessage, 'id' | 'timestamp'> = {
       sessionId,
       businessId,
       text: response,
       role: 'model',
-      timestamp: new Date(),
       usage,
       cost,
     };

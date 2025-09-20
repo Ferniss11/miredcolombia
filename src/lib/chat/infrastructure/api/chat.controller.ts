@@ -83,7 +83,7 @@ const StartSessionSchema = z.object({
 export type PostMessagePayload = {
     userMessage: string;
     userId?: string;
-    sessionId?: string;
+    sessionId: string; // Session ID is now always expected in the payload
     businessId?: string;
     document?: File | null;
     isLabMode?: boolean;
@@ -137,9 +137,10 @@ export class ChatController {
           return ApiResponse.badRequest('Session ID is missing.');
       }
       
+      const chatRepository = new FirestoreChatRepository();
+      
       // If we are in Lab mode, but no session document exists, we must create one.
       if (isLabMode) {
-          const chatRepository = new FirestoreChatRepository();
           let existingSession = await chatRepository.findSessionById(sessionId);
           if (!existingSession) {
               await chatRepository.createSessionWithInitialMessage({
@@ -163,14 +164,12 @@ export class ChatController {
       }
 
       if (isLabMode && agentId) {
-          // Lab mode: just get the AI response without persisting much
-          const history = await this.getChatHistoryUseCase.execute({ sessionId, businessId });
-          const output = await this.simulateAgentResponseUseCase.execute({
-              agentId,
-              chatHistory: history,
-              currentMessage: userMessage,
-              sessionId: sessionId,
-              businessId: businessId
+          // Lab mode now also persists messages to allow for a continuous conversation.
+          const output = await this.postMessageUseCase.execute({
+              sessionId,
+              userMessage,
+              userId: userId || 'lab-user-id',
+              businessId
           });
           return ApiResponse.success(output);
       }

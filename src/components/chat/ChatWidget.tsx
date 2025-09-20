@@ -371,7 +371,10 @@ export default function ChatWidget({ isLabMode = false, labConfig, onReset, onMe
   }, [isChatOpen, isLabMode, session, suggestionPool]);
   
   const handleSendMessage = async (messageText: string, file?: File | null) => {
-    if ((!messageText.trim() && !file) || isAiResponding || (!session && !isLabMode)) return;
+    // Determine the effective session ID
+    const effectiveSessionId = isLabMode ? labConfig?.sessionId : session?.id;
+
+    if ((!messageText.trim() && !file) || isAiResponding || !effectiveSessionId) return;
 
     if (!isLabMode) {
       const currentMessageCount = session?.messageCount || 0;
@@ -384,17 +387,13 @@ export default function ChatWidget({ isLabMode = false, labConfig, onReset, onMe
     const tempId = `temp-${Date.now()}`;
     const userMessage: ChatMessage = { id: tempId, role: 'user', text: messageText.trim(), timestamp: new Date().toISOString(), replyTo: null, authorId: user?.uid };
     
-    // Add user message optimistically
-    if (userMessage.text) {
-        setMessages(prev => [...prev, userMessage]);
-    }
+    setMessages(prev => [...prev, userMessage]);
     
-    // Add file processing message if a file is attached
     if (file) {
         const fileMessage: ChatMessage = {
             id: `file-${tempId}`,
             role: 'user',
-            text: '', // Text is optional for file messages
+            text: '',
             timestamp: new Date().toISOString(),
             replyTo: null,
             file: { name: file.name, status: 'processing', progress: 0 }
@@ -404,7 +403,7 @@ export default function ChatWidget({ isLabMode = false, labConfig, onReset, onMe
 
     setIsAiResponding(true);
     setCurrentMessage('');
-    setAttachedFile(null); // Clear the preview
+    setAttachedFile(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
 
     const formData = new FormData();
@@ -413,30 +412,32 @@ export default function ChatWidget({ isLabMode = false, labConfig, onReset, onMe
       formData.append('document', file);
     }
     
-    // Filter out the file processing message from history sent to backend
-    const historyForBackend = messages.filter(m => !m.file);
-    if(userMessage.text) {
-      historyForBackend.push(userMessage);
-    }
+    const historyForBackend = [...messages, userMessage];
+
+    let endpoint: string;
+    let headers: HeadersInit = {};
 
     if (isLabMode && labConfig) {
+        endpoint = '/api/agent-lab/chat';
         formData.append('agentId', labConfig.agentId);
-        formData.append('sessionId', labConfig.sessionId);
-        formData.append('userId', user?.uid || 'lab-user');
-        formData.append('chatHistory', JSON.stringify(historyForBackend));
+        formData.append('sessionId', labConfig.sessionId); // Pass sessionId in the body for lab mode
+        formData.append('userId', user?.uid || 'lab-user-id');
     } else if (session) {
+        endpoint = `/api/chat/sessions/${session.id}/messages`;
         if (chatContext?.businessId) {
-            formData.append('businessId', chatContext.businessId);
+            endpoint += `?businessId=${chatContext.businessId}`;
         }
+        const idToken = await user?.getIdToken();
+        if (idToken) headers['Authorization'] = `Bearer ${idToken}`;
+    } else {
+        setIsAiResponding(false);
+        return;
     }
     
     try {
-        const endpoint = isLabMode ? '/api/agent-lab/chat' : `/api/chat/sessions/${session!.id}/messages`;
-        const idToken = await user?.getIdToken();
-
         const response = await fetch(endpoint, {
             method: 'POST',
-            headers: { ...(idToken && { 'Authorization': `Bearer ${idToken}` }) },
+            headers,
             body: formData,
         });
         
@@ -451,18 +452,17 @@ export default function ChatWidget({ isLabMode = false, labConfig, onReset, onMe
         const aiMessage: ChatMessage = {
             id: `ai-${Date.now()}`,
             role: 'model',
-            text: result.response, // Adjusted to match the unified response structure
+            text: result.response,
             timestamp: new Date().toISOString(),
             replyTo: null,
             usage: result.usage,
         };
         setMessages(prev => [...prev, aiMessage]);
-        onMessageReceived?.(aiMessage); // Callback for lab mode
+        onMessageReceived?.(aiMessage);
 
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
         toast({ variant: 'destructive', title: 'Error', description: errorMessage });
-        // Remove optimistic messages on error
         setMessages(prev => prev.filter(m => m.id !== tempId && m.id !== `file-${tempId}`));
     } finally {
         setIsAiResponding(false);
@@ -517,7 +517,7 @@ export default function ChatWidget({ isLabMode = false, labConfig, onReset, onMe
     }
 
     const isLimitReached = !isLabMode && !isPremiumUser && (session?.messageCount || 0) >= 3;
-    const canUploadFile = isPremiumUser || isLabMode;
+    const canUploadFile = (isPremiumUser || (isLabMode && labConfig?.agentId === 'valeria_premium'));
 
     return (
       <div className="flex flex-col h-full">
@@ -688,5 +688,3 @@ export default function ChatWidget({ isLabMode = false, labConfig, onReset, onMe
     </Fragment>
   );
 }
-
-    

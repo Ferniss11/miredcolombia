@@ -5,12 +5,13 @@ import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { BrainCircuit, TestTube2, RotateCcw, Bot } from 'lucide-react';
+import { BrainCircuit, TestTube2, RotateCcw, Bot, LogIn } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Label } from '@/components/ui/label';
 import { v4 as uuidv4 } from 'uuid';
 import ChatWidget from '@/components/chat/ChatWidget'; // Import the main ChatWidget
 import type { ChatMessage, TokenUsage } from '@/lib/chat-types';
+import { Button } from '@/components/ui/button';
 
 interface ResponseMetadata {
     inputTokens: number;
@@ -21,16 +22,23 @@ interface ResponseMetadata {
 export default function AgentLabPage() {
   const [selectedAgent, setSelectedAgent] = useState<'global' | 'valeria_premium'>('global');
   const [lastResponseMeta, setLastResponseMeta] = useState<ResponseMetadata | null>(null);
+  const [isSessionActive, setIsSessionActive] = useState(false);
   
   // Create a unique session ID for this lab instance that changes on reset
   const [sessionId, setSessionId] = useState(uuidv4());
   
-  const handleResetSession = () => {
+  const handleStartSession = () => {
+    // Reset metadata and create a new session ID, then activate the chat view
     setLastResponseMeta(null);
-    setSessionId(uuidv4()); // This is the key to starting a fresh session
+    setSessionId(uuidv4());
+    setIsSessionActive(true);
+  };
+
+  const handleResetSession = () => {
+    // This will bring the user back to the "Start Session" screen
+    setIsSessionActive(false);
   };
   
-  // Callback to update metadata when a message is received from the ChatWidget
   const handleMessageReceived = (message: ChatMessage) => {
       if (message.role === 'model' && message.usage) {
           setLastResponseMeta(message.usage);
@@ -55,13 +63,22 @@ export default function AgentLabPage() {
                     </div>
                 </CardHeader>
                 <CardContent className="flex-1 overflow-hidden p-0">
-                    {/* The ChatWidget now handles all chat logic internally */}
-                    <ChatWidget
-                        isLabMode={true}
-                        labConfig={{ agentId: selectedAgent, sessionId: sessionId }}
-                        onReset={handleResetSession}
-                        onMessageReceived={handleMessageReceived}
-                    />
+                    {isSessionActive ? (
+                        <ChatWidget
+                            isLabMode={true}
+                            labConfig={{ agentId: selectedAgent, sessionId: sessionId }}
+                            onReset={handleResetSession}
+                            onMessageReceived={handleMessageReceived}
+                        />
+                    ) : (
+                        <div className="h-full flex flex-col items-center justify-center text-center p-4">
+                            <Bot className="h-16 w-16 text-muted-foreground mb-4" />
+                            <h3 className="text-xl font-semibold">Sesión de Prueba Terminada</h3>
+                            <p className="text-muted-foreground mt-2">
+                                Para iniciar una nueva conversación de prueba, selecciona un agente y haz clic en "Iniciar Sesión de Prueba".
+                            </p>
+                        </div>
+                    )}
                 </CardContent>
             </Card>
         </div>
@@ -85,6 +102,10 @@ export default function AgentLabPage() {
                             </SelectContent>
                         </Select>
                     </div>
+                    <Button className="w-full" onClick={handleStartSession}>
+                        <LogIn className="mr-2 h-4 w-4" />
+                        Iniciar Sesión de Prueba
+                    </Button>
                 </CardContent>
             </Card>
             <Card>
