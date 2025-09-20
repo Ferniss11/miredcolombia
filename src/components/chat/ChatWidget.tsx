@@ -383,23 +383,6 @@ export default function ChatWidget({ isLabMode = false, labConfig, onReset, onMe
       }
     }
     
-    const tempId = `temp-${Date.now()}`;
-    const userMessage: ChatMessage = { id: tempId, role: 'user', text: messageText.trim(), timestamp: new Date().toISOString(), replyTo: null, authorId: user?.uid };
-    
-    setMessages(prev => [...prev, userMessage]);
-    
-    if (file) {
-        const fileMessage: ChatMessage = {
-            id: `file-${tempId}`,
-            role: 'user',
-            text: '',
-            timestamp: new Date().toISOString(),
-            replyTo: null,
-            file: { name: file.name, status: 'processing', progress: 0 }
-        };
-        setMessages(prev => [...prev, fileMessage]);
-    }
-
     setIsAiResponding(true);
     setCurrentMessage('');
     setAttachedFile(null);
@@ -435,21 +418,13 @@ export default function ChatWidget({ isLabMode = false, labConfig, onReset, onMe
         const result = await response.json();
         if (!response.ok) throw new Error(result.error?.message || 'Error en el servidor');
 
-        // Update file message status to 'ready' if it exists
-        if (file) {
-            setMessages(prev => prev.map(m => m.id === `file-${tempId}` ? { ...m, file: { ...m.file!, status: 'ready' } } : m));
+        // The API now returns the full history.
+        setMessages(result.history || []);
+        
+        // Find the last message (which should be the AI response) to pass to the callback.
+        if (result.history && result.history.length > 0) {
+            onMessageReceived?.(result.history[result.history.length - 1]);
         }
-
-        const aiMessage: ChatMessage = {
-            id: `ai-${Date.now()}`,
-            role: 'model',
-            text: result.response || '',
-            timestamp: new Date().toISOString(),
-            replyTo: null,
-            usage: result.usage,
-        };
-        setMessages(prev => [...prev, aiMessage]);
-        onMessageReceived?.(aiMessage);
 
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
@@ -458,7 +433,6 @@ export default function ChatWidget({ isLabMode = false, labConfig, onReset, onMe
         } else {
             toast({ variant: 'destructive', title: 'Error', description: errorMessage });
         }
-        setMessages(prev => prev.filter(m => m.id !== tempId && m.id !== `file-${tempId}`));
     } finally {
         setIsAiResponding(false);
     }

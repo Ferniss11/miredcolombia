@@ -152,7 +152,7 @@ export class ChatController {
           }
       }
 
-      const output = await this.postMessageUseCase.execute({
+      await this.postMessageUseCase.execute({
           sessionId,
           userMessage,
           userId,
@@ -160,7 +160,12 @@ export class ChatController {
           agentId
       });
 
-      return ApiResponse.success(output);
+      // After posting, always fetch the full, updated history to return to the client.
+      const updatedHistory = await this.getChatHistoryUseCase.execute({ sessionId, businessId });
+
+      return ApiResponse.success({
+        history: updatedHistory.map(m => ({ ...m, timestamp: m.timestamp.toISOString() })),
+      });
   }
 
   async getAllSessions(req: NextRequest): Promise<ApiResponse> {
