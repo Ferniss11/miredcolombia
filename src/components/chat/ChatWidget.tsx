@@ -183,10 +183,6 @@ const allGeneralQuestions = [
     "Háblame sobre el costo de vida en Madrid",
     "¿Cómo puedo encontrar mi primer piso en España?",
     "Explícame la diferencia entre NIE y TIE",
-    "Tengo una duda sobre el visado, ¿puedes ayudarme?",
-    "¿Qué necesito para homologar mi título?",
-    "¿Cómo funciona el proceso de empadronamiento?",
-    "¿Es difícil conseguir trabajo como colombiano en España?",
 ];
 
 const allBusinessQuestions = [
@@ -194,8 +190,6 @@ const allBusinessQuestions = [
     "¿Me puedes dar la dirección?",
     "Quisiera reservar una cita para mañana",
     "¿Tenéis alguna promoción especial?",
-    "Me gustaría saber más sobre vuestros servicios",
-    "¿Cuáles son los productos más recomendados?",
 ];
 
 const getShuffledSample = (arr: string[], count: number) => {
@@ -218,13 +212,11 @@ interface ChatWidgetProps {
 
 
 export default function ChatWidget({ isLabMode = false, labConfig, onReset, onMessageReceived, initialHistory = [] }: ChatWidgetProps) {
-  const { 
-    isChatOpen, 
-    setChatOpen, 
-    chatContext, 
-    isChatVisible 
-  } = useChat();
-
+  const { isChatOpen, setChatOpen, chatContext, isChatVisible } = useChat();
+  const { toast } = useToast();
+  const { user, userProfile, claims, loading: authLoading } = useAuth();
+  const pathname = usePathname();
+  
   const [session, setSession] = useState<ChatSession | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>(initialHistory);
   const [isAiResponding, setIsAiResponding] = useState(false);
@@ -239,14 +231,10 @@ export default function ChatWidget({ isLabMode = false, labConfig, onReset, onMe
   const [view, setView] = useState<'welcome' | 'login' | 'chat'>('chat');
   const [suggestions, setSuggestions] = useState<string[]>([]);
   
-  const { toast } = useToast();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isMounted, setIsMounted] = useState(false);
-  const router = useRouter();
-  const pathname = usePathname();
-  const { user, claims, userProfile, loading: authLoading } = useAuth();
   
   const isPremiumUser = claims?.valeria_plan === 'valeria_premium';
   const isInDashboard = pathname.startsWith('/dashboard/valeria');
@@ -255,65 +243,23 @@ export default function ChatWidget({ isLabMode = false, labConfig, onReset, onMe
   const suggestionPool = isBusinessChat ? allBusinessQuestions : allGeneralQuestions;
   const proactivePool = isBusinessChat ? businessProactiveMessages : migrationProactiveMessages;
 
-  const handleSessionStarted = useCallback((newSession: ChatSession, history: ChatMessage[]) => {
-    setSession(newSession);
-    setMessages(history);
-    setView('chat');
-  }, []);
+  // --- Effect Hooks ---
 
-  const startSessionForUser = useCallback(async () => {
-    if (!user || !userProfile) return;
-    
-    try {
-        const response = await fetch('/api/chat/sessions', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${await user.getIdToken()}`},
-            body: JSON.stringify({
-                 userId: user.uid,
-                userName: userProfile.name,
-                userPhone: userProfile.businessProfile?.phone,
-                userEmail: userProfile.email,
-                businessId: chatContext?.businessId
-            }),
-        });
-        const result = await response.json();
-        if (!response.ok) throw new Error(result.error?.message);
-
-        handleSessionStarted(result.session, result.history);
-        
-    } catch(e) {
-        const errorMessage = e instanceof Error ? e.message : 'No se pudo iniciar tu sesión de chat.';
-        toast({ variant: 'destructive', title: 'Error', description: errorMessage});
-    }
-  }, [user, userProfile, chatContext, handleSessionStarted, toast]);
-
-  useEffect(() => {
-    if (!isLabMode) {
-      if (!authLoading && (isChatOpen || isInDashboard)) {
-          if (user && userProfile && !session) {
-              startSessionForUser();
-          } else if (!user && view === 'chat') {
-              setSession(null);
-              setMessages([]);
-              setView('welcome');
-          }
-      }
-    }
-  }, [user, userProfile, session, isChatOpen, isInDashboard, startSessionForUser, view, authLoading, isLabMode]);
-  
-  // Effect for lab mode session management
-  useEffect(() => {
-    if (isLabMode && labConfig) {
-        setSession({ id: labConfig.sessionId } as ChatSession);
-        setMessages(initialHistory); // Use initialHistory from props
-        setView('chat');
-        setSuggestions(getShuffledSample(suggestionPool, 3));
-    }
-  }, [isLabMode, labConfig, suggestionPool, initialHistory])
-
-
+  // Set initial state on mount
   useEffect(() => {
     setIsMounted(true);
+    setMessages(initialHistory);
+  }, [initialHistory]);
+
+  // Handle auto-scrolling
+  useEffect(() => {
+    if (scrollAreaRef.current) {
+      scrollAreaRef.current.scrollTo({ top: scrollAreaRef.current.scrollHeight, behavior: 'smooth' });
+    }
+  }, [messages]);
+  
+  // Set up audio for proactive messages
+  useEffect(() => {
     if (typeof window !== 'undefined') {
         const handleFirstInteraction = () => {
             setUserHasInteracted(true);
@@ -331,53 +277,101 @@ export default function ChatWidget({ isLabMode = false, labConfig, onReset, onMe
     }
   }, []);
 
+  // Show proactive messages
   useEffect(() => {
       if (!isMounted || isChatOpen || proactiveClosed || showProactive || isLabMode) return;
       let timeoutId: NodeJS.Timeout;
       const scheduleNextMessage = () => {
           timeoutId = setTimeout(() => {
-              const randomIndex = Math.floor(Math.random() * proactivePool.length);
-              setProactiveMessage(proactivePool[randomIndex]);
+              setProactiveMessage(proactivePool[Math.floor(Math.random() * proactivePool.length)]);
               setShowProactive(true);
-          }, 2000); // Wait 2s before showing first proactive message
+          }, 2000);
       };
       scheduleNextMessage();
       return () => clearTimeout(timeoutId);
   }, [isMounted, isChatOpen, proactiveClosed, proactivePool, showProactive, isLabMode]);
   
+  // Play sound for proactive messages
   useEffect(() => {
       if (showProactive && userHasInteracted && audioRef.current) {
           audioRef.current.play().catch(e => console.error("Error playing audio:", e));
       }
   }, [showProactive, userHasInteracted]);
-
+  
+  // Set suggestions when chat is opened without a session
   useEffect(() => {
-    if (scrollAreaRef.current) {
-      scrollAreaRef.current.scrollTo({ top: scrollAreaRef.current.scrollHeight, behavior: 'smooth' });
-    }
-  }, [messages]);
-
-  useEffect(() => {
-      if((isChatOpen || isLabMode) && !session) {
+      if ((isChatOpen || isLabMode) && messages.length <= 1) { // Show if only welcome msg exists
         setSuggestions(getShuffledSample(suggestionPool, 3));
       }
-  }, [isChatOpen, isLabMode, session, suggestionPool]);
+  }, [isChatOpen, isLabMode, messages, suggestionPool]);
+
+  // Main session management logic
+  const startSessionForUser = useCallback(async () => {
+    if (!user || !userProfile) return;
+    
+    try {
+        const response = await fetch('/api/chat/sessions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${await user.getIdToken()}`},
+            body: JSON.stringify({
+                userId: user.uid,
+                userName: userProfile.name,
+                userPhone: userProfile.businessProfile?.phone,
+                userEmail: userProfile.email,
+                businessId: chatContext?.businessId
+            }),
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error?.message);
+
+        setSession(result.session);
+        setMessages(result.history);
+        setView('chat');
+        
+    } catch(e) {
+        const errorMessage = e instanceof Error ? e.message : 'No se pudo iniciar tu sesión de chat.';
+        toast({ variant: 'destructive', title: 'Error', description: errorMessage});
+    }
+  }, [user, userProfile, chatContext, toast]);
   
+  // Triggers session management
+  useEffect(() => {
+    if (isLabMode) {
+      setSession({ id: labConfig?.sessionId } as ChatSession);
+      setView('chat');
+      return;
+    }
+    
+    if (!authLoading) {
+      if (isChatOpen || isInDashboard) {
+        if (user && userProfile && !session) {
+          startSessionForUser();
+        } else if (!user) {
+          setSession(null);
+          setMessages([]);
+          setView('welcome');
+        }
+      }
+    }
+  }, [isLabMode, labConfig, authLoading, isChatOpen, isInDashboard, user, userProfile, session, startSessionForUser]);
+
+
+  // --- Event Handlers ---
+
   const handleSendMessage = async (messageText: string, file?: File | null) => {
     const effectiveSessionId = isLabMode ? labConfig?.sessionId : session?.id;
     if ((!messageText.trim() && !file) || isAiResponding || !effectiveSessionId) return;
 
     if (!isLabMode) {
-      const currentMessageCount = session?.messageCount || 0;
+      const currentMessageCount = messages.filter(m => m.role === 'user').length;
       if (!isPremiumUser && currentMessageCount >= 3) {
         toast({ title: 'Límite Gratuito Alcanzado', description: 'Actualiza a un plan premium para continuar.', variant: 'destructive' });
         return;
       }
     }
     
-    const tempId = `temp_${Date.now()}`;
     const optimisticUserMessage: ChatMessage = {
-      id: tempId,
+      id: `temp_user_${Date.now()}`,
       text: messageText,
       role: 'user',
       timestamp: new Date().toISOString(),
@@ -386,6 +380,18 @@ export default function ChatWidget({ isLabMode = false, labConfig, onReset, onMe
     };
     setMessages(prev => [...prev, optimisticUserMessage]);
     
+    if (file) {
+      const optimisticFileMessage: ChatMessage = {
+        id: `temp_file_${Date.now()}`,
+        text: '',
+        role: 'user',
+        timestamp: new Date().toISOString(),
+        file: { name: file.name, status: 'processing' },
+        replyTo: null
+      };
+      setMessages(prev => [...prev, optimisticFileMessage]);
+    }
+    
     setCurrentMessage('');
     setAttachedFile(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
@@ -393,25 +399,18 @@ export default function ChatWidget({ isLabMode = false, labConfig, onReset, onMe
 
     const formData = new FormData();
     formData.append('currentMessage', messageText.trim());
-    if (file) {
-      formData.append('document', file);
-    }
-    
-    const endpoint = `/api/chat/sessions/${effectiveSessionId}/messages`;
-    let headers: HeadersInit = {};
-    const idToken = await user?.getIdToken();
-    if (idToken) {
-      headers['Authorization'] = `Bearer ${idToken}`;
-    }
+    if (file) formData.append('document', file);
+    if (isLabMode && labConfig) formData.append('agentId', labConfig.agentId);
+    if (chatContext?.businessId) formData.append('businessId', chatContext.businessId);
 
-    if (isLabMode && labConfig) {
-      formData.append('agentId', labConfig.agentId);
-    } else if (chatContext?.businessId) {
-      formData.append('businessId', chatContext.businessId);
+    const headers: HeadersInit = {};
+    if (user) {
+        const idToken = await user.getIdToken();
+        headers['Authorization'] = `Bearer ${idToken}`;
     }
     
     try {
-        const response = await fetch(endpoint, {
+        const response = await fetch(`/api/chat/sessions/${effectiveSessionId}/messages`, {
             method: 'POST',
             headers,
             body: formData,
@@ -421,18 +420,14 @@ export default function ChatWidget({ isLabMode = false, labConfig, onReset, onMe
         if (!response.ok) throw new Error(result.error?.message || 'Error en el servidor');
 
         setMessages(result.history || []);
-        
-        if (result.history && result.history.length > 0) {
-          const lastMessage = result.history[result.history.length - 1];
-          if (lastMessage) {
-            onMessageReceived?.(lastMessage);
-          }
+        if (onMessageReceived && result.history?.length > 0) {
+          onMessageReceived(result.history[result.history.length - 1]);
         }
 
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
         toast({ variant: 'destructive', title: 'Error', description: errorMessage });
-        setMessages(prev => prev.filter(m => m.id !== tempId));
+        setMessages(prev => prev.filter(m => !m.id.startsWith('temp_')));
     } finally {
         setIsAiResponding(false);
     }
@@ -461,7 +456,7 @@ export default function ChatWidget({ isLabMode = false, labConfig, onReset, onMe
   };
   
   const handleReset = () => {
-    if (onReset) onReset(); // For lab mode
+    if (onReset) onReset();
     else {
         setSession(null);
         setMessages([]);
@@ -475,8 +470,9 @@ export default function ChatWidget({ isLabMode = false, labConfig, onReset, onMe
     return new Date(isoString).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
   }
 
+  // --- Render Logic ---
   const renderChatContent = () => {
-    if (isInDashboard && !isLabMode && (!session || !userProfile)) {
+    if ((isInDashboard || isLabMode) && authLoading) {
         return <div className='flex-1 flex items-center justify-center'><Loader2 className='animate-spin h-8 w-8'/></div>
     }
 
@@ -485,42 +481,26 @@ export default function ChatWidget({ isLabMode = false, labConfig, onReset, onMe
         return <WelcomeForm onSignUpSuccess={startSessionForUser} isBusinessChat={isBusinessChat} businessContext={chatContext || undefined} onLoginClick={() => setView('login')} />;
     }
 
-    const isLimitReached = !isLabMode && !isPremiumUser && (session?.messageCount || 0) >= 3;
+    const isLimitReached = !isLabMode && !isPremiumUser && messages.filter(m => m.role === 'user').length >= 3;
     const canUploadFile = isLabMode ? labConfig?.agentId === 'valeria_premium' : isPremiumUser;
-
 
     return (
       <div className="flex flex-col h-full">
         <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
           <div className="space-y-4">
             {messages.map((msg, index) => {
-              // --- File Message Card ---
               if (msg.file) {
-                 const { status, name } = msg.file;
+                 const { name, status } = msg.file;
                  let icon = <Loader2 className="animate-spin h-5 w-5 text-muted-foreground" />;
-                 let statusText = 'Procesando documento...';
-                 if (status === 'ready') {
-                    icon = <CheckCircle className="h-5 w-5 text-green-500" />;
-                    statusText = 'Documento listo para consulta.';
-                 }
+                 if (status === 'ready') icon = <CheckCircle className="h-5 w-5 text-green-500" />;
                  return (
                     <div key={msg.id} className="flex justify-end">
                        <div className="p-3 rounded-lg shadow-sm bg-primary text-primary-foreground max-w-lg w-fit ml-auto rounded-br-none">
-                           <div className="flex items-center gap-3">
-                              <FileText className="h-6 w-6"/>
-                              <div className="overflow-hidden">
-                                  <p className="text-sm font-semibold truncate">{name}</p>
-                                  <div className="flex items-center gap-1.5 text-xs opacity-90">
-                                      {icon}
-                                      <span>{statusText}</span>
-                                  </div>
-                              </div>
-                           </div>
+                           <div className="flex items-center gap-3"><FileText className="h-6 w-6"/><div className="overflow-hidden"><p className="text-sm font-semibold truncate">{name}</p><div className="flex items-center gap-1.5 text-xs opacity-90">{icon}<span>{status === 'ready' ? 'Listo para consulta' : 'Procesando...'}</span></div></div></div>
                        </div>
                     </div>
                  );
               }
-              // --- Regular Text Message ---
               const isUser = msg.role === 'user';
               const isAdmin = msg.role === 'admin';
               const isModel = msg.role === 'model';
@@ -547,7 +527,7 @@ export default function ChatWidget({ isLabMode = false, labConfig, onReset, onMe
                 </div>
               )
             })}
-             {messages.length === 0 && (
+             {messages.length <= 1 && (
                 <div className="pt-4 space-y-2">
                     <p className="text-sm font-medium flex items-center gap-2 text-muted-foreground"><MessageSquareQuote className="h-4 w-4"/> O pregúntale directamente...</p>
                     {suggestions.map((q, i) => (
@@ -575,17 +555,7 @@ export default function ChatWidget({ isLabMode = false, labConfig, onReset, onMe
                     <div className="relative flex items-center gap-2 p-2 mb-2 border rounded-lg bg-muted">
                         <FileText className="h-5 w-5 flex-shrink-0 text-muted-foreground" />
                         <p className="text-sm text-muted-foreground truncate flex-grow">{attachedFile.name}</p>
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-6 w-6 flex-shrink-0"
-                            onClick={() => {
-                                setAttachedFile(null);
-                                if (fileInputRef.current) fileInputRef.current.value = '';
-                            }}
-                        >
-                            <X className="h-4 w-4" />
-                        </Button>
+                        <Button variant="ghost" size="icon" className="h-6 w-6 flex-shrink-0" onClick={() => { setAttachedFile(null); if (fileInputRef.current) fileInputRef.current.value = ''; }}><X className="h-4 w-4" /></Button>
                     </div>
                 )}
                  <form onSubmit={handleFormSubmit} className="flex gap-2">
@@ -658,5 +628,3 @@ export default function ChatWidget({ isLabMode = false, labConfig, onReset, onMe
     </Fragment>
   );
 }
-
-    
