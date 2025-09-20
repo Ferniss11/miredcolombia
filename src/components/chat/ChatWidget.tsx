@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useRef, useEffect, useCallback, useTransition, Fragment } from 'react';
@@ -272,9 +273,8 @@ export default function ChatWidget({ isLabMode = false, labConfig, onReset, onMe
     };
 
     if (isLabMode && labConfig) {
-        endpoint = '/api/agent-lab/chat-session'; // A new endpoint for lab sessions if needed, or adjust existing. For now, we use a flag.
+        endpoint = '/api/chat/sessions'; 
         body.isLabSession = true;
-        body.labSessionId = labConfig.sessionId;
     }
 
     try {
@@ -371,7 +371,6 @@ export default function ChatWidget({ isLabMode = false, labConfig, onReset, onMe
   }, [isChatOpen, isLabMode, session, suggestionPool]);
   
   const handleSendMessage = async (messageText: string, file?: File | null) => {
-    // Determine the effective session ID
     const effectiveSessionId = isLabMode ? labConfig?.sessionId : session?.id;
 
     if ((!messageText.trim() && !file) || isAiResponding || !effectiveSessionId) return;
@@ -414,25 +413,18 @@ export default function ChatWidget({ isLabMode = false, labConfig, onReset, onMe
     
     const historyForBackend = [...messages, userMessage];
 
-    let endpoint: string;
+    const endpoint = `/api/chat/sessions/${effectiveSessionId}/messages`;
     let headers: HeadersInit = {};
     const idToken = await user?.getIdToken();
 
-    if (isLabMode && labConfig && idToken) {
-        endpoint = '/api/agent-lab/chat';
-        formData.append('agentId', labConfig.agentId);
-        formData.append('sessionId', labConfig.sessionId);
-        formData.append('userId', user?.uid || 'lab-user-id');
+    if (idToken) {
         headers['Authorization'] = `Bearer ${idToken}`;
-    } else if (session) {
-        endpoint = `/api/chat/sessions/${session.id}/messages`;
-        if (chatContext?.businessId) {
-            endpoint += `?businessId=${chatContext.businessId}`;
-        }
-        if (idToken) headers['Authorization'] = `Bearer ${idToken}`;
-    } else {
-        setIsAiResponding(false);
-        return;
+    }
+
+    if (isLabMode && labConfig) {
+        formData.append('agentId', labConfig.agentId);
+    } else if (chatContext?.businessId) {
+        formData.append('businessId', chatContext.businessId);
     }
     
     try {
@@ -463,7 +455,11 @@ export default function ChatWidget({ isLabMode = false, labConfig, onReset, onMe
 
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
-        toast({ variant: 'destructive', title: 'Error', description: errorMessage });
+        if (errorMessage.includes("<!DOCTYPE")) {
+            toast({ variant: 'destructive', title: 'Error de Comunicación', description: 'La respuesta del servidor no fue válida. Inténtalo de nuevo.' });
+        } else {
+            toast({ variant: 'destructive', title: 'Error', description: errorMessage });
+        }
         setMessages(prev => prev.filter(m => m.id !== tempId && m.id !== `file-${tempId}`));
     } finally {
         setIsAiResponding(false);
