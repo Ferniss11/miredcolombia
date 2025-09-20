@@ -416,18 +416,19 @@ export default function ChatWidget({ isLabMode = false, labConfig, onReset, onMe
 
     let endpoint: string;
     let headers: HeadersInit = {};
+    const idToken = await user?.getIdToken();
 
     if (isLabMode && labConfig) {
         endpoint = '/api/agent-lab/chat';
         formData.append('agentId', labConfig.agentId);
-        formData.append('sessionId', labConfig.sessionId); // Pass sessionId in the body for lab mode
+        formData.append('sessionId', labConfig.sessionId);
         formData.append('userId', user?.uid || 'lab-user-id');
+        if (idToken) headers['Authorization'] = `Bearer ${idToken}`;
     } else if (session) {
         endpoint = `/api/chat/sessions/${session.id}/messages`;
         if (chatContext?.businessId) {
             endpoint += `?businessId=${chatContext.businessId}`;
         }
-        const idToken = await user?.getIdToken();
         if (idToken) headers['Authorization'] = `Bearer ${idToken}`;
     } else {
         setIsAiResponding(false);
