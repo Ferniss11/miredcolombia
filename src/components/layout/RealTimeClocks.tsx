@@ -2,7 +2,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Clock } from 'lucide-react';
 
 const RealTimeClocks = () => {
@@ -12,34 +12,30 @@ const RealTimeClocks = () => {
   });
   const [isClient, setIsClient] = useState(false);
 
-  useEffect(() => {
-    // This function will only run on the client side, after the component has mounted.
-    // This prevents the hydration mismatch error because the server sends a placeholder,
-    // and the client initially renders the same placeholder. The actual time is then
-    // calculated and displayed only on the client.
-    setIsClient(true);
-    const updateClocks = () => {
-        setTime({
-            colombia: new Date().toLocaleTimeString('es-CO', {
-              timeZone: 'America/Bogota',
-              hour: '2-digit',
-              minute: '2-digit',
-              hour12: true,
-            }),
-            spain: new Date().toLocaleTimeString('es-ES', {
-              timeZone: 'Europe/Madrid',
-              hour: '2-digit',
-              minute: '2-digit',
-              hour12: false,
-            }),
-        });
-    }
+  const updateClocks = useCallback(() => {
+    setTime({
+      colombia: new Date().toLocaleTimeString('es-CO', {
+        timeZone: 'America/Bogota',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true,
+      }),
+      spain: new Date().toLocaleTimeString('es-ES', {
+        timeZone: 'Europe/Madrid',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+      }),
+    });
+  }, []); // El array vacío asegura que la función no se recree
 
+  useEffect(() => {
+    setIsClient(true);
     updateClocks(); // Initial update
     const timer = setInterval(updateClocks, 1000 * 30); // Update every 30 seconds
 
     return () => clearInterval(timer);
-  }, []);
+  }, [updateClocks]); // Ahora la dependencia es estable
 
   if (!isClient) {
     // Render a lightweight, static placeholder on the server.
