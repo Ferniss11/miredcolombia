@@ -228,13 +228,13 @@ export default function AgentLabPage() {
 
   return (
     <>
-    <div className="h-full flex flex-col space-y-4">
+    <div className="flex flex-col space-y-4 h-[calc(100vh-8rem)]">
       <div className="flex items-center gap-4">
         <TestTube2 className="w-8 h-8 text-primary" />
         <h1 className="text-3xl font-bold font-headline">Laboratorio de Agentes IA</h1>
       </div>
       
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start flex-1 min-h-0 h-[calc(100vh-10rem)]">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start flex-1 min-h-0">
         
         <div className="lg:col-span-4 xl:col-span-3 h-full flex flex-col gap-4">
              <Card>
