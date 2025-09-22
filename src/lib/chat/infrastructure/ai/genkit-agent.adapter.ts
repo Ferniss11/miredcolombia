@@ -107,7 +107,7 @@ export class GenkitAgentAdapter implements AgentAdapter {
             usage, 
             cost, 
             agentConfig,
-            debugInfo: { toolInvocations: aiResponse.toolInvocations },
+            debugInfo: { toolInvocations: aiResponse.toolInvocations || [] },
         };
 
     } else { // Global Chat Mode
@@ -138,7 +138,7 @@ export class GenkitAgentAdapter implements AgentAdapter {
         usage, 
         cost, 
         agentConfig: usedConfig,
-        debugInfo: { toolInvocations: aiResponse.toolInvocations },
+        debugInfo: { toolInvocations: aiResponse.toolInvocations || [] },
     };
   }
 }
