@@ -35,6 +35,7 @@ type KnowledgeDocument = {
   source: string;
   doc_type: string;
   chunk_count: number;
+  sessionId?: string; // Add sessionId to the type
 };
 
 
@@ -108,26 +109,31 @@ const MetadataModal = ({ session, onOpenChange }: { session: ChatSession | null,
     )
 }
 
-const KnowledgeBaseManager = ({ user, toast, onUpdate }: { user: any, toast: any, onUpdate: () => void }) => {
+const KnowledgeBaseManager = ({ user, toast, onUpdate, sessionId }: { user: any, toast: any, onUpdate: () => void, sessionId: string | null }) => {
     const [documents, setDocuments] = useState<KnowledgeDocument[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isDeleting, startDeleteTransition] = useTransition();
 
     const fetchDocuments = useCallback(async () => {
-        if (!user) return;
+        if (!user || !sessionId) {
+            setDocuments([]);
+            setIsLoading(false);
+            return;
+        }
         setIsLoading(true);
         try {
             const idToken = await user.getIdToken();
-            const response = await fetch('/api/knowledge-base', { headers: { Authorization: `Bearer ${idToken}` } });
-            if (!response.ok) throw new Error('Failed to fetch documents');
+            // Pass sessionId to the API endpoint to fetch only relevant documents
+            const response = await fetch(`/api/knowledge-base?sessionId=${sessionId}`, { headers: { Authorization: `Bearer ${idToken}` } });
+            if (!response.ok) throw new Error('Failed to fetch documents for session');
             const data = await response.json();
             setDocuments(data);
         } catch (error) {
-            toast({ variant: 'destructive', title: 'Error', description: 'No se pudo cargar la base de conocimiento.' });
+            toast({ variant: 'destructive', title: 'Error', description: 'No se pudo cargar la base de conocimiento de la sesión.' });
         } finally {
             setIsLoading(false);
         }
-    }, [user, toast]);
+    }, [user, toast, sessionId]);
 
     useEffect(() => {
         fetchDocuments();
@@ -152,8 +158,8 @@ const KnowledgeBaseManager = ({ user, toast, onUpdate }: { user: any, toast: any
     return (
         <Card className="flex-shrink-0">
             <CardHeader>
-                <CardTitle className="flex items-center gap-2"><Database/> Documentos en Base de Conocimiento</CardTitle>
-                <CardDescription>Documentos vectorizados para ser usados por el agente.</CardDescription>
+                <CardTitle className="flex items-center gap-2"><Database/> Documentos en esta Sesión</CardTitle>
+                <CardDescription>Documentos subidos y vectorizados en esta conversación.</CardDescription>
             </CardHeader>
             <CardContent>
                 <div className="border rounded-md max-h-60 overflow-y-auto">
@@ -170,7 +176,7 @@ const KnowledgeBaseManager = ({ user, toast, onUpdate }: { user: any, toast: any
                             {isLoading ? (
                                 <TableRow><TableCell colSpan={4}><Skeleton className="h-5 w-full"/></TableCell></TableRow>
                             ) : documents.length === 0 ? (
-                                <TableRow><TableCell colSpan={4} className="text-center h-20 text-muted-foreground">No hay documentos.</TableCell></TableRow>
+                                <TableRow><TableCell colSpan={4} className="text-center h-20 text-muted-foreground">No hay documentos en esta sesión.</TableCell></TableRow>
                             ) : (
                                 documents.map(doc => (
                                     <TableRow key={doc.id}>
@@ -328,7 +334,7 @@ export default function AgentLabPage() {
 
   return (
     <>
-    <div className="flex flex-col h-full min-h-0">
+    <div className="flex flex-col h-[calc(100vh-8rem)] min-h-0">
         <div className="flex items-center gap-4 mb-4 flex-shrink-0">
             <TestTube2 className="w-8 h-8 text-primary" />
             <h1 className="text-3xl font-bold font-headline">Laboratorio de Agentes IA</h1>
@@ -394,16 +400,22 @@ export default function AgentLabPage() {
                         )}
                     </CardContent>
                 </Card>
-                {debugInfo && (
-                    <div className="flex-shrink-0">
-                        <DebugInfoCard title="Información de Depuración" description="Resultados devueltos por las herramientas de Genkit en el último turno." data={debugInfo} />
-                    </div>
-                )}
-                {user && (
-                    <div className="flex-shrink-0">
-                        <KnowledgeBaseManager user={user} toast={toast} key={knowledgeBaseKey} onUpdate={() => setKnowledgeBaseKey(k => k + 1)}/>
-                    </div>
-                )}
+                
+                <div className="flex-shrink-0 space-y-4">
+                    {debugInfo && (
+                        <DebugInfoCard title="Información de Depuración (Último Mensaje)" description="Resultados devueltos por las herramientas de Genkit en el último turno." data={debugInfo} />
+                    )}
+                    {user && activeSession && (
+                         <KnowledgeBaseManager 
+                            user={user} 
+                            toast={toast} 
+                            key={knowledgeBaseKey} 
+                            onUpdate={() => setKnowledgeBaseKey(k => k + 1)}
+                            sessionId={activeSession.id}
+                        />
+                    )}
+                </div>
+
             </div>
         </div>
     </div>
@@ -426,3 +438,4 @@ export default function AgentLabPage() {
     </>
   );
 }
+
