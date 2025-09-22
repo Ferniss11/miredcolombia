@@ -1,6 +1,5 @@
-
 // src/lib/chat/infrastructure/ai/genkit-agent.adapter.ts
-import type { AgentAdapter } from './agent.adapter';
+import type { AgentAdapter, AgentCompletionOutput } from './agent.adapter';
 import type { ChatMessage } from '../../domain/chat-message.entity';
 import type { TokenUsage, AgentConfig } from '@/lib/chat-types';
 import { adminAuth } from '@/lib/firebase/admin-config';
@@ -61,77 +60,60 @@ export class GenkitAgentAdapter implements AgentAdapter {
     businessId?: string;
     sessionId?: string;
     agentId?: 'global' | 'valeria_premium' | 'business';
-  }): Promise<{ response: string; usage: TokenUsage; cost: number; }> {
+  }): Promise<AgentCompletionOutput> {
     
     const chatHistoryForAI = input.chatHistory.map(m => ({
       role: m.role === 'admin' ? 'model' : m.role,
       text: m.role === 'admin' ? `[Mensaje del Administrador: ${m.text}]` : m.text,
     }));
 
-    // --- Logic for explicit agent selection (Agent Lab) ---
-    if (input.agentId) {
-        let agentConfig: AgentConfig;
+    let agentConfig: AgentConfig;
+
+    if (input.agentId) { // Lab Mode
         if (input.agentId === 'business' && input.businessId) {
              const user = await this.userRepository.findUserByBusinessId(input.businessId);
              agentConfig = user?.businessProfile?.agentConfig || await this.userRepository.getAgentConfig('global');
         } else {
              agentConfig = await this.userRepository.getAgentConfig(input.agentId);
         }
+    } else if (input.businessId) { // Business Chat Mode
+        const businessDetails = await this.getBusinessDetailsUseCase.execute(input.businessId);
+        if (!businessDetails || !businessDetails.ownerUid) {
+            throw new Error(`Business with ID ${input.businessId} not found or has no owner.`);
+        }
+        const owner = await this.userRepository.findByUid(businessDetails.ownerUid);
+        agentConfig = owner?.businessProfile?.agentConfig || await this.userRepository.getAgentConfig('global');
+        
+        const businessContext = `Nombre: ${businessDetails.displayName}\nCategoría: ${businessDetails.category}\nDirección: ${businessDetails.formattedAddress}\nTeléfono: ${businessDetails.internationalPhoneNumber}\nDescripción: ${businessDetails.editorialSummary || ''}`;
 
-        const aiResponse = await migrationChat({
-            model: agentConfig.model,
-            systemPrompt: agentConfig.systemPrompt || DEFAULT_GLOBAL_PROMPT,
+        const aiResponse = await businessChat({
+            ownerUid: businessDetails.ownerUid,
             chatHistory: chatHistoryForAI,
             currentMessage: input.currentMessage,
-            sessionId: input.sessionId,
+            businessContext,
+            agentConfig,
         });
 
         const usage = aiResponse.usage || { inputTokens: 0, outputTokens: 0, totalTokens: 0 };
         const cost = calculateCost(agentConfig.model, usage.inputTokens, usage.outputTokens);
-        return { response: aiResponse.response, usage, cost };
+        return { response: aiResponse.response, usage, cost, agentConfig };
+
+    } else { // Global Chat Mode
+        agentConfig = await this.getAgentConfigForUser(input.chatHistory);
     }
-
-    // --- Standard Flow (Not from Agent Lab) ---
     
-    if (input.businessId) {
-      const businessDetails = await this.getBusinessDetailsUseCase.execute(input.businessId);
-      if (!businessDetails || !businessDetails.ownerUid) {
-        throw new Error(`Business with ID ${input.businessId} not found or has no owner.`);
-      }
-      
-      const owner = await this.userRepository.findByUid(businessDetails.ownerUid);
-      const agentConfig = owner?.businessProfile?.agentConfig || await this.userRepository.getAgentConfig('global');
-      const businessContext = `Nombre: ${businessDetails.displayName}\nCategoría: ${businessDetails.category}\nDirección: ${businessDetails.formattedAddress}\nTeléfono: ${businessDetails.internationalPhoneNumber}\nDescripción: ${businessDetails.editorialSummary || ''}`;
-
-      const aiResponse = await businessChat({
-        ownerUid: businessDetails.ownerUid,
-        chatHistory: chatHistoryForAI,
-        currentMessage: input.currentMessage,
-        businessContext,
-        agentConfig,
-      });
-      
-      const usage = aiResponse.usage || { inputTokens: 0, outputTokens: 0, totalTokens: 0 };
-      const cost = calculateCost(agentConfig.model, usage.inputTokens, usage.outputTokens);
-
-      return { response: aiResponse.response, usage, cost };
-
-    } else {
-      // --- Global & Subscriber Agent Logic ---
-      const agentConfig = await this.getAgentConfigForUser(input.chatHistory);
-      
-      const aiResponse = await migrationChat({
+    // This part is for Global, Premium, and Lab agents that use the 'migrationChat' flow
+    const aiResponse = await migrationChat({
         model: agentConfig.model,
         systemPrompt: agentConfig.systemPrompt || DEFAULT_GLOBAL_PROMPT,
         chatHistory: chatHistoryForAI,
         currentMessage: input.currentMessage,
         sessionId: input.sessionId,
-      });
-      
-      const usage = aiResponse.usage || { inputTokens: 0, outputTokens: 0, totalTokens: 0 };
-      const cost = calculateCost(agentConfig.model, usage.inputTokens, usage.outputTokens);
-      
-      return { response: aiResponse.response, usage, cost };
-    }
+    });
+    
+    const usage = aiResponse.usage || { inputTokens: 0, outputTokens: 0, totalTokens: 0 };
+    const cost = calculateCost(agentConfig.model, usage.inputTokens, usage.outputTokens);
+    
+    return { response: aiResponse.response, usage, cost, agentConfig };
   }
 }

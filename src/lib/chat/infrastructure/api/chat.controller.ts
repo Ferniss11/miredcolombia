@@ -1,4 +1,3 @@
-
 // src/lib/chat/infrastructure/api/chat.controller.ts
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
@@ -153,7 +152,7 @@ export class ChatController {
           }
       }
 
-      await this.postMessageUseCase.execute({
+      const { lastResponse } = await this.postMessageUseCase.execute({
           sessionId,
           userMessage,
           userId,
@@ -166,6 +165,7 @@ export class ChatController {
 
       return ApiResponse.success({
         history: updatedHistory.map(m => ({ ...m, timestamp: m.timestamp.toISOString() })),
+        lastResponse, // Also return the last response for metadata purposes in the lab
       });
   }
 
@@ -191,5 +191,3 @@ export class ChatController {
       });
   }
 }
-
-    

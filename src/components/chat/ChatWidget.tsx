@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useRef, useEffect, useCallback, useTransition, Fragment } from 'react';
@@ -126,13 +125,21 @@ const LoginForm = ({ onLoginSuccess, onBackClick }: { onLoginSuccess: () => void
 // --- Main Chat Widget Component ---
 const AGENT_AVATAR_URL = "https://firebasestorage.googleapis.com/v0/b/colombia-en-esp.firebasestorage.app/o/web%2FImagen%20de%20WhatsApp%202025-08-09%20a%20las%2018.20.39_3c2b6161.jpg?alt=media&token=41ebe34a-f846-41fc-937f-4141f1240ee8";
 
-export default function ChatWidget() {
+interface ChatWidgetProps {
+    isLabMode?: boolean;
+    labConfig?: { agentId: 'global' | 'valeria_premium' | 'business'; sessionId: string };
+    initialHistory?: ChatMessage[];
+    onReset?: () => void;
+    onMessageReceived?: (message: ChatMessage & { agentConfig?: AgentConfig }) => void;
+}
+
+export default function ChatWidget({ isLabMode = false, labConfig, initialHistory = [], onReset, onMessageReceived }: ChatWidgetProps) {
   const { isChatOpen, setChatOpen, chatContext, isChatVisible } = useChat();
   const { toast } = useToast();
   const { user, userProfile, claims, loading: authLoading } = useAuth();
   const pathname = usePathname();
   
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>(initialHistory);
   const [isAiResponding, setIsAiResponding] = useState(false);
   const [currentMessage, setCurrentMessage] = useState('');
   const [attachedFile, setAttachedFile] = useState<File | null>(null);
@@ -145,14 +152,12 @@ export default function ChatWidget() {
   const isPremiumUser = claims?.valeria_plan === 'valeria_premium';
   const isInDashboard = pathname.startsWith('/dashboard/valeria');
 
-  // Effect for auto-scrolling
   useEffect(() => {
     if (scrollAreaRef.current) {
       scrollAreaRef.current.scrollTo({ top: scrollAreaRef.current.scrollHeight, behavior: 'smooth' });
     }
   }, [messages]);
-  
-  // Memoize the start session function
+
   const startSession = useCallback(async () => {
     if (!user || !userProfile) return;
 
@@ -180,32 +185,38 @@ export default function ChatWidget() {
     }
   }, [user, userProfile, chatContext?.businessId, toast]);
 
-  // Main effect to manage session state based on authentication
   useEffect(() => {
-    if (authLoading) {
-        setView('loading');
+    if (isLabMode) {
+        setMessages(initialHistory);
+        setView('chat');
         return;
     }
-    if (user && userProfile) {
-        // If a user is logged in, but we don't have a session for them yet, start one.
-        if (!session) {
-            startSession();
-        }
-        setView('chat');
-    } else {
-        // If no user, show the welcome/login flow
-        setSession(null);
-        setMessages([]);
-        setView('welcome');
+    
+    if (authLoading) {
+      setView('loading');
+      return;
     }
-  }, [user, userProfile, authLoading, session, startSession]);
+
+    if (user && userProfile) {
+      if (!session || session.userId !== user.uid) {
+        startSession();
+      } else {
+        setView('chat');
+      }
+    } else {
+      setSession(null);
+      setMessages([]);
+      setView('welcome');
+    }
+  }, [user, userProfile, authLoading, session, startSession, isLabMode, initialHistory]);
 
 
   const handleSendMessage = async (messageText: string, file?: File | null) => {
-    if ((!messageText.trim() && !file) || isAiResponding || !session?.id) return;
+    const activeSessionId = isLabMode ? labConfig?.sessionId : session?.id;
+    if ((!messageText.trim() && !file) || isAiResponding || !activeSessionId) return;
 
     const isLimitReached = !isPremiumUser && messages.filter(m => m.role === 'user').length >= 3;
-    if (isLimitReached) {
+    if (!isLabMode && isLimitReached) {
         toast({ title: 'Límite Gratuito Alcanzado', description: 'Actualiza a un plan premium para continuar.', variant: 'destructive' });
         return;
     }
@@ -237,13 +248,16 @@ export default function ChatWidget() {
     const formData = new FormData();
     formData.append('currentMessage', messageText.trim());
     if (file) formData.append('document', file);
+    
+    // Add businessId if in that context, or agentId if in lab mode
     if (chatContext?.businessId) formData.append('businessId', chatContext.businessId);
+    if (isLabMode && labConfig?.agentId) formData.append('agentId', labConfig.agentId);
 
     try {
         const idToken = await user?.getIdToken();
         const headers: HeadersInit = idToken ? { 'Authorization': `Bearer ${idToken}` } : {};
 
-        const response = await fetch(`/api/chat/sessions/${session.id}/messages`, {
+        const response = await fetch(`/api/chat/sessions/${activeSessionId}/messages`, {
             method: 'POST',
             headers,
             body: formData,
@@ -252,8 +266,10 @@ export default function ChatWidget() {
         const result = await response.json();
         if (!response.ok) throw new Error(result.error?.message || 'Error en el servidor');
         
-        // This is the key: replace the entire message history with the server's response.
         setMessages(result.history || []);
+        if (isLabMode && onMessageReceived && result.lastResponse) {
+             onMessageReceived(result.lastResponse);
+        }
 
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : "Un error desconocido ocurrió.";
@@ -269,6 +285,10 @@ export default function ChatWidget() {
       handleSendMessage(currentMessage, attachedFile);
   }
 
+  const handleReset = () => {
+    if (onReset) onReset();
+  }
+
   const renderChatContent = () => {
     switch (view) {
         case 'loading':
@@ -279,7 +299,7 @@ export default function ChatWidget() {
             return <LoginForm onLoginSuccess={startSession} onBackClick={() => setView('welcome')} />;
         case 'chat':
           const isLimitReached = !isPremiumUser && messages.filter(m => m.role === 'user').length >= 3;
-          const canUploadFile = isPremiumUser;
+          const canUploadFile = isPremiumUser || isLabMode; // Allow uploads in lab mode
 
           return (
             <div className="flex flex-col h-full">
@@ -313,7 +333,7 @@ export default function ChatWidget() {
                 </div>
               </ScrollArea>
               <div className="p-4 border-t bg-background rounded-b-lg">
-                  {isLimitReached ? (
+                  {isLimitReached && !isLabMode ? (
                        <Alert><Package className="h-4 w-4" /><AlertTitle>Límite Gratuito Alcanzado</AlertTitle><AlertDescription className="flex flex-col gap-2">Has usado tus 3 mensajes gratis. ¡Actualiza tu plan para seguir chateando con Valeria!<Button asChild size="sm"><Link href="/valeria">Ver Planes de Valeria</Link></Button></AlertDescription></Alert>
                   ) : (
                       <>
@@ -338,8 +358,20 @@ export default function ChatWidget() {
     }
   };
   
-  if (isInDashboard) {
-      return renderChatContent();
+  if (isLabMode) {
+      return (
+        <div className="h-full flex flex-col">
+            <header className="p-2 border-b flex items-center justify-end">
+                <Button variant="ghost" size="sm" onClick={handleReset}>
+                    <RotateCcw className="mr-2 h-4 w-4"/>
+                    Nueva Sesión de Prueba
+                </Button>
+            </header>
+            <div className="flex-1 overflow-hidden">
+                {renderChatContent()}
+            </div>
+        </div>
+      )
   }
 
   if (!isChatVisible) {

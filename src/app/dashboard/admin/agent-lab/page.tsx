@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect, useTransition } from 'react';
@@ -10,14 +9,14 @@ import { BrainCircuit, TestTube2, RotateCcw, Bot, LogIn } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Label } from '@/components/ui/label';
 import ChatWidget from '@/components/chat/ChatWidget';
-import type { ChatMessage, TokenUsage } from '@/lib/chat-types';
+import type { ChatMessage, TokenUsage, AgentConfig } from '@/lib/chat-types';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 
 interface ResponseMetadata {
-    inputTokens: number;
-    outputTokens: number;
-    totalTokens: number;
+    usage: TokenUsage;
+    cost: number;
+    agentConfig: AgentConfig;
 }
 
 export default function AgentLabPage() {
@@ -72,10 +71,14 @@ export default function AgentLabPage() {
     setInitialHistory([]);
   };
   
-  const handleMessageReceived = (message: ChatMessage) => {
-      if (message.role === 'model' && message.usage) {
-          setLastResponseMeta(message.usage);
-      }
+  const handleMessageReceived = (lastResponse: any) => {
+    if (lastResponse) {
+        setLastResponseMeta({
+            usage: lastResponse.usage,
+            cost: lastResponse.cost,
+            agentConfig: lastResponse.agentConfig,
+        });
+    }
   }
 
   return (
@@ -155,14 +158,32 @@ export default function AgentLabPage() {
                 </CardHeader>
                 <CardContent>
                      {lastResponseMeta ? (
-                        <div className="space-y-2 text-sm">
-                            <div className="flex justify-between"><span>Tokens de Entrada:</span> <span className="font-mono">{lastResponseMeta.inputTokens}</span></div>
-                            <div className="flex justify-between"><span>Tokens de Salida:</span> <span className="font-mono">{lastResponseMeta.outputTokens}</span></div>
-                            <div className="border-t my-2"></div>
-                            <div className="flex justify-between font-bold"><span>Tokens Totales:</span> <span className="font-mono">{lastResponseMeta.totalTokens}</span></div>
+                        <div className="space-y-4 text-sm">
+                            <div className="space-y-2">
+                                <div className="flex justify-between"><span>Tokens de Entrada:</span> <span className="font-mono">{lastResponseMeta.usage.inputTokens}</span></div>
+                                <div className="flex justify-between"><span>Tokens de Salida:</span> <span className="font-mono">{lastResponseMeta.usage.outputTokens}</span></div>
+                                <div className="border-t my-2"></div>
+                                <div className="flex justify-between font-bold"><span>Tokens Totales:</span> <span className="font-mono">{lastResponseMeta.usage.totalTokens}</span></div>
+                            </div>
+                            <div className="border-t pt-4 space-y-2">
+                                <div className="flex justify-between font-bold">
+                                    <span>Coste:</span> 
+                                    <span className="font-mono">{lastResponseMeta.cost.toFixed(6)}€</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span>Modelo:</span> 
+                                    <span className="font-mono text-xs">{lastResponseMeta.agentConfig.model}</span>
+                                </div>
+                            </div>
+                             <div className="border-t pt-4 space-y-2">
+                                <Label>System Prompt Utilizado</Label>
+                                <p className="text-xs text-muted-foreground p-2 border rounded-md bg-muted h-32 overflow-y-auto">
+                                    {lastResponseMeta.agentConfig.systemPrompt}
+                                </p>
+                             </div>
                         </div>
                      ) : (
-                         <div className="text-center py-8 text-muted-foreground">
+                         <div className="text-center py-8 text-muted-foreground text-sm">
                             (Esperando una respuesta para mostrar metadatos)
                         </div>
                      )}
@@ -174,5 +195,3 @@ export default function AgentLabPage() {
     </div>
   );
 }
-
-    

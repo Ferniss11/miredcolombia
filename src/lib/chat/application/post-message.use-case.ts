@@ -3,7 +3,7 @@ import type { ChatMessage, ChatMessageRole } from '../domain/chat-message.entity
 import type { ChatRepository } from '../domain/chat.repository';
 // The AgentAdapter is an abstraction over the AI implementation (e.g., Genkit)
 // We will create this adapter in the infrastructure layer later.
-import type { AgentAdapter } from '../infrastructure/ai/agent.adapter';
+import type { AgentAdapter, AgentCompletionOutput } from '../infrastructure/ai/agent.adapter';
 import type { TokenUsage } from '@/lib/chat-types';
 
 export type PostMessageInput = {
@@ -17,6 +17,7 @@ export type PostMessageInput = {
 export type PostMessageOutput = {
   aiResponse: string;
   usage: TokenUsage;
+  lastResponse: AgentCompletionOutput; // Return the full last response object
 };
 
 /**
@@ -48,7 +49,7 @@ export class PostMessageUseCase {
     const updatedChatHistory = [...chatHistory, userMsgEntity as ChatMessage];
     
     // 3. Invoke the AI agent via the adapter to get a response
-    const { response, usage, cost } = await this.agentAdapter.getCompletion({
+    const agentResponse = await this.agentAdapter.getCompletion({
         chatHistory: updatedChatHistory, // Pass the most up-to-date history
         currentMessage: userMessage,
         businessId,
@@ -60,13 +61,17 @@ export class PostMessageUseCase {
     const aiMsgEntity: Omit<ChatMessage, 'id' | 'timestamp'> = {
       sessionId,
       businessId,
-      text: response,
+      text: agentResponse.response,
       role: 'model',
-      usage,
-      cost,
+      usage: agentResponse.usage,
+      cost: agentResponse.cost,
     };
     await this.chatRepository.saveMessage(aiMsgEntity);
     
-    return { aiResponse: response, usage };
+    return {
+      aiResponse: agentResponse.response,
+      usage: agentResponse.usage,
+      lastResponse: agentResponse, // Return the full response object
+    };
   }
 }

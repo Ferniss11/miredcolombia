@@ -1,6 +1,17 @@
 // src/lib/chat/infrastructure/ai/agent.adapter.ts
 
-import type { ChatMessage, TokenUsage } from '@/lib/chat-types';
+import type { ChatMessage, TokenUsage, AgentConfig } from '@/lib/chat-types';
+
+/**
+ * Defines the output structure for the agent's completion.
+ */
+export type AgentCompletionOutput = {
+  response: string;
+  usage: TokenUsage;
+  cost: number;
+  agentConfig: AgentConfig; // Now includes the config used
+};
+
 
 /**
  * Defines the contract (port) for an AI agent adapter.
@@ -20,5 +31,5 @@ export interface AgentAdapter {
     sessionId?: string; // Add sessionId to the interface
     // New optional field to explicitly specify an agent, used by the Agent Lab
     agentId?: 'global' | 'valeria_premium' | 'business';
-  }): Promise<{ response: string; usage: TokenUsage; cost: number; }>;
+  }): Promise<AgentCompletionOutput>;
 }
