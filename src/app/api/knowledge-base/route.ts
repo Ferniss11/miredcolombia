@@ -21,7 +21,8 @@ export const GET = apiHandler(async (req: NextRequest) => {
     let query = adminDb.collection(KNOWLEDGE_BASE_COLLECTION).orderBy('metadata.chunk_number', 'asc');
 
     if (sessionId) {
-        // Filter for documents belonging to a specific session
+        // Corrected Logic: If a session ID is provided, fetch documents matching that session ID,
+        // regardless of the source. This is crucial for the Agent Lab.
         query = query.where('metadata.sessionId', '==', sessionId);
     } else {
         // Default to global admin knowledge base if no session ID
