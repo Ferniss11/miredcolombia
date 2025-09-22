@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect, useTransition } from 'react';
@@ -14,7 +13,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Input } from '@/components/ui/input';
 
 type KnowledgeDocument = {
-  id: string;
+  id: string; // This will be the doc_id from metadata
   doc_title: string;
   source: string;
   doc_type: string;
@@ -36,7 +35,7 @@ export default function KnowledgeBasePage() {
     setIsLoading(true);
     try {
       const idToken = await user.getIdToken();
-      // Fetch only global documents by not providing a sessionId
+      // CORRECTED: Fetch from the correct endpoint
       const response = await fetch('/api/knowledge-base', {
         headers: { Authorization: `Bearer ${idToken}` }
       });
@@ -79,10 +78,10 @@ export default function KnowledgeBasePage() {
           throw new Error(result.error?.message || 'Error al subir el archivo');
         }
         
-        toast({ title: 'Archivo Subido', description: 'El documento se está procesando y se añadirá a la base de conocimiento.' });
+        toast({ title: 'Archivo Subido', description: 'El documento se está procesando. La lista se actualizará en breve.' });
         setFile(null);
-        // Optimistically add or just refetch
-        setTimeout(() => fetchDocuments(), 2000); // Give some time for processing
+        // Optimistically refetch after a short delay to allow for indexing
+        setTimeout(() => fetchDocuments(), 3000); 
       } catch (error) {
         toast({ variant: 'destructive', title: 'Error', description: error instanceof Error ? error.message : 'Error inesperado.' });
       }
@@ -160,7 +159,7 @@ export default function KnowledgeBasePage() {
                 ) : (
                   documents.map((doc) => (
                     <TableRow key={doc.id}>
-                      <TableCell className="font-medium flex items-center gap-2"><FileText className="h-4 w-4 text-muted-foreground"/>{doc.doc_title}</TableCell>
+                      <TableCell className="font-medium flex items-center gap-2"><FileText className="h-4 w-4 text-muted-foreground"/>{doc.doc_title || '(Sin título)'}</TableCell>
                       <TableCell>{doc.doc_type}</TableCell>
                       <TableCell>{doc.chunk_count}</TableCell>
                       <TableCell className="text-right">
@@ -202,4 +201,4 @@ export default function KnowledgeBasePage() {
     </div>
   );
 }
-
+    

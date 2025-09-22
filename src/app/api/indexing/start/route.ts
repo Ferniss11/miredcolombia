@@ -1,4 +1,3 @@
-
 // src/app/api/indexing/start/route.ts
 import { NextRequest } from 'next/server';
 import { ApiResponse } from '@/lib/platform/api/api-response';
@@ -43,21 +42,22 @@ async function indexContent(documents: (Guide | BlogPost)[]) {
         let textContent = '';
         const isGuide = 'pdfUrl' in doc;
 
-        if (isGuide) {
-             try {
+        try {
+            if (isGuide && doc.pdfUrl) {
                 const filePath = new URL(doc.pdfUrl).pathname.split('/').slice(2).join('/');
                 const file = bucket.file(filePath);
                 const [pdfBuffer] = await file.download();
                 const pdfData = await pdf(pdfBuffer);
                 textContent = pdfData.text;
-            } catch (e) {
-                console.error(`Failed to process PDF for guide ${doc.id}:`, e);
-                continue; // Skip this document if PDF processing fails
+            } else if (!isGuide && doc.content) { // Handle simple blog posts
+                 textContent = `# ${doc.title}\n\n${doc.content}`;
+            } else if (!isGuide && doc.sections) { // Handle intelligent blog posts
+                const sectionsText = doc.sections.map(s => `## ${s.heading}\n${s.content}`).join('\n\n');
+                textContent = `# ${doc.title}\n\n**Introducción:**\n${doc.introduction}\n\n${sectionsText}\n\n**Conclusión:**\n${doc.conclusion}`;
             }
-        } else {
-            // It's a blog post
-            const sectionsText = doc.sections.map(s => `## ${s.heading}\n${s.content}`).join('\n\n');
-            textContent = `# ${doc.title}\n\n**Introducción:**\n${doc.introduction}\n\n${sectionsText}\n\n**Conclusión:**\n${doc.conclusion}`;
+        } catch (e) {
+            console.error(`Failed to process document ${doc.id} ("${doc.title}"):`, e);
+            continue; // Skip this document if processing fails
         }
         
         textContent = textContent.replace(/\s+/g, ' ').trim();
@@ -71,8 +71,8 @@ async function indexContent(documents: (Guide | BlogPost)[]) {
                 content: chunk,
                 metadata: {
                     source: 'admin_kb',
-                    doc_id: doc.id,
-                    doc_title: doc.title,
+                    doc_id: doc.id, // CORRECTED: Use the original document ID
+                    doc_title: doc.title, // CORRECTED: Use the original document title
                     doc_type: isGuide ? 'guide' : 'blog',
                     chunk_number: index + 1,
                 }
@@ -118,3 +118,4 @@ async function startIndexingProcess(req: NextRequest) {
 
 // The API route handler
 export const POST = apiHandler(startIndexingProcess, ['Admin', 'SAdmin']);
+    
