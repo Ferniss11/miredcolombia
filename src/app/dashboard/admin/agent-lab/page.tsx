@@ -6,7 +6,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { BrainCircuit, TestTube2, RotateCcw, Bot, LogIn, Trash2, MessageSquare, ChevronDown } from 'lucide-react';
+import { BrainCircuit, TestTube2, RotateCcw, Bot, LogIn, Trash2, MessageSquare, PlusCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Label } from '@/components/ui/label';
 import ChatWidget from '@/components/chat/ChatWidget';
@@ -14,8 +14,8 @@ import type { ChatMessage, TokenUsage, AgentConfig, ChatSession } from '@/lib/ch
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible';
 import { Separator } from '@/components/ui/separator';
 
 interface ResponseMetadata {
@@ -27,49 +27,79 @@ interface ResponseMetadata {
 // --- Session List Component ---
 const SessionList = ({ sessions, onSelect, onDelete, activeSessionId, isLoading }: { sessions: ChatSession[], onSelect: (session: ChatSession) => void, onDelete: (sessionId: string) => void, activeSessionId: string | null, isLoading: boolean }) => {
     return (
-        <Card className="h-full flex flex-col">
-            <CardHeader>
-                <CardTitle>Sesiones de Prueba</CardTitle>
-                <CardDescription>Selecciona una sesión para continuarla o eliminarla.</CardDescription>
-            </CardHeader>
-            <CardContent className="flex-1 p-2 overflow-hidden">
-                <ScrollArea className="h-full">
-                    <div className="space-y-2 p-2">
-                        {isLoading ? (
-                            Array.from({ length: 5 }).map((_, i) => <div key={i} className="h-16 bg-muted rounded-md animate-pulse" />)
-                        ) : sessions.length === 0 ? (
-                            <div className="text-center text-sm text-muted-foreground py-10">No hay sesiones guardadas.</div>
-                        ) : (
-                            sessions.map(session => (
-                                <div
-                                    key={session.id}
-                                    className={cn(
-                                        "p-2 border rounded-md cursor-pointer hover:bg-muted/50 transition-colors group",
-                                        activeSessionId === session.id && "bg-primary/10 border-primary"
-                                    )}
-                                    onClick={() => onSelect(session)}
-                                >
-                                    <div className="flex justify-between items-start">
-                                        <p className="font-semibold text-sm line-clamp-1">{session.userName || 'Sesión de Laboratorio'}</p>
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity text-destructive"
-                                            onClick={(e) => { e.stopPropagation(); onDelete(session.id!); }}
-                                        >
-                                            <Trash2 className="h-4 w-4" />
-                                        </Button>
-                                    </div>
-                                    <p className="text-xs text-muted-foreground">{new Date(session.createdAt).toLocaleString('es-ES')}</p>
+        <div className="h-full flex flex-col">
+             <ScrollArea className="flex-1 -mx-4">
+                <div className="space-y-2 p-4">
+                    {isLoading ? (
+                        Array.from({ length: 5 }).map((_, i) => <div key={i} className="h-16 bg-muted rounded-md animate-pulse" />)
+                    ) : sessions.length === 0 ? (
+                        <div className="text-center text-sm text-muted-foreground py-10">No hay sesiones guardadas.</div>
+                    ) : (
+                        sessions.map(session => (
+                            <div
+                                key={session.id}
+                                className={cn(
+                                    "p-2 border rounded-md cursor-pointer hover:bg-muted/50 transition-colors group",
+                                    activeSessionId === session.id && "bg-primary/10 border-primary"
+                                )}
+                                onClick={() => onSelect(session)}
+                            >
+                                <div className="flex justify-between items-start">
+                                    <p className="font-semibold text-sm line-clamp-1">{session.userName || 'Sesión de Laboratorio'}</p>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity text-destructive"
+                                        onClick={(e) => { e.stopPropagation(); onDelete(session.id!); }}
+                                    >
+                                        <Trash2 className="h-4 w-4" />
+                                    </Button>
                                 </div>
-                            ))
-                        )}
-                    </div>
-                </ScrollArea>
-            </CardContent>
-        </Card>
+                                <p className="text-xs text-muted-foreground">{new Date(session.createdAt).toLocaleString('es-ES')}</p>
+                            </div>
+                        ))
+                    )}
+                </div>
+            </ScrollArea>
+        </div>
     );
 };
+
+// --- Metadata Modal Component ---
+const MetadataModal = ({ session, onOpenChange }: { session: ChatSession | null, onOpenChange: (open: boolean) => void }) => {
+    const formatCurrency = (value: number = 0) => {
+        return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', minimumFractionDigits: 5 }).format(value);
+    }
+    
+    return (
+        <DialogContent className="sm:max-w-xl">
+             <DialogHeader>
+                <DialogTitle className="flex items-center gap-2"><BrainCircuit/> Metadatos de la Sesión</DialogTitle>
+                <DialogDescription>Información técnica sobre la conversación actual para depuración.</DialogDescription>
+             </DialogHeader>
+             {session ? (
+                <div className="space-y-4 text-sm py-4">
+                    <div className="flex justify-between font-bold"><span>Coste Total:</span> <span className="font-mono">{formatCurrency(session.totalCost)}</span></div>
+                    <Separator/>
+                    <div className="flex justify-between"><span>Tokens Totales:</span> <span className="font-mono">{(session.totalTokens || 0).toLocaleString()}</span></div>
+                    <div className="flex justify-between text-muted-foreground"><span>└─ Input:</span> <span className="font-mono">{(session.totalInputTokens || 0).toLocaleString()}</span></div>
+                    <div className="flex justify-between text-muted-foreground"><span>└─ Output:</span> <span className="font-mono">{(session.totalOutputTokens || 0).toLocaleString()}</span></div>
+                    <Separator/>
+                    <div>
+                        <Label>System Prompt Utilizado</Label>
+                        <ScrollArea className="h-48 mt-1">
+                             <pre className="text-xs whitespace-pre-wrap font-mono p-3 border rounded-md bg-muted h-full">
+                                {session.agentConfig?.systemPrompt || '(No disponible aún)'}
+                            </pre>
+                        </ScrollArea>
+                    </div>
+                </div>
+             ) : (
+                <div className="text-center py-8 text-muted-foreground text-sm">No hay una sesión activa para mostrar metadatos.</div>
+             )}
+        </DialogContent>
+    )
+}
 
 
 export default function AgentLabPage() {
@@ -78,10 +108,10 @@ export default function AgentLabPage() {
   const [initialHistory, setInitialHistory] = useState<ChatMessage[]>([]);
   const [isLoading, startLoadingTransition] = useTransition();
   
-  // New state for managing the list of sessions
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [isLoadingSessions, setIsLoadingSessions] = useState(true);
   const [deletingSessionId, setDeletingSessionId] = useState<string | null>(null);
+  const [isMetadataModalOpen, setMetadataModalOpen] = useState(false);
 
   const { user } = useAuth();
   const { toast } = useToast();
@@ -131,11 +161,16 @@ export default function AgentLabPage() {
         const { session, history } = await response.json();
         setActiveSession(session);
         setInitialHistory(history);
-        fetchLabSessions(); // Refresh list to include the new session
+        await fetchLabSessions();
       } catch (error) {
         toast({ variant: 'destructive', title: 'Error', description: error instanceof Error ? error.message : 'Error desconocido' });
       }
     });
+  };
+
+  const handleResetSession = () => {
+    setActiveSession(null);
+    setInitialHistory([]);
   };
   
   const handleSelectSession = (session: ChatSession) => {
@@ -148,6 +183,9 @@ export default function AgentLabPage() {
             const { session: fullSession, messages } = await response.json();
             setActiveSession(fullSession);
             setInitialHistory(messages);
+            // Ensure the select dropdown matches the loaded session's agent type if possible
+            const agentId = fullSession.userName?.includes('valeria_premium') ? 'valeria_premium' : 'global';
+            setSelectedAgent(agentId);
         } catch (error) {
             toast({ variant: 'destructive', title: 'Error', description: 'No se pudo cargar el historial de la sesión.' });
         }
@@ -163,11 +201,10 @@ export default function AgentLabPage() {
             if (!response.ok) throw new Error((await response.json()).error?.message);
             toast({ title: 'Sesión eliminada' });
             if (activeSession?.id === deletingSessionId) {
-                setActiveSession(null);
-                setInitialHistory([]);
+                handleResetSession();
             }
             setDeletingSessionId(null);
-            fetchLabSessions(); // Refresh list
+            await fetchLabSessions();
         } catch (error) {
              toast({ variant: 'destructive', title: 'Error', description: 'No se pudo eliminar la sesión.' });
         }
@@ -187,10 +224,6 @@ export default function AgentLabPage() {
     }
   }
 
-  const formatCurrency = (value: number = 0) => {
-    return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', minimumFractionDigits: 5 }).format(value);
-  }
-
   return (
     <>
     <div className="h-[calc(100vh-8rem)] flex flex-col space-y-6">
@@ -201,71 +234,63 @@ export default function AgentLabPage() {
       
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start flex-1 min-h-0">
         
-        <div className="lg:col-span-3 h-full min-h-0">
-             <SessionList 
-                sessions={sessions}
-                onSelect={handleSelectSession}
-                onDelete={(id) => setDeletingSessionId(id)}
-                activeSessionId={activeSession?.id || null}
-                isLoading={isLoadingSessions}
-             />
+        <div className="lg:col-span-4 h-full min-h-0 flex flex-col gap-4">
+             {/* -- Controls -- */}
+             <Card>
+                 <CardHeader>
+                    <CardTitle>Configuración de Prueba</CardTitle>
+                 </CardHeader>
+                 <CardContent className="space-y-4">
+                     <div>
+                         <Label htmlFor="agent-selector">Seleccionar Agente</Label>
+                        <Select value={selectedAgent} onValueChange={(value: 'global' | 'valeria_premium') => setSelectedAgent(value)} disabled={!!activeSession}>
+                            <SelectTrigger id="agent-selector">
+                                <SelectValue placeholder="Selecciona un agente" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="global">Agente Global (Gratis)</SelectItem>
+                                <SelectItem value="valeria_premium">Valeria Premium (con RAG)</SelectItem>
+                            </SelectContent>
+                        </Select>
+                     </div>
+                      <Button className="w-full" onClick={activeSession ? handleResetSession : handleStartNewSession} disabled={isLoading} variant={activeSession ? 'outline' : 'default'}>
+                        {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (activeSession ? <PlusCircle className="mr-2 h-4 w-4"/> : <LogIn className="mr-2 h-4 w-4" />)}
+                        {activeSession ? 'Empezar Nueva Prueba' : 'Iniciar Sesión de Prueba'}
+                    </Button>
+                 </CardContent>
+             </Card>
+             {/* -- Session List -- */}
+             <Card className="flex-1 flex flex-col">
+                <CardHeader>
+                    <CardTitle>Sesiones de Prueba</CardTitle>
+                    <CardDescription>Selecciona una sesión para continuarla o eliminarla.</CardDescription>
+                </CardHeader>
+                 <CardContent className="flex-1 p-0 overflow-hidden">
+                    <SessionList 
+                        sessions={sessions}
+                        onSelect={handleSelectSession}
+                        onDelete={(id) => setDeletingSessionId(id)}
+                        activeSessionId={activeSession?.id || null}
+                        isLoading={isLoadingSessions}
+                    />
+                 </CardContent>
+             </Card>
         </div>
 
-        <div className="lg:col-span-9 h-full flex flex-col gap-6 min-h-0">
-             {/* -- New Header Area -- */}
-            <Card>
-                <CardContent className="p-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
-                        <div>
-                             <Label htmlFor="agent-selector">Seleccionar Agente a Probar</Label>
-                            <Select value={selectedAgent} onValueChange={(value: 'global' | 'valeria_premium') => setSelectedAgent(value)} disabled={!!activeSession}>
-                                <SelectTrigger id="agent-selector">
-                                    <SelectValue placeholder="Selecciona un agente" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="global">Agente Global (Gratis)</SelectItem>
-                                    <SelectItem value="valeria_premium">Valeria Premium (con RAG)</SelectItem>
-                                </SelectContent>
-                            </Select>
-                            <Button className="w-full mt-2" onClick={handleStartNewSession} disabled={isLoading}>
-                                {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LogIn className="mr-2 h-4 w-4" />}
-                                Iniciar Nueva Sesión
+        <div className="lg:col-span-8 h-full min-h-0">
+            <Card className="h-full flex flex-col">
+                <CardHeader className="flex-row items-center justify-between">
+                    <CardTitle>Simulador de Chat</CardTitle>
+                    <Dialog open={isMetadataModalOpen} onOpenChange={setMetadataModalOpen}>
+                        <DialogTrigger asChild>
+                            <Button variant="outline" size="icon" disabled={!activeSession}>
+                                <BrainCircuit className="h-5 w-5"/>
+                                <span className="sr-only">Ver Metadatos</span>
                             </Button>
-                        </div>
-                        <Collapsible>
-                            <CollapsibleTrigger asChild>
-                                <Button variant="outline" className="w-full justify-between">
-                                    <span className="flex items-center gap-2"><BrainCircuit/> Metadatos de la Sesión</span>
-                                    <ChevronDown className="h-4 w-4 transition-transform [&[data-state=open]]:rotate-180" />
-                                </Button>
-                            </CollapsibleTrigger>
-                            <CollapsibleContent className="mt-2">
-                                 {activeSession ? (
-                                    <div className="space-y-4 text-sm p-4 border rounded-md">
-                                        <div className="flex justify-between font-bold"><span>Coste Total:</span> <span className="font-mono">{formatCurrency(activeSession.totalCost)}</span></div>
-                                        <Separator/>
-                                        <div className="flex justify-between"><span>Tokens Totales:</span> <span className="font-mono">{(activeSession.totalTokens || 0).toLocaleString()}</span></div>
-                                        <div className="flex justify-between text-muted-foreground"><span>└─ Input:</span> <span className="font-mono">{(activeSession.totalInputTokens || 0).toLocaleString()}</span></div>
-                                        <div className="flex justify-between text-muted-foreground"><span>└─ Output:</span> <span className="font-mono">{(activeSession.totalOutputTokens || 0).toLocaleString()}</span></div>
-                                        <Separator/>
-                                        <div>
-                                            <Label>System Prompt Utilizado</Label>
-                                            <p className="text-xs text-muted-foreground p-2 mt-1 border rounded-md bg-muted h-24 overflow-y-auto">
-                                                {activeSession.agentConfig?.systemPrompt || '(No disponible aún)'}
-                                            </p>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div className="text-center py-4 text-muted-foreground text-sm border rounded-md">(Selecciona o crea una sesión)</div>
-                                )}
-                            </CollapsibleContent>
-                        </Collapsible>
-                    </div>
-                </CardContent>
-            </Card>
-
-            {/* -- Chat Area -- */}
-            <Card className="flex-1 flex flex-col min-h-0">
+                        </DialogTrigger>
+                        <MetadataModal session={activeSession} onOpenChange={setMetadataModalOpen}/>
+                    </Dialog>
+                </CardHeader>
                 <CardContent className="flex-1 overflow-hidden p-0">
                     {activeSession?.id ? (
                         <ChatWidget
@@ -279,7 +304,7 @@ export default function AgentLabPage() {
                         <div className="h-full flex flex-col items-center justify-center text-center p-4">
                             {isLoading ? <Loader2 className="h-12 w-12 animate-spin text-primary mb-4"/> : <MessageSquare className="h-16 w-16 text-muted-foreground mb-4" />}
                             <h3 className="text-xl font-semibold">{isLoading ? 'Cargando sesión...' : 'Ninguna Sesión Activa'}</h3>
-                            <p className="text-muted-foreground mt-2">{isLoading ? 'Por favor, espera un momento.' : 'Selecciona una sesión de la izquierda o crea una nueva.'}</p>
+                            <p className="text-muted-foreground mt-2">{isLoading ? 'Por favor, espera un momento.' : 'Selecciona una sesión de la izquierda o inicia una nueva prueba.'}</p>
                         </div>
                     )}
                 </CardContent>
