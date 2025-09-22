@@ -33,7 +33,7 @@ const SessionList = ({ sessions, onSelect, onDelete, activeSessionId, isLoading 
                     {isLoading ? (
                         Array.from({ length: 5 }).map((_, i) => <div key={i} className="h-16 bg-muted rounded-md animate-pulse" />)
                     ) : sessions.length === 0 ? (
-                        <div className="text-center text-sm text-muted-foreground py-10">No hay sesiones guardadas.</div>
+                        <div className="text-center text-sm text-muted-foreground py-10">No hay sesiones de prueba.</div>
                     ) : (
                         sessions.map(session => (
                             <div
@@ -225,7 +225,7 @@ export default function AgentLabPage() {
 
   return (
     <>
-    <div className="h-[calc(100vh-8rem)] flex flex-col space-y-6">
+    <div className="h-full flex flex-col space-y-6">
       <div className="flex items-center gap-4">
         <TestTube2 className="w-8 h-8 text-primary" />
         <h1 className="text-3xl font-bold font-headline">Laboratorio de Agentes IA</h1>
@@ -233,10 +233,9 @@ export default function AgentLabPage() {
       
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start flex-1 min-h-0">
         
-        <div className="lg:col-span-4 xl:col-span-3 h-full min-h-0 flex flex-col gap-4">
-             {/* -- Controls -- */}
+        <div className="lg:col-span-4 xl:col-span-3 h-full flex flex-col gap-4">
              <Card>
-                 <CardHeader className="pb-4">
+                 <CardContent className="p-4 space-y-4">
                      <div className="space-y-2">
                          <Label htmlFor="agent-selector">Seleccionar Agente</Label>
                         <Select value={selectedAgent} onValueChange={(value: 'global' | 'valeria_premium') => setSelectedAgent(value)} disabled={!!activeSession}>
@@ -249,39 +248,30 @@ export default function AgentLabPage() {
                             </SelectContent>
                         </Select>
                      </div>
-                 </CardHeader>
-                 <CardContent>
                       <Button className="w-full" onClick={activeSession ? handleResetSession : handleStartNewSession} disabled={isLoading}>
                         {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (activeSession ? <RotateCcw className="mr-2 h-4 w-4"/> : <PlusCircle className="mr-2 h-4 w-4" />)}
                         {activeSession ? 'Empezar Nueva Prueba' : 'Iniciar Sesión de Prueba'}
                     </Button>
                  </CardContent>
              </Card>
-             {/* -- Session List -- */}
-             <Card className="flex-1 flex flex-col">
-                <CardHeader>
-                    <CardTitle>Sesiones de Prueba</CardTitle>
-                    <CardDescription>Selecciona una sesión para continuarla o eliminarla.</CardDescription>
-                </CardHeader>
-                 <CardContent className="flex-1 p-0 overflow-hidden">
-                    <SessionList 
-                        sessions={sessions}
-                        onSelect={handleSelectSession}
-                        onDelete={(id) => setDeletingSessionId(id)}
-                        activeSessionId={activeSession?.id || null}
-                        isLoading={isLoadingSessions}
-                    />
-                 </CardContent>
-             </Card>
+             <div className="flex-1 min-h-0">
+                <SessionList 
+                    sessions={sessions}
+                    onSelect={handleSelectSession}
+                    onDelete={(id) => setDeletingSessionId(id)}
+                    activeSessionId={activeSession?.id || null}
+                    isLoading={isLoadingSessions}
+                />
+             </div>
         </div>
 
         <div className="lg:col-span-8 xl:col-span-9 h-full min-h-0">
             <Card className="h-full flex flex-col">
-                <CardHeader className="flex-row items-center justify-between p-3">
+                <CardHeader className="flex-row items-center justify-between p-3 h-14">
                     <CardTitle className="text-base">Simulador de Chat</CardTitle>
                     <Dialog open={isMetadataModalOpen} onOpenChange={setMetadataModalOpen}>
                         <DialogTrigger asChild>
-                            <Button variant="outline" size="icon" disabled={!activeSession}>
+                            <Button variant="ghost" size="icon" disabled={!activeSession}>
                                 <BrainCircuit className="h-5 w-5"/>
                                 <span className="sr-only">Ver Metadatos</span>
                             </Button>
@@ -329,3 +319,5 @@ export default function AgentLabPage() {
     </>
   );
 }
+
+    
