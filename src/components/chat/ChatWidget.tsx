@@ -13,7 +13,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { X, Send, User, Bot, Loader2, Sparkles, Phone, Building, MessageSquareQuote, UserCog, Clock, RotateCcw, Package, Paperclip, FileText, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
-import type { ChatMessage, ChatSession, UserRole } from '@/lib/chat-types';
+import type { ChatMessage, ChatSession, UserRole, AgentConfig } from '@/lib/chat-types';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '../ui/sheet';
 import { useChat } from '@/context/ChatContext';
@@ -158,57 +158,63 @@ export default function ChatWidget({ isLabMode = false, labConfig, initialHistor
     }
   }, [messages]);
 
-  const startSession = useCallback(async () => {
-    if (!user || !userProfile) return;
-
-    try {
-        const response = await fetch('/api/chat/sessions', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${await user.getIdToken()}`},
-            body: JSON.stringify({
-                userId: user.uid,
-                userName: userProfile.name,
-                userPhone: userProfile.businessProfile?.phone || '',
-                userEmail: userProfile.email,
-                businessId: chatContext?.businessId
-            }),
-        });
-        const result = await response.json();
-        if (!response.ok) throw new Error(result.error?.message);
-
-        setSession(result.session);
-        setMessages(result.history);
-        setView('chat');
-    } catch(e) {
-        const errorMessage = e instanceof Error ? e.message : 'No se pudo iniciar tu sesión de chat.';
-        toast({ variant: 'destructive', title: 'Error', description: errorMessage});
-    }
-  }, [user, userProfile, chatContext?.businessId, toast]);
-
   useEffect(() => {
+    // In Lab Mode, the view is controlled externally.
     if (isLabMode) {
         setMessages(initialHistory);
         setView('chat');
         return;
     }
-    
-    if (authLoading) {
-      setView('loading');
-      return;
-    }
 
-    if (user && userProfile) {
-      if (!session || session.userId !== user.uid) {
-        startSession();
-      } else {
-        setView('chat');
-      }
-    } else {
-      setSession(null);
-      setMessages([]);
-      setView('welcome');
+    if (authLoading) {
+        setView('loading');
+        return;
     }
-  }, [user, userProfile, authLoading, session, startSession, isLabMode, initialHistory]);
+    
+    // Only attempt to start a session if the chat is open or in the dedicated dashboard.
+    // This prevents unnecessary API calls on every page load.
+    if (isChatOpen || isInDashboard) {
+        if (user && userProfile) {
+            // If there's a user but no session, or the session belongs to a different user, start a new one.
+            if (!session || session.userId !== user.uid) {
+                 const startSessionForUser = async () => {
+                    try {
+                        const response = await fetch('/api/chat/sessions', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${await user.getIdToken()}`},
+                            body: JSON.stringify({
+                                userId: user.uid,
+                                userName: userProfile.name,
+                                userPhone: userProfile.businessProfile?.phone || '',
+                                userEmail: userProfile.email,
+                                businessId: chatContext?.businessId
+                            }),
+                        });
+                        const result = await response.json();
+                        if (!response.ok) throw new Error(result.error?.message);
+
+                        setSession(result.session);
+                        setMessages(result.history);
+                        setView('chat');
+                    } catch(e) {
+                        const errorMessage = e instanceof Error ? e.message : 'No se pudo iniciar tu sesión de chat.';
+                        toast({ variant: 'destructive', title: 'Error', description: errorMessage});
+                    }
+                };
+                startSessionForUser();
+            } else {
+                // We have a user and a matching session, show the chat.
+                setView('chat');
+            }
+        } else {
+            // No user, show the welcome/login flow.
+            setSession(null);
+            setMessages([]);
+            setView('welcome');
+        }
+    }
+}, [user?.uid, userProfile?.uid, authLoading, isChatOpen, isInDashboard, isLabMode, initialHistory, chatContext?.businessId]);
+
 
 
   const handleSendMessage = async (messageText: string, file?: File | null) => {
@@ -226,6 +232,7 @@ export default function ChatWidget({ isLabMode = false, labConfig, initialHistor
       text: messageText,
       role: 'user',
       timestamp: new Date().toISOString(),
+      replyTo: null,
     };
     setMessages(prev => [...prev, optimisticUserMessage]);
     
@@ -236,6 +243,7 @@ export default function ChatWidget({ isLabMode = false, labConfig, initialHistor
         role: 'user',
         timestamp: new Date().toISOString(),
         file: { name: file.name, status: 'processing' },
+        replyTo: null,
       };
       setMessages(prev => [...prev, optimisticFileMessage]);
     }
@@ -294,9 +302,9 @@ export default function ChatWidget({ isLabMode = false, labConfig, initialHistor
         case 'loading':
             return <div className='flex-1 flex items-center justify-center'><Loader2 className='animate-spin h-8 w-8'/></div>;
         case 'welcome':
-            return <WelcomeForm onSignUpSuccess={startSession} onLoginClick={() => setView('login')} />;
+            return <WelcomeForm onSignUpSuccess={() => {}} onLoginClick={() => setView('login')} />;
         case 'login':
-            return <LoginForm onLoginSuccess={startSession} onBackClick={() => setView('welcome')} />;
+            return <LoginForm onLoginSuccess={() => {}} onBackClick={() => setView('welcome')} />;
         case 'chat':
           const isLimitReached = !isPremiumUser && messages.filter(m => m.role === 'user').length >= 3;
           const canUploadFile = isPremiumUser || isLabMode; // Allow uploads in lab mode
@@ -391,7 +399,7 @@ export default function ChatWidget({ isLabMode = false, labConfig, initialHistor
                   <Avatar className="w-8 h-8"><AvatarImage src={AGENT_AVATAR_URL} alt="Avatar de Valeria" className="object-cover"/><AvatarFallback><Sparkles className="h-4 w-4"/></AvatarFallback></Avatar>
                   Valeria
               </SheetTitle>
-              {session && (<Button variant="ghost" size="icon" className="h-8 w-8" onClick={startSession}><RotateCcw className="h-4 w-4" /></Button>)}
+              {session && (<Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => {setSession(null); setView('loading')}}><RotateCcw className="h-4 w-4" /></Button>)}
           </SheetHeader>
           <div className="flex-1 min-h-0">
             {renderChatContent()}
