@@ -37,28 +37,44 @@ export const knowledgeBaseSearch = ai.defineTool(
 
     try {
       // The Firebase Vector Search extension makes documents searchable via the findNeighbors operator.
-      // We can add a filter to search within a specific context (admin_kb or user_session).
-      
-      const filters: any[] = [{ field: 'metadata.source', op: '==', value: 'admin_kb' }];
-      if (sessionId) {
-        filters.push({ field: 'metadata.sessionId', op: '==', value: sessionId });
-      }
-
-      const results = await adminDb.collection('knowledge_base').findNeighbors('embedding', {
+      const vectorQuery = await adminDb.collection('knowledge_base').findNeighbors('embedding', {
         query: query,
         limit: 5,
         distanceMeasure: 'COSINE',
-        // If a sessionId is provided, search in BOTH admin docs AND session docs.
-        // If not, just search admin docs.
-        filter: sessionId ? { or: filters } : { and: filters }
       });
+      
+      let finalResults = vectorQuery;
 
-      if (!results || results.length === 0) {
-        console.log('[Knowledge Base] No relevant documents found.');
+      // If a session ID is provided, we need to filter the results to include
+      // either global knowledge OR documents from this specific session.
+      if (sessionId) {
+        finalResults = vectorQuery.filter(neighbor => {
+          const metadata = neighbor.document.data().metadata;
+          if (!metadata) return false;
+          
+          // Condition 1: It's a global document from the admin knowledge base
+          const isGlobalDoc = metadata.source === 'admin_kb';
+          
+          // Condition 2: It's a document from the current user's session
+          const isSessionDoc = metadata.source === 'user_session' && metadata.sessionId === sessionId;
+          
+          return isGlobalDoc || isSessionDoc;
+        });
+      } else {
+        // If no session ID, only return global knowledge base documents.
+        finalResults = vectorQuery.filter(neighbor => {
+            const metadata = neighbor.document.data().metadata;
+            return metadata?.source === 'admin_kb';
+        });
+      }
+
+
+      if (!finalResults || finalResults.length === 0) {
+        console.log('[Knowledge Base] No relevant documents found after filtering.');
         return { results: [] };
       }
 
-      const searchResults = results.map(neighbor => {
+      const searchResults = finalResults.map(neighbor => {
         const data = neighbor.document.data();
         return {
           content: data.content || '', // The text chunk
