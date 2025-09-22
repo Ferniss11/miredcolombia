@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect, useTransition } from 'react';
@@ -8,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Upload, Trash2, MoreVertical, Loader2, Database, BrainCircuit, FileText } from 'lucide-react';
+import { Upload, Trash2, MoreVertical, Loader2, BrainCircuit, FileText } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 
@@ -35,6 +36,7 @@ export default function KnowledgeBasePage() {
     setIsLoading(true);
     try {
       const idToken = await user.getIdToken();
+      // Fetch only global documents by not providing a sessionId
       const response = await fetch('/api/knowledge-base', {
         headers: { Authorization: `Bearer ${idToken}` }
       });
@@ -200,3 +202,4 @@ export default function KnowledgeBasePage() {
     </div>
   );
 }
+

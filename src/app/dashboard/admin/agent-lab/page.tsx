@@ -6,7 +6,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { BrainCircuit, TestTube2, RotateCcw, Bot, LogIn, Trash2, MessageSquare, PlusCircle, Database, FileText } from 'lucide-react';
+import { BrainCircuit, TestTube2, RotateCcw, Bot, LogIn, Trash2, MessageSquare, PlusCircle, Database, FileText, Check, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Label } from '@/components/ui/label';
 import ChatWidget from '@/components/chat/ChatWidget';
@@ -32,10 +32,10 @@ interface ResponseMetadata {
 type KnowledgeDocument = {
   id: string;
   doc_title: string;
-  source: string;
+  source: 'admin_kb' | 'user_session';
   doc_type: string;
   chunk_count: number;
-  sessionId?: string; // Add sessionId to the type
+  sessionId?: string;
 };
 
 
@@ -123,12 +123,11 @@ const KnowledgeBaseManager = ({ user, toast, onUpdate, sessionId }: { user: any,
         setIsLoading(true);
         try {
             const idToken = await user.getIdToken();
+            // This API call now fetches global AND session-specific documents
             const response = await fetch(`/api/knowledge-base?sessionId=${sessionId}`, { headers: { Authorization: `Bearer ${idToken}` } });
             if (!response.ok) throw new Error('Failed to fetch documents for session');
             const data = await response.json();
-            // Sort the documents client-side
-            const sortedData = data.sort((a: KnowledgeDocument, b: KnowledgeDocument) => a.doc_title.localeCompare(b.doc_title));
-            setDocuments(sortedData);
+            setDocuments(data);
         } catch (error) {
             toast({ variant: 'destructive', title: 'Error', description: 'No se pudo cargar la base de conocimiento de la sesión.' });
         } finally {
@@ -141,14 +140,14 @@ const KnowledgeBaseManager = ({ user, toast, onUpdate, sessionId }: { user: any,
     }, [fetchDocuments]);
 
     const handleDelete = (docId: string) => {
-        if (!confirm("¿Estás seguro de que quieres eliminar este documento y todos sus fragmentos de la base de conocimiento?")) return;
+        if (!confirm("¿Estás seguro de que quieres eliminar este documento y todos sus fragmentos?")) return;
         startDeleteTransition(async () => {
              try {
                 const idToken = await user.getIdToken();
                 const response = await fetch(`/api/knowledge-base/${docId}`, { method: 'DELETE', headers: { Authorization: `Bearer ${idToken}` } });
                 if (!response.ok) throw new Error('Error al eliminar');
                 toast({ title: 'Documento Eliminado' });
-                fetchDocuments();
+                fetchDocuments(); // Refetch to update the list
                 onUpdate();
             } catch (error) {
                  toast({ variant: 'destructive', title: 'Error', description: 'No se pudo eliminar el documento.' });
@@ -159,8 +158,8 @@ const KnowledgeBaseManager = ({ user, toast, onUpdate, sessionId }: { user: any,
     return (
         <Card className="flex-shrink-0">
             <CardHeader>
-                <CardTitle className="flex items-center gap-2"><Database/> Documentos en esta Sesión</CardTitle>
-                <CardDescription>Documentos subidos y vectorizados en esta conversación.</CardDescription>
+                <CardTitle className="flex items-center gap-2"><Database/> Documentos en Contexto</CardTitle>
+                <CardDescription>Documentos globales (admin) y de sesión (usuario) disponibles para la IA.</CardDescription>
             </CardHeader>
             <CardContent>
                 <div className="border rounded-md max-h-60 overflow-y-auto">
@@ -177,12 +176,16 @@ const KnowledgeBaseManager = ({ user, toast, onUpdate, sessionId }: { user: any,
                             {isLoading ? (
                                 <TableRow><TableCell colSpan={4}><Skeleton className="h-5 w-full"/></TableCell></TableRow>
                             ) : documents.length === 0 ? (
-                                <TableRow><TableCell colSpan={4} className="text-center h-20 text-muted-foreground">No hay documentos en esta sesión.</TableCell></TableRow>
+                                <TableRow><TableCell colSpan={4} className="text-center h-20 text-muted-foreground">No hay documentos en el contexto.</TableCell></TableRow>
                             ) : (
                                 documents.map(doc => (
                                     <TableRow key={doc.id}>
                                         <TableCell className="font-medium text-sm flex items-center gap-2"><FileText className="h-4 w-4 text-muted-foreground"/>{doc.doc_title}</TableCell>
-                                        <TableCell><Badge variant={doc.source === 'admin_kb' ? 'secondary' : 'outline'}>{doc.source}</Badge></TableCell>
+                                        <TableCell>
+                                            <Badge variant={doc.source === 'admin_kb' ? 'secondary' : 'outline'}>
+                                                {doc.source === 'admin_kb' ? 'Global' : 'Sesión'}
+                                            </Badge>
+                                        </TableCell>
                                         <TableCell>{doc.chunk_count}</TableCell>
                                         <TableCell className="text-right">
                                             <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDelete(doc.id)} disabled={isDeleting}>
@@ -438,3 +441,4 @@ export default function AgentLabPage() {
     </>
   );
 }
+
