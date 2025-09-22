@@ -35,6 +35,7 @@ import {
   ChevronDown,
   TestTube2,
   BrainCircuit,
+  Database, // Import the new icon
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -87,7 +88,7 @@ export function DashboardSidebar() {
       items: [
         { href: "/dashboard/admin/agent", label: "Gestión de Agentes", icon: Bot },
         { href: "/dashboard/admin/agent-lab", label: "Laboratorio IA", icon: TestTube2 },
-        { href: "/dashboard/admin/knowledge-base", label: "Base de Conocimiento", icon: BrainCircuit },
+        { href: "/dashboard/admin/knowledge-base", label: "Base de Conocimiento", icon: Database }, // Added new item
         { href: "/dashboard/admin/conversations", label: "Conversaciones", icon: MessageSquare },
       ]
     },

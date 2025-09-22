@@ -77,11 +77,16 @@ const migrationChatFlow = ai.defineFlow(
 
         // Safely extract tool invocations from the history for debugging
         const toolInvocations = (history || [])
-            .filter(step => step.toolRequest) // Ensure the step has a tool request
-            .map((step) => ({
-                tool: step.toolRequest?.name || 'unknown_tool',
-                result: step.toolResponse?.output || { error: 'No tool response found' },
-            }));
+            .map((step) => {
+                if (step.toolRequest) {
+                    return {
+                        tool: step.toolRequest.name || 'unknown_tool',
+                        result: step.toolResponse?.output || { error: 'No tool response found' },
+                    };
+                }
+                return null;
+            })
+            .filter((invocation): invocation is NonNullable<typeof invocation> => invocation !== null);
 
 
         return {

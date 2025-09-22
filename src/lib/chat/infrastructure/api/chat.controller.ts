@@ -28,7 +28,7 @@ const chunkText = (text: string, chunkSize = 1500, overlap = 200): string[] => {
     return chunks;
 };
 
-async function ingestSessionDocument(file: File, sessionId: string, userId: string): Promise<string[]> {
+async function ingestSessionDocument(file: File, sessionId: string, userId: string, isLabSession: boolean): Promise<string[]> {
     if (!adminDb) {
         throw new Error('Firestore not initialized for document ingestion.');
     }
@@ -50,13 +50,14 @@ async function ingestSessionDocument(file: File, sessionId: string, userId: stri
     const chunks = chunkText(textContent);
     const batch = adminDb.batch();
     const collectionRef = adminDb.collection('knowledge_base');
+    const source = isLabSession ? 'admin_kb' : 'user_session';
 
     chunks.forEach((chunk, index) => {
         const docRef = collectionRef.doc(); // Auto-generate ID
         batch.set(docRef, {
             content: chunk,
             metadata: {
-                source: 'user_session', // Distinguishes from admin-uploaded content
+                source,
                 sessionId,
                 userId,
                 doc_title: file.name,
@@ -66,7 +67,7 @@ async function ingestSessionDocument(file: File, sessionId: string, userId: stri
     });
 
     await batch.commit();
-    console.log(`[ChatController] Indexed ${chunks.length} chunks for session ${sessionId}.`);
+    console.log(`[ChatController] Indexed ${chunks.length} chunks for session ${sessionId} with source: ${source}.`);
     return chunks; // Return the generated chunks for debugging
 }
 
@@ -88,6 +89,7 @@ export type PostMessagePayload = {
     businessId?: string;
     document?: File | null;
     agentId?: 'global' | 'valeria_premium' | 'business';
+    isLabSession?: boolean; // Add this flag
 };
 
 
@@ -141,16 +143,42 @@ export class ChatController {
     });
   }
   
-  async postMessage(payload: PostMessagePayload): Promise<ApiResponse> {
-      let { userMessage, userId, sessionId, businessId, document, agentId } = payload;
-      let generatedChunks: string[] | undefined = undefined;
+  async postMessage(req: NextRequest, { params }: { params: { sessionId: string } }): Promise<ApiResponse> {
+      let userMessage: string;
+      let document: File | null = null;
+      let userId: string | undefined = undefined;
+
+      const { sessionId } = params;
+      const { searchParams } = new URL(req.url);
+      const businessId = searchParams.get('businessId') || undefined;
+      const agentId = searchParams.get('agentId') as any;
+      const isLabSession = searchParams.get('isLabSession') === 'true';
 
       if (!sessionId) {
           return ApiResponse.badRequest('Session ID is missing.');
       }
       
+      const idToken = req.headers.get('Authorization')?.split('Bearer ')[1];
+      if (idToken && adminAuth) {
+        try {
+          const decodedToken = await adminAuth.verifyIdToken(idToken);
+          userId = decodedToken.uid;
+        } catch (error) { /* Ignore for guests */ }
+      }
+
+      const contentType = req.headers.get('content-type');
+      if (contentType?.includes('multipart/form-data')) {
+          const formData = await req.formData();
+          userMessage = formData.get('currentMessage') as string;
+          document = formData.get('document') as File | null;
+      } else {
+          const json = await req.json();
+          userMessage = json.userMessage;
+      }
+      
+      let generatedChunks: string[] | undefined = undefined;
       if (document && userId) {
-          generatedChunks = await ingestSessionDocument(document, sessionId, userId);
+          generatedChunks = await ingestSessionDocument(document, sessionId, userId, isLabSession);
           if (!userMessage) {
               userMessage = `He adjuntado el documento "${document.name}". Por favor, resúmelo.`;
           }
@@ -169,12 +197,11 @@ export class ChatController {
 
       return ApiResponse.success({
         history: updatedHistory.map(m => ({ ...m, timestamp: m.timestamp.toISOString() })),
-        // Also return the last response for metadata purposes in the lab
         lastResponse: {
           ...lastResponse,
           debugInfo: {
             ...lastResponse.debugInfo,
-            generatedChunks, // Add generated chunks to debug info
+            generatedChunks,
           }
         },
       });
