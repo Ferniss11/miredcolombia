@@ -240,7 +240,7 @@ export default function AgentLabPage() {
              <Card>
                  <CardContent className="p-2 flex flex-row items-center gap-2">
                     <Select value={selectedAgent} onValueChange={(value: 'global' | 'valeria_premium') => setSelectedAgent(value)} disabled={!!activeSession}>
-                        <SelectTrigger id="agent-selector">
+                        <SelectTrigger id="agent-selector" className="flex-1">
                             <SelectValue placeholder="Selecciona un agente" />
                         </SelectTrigger>
                         <SelectContent>
@@ -318,3 +318,5 @@ export default function AgentLabPage() {
     </>
   );
 }
+
+    
