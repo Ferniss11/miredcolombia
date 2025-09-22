@@ -1,4 +1,3 @@
-
 // src/lib/chat/infrastructure/api/chat.controller.ts
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
@@ -46,11 +45,13 @@ async function ingestSessionDocument(file: File, sessionId: string, userId: stri
     if (!textContent) {
         throw new Error('The uploaded document appears to be empty.');
     }
-
+    
+    // **THE FIX**: Generate a stable and unique document ID for this upload.
+    const docId = `${sessionId}-${file.name}-${Date.now()}`;
     const chunks = chunkText(textContent);
     const batch = adminDb.batch();
     const collectionRef = adminDb.collection('knowledge_base');
-    const source = isLabSession ? 'admin_kb' : 'user_session';
+    const source = 'user_session';
 
     chunks.forEach((chunk, index) => {
         const docRef = collectionRef.doc(); // Auto-generate ID
@@ -60,14 +61,16 @@ async function ingestSessionDocument(file: File, sessionId: string, userId: stri
                 source,
                 sessionId,
                 userId,
+                doc_id: docId, // **CRUCIAL**: Save the generated document ID
                 doc_title: file.name,
+                doc_type: file.type,
                 chunk_number: index + 1,
             }
         });
     });
 
     await batch.commit();
-    console.log(`[ChatController] Indexed ${chunks.length} chunks for session ${sessionId} with source: ${source}.`);
+    console.log(`[ChatController] Indexed ${chunks.length} chunks for session ${sessionId} with source: ${source} and doc_id: ${docId}.`);
     return chunks; // Return the generated chunks for debugging
 }
 
