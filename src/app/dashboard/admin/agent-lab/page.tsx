@@ -123,11 +123,12 @@ const KnowledgeBaseManager = ({ user, toast, onUpdate, sessionId }: { user: any,
         setIsLoading(true);
         try {
             const idToken = await user.getIdToken();
-            // Pass sessionId to the API endpoint to fetch only relevant documents
             const response = await fetch(`/api/knowledge-base?sessionId=${sessionId}`, { headers: { Authorization: `Bearer ${idToken}` } });
             if (!response.ok) throw new Error('Failed to fetch documents for session');
             const data = await response.json();
-            setDocuments(data);
+            // Sort the documents client-side
+            const sortedData = data.sort((a: KnowledgeDocument, b: KnowledgeDocument) => a.doc_title.localeCompare(b.doc_title));
+            setDocuments(sortedData);
         } catch (error) {
             toast({ variant: 'destructive', title: 'Error', description: 'No se pudo cargar la base de conocimiento de la sesión.' });
         } finally {
@@ -401,7 +402,7 @@ export default function AgentLabPage() {
                     </CardContent>
                 </Card>
                 
-                <div className="flex-shrink-0 space-y-4">
+                 <div className="flex-shrink-0 space-y-4">
                     {debugInfo && (
                         <DebugInfoCard title="Información de Depuración (Último Mensaje)" description="Resultados devueltos por las herramientas de Genkit en el último turno." data={debugInfo} />
                     )}
@@ -415,7 +416,6 @@ export default function AgentLabPage() {
                         />
                     )}
                 </div>
-
             </div>
         </div>
     </div>
@@ -438,4 +438,3 @@ export default function AgentLabPage() {
     </>
   );
 }
-
