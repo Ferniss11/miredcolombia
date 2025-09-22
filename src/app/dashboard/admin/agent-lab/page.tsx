@@ -5,7 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { BrainCircuit, TestTube2, RotateCcw, Bot, LogIn, Trash2, MessageSquare } from 'lucide-react';
+import { BrainCircuit, TestTube2, RotateCcw, Bot, LogIn, Trash2, MessageSquare, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Label } from '@/components/ui/label';
 import ChatWidget from '@/components/chat/ChatWidget';
@@ -14,7 +14,8 @@ import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible';
+import { Separator } from '@/components/ui/separator';
 
 interface ResponseMetadata {
     usage: TokenUsage;
@@ -25,7 +26,7 @@ interface ResponseMetadata {
 // --- Session List Component ---
 const SessionList = ({ sessions, onSelect, onDelete, activeSessionId, isLoading }: { sessions: ChatSession[], onSelect: (session: ChatSession) => void, onDelete: (sessionId: string) => void, activeSessionId: string | null, isLoading: boolean }) => {
     return (
-        <Card className="h-[calc(100vh-12rem)] flex flex-col">
+        <Card className="h-full flex flex-col">
             <CardHeader>
                 <CardTitle>Sesiones de Prueba</CardTitle>
                 <CardDescription>Selecciona una sesión para continuarla o eliminarla.</CardDescription>
@@ -173,8 +174,6 @@ export default function AgentLabPage() {
   }
 
   const handleMessageReceived = (lastResponse: any) => {
-     // This function is called by the ChatWidget on new messages.
-     // We need to update the total cost in our active session state.
     if (lastResponse && activeSession) {
         setActiveSession(prev => prev ? ({
             ...prev,
@@ -182,7 +181,7 @@ export default function AgentLabPage() {
             totalInputTokens: (prev.totalInputTokens || 0) + (lastResponse.usage?.inputTokens || 0),
             totalOutputTokens: (prev.totalOutputTokens || 0) + (lastResponse.usage?.outputTokens || 0),
             totalTokens: (prev.totalTokens || 0) + (lastResponse.usage?.totalTokens || 0),
-            agentConfig: lastResponse.agentConfig, // Store the agent config used
+            agentConfig: lastResponse.agentConfig,
         }) : null);
     }
   }
@@ -193,15 +192,14 @@ export default function AgentLabPage() {
 
   return (
     <>
-    <div className="space-y-6">
+    <div className="h-[calc(100vh-8rem)] flex flex-col space-y-6">
       <div className="flex items-center gap-4">
         <TestTube2 className="w-8 h-8 text-primary" />
         <h1 className="text-3xl font-bold font-headline">Laboratorio de Agentes IA</h1>
       </div>
       
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Left Column: Session List */}
-        <div className="lg:col-span-3">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start flex-1 min-h-0">
+        <div className="lg:col-span-3 h-full">
              <SessionList 
                 sessions={sessions}
                 onSelect={handleSelectSession}
@@ -211,15 +209,61 @@ export default function AgentLabPage() {
              />
         </div>
 
-        {/* Center Column: Main Chat */}
-        <div className="lg:col-span-6">
-            <Card className="h-[calc(100vh-12rem)] flex flex-col">
-                <CardHeader className="flex flex-row items-center justify-between">
-                    <div>
-                        <CardTitle>Simulador de Chat</CardTitle>
-                        <CardDescription>Interactúa con el agente seleccionado.</CardDescription>
+        <div className="lg:col-span-9 h-full flex flex-col gap-6">
+             {/* -- New Header Area -- */}
+            <Card>
+                <CardContent className="p-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+                        <div>
+                             <Label htmlFor="agent-selector">Seleccionar Agente a Probar</Label>
+                            <Select value={selectedAgent} onValueChange={(value: 'global' | 'valeria_premium') => setSelectedAgent(value)} disabled={!!activeSession}>
+                                <SelectTrigger id="agent-selector">
+                                    <SelectValue placeholder="Selecciona un agente" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="global">Agente Global (Gratis)</SelectItem>
+                                    <SelectItem value="valeria_premium">Valeria Premium (con RAG)</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <Button className="w-full mt-2" onClick={handleStartNewSession} disabled={isLoading}>
+                                {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LogIn className="mr-2 h-4 w-4" />}
+                                Iniciar Nueva Sesión
+                            </Button>
+                        </div>
+                        <Collapsible>
+                            <CollapsibleTrigger asChild>
+                                <Button variant="outline" className="w-full justify-between">
+                                    <span className="flex items-center gap-2"><BrainCircuit/> Metadatos de la Sesión</span>
+                                    <ChevronDown className="h-4 w-4 transition-transform [&[data-state=open]]:rotate-180" />
+                                </Button>
+                            </CollapsibleTrigger>
+                            <CollapsibleContent className="mt-2">
+                                 {activeSession ? (
+                                    <div className="space-y-4 text-sm p-4 border rounded-md">
+                                        <div className="flex justify-between font-bold"><span>Coste Total:</span> <span className="font-mono">{formatCurrency(activeSession.totalCost)}</span></div>
+                                        <Separator/>
+                                        <div className="flex justify-between"><span>Tokens Totales:</span> <span className="font-mono">{(activeSession.totalTokens || 0).toLocaleString()}</span></div>
+                                        <div className="flex justify-between text-muted-foreground"><span>└─ Input:</span> <span className="font-mono">{(activeSession.totalInputTokens || 0).toLocaleString()}</span></div>
+                                        <div className="flex justify-between text-muted-foreground"><span>└─ Output:</span> <span className="font-mono">{(activeSession.totalOutputTokens || 0).toLocaleString()}</span></div>
+                                        <Separator/>
+                                        <div>
+                                            <Label>System Prompt Utilizado</Label>
+                                            <p className="text-xs text-muted-foreground p-2 mt-1 border rounded-md bg-muted h-24 overflow-y-auto">
+                                                {activeSession.agentConfig?.systemPrompt || '(No disponible aún)'}
+                                            </p>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="text-center py-4 text-muted-foreground text-sm border rounded-md">(Selecciona o crea una sesión)</div>
+                                )}
+                            </CollapsibleContent>
+                        </Collapsible>
                     </div>
-                </CardHeader>
+                </CardContent>
+            </Card>
+
+            {/* -- Chat Area -- */}
+            <Card className="flex-1 flex flex-col min-h-0">
                 <CardContent className="flex-1 overflow-hidden p-0">
                     {activeSession?.id ? (
                         <ChatWidget
@@ -227,80 +271,15 @@ export default function AgentLabPage() {
                             labConfig={{ agentId: selectedAgent, sessionId: activeSession.id }}
                             onMessageReceived={handleMessageReceived}
                             initialHistory={initialHistory}
+                            onReset={handleStartNewSession}
                         />
                     ) : (
                         <div className="h-full flex flex-col items-center justify-center text-center p-4">
-                            {isLoading ? (
-                                <Loader2 className="h-12 w-12 animate-spin text-primary mb-4"/>
-                            ) : (
-                                <MessageSquare className="h-16 w-16 text-muted-foreground mb-4" />
-                            )}
-                            <h3 className="text-xl font-semibold">
-                                {isLoading ? 'Cargando sesión...' : 'Ninguna Sesión Activa'}
-                            </h3>
-                            <p className="text-muted-foreground mt-2">
-                                {isLoading ? 'Por favor, espera un momento.' : 'Selecciona una sesión de la izquierda o crea una nueva para empezar.'}
-                            </p>
+                            {isLoading ? <Loader2 className="h-12 w-12 animate-spin text-primary mb-4"/> : <MessageSquare className="h-16 w-16 text-muted-foreground mb-4" />}
+                            <h3 className="text-xl font-semibold">{isLoading ? 'Cargando sesión...' : 'Ninguna Sesión Activa'}</h3>
+                            <p className="text-muted-foreground mt-2">{isLoading ? 'Por favor, espera un momento.' : 'Selecciona una sesión de la izquierda o crea una nueva.'}</p>
                         </div>
                     )}
-                </CardContent>
-            </Card>
-        </div>
-        
-        {/* Right Column: Config & Metadata */}
-        <div className="lg:col-span-3 space-y-6">
-            <Card>
-                <CardHeader>
-                    <CardTitle>Configuración de la Prueba</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                     <div>
-                        <Label htmlFor="agent-selector">Seleccionar Agente a Probar</Label>
-                        <Select value={selectedAgent} onValueChange={(value: 'global' | 'valeria_premium') => setSelectedAgent(value)} disabled={!!activeSession}>
-                            <SelectTrigger id="agent-selector">
-                                <SelectValue placeholder="Selecciona un agente" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="global">Agente Global (Gratis)</SelectItem>
-                                <SelectItem value="valeria_premium">Valeria Premium (con RAG)</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <Button className="w-full" onClick={handleStartNewSession} disabled={isLoading}>
-                        {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LogIn className="mr-2 h-4 w-4" />}
-                        Iniciar Nueva Sesión
-                    </Button>
-                </CardContent>
-            </Card>
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><BrainCircuit/> Metadatos de la Sesión</CardTitle>
-                    <CardDescription>Información acumulada de la sesión de chat activa.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                     {activeSession ? (
-                        <div className="space-y-4 text-sm">
-                           <div className="flex justify-between font-bold">
-                                <span>Coste Total:</span> 
-                                <span className="font-mono">{formatCurrency(activeSession.totalCost)}</span>
-                            </div>
-                            <div className="border-t pt-4 space-y-2">
-                                <div className="flex justify-between"><span>Tokens Totales:</span> <span className="font-mono">{(activeSession.totalTokens || 0).toLocaleString()}</span></div>
-                                <div className="flex justify-between text-muted-foreground"><span>└─ Input:</span> <span className="font-mono">{(activeSession.totalInputTokens || 0).toLocaleString()}</span></div>
-                                <div className="flex justify-between text-muted-foreground"><span>└─ Output:</span> <span className="font-mono">{(activeSession.totalOutputTokens || 0).toLocaleString()}</span></div>
-                            </div>
-                             <div className="border-t pt-4 space-y-2">
-                                <Label>System Prompt Utilizado</Label>
-                                <p className="text-xs text-muted-foreground p-2 border rounded-md bg-muted h-32 overflow-y-auto">
-                                    {activeSession.agentConfig?.systemPrompt || '(No disponible aún)'}
-                                </p>
-                             </div>
-                        </div>
-                     ) : (
-                         <div className="text-center py-8 text-muted-foreground text-sm">
-                            (Selecciona o crea una sesión)
-                        </div>
-                     )}
                 </CardContent>
             </Card>
         </div>
@@ -311,9 +290,7 @@ export default function AgentLabPage() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Esta acción eliminará permanentemente la sesión de chat y todo su historial.
-            </AlertDialogDescription>
+            <AlertDialogDescription>Esta acción eliminará permanentemente la sesión de chat y todo su historial.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
