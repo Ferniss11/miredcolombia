@@ -1,3 +1,4 @@
+
 // infrastructure/persistence/firestore-user.repository.ts
 import type { User } from '../../domain/user.entity';
 import type { UserRepository } from '../../domain/user.repository';
@@ -108,15 +109,16 @@ export class FirestoreUserRepository implements UserRepository {
     const doc = await docRef.get();
     
     // If a specific config doesn't exist, return a default shell.
-    // The adapter will be responsible for merging this with tool instructions.
     if (!doc.exists) {
         console.warn(`[FirestoreRepo] No specific agent config found for '${agentId}'. Returning a default config.`);
-        return {
-            model: 'googleai/gemini-1.5-flash-latest', // A safe default model
-            systemPrompt: `Eres Valeria, una asistente de IA experta en ayudar a colombianos en su proceso de migración y vida en España.` // A simple default personality
-        };
     }
-    return doc.data() as AgentConfig;
+    
+    const data = doc.data() as AgentConfig;
+
+    return {
+        model: data?.model || 'googleai/gemini-1.5-flash-latest',
+        systemPrompt: data?.systemPrompt || `Eres Valeria, una asistente de IA experta en ayudar a colombianos en su proceso de migración y vida en España.`
+    };
   }
 
   async saveAgentConfig(agentId: string, config: AgentConfig): Promise<void> {

@@ -212,7 +212,7 @@ export default function ChatWidget({ isLabMode = false, labConfig, initialHistor
             setView('welcome');
         }
     }
-  }, [user?.uid, userProfile?.uid, authLoading, isChatOpen, isInDashboard, isLabMode, initialHistory, chatContext?.businessId, session]);
+  }, [user, userProfile, authLoading, isChatOpen, isInDashboard, isLabMode, initialHistory, chatContext, session]);
 
   const handleSendMessage = async (messageText: string, file?: File | null) => {
     const activeSessionId = isLabMode ? labConfig?.sessionId : session?.id;
@@ -223,31 +223,24 @@ export default function ChatWidget({ isLabMode = false, labConfig, initialHistor
         toast({ title: 'Límite Gratuito Alcanzado', description: 'Actualiza a un plan premium para continuar.', variant: 'destructive' });
         return;
     }
+    
+    let userMessageText = messageText.trim();
+    if (file) {
+      // Append a clear text message indicating a file was uploaded.
+      userMessageText = messageText.trim() 
+        ? `${messageText.trim()}\n\n(He adjuntado el documento: ${file.name})`
+        : `He adjuntado el documento: ${file.name}`;
+    }
 
     const optimisticUserMessage: ChatMessage = {
       id: `temp_user_${Date.now()}`,
-      text: messageText,
+      text: userMessageText,
       role: 'user',
       timestamp: new Date().toISOString(),
       replyTo: null,
     };
     
-    // Add user message first
-    let tempMessages = [...messages, optimisticUserMessage];
-    
-    if (file) {
-      const optimisticFileMessage: ChatMessage = {
-        id: `temp_file_${Date.now()}`,
-        text: '',
-        role: 'user',
-        timestamp: new Date().toISOString(),
-        file: { name: file.name, status: 'processing' },
-        replyTo: null,
-      };
-      tempMessages.push(optimisticFileMessage);
-    }
-
-    setMessages(tempMessages);
+    setMessages(prev => [...prev, optimisticUserMessage]);
     
     setCurrentMessage('');
     setAttachedFile(null);
@@ -255,7 +248,7 @@ export default function ChatWidget({ isLabMode = false, labConfig, initialHistor
     setIsAiResponding(true);
 
     const formData = new FormData();
-    formData.append('currentMessage', messageText.trim());
+    formData.append('currentMessage', userMessageText);
     if (file) formData.append('document', file);
     
     if (chatContext?.businessId) formData.append('businessId', chatContext.businessId);
@@ -313,25 +306,6 @@ export default function ChatWidget({ isLabMode = false, labConfig, initialHistor
                     const isUser = msg.role === 'user';
                     const avatar = isUser ? (<Avatar className="w-8 h-8 flex-shrink-0"><AvatarFallback className="bg-muted"><User size={18} /></AvatarFallback></Avatar>) 
                                            : (<Avatar className="w-8 h-8 flex-shrink-0"><AvatarImage src={AGENT_AVATAR_URL} alt="Avatar de Valeria" className="object-cover" /><AvatarFallback><Sparkles className="h-4 w-4"/></AvatarFallback></Avatar>);
-
-                    if (msg.file) {
-                       return (
-                          <div key={msg.id || index} className="flex items-end gap-2 justify-start">
-                              {avatar}
-                              <div className="flex flex-col gap-1 w-full max-w-lg">
-                                  <div className="p-3 rounded-lg shadow-sm w-fit bg-muted mr-auto rounded-bl-none">
-                                      <div className="flex items-center gap-3">
-                                          {msg.file.status === 'processing' ? <Loader2 className="h-6 w-6 animate-spin text-muted-foreground"/> : <FileText className="h-6 w-6 text-muted-foreground"/>}
-                                          <div className="flex-grow">
-                                              <p className="text-sm font-medium">{msg.file.name}</p>
-                                              <p className="text-xs text-muted-foreground">{msg.file.status === 'processing' ? 'Procesando...' : 'Archivo listo'}</p>
-                                          </div>
-                                      </div>
-                                  </div>
-                              </div>
-                          </div>
-                       )
-                    }
 
                     return (
                         <div key={msg.id || index} className={cn("flex items-end gap-2 w-full", isUser ? 'justify-end' : 'justify-start')}>

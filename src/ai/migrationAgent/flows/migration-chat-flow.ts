@@ -42,7 +42,7 @@ const prompt = ai.definePrompt({
     name: 'migrationChatPrompt',
     input: { schema: MigrationChatInputSchema },
     output: { schema: ChatOutputSchema },
-    tools: [knowledgeBaseSearch],
+    tools: [knowledgeBaseSearch], // Ensure the tool is explicitly passed to the prompt
     prompt: `{{{systemPrompt}}}
 ---
 TASK: Based on the conversation history and using your tools to search for information, generate the next response for the 'model'. If the user's question seems related to a document they may have uploaded, be sure to use the 'sessionId' when searching the knowledge base.
