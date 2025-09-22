@@ -141,7 +141,6 @@ export default function AgentLabPage() {
 
   const handleStartNewSession = () => {
     if (activeSession) {
-      // If a session is active, this button acts as a reset
       setActiveSession(null);
       setInitialHistory([]);
       return;
@@ -228,76 +227,78 @@ export default function AgentLabPage() {
 
   return (
     <>
-    <div className="flex flex-col space-y-4 h-[calc(100vh-8rem)]">
-      <div className="flex items-center gap-4">
-        <TestTube2 className="w-8 h-8 text-primary" />
-        <h1 className="text-3xl font-bold font-headline">Laboratorio de Agentes IA</h1>
-      </div>
+    <div className="flex flex-col h-[calc(100vh-8rem)]">
+        <div className="flex items-center gap-4 mb-4">
+            <TestTube2 className="w-8 h-8 text-primary" />
+            <h1 className="text-3xl font-bold font-headline">Laboratorio de Agentes IA</h1>
+        </div>
       
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start flex-1 min-h-0">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start flex-1 min-h-0">
         
-        <div className="lg:col-span-4 xl:col-span-3 h-full flex flex-col gap-4">
-             <Card>
-                 <CardContent className="p-2 flex flex-row items-center gap-2">
-                    <Select value={selectedAgent} onValueChange={(value: 'global' | 'valeria_premium') => setSelectedAgent(value)} disabled={!!activeSession}>
-                        <SelectTrigger id="agent-selector" className="flex-1">
-                            <SelectValue placeholder="Selecciona un agente" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="global">Agente Global (Gratis)</SelectItem>
-                            <SelectItem value="valeria_premium">Valeria Premium (con RAG)</SelectItem>
-                        </SelectContent>
-                    </Select>
-                      <Button variant="outline" size="icon" onClick={handleStartNewSession} disabled={isLoading}>
-                        {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : (activeSession ? <RotateCcw className="h-4 w-4"/> : <PlusCircle className="h-4 w-4" />)}
-                      </Button>
-                 </CardContent>
-             </Card>
-             <div className="flex-1 min-h-0">
-                <SessionList 
-                    sessions={sessions}
-                    onSelect={handleSelectSession}
-                    onDelete={(id) => setDeletingSessionId(id)}
-                    activeSessionId={activeSession?.id || null}
-                    isLoading={isLoadingSessions}
-                />
-             </div>
-        </div>
-
-        <div className="lg:col-span-8 xl:col-span-9 h-full min-h-0">
-            <Card className="h-full flex flex-col">
-                <CardHeader className="flex-row items-center justify-between p-3 h-14">
-                    <CardTitle className="text-base">Simulador de Chat</CardTitle>
-                    <Dialog open={isMetadataModalOpen} onOpenChange={setMetadataModalOpen}>
-                        <DialogTrigger asChild>
-                            <Button variant="ghost" size="icon" disabled={!activeSession}>
-                                <BrainCircuit className="h-5 w-5"/>
-                                <span className="sr-only">Ver Metadatos</span>
-                            </Button>
-                        </DialogTrigger>
-                        <MetadataModal session={activeSession} onOpenChange={setMetadataModalOpen}/>
-                    </Dialog>
-                </CardHeader>
-                <CardContent className="flex-1 overflow-hidden p-0">
-                    {activeSession?.id ? (
-                        <ChatWidget
-                            isLabMode={true}
-                            labConfig={{ agentId: selectedAgent, sessionId: activeSession.id }}
-                            onMessageReceived={handleMessageReceived}
-                            initialHistory={initialHistory}
-                            onReset={handleStartNewSession}
+            <div className="lg:col-span-4 xl:col-span-3 h-full flex flex-col gap-4">
+                <Card>
+                    <CardContent className="p-2 flex flex-row items-center gap-2">
+                        <Select value={selectedAgent} onValueChange={(value: 'global' | 'valeria_premium') => setSelectedAgent(value)} disabled={!!activeSession}>
+                            <SelectTrigger id="agent-selector" className="flex-1">
+                                <SelectValue placeholder="Selecciona un agente" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="global">Agente Global (Gratis)</SelectItem>
+                                <SelectItem value="valeria_premium">Valeria Premium (con RAG)</SelectItem>
+                            </SelectContent>
+                        </Select>
+                        <Button variant="outline" size="icon" onClick={handleStartNewSession} disabled={isLoading}>
+                            {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : (activeSession ? <RotateCcw className="h-4 w-4"/> : <PlusCircle className="h-4 w-4" />)}
+                        </Button>
+                    </CardContent>
+                </Card>
+                <div className="relative h-full flex-1 flex flex-col">
+                    <div className="absolute inset-0">
+                         <SessionList 
+                            sessions={sessions}
+                            onSelect={handleSelectSession}
+                            onDelete={(id) => setDeletingSessionId(id)}
+                            activeSessionId={activeSession?.id || null}
+                            isLoading={isLoadingSessions}
                         />
-                    ) : (
-                        <div className="h-full flex flex-col items-center justify-center text-center p-4">
-                            {isLoading ? <Loader2 className="h-12 w-12 animate-spin text-primary mb-4"/> : <MessageSquare className="h-16 w-16 text-muted-foreground mb-4" />}
-                            <h3 className="text-xl font-semibold">{isLoading ? 'Cargando sesión...' : 'Ninguna Sesión Activa'}</h3>
-                            <p className="text-muted-foreground mt-2">{isLoading ? 'Por favor, espera un momento.' : 'Selecciona una sesión de la izquierda o inicia una nueva prueba.'}</p>
-                        </div>
-                    )}
-                </CardContent>
-            </Card>
+                    </div>
+                </div>
+            </div>
+
+            <div className="lg:col-span-8 xl:col-span-9 h-full min-h-0">
+                <Card className="h-full flex flex-col">
+                    <CardHeader className="flex-row items-center justify-between p-3 h-14">
+                        <CardTitle className="text-base">Simulador de Chat</CardTitle>
+                        <Dialog open={isMetadataModalOpen} onOpenChange={setMetadataModalOpen}>
+                            <DialogTrigger asChild>
+                                <Button variant="ghost" size="icon" disabled={!activeSession}>
+                                    <BrainCircuit className="h-5 w-5"/>
+                                    <span className="sr-only">Ver Metadatos</span>
+                                </Button>
+                            </DialogTrigger>
+                            <MetadataModal session={activeSession} onOpenChange={setMetadataModalOpen}/>
+                        </Dialog>
+                    </CardHeader>
+                    <CardContent className="flex-1 overflow-hidden p-0">
+                        {activeSession?.id ? (
+                            <ChatWidget
+                                isLabMode={true}
+                                labConfig={{ agentId: selectedAgent, sessionId: activeSession.id }}
+                                onMessageReceived={handleMessageReceived}
+                                initialHistory={initialHistory}
+                                onReset={handleStartNewSession}
+                            />
+                        ) : (
+                            <div className="h-full flex flex-col items-center justify-center text-center p-4">
+                                {isLoading ? <Loader2 className="h-12 w-12 animate-spin text-primary mb-4"/> : <MessageSquare className="h-16 w-16 text-muted-foreground mb-4" />}
+                                <h3 className="text-xl font-semibold">{isLoading ? 'Cargando sesión...' : 'Ninguna Sesión Activa'}</h3>
+                                <p className="text-muted-foreground mt-2">{isLoading ? 'Por favor, espera un momento.' : 'Selecciona una sesión de la izquierda o inicia una nueva prueba.'}</p>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+            </div>
         </div>
-      </div>
     </div>
     
      <AlertDialog open={!!deletingSessionId} onOpenChange={(open) => !open && setDeletingSessionId(null)}>
@@ -319,4 +320,3 @@ export default function AgentLabPage() {
   );
 }
 
-    
