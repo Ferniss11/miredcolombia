@@ -15,11 +15,16 @@ import { GooglePlacesAdapter } from '@/lib/directory/infrastructure/search/googl
 import { FirestoreCacheAdapter } from '@/lib/directory/infrastructure/cache/firestore-cache.adapter';
 
 
-const DEFAULT_GLOBAL_PROMPT = 'Eres un asistente de IA para Mi Red Colombia. Ayuda a los usuarios con sus preguntas sobre inmigración y servicios.';
+// This is the base system prompt that gives the model its core capabilities and tool instructions.
+const BASE_TOOL_PROMPT = `### PROCESO DE BÚSQUEDA OBLIGATORIO
+Antes de responder cualquier pregunta, SIEMPRE debes usar la herramienta \`knowledgeBaseSearch\` para buscar en tu base de conocimiento. Esta es tu fuente principal de verdad.
+- Si el usuario menciona un documento o archivo, o si el contexto sugiere que acaba de subir uno, DEBES incluir el \`sessionId\` en tu búsqueda para encontrar información relevante a esta conversación.
+- Basa tu respuesta principalmente en los resultados de la búsqueda. Si no encuentras información relevante, indícalo amablemente en lugar de inventar una respuesta.`;
+
 
 /**
  * An adapter that uses Genkit to provide AI agent completions.
- * It dynamically selects the appropriate agent (global vs. business) based on context.
+ * It dynamically selects the appropriate agent (global vs. business) and combines system prompts.
  */
 export class GenkitAgentAdapter implements AgentAdapter {
   private userRepository: FirestoreUserRepository;
@@ -102,10 +107,14 @@ export class GenkitAgentAdapter implements AgentAdapter {
         agentConfig = await this.getAgentConfigForUser(input.chatHistory);
     }
     
-    // This part is for Global, Premium, and Lab agents that use the 'migrationChat' flow
+    // --- For Global, Premium, and Lab agents that use the 'migrationChat' flow ---
+    
+    // Combine the base tool prompt with the specific personality prompt from the database.
+    const finalSystemPrompt = `${agentConfig.systemPrompt}\n\n${BASE_TOOL_PROMPT}`;
+
     const aiResponse = await migrationChat({
         model: agentConfig.model,
-        systemPrompt: agentConfig.systemPrompt || DEFAULT_GLOBAL_PROMPT,
+        systemPrompt: finalSystemPrompt,
         chatHistory: chatHistoryForAI,
         currentMessage: input.currentMessage,
         sessionId: input.sessionId, // Pass sessionId to the flow
@@ -114,6 +123,9 @@ export class GenkitAgentAdapter implements AgentAdapter {
     const usage = aiResponse.usage || { inputTokens: 0, outputTokens: 0, totalTokens: 0 };
     const cost = calculateCost(agentConfig.model, usage.inputTokens, usage.outputTokens);
     
-    return { response: aiResponse.response, usage, cost, agentConfig };
+    // Return the config that was actually used
+    const usedConfig = { model: agentConfig.model, systemPrompt: finalSystemPrompt };
+    
+    return { response: aiResponse.response, usage, cost, agentConfig: usedConfig };
   }
 }
