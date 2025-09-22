@@ -162,9 +162,8 @@ export default function ChatWidget({ isLabMode = false, labConfig, initialHistor
   useEffect(() => {
     if (isLabMode) {
       setMessages(initialHistory);
-      setView(initialHistory.length > 0 ? 'chat' : 'loading'); // Show loading if history is empty
-      if(labConfig?.sessionId && !session) {
-          // This is a bit of a hack to make lab mode work with the session state
+      setView('chat'); // Go directly to chat in lab mode
+      if (labConfig?.sessionId && (!session || session.id !== labConfig.sessionId)) {
           setSession({id: labConfig.sessionId} as ChatSession);
       }
       return;
@@ -172,6 +171,7 @@ export default function ChatWidget({ isLabMode = false, labConfig, initialHistor
     
     const startSessionForUser = async () => {
         if (!user || !userProfile) return;
+        setView('loading');
         try {
             const response = await fetch('/api/chat/sessions', {
                 method: 'POST',
@@ -211,8 +211,6 @@ export default function ChatWidget({ isLabMode = false, labConfig, initialHistor
             setMessages([]);
             setView('welcome');
         }
-    } else {
-      setView('loading');
     }
   }, [user?.uid, userProfile?.uid, authLoading, isChatOpen, isInDashboard, isLabMode, initialHistory, chatContext?.businessId, session]);
 
@@ -233,7 +231,9 @@ export default function ChatWidget({ isLabMode = false, labConfig, initialHistor
       timestamp: new Date().toISOString(),
       replyTo: null,
     };
-    setMessages(prev => [...prev, optimisticUserMessage]);
+    
+    // Add user message first
+    let tempMessages = [...messages, optimisticUserMessage];
     
     if (file) {
       const optimisticFileMessage: ChatMessage = {
@@ -244,8 +244,10 @@ export default function ChatWidget({ isLabMode = false, labConfig, initialHistor
         file: { name: file.name, status: 'processing' },
         replyTo: null,
       };
-      setMessages(prev => [...prev, optimisticFileMessage]);
+      tempMessages.push(optimisticFileMessage);
     }
+
+    setMessages(tempMessages);
     
     setCurrentMessage('');
     setAttachedFile(null);
@@ -311,6 +313,25 @@ export default function ChatWidget({ isLabMode = false, labConfig, initialHistor
                     const isUser = msg.role === 'user';
                     const avatar = isUser ? (<Avatar className="w-8 h-8 flex-shrink-0"><AvatarFallback className="bg-muted"><User size={18} /></AvatarFallback></Avatar>) 
                                            : (<Avatar className="w-8 h-8 flex-shrink-0"><AvatarImage src={AGENT_AVATAR_URL} alt="Avatar de Valeria" className="object-cover" /><AvatarFallback><Sparkles className="h-4 w-4"/></AvatarFallback></Avatar>);
+
+                    if (msg.file) {
+                       return (
+                          <div key={msg.id || index} className="flex items-end gap-2 justify-start">
+                              {avatar}
+                              <div className="flex flex-col gap-1 w-full max-w-lg">
+                                  <div className="p-3 rounded-lg shadow-sm w-fit bg-muted mr-auto rounded-bl-none">
+                                      <div className="flex items-center gap-3">
+                                          {msg.file.status === 'processing' ? <Loader2 className="h-6 w-6 animate-spin text-muted-foreground"/> : <FileText className="h-6 w-6 text-muted-foreground"/>}
+                                          <div className="flex-grow">
+                                              <p className="text-sm font-medium">{msg.file.name}</p>
+                                              <p className="text-xs text-muted-foreground">{msg.file.status === 'processing' ? 'Procesando...' : 'Archivo listo'}</p>
+                                          </div>
+                                      </div>
+                                  </div>
+                              </div>
+                          </div>
+                       )
+                    }
 
                     return (
                         <div key={msg.id || index} className={cn("flex items-end gap-2 w-full", isUser ? 'justify-end' : 'justify-start')}>

@@ -108,7 +108,7 @@ export class GenkitAgentAdapter implements AgentAdapter {
         systemPrompt: agentConfig.systemPrompt || DEFAULT_GLOBAL_PROMPT,
         chatHistory: chatHistoryForAI,
         currentMessage: input.currentMessage,
-        sessionId: input.sessionId,
+        sessionId: input.sessionId, // Pass sessionId to the flow
     });
     
     const usage = aiResponse.usage || { inputTokens: 0, outputTokens: 0, totalTokens: 0 };
