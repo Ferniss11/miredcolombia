@@ -1,3 +1,4 @@
+
 // src/lib/chat/infrastructure/api/chat.controller.ts
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
@@ -151,7 +152,7 @@ export class ChatController {
       if (document && userId) {
           generatedChunks = await ingestSessionDocument(document, sessionId, userId);
           if (!userMessage) {
-              userMessage = `He adjuntado el documento "${document.name}".`;
+              userMessage = `He adjuntado el documento "${document.name}". Por favor, resúmelo.`;
           }
       }
 

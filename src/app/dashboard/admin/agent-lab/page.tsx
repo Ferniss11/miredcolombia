@@ -6,7 +6,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { BrainCircuit, TestTube2, RotateCcw, Bot, LogIn, Trash2, MessageSquare, PlusCircle } from 'lucide-react';
+import { BrainCircuit, TestTube2, RotateCcw, Bot, LogIn, Trash2, MessageSquare, PlusCircle, Database, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Label } from '@/components/ui/label';
 import ChatWidget from '@/components/chat/ChatWidget';
@@ -18,62 +18,67 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Separator } from '@/components/ui/separator';
 import DebugInfoCard from '@/components/debug/DebugInfoCard';
+import { Badge } from '@/components/ui/badge';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Skeleton } from '@/components/ui/skeleton';
 
-
+// --- Types ---
 interface ResponseMetadata {
     usage: TokenUsage;
     cost: number;
     agentConfig: AgentConfig;
 }
 
-// --- Session List Component ---
-const SessionList = ({ sessions, onSelect, onDelete, activeSessionId, isLoading }: { sessions: ChatSession[], onSelect: (session: ChatSession) => void, onDelete: (sessionId: string) => void, activeSessionId: string | null, isLoading: boolean }) => {
-    return (
-        <div className="relative h-full flex flex-col">
-             <div className="absolute inset-0">
-                <ScrollArea className="h-full">
-                    <div className="space-y-2 p-4">
-                        {isLoading ? (
-                            Array.from({ length: 5 }).map((_, i) => <div key={i} className="h-16 bg-muted rounded-md animate-pulse" />)
-                        ) : sessions.length === 0 ? (
-                            <div className="text-center text-sm text-muted-foreground py-10">No hay sesiones de prueba.</div>
-                        ) : (
-                            sessions.map(session => (
-                                <div
-                                    key={session.id}
-                                    className={cn(
-                                        "p-2 border rounded-md cursor-pointer hover:bg-muted/50 transition-colors group",
-                                        activeSessionId === session.id && "bg-primary/10 border-primary"
-                                    )}
-                                    onClick={() => onSelect(session)}
-                                >
-                                    <div className="flex justify-between items-start">
-                                        <p className="font-semibold text-sm line-clamp-1">{session.userName || 'Sesión de Laboratorio'}</p>
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity text-destructive"
-                                            onClick={(e) => { e.stopPropagation(); onDelete(session.id!); }}
-                                        >
-                                            <Trash2 className="h-4 w-4" />
-                                        </Button>
-                                    </div>
-                                    <p className="text-xs text-muted-foreground">{new Date(session.createdAt).toLocaleString('es-ES')}</p>
-                                </div>
-                            ))
-                        )}
-                    </div>
-                </ScrollArea>
-             </div>
-        </div>
-    );
+type KnowledgeDocument = {
+  id: string;
+  doc_title: string;
+  source: string;
+  doc_type: string;
+  chunk_count: number;
 };
 
-// --- Metadata Modal Component ---
+
+// --- Sub-components ---
+const SessionList = ({ sessions, onSelect, onDelete, activeSessionId, isLoading }: { sessions: ChatSession[], onSelect: (session: ChatSession) => void, onDelete: (sessionId: string) => void, activeSessionId: string | null, isLoading: boolean }) => (
+     <div className="relative flex-1 min-h-0">
+        <ScrollArea className="absolute inset-0">
+            <div className="space-y-2 p-4">
+                {isLoading ? (
+                    Array.from({ length: 5 }).map((_, i) => <div key={i} className="h-16 bg-muted rounded-md animate-pulse" />)
+                ) : sessions.length === 0 ? (
+                    <div className="text-center text-sm text-muted-foreground py-10">No hay sesiones de prueba.</div>
+                ) : (
+                    sessions.map(session => (
+                        <div
+                            key={session.id}
+                            className={cn(
+                                "p-2 border rounded-md cursor-pointer hover:bg-muted/50 transition-colors group",
+                                activeSessionId === session.id && "bg-primary/10 border-primary"
+                            )}
+                            onClick={() => onSelect(session)}
+                        >
+                            <div className="flex justify-between items-start">
+                                <p className="font-semibold text-sm line-clamp-1">{session.userName || 'Sesión de Laboratorio'}</p>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity text-destructive"
+                                    onClick={(e) => { e.stopPropagation(); onDelete(session.id!); }}
+                                >
+                                    <Trash2 className="h-4 w-4" />
+                                </Button>
+                            </div>
+                            <p className="text-xs text-muted-foreground">{new Date(session.createdAt).toLocaleString('es-ES')}</p>
+                        </div>
+                    ))
+                )}
+            </div>
+        </ScrollArea>
+     </div>
+);
+
 const MetadataModal = ({ session, onOpenChange }: { session: ChatSession | null, onOpenChange: (open: boolean) => void }) => {
-    const formatCurrency = (value: number = 0) => {
-        return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', minimumFractionDigits: 5 }).format(value);
-    }
+    const formatCurrency = (value: number = 0) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', minimumFractionDigits: 5 }).format(value);
     
     return (
         <DialogContent className="sm:max-w-xl">
@@ -89,13 +94,11 @@ const MetadataModal = ({ session, onOpenChange }: { session: ChatSession | null,
                     <div className="flex justify-between text-muted-foreground"><span>└─ Input:</span> <span className="font-mono">{(session.totalInputTokens || 0).toLocaleString()}</span></div>
                     <div className="flex justify-between text-muted-foreground"><span>└─ Output:</span> <span className="font-mono">{(session.totalOutputTokens || 0).toLocaleString()}</span></div>
                     <Separator/>
-                    <div>
-                        <Label>System Prompt Utilizado</Label>
-                        <ScrollArea className="h-48 mt-1">
-                             <pre className="text-xs whitespace-pre-wrap font-mono p-3 border rounded-md bg-muted h-full">
-                                {session.agentConfig?.systemPrompt || '(No disponible aún)'}
-                            </pre>
-                        </ScrollArea>
+                     <div>
+                        <Label>Modelo Utilizado</Label>
+                         <p className="text-xs whitespace-pre-wrap font-mono p-3 border rounded-md bg-muted">
+                            {session.agentConfig?.model || '(No disponible aún)'}
+                        </p>
                     </div>
                 </div>
              ) : (
@@ -105,7 +108,92 @@ const MetadataModal = ({ session, onOpenChange }: { session: ChatSession | null,
     )
 }
 
+const KnowledgeBaseManager = ({ user, toast, onUpdate }: { user: any, toast: any, onUpdate: () => void }) => {
+    const [documents, setDocuments] = useState<KnowledgeDocument[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [isDeleting, startDeleteTransition] = useTransition();
 
+    const fetchDocuments = useCallback(async () => {
+        if (!user) return;
+        setIsLoading(true);
+        try {
+            const idToken = await user.getIdToken();
+            const response = await fetch('/api/knowledge-base', { headers: { Authorization: `Bearer ${idToken}` } });
+            if (!response.ok) throw new Error('Failed to fetch documents');
+            const data = await response.json();
+            setDocuments(data);
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Error', description: 'No se pudo cargar la base de conocimiento.' });
+        } finally {
+            setIsLoading(false);
+        }
+    }, [user, toast]);
+
+    useEffect(() => {
+        fetchDocuments();
+    }, [fetchDocuments]);
+
+    const handleDelete = (docId: string) => {
+        if (!confirm("¿Estás seguro de que quieres eliminar este documento y todos sus fragmentos de la base de conocimiento?")) return;
+        startDeleteTransition(async () => {
+             try {
+                const idToken = await user.getIdToken();
+                const response = await fetch(`/api/knowledge-base/${docId}`, { method: 'DELETE', headers: { Authorization: `Bearer ${idToken}` } });
+                if (!response.ok) throw new Error('Error al eliminar');
+                toast({ title: 'Documento Eliminado' });
+                fetchDocuments();
+                onUpdate();
+            } catch (error) {
+                 toast({ variant: 'destructive', title: 'Error', description: 'No se pudo eliminar el documento.' });
+            }
+        });
+    }
+
+    return (
+        <Card className="flex-shrink-0">
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2"><Database/> Documentos en Base de Conocimiento</CardTitle>
+                <CardDescription>Documentos vectorizados para ser usados por el agente.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="border rounded-md max-h-60 overflow-y-auto">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Documento</TableHead>
+                                <TableHead>Origen</TableHead>
+                                <TableHead>Chunks</TableHead>
+                                <TableHead className="text-right">Acción</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {isLoading ? (
+                                <TableRow><TableCell colSpan={4}><Skeleton className="h-5 w-full"/></TableCell></TableRow>
+                            ) : documents.length === 0 ? (
+                                <TableRow><TableCell colSpan={4} className="text-center h-20 text-muted-foreground">No hay documentos.</TableCell></TableRow>
+                            ) : (
+                                documents.map(doc => (
+                                    <TableRow key={doc.id}>
+                                        <TableCell className="font-medium text-sm flex items-center gap-2"><FileText className="h-4 w-4 text-muted-foreground"/>{doc.doc_title}</TableCell>
+                                        <TableCell><Badge variant={doc.source === 'admin_kb' ? 'secondary' : 'outline'}>{doc.source}</Badge></TableCell>
+                                        <TableCell>{doc.chunk_count}</TableCell>
+                                        <TableCell className="text-right">
+                                            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDelete(doc.id)} disabled={isDeleting}>
+                                                <Trash2 className="h-4 w-4"/>
+                                            </Button>
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            )}
+                        </TableBody>
+                    </Table>
+                </div>
+            </CardContent>
+        </Card>
+    );
+}
+
+// --- Main Page Component ---
 export default function AgentLabPage() {
   const [selectedAgent, setSelectedAgent] = useState<'global' | 'valeria_premium'>('global');
   const [activeSession, setActiveSession] = useState<ChatSession | null>(null);
@@ -116,8 +204,8 @@ export default function AgentLabPage() {
   const [isLoadingSessions, setIsLoadingSessions] = useState(true);
   const [deletingSessionId, setDeletingSessionId] = useState<string | null>(null);
   const [isMetadataModalOpen, setMetadataModalOpen] = useState(false);
+  const [knowledgeBaseKey, setKnowledgeBaseKey] = useState(0);
 
-  // New state for debug info
   const [debugInfo, setDebugInfo] = useState<any | null>(null);
 
   const { user } = useAuth();
@@ -147,40 +235,9 @@ export default function AgentLabPage() {
 
 
   const handleStartNewSession = () => {
-    if (activeSession) {
-      setActiveSession(null);
-      setInitialHistory([]);
-      setDebugInfo(null);
-      return;
-    }
-    
-    if (!user) {
-      toast({ variant: 'destructive', title: 'Error', description: 'Debes estar autenticado.' });
-      return;
-    }
-    startLoadingTransition(async () => {
-      try {
-        const token = await user.getIdToken();
-        const response = await fetch('/api/chat/sessions', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          body: JSON.stringify({
-            userName: `Lab: ${selectedAgent}`,
-            userId: user.uid,
-            isLabSession: true,
-          }),
-        });
-        if (!response.ok) throw new Error((await response.json()).error?.message);
-        
-        const { session, history } = await response.json();
-        setActiveSession(session);
-        setInitialHistory(history);
-        setDebugInfo(null);
-        await fetchLabSessions();
-      } catch (error) {
-        toast({ variant: 'destructive', title: 'Error', description: error instanceof Error ? error.message : 'Error desconocido' });
-      }
-    });
+    setActiveSession(null);
+    setInitialHistory([]);
+    setDebugInfo(null);
   };
   
   const handleSelectSession = (session: ChatSession) => {
@@ -200,6 +257,33 @@ export default function AgentLabPage() {
             toast({ variant: 'destructive', title: 'Error', description: 'No se pudo cargar el historial de la sesión.' });
         }
     });
+  }
+  
+  const handleCreateAndSelectSession = () => {
+       if (!user) return;
+        startLoadingTransition(async () => {
+        try {
+            const token = await user.getIdToken();
+            const response = await fetch('/api/chat/sessions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify({
+                userName: `Lab: ${selectedAgent}`,
+                userId: user.uid,
+                isLabSession: true,
+            }),
+            });
+            if (!response.ok) throw new Error((await response.json()).error?.message);
+            
+            const { session, history } = await response.json();
+            setActiveSession(session);
+            setInitialHistory(history);
+            setDebugInfo(null);
+            await fetchLabSessions();
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Error', description: error instanceof Error ? error.message : 'Error desconocido' });
+        }
+        });
   }
 
   const handleDeleteSession = async () => {
@@ -225,7 +309,6 @@ export default function AgentLabPage() {
 
   const handleMessageReceived = (lastResponse: any) => {
     if (lastResponse) {
-        // Update session metadata
         if (activeSession) {
             setActiveSession(prev => prev ? ({
                 ...prev,
@@ -236,15 +319,17 @@ export default function AgentLabPage() {
                 agentConfig: lastResponse.agentConfig,
             }) : null);
         }
-        // Update debug info
         setDebugInfo(lastResponse.debugInfo || null);
+        if (lastResponse.debugInfo?.generatedChunks) {
+            setKnowledgeBaseKey(prev => prev + 1);
+        }
     }
   }
 
   return (
     <>
-    <div className="flex flex-col h-[calc(100vh-8rem)]">
-        <div className="flex items-center gap-4 mb-4">
+    <div className="flex flex-col h-full min-h-0">
+        <div className="flex items-center gap-4 mb-4 flex-shrink-0">
             <TestTube2 className="w-8 h-8 text-primary" />
             <h1 className="text-3xl font-bold font-headline">Laboratorio de Agentes IA</h1>
         </div>
@@ -263,20 +348,18 @@ export default function AgentLabPage() {
                                 <SelectItem value="valeria_premium">Valeria Premium (con RAG)</SelectItem>
                             </SelectContent>
                         </Select>
-                        <Button variant="outline" size="icon" onClick={handleStartNewSession} disabled={isLoading}>
+                        <Button variant="outline" size="icon" onClick={activeSession ? handleStartNewSession : handleCreateAndSelectSession} disabled={isLoading}>
                             {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : (activeSession ? <RotateCcw className="h-4 w-4"/> : <PlusCircle className="h-4 w-4" />)}
                         </Button>
                     </CardContent>
                 </Card>
-                <div className="relative flex-1 min-h-0">
-                    <SessionList 
-                        sessions={sessions}
-                        onSelect={handleSelectSession}
-                        onDelete={(id) => setDeletingSessionId(id)}
-                        activeSessionId={activeSession?.id || null}
-                        isLoading={isLoadingSessions}
-                    />
-                </div>
+                <SessionList 
+                    sessions={sessions}
+                    onSelect={handleSelectSession}
+                    onDelete={(id) => setDeletingSessionId(id)}
+                    activeSessionId={activeSession?.id || null}
+                    isLoading={isLoadingSessions}
+                />
             </div>
 
             <div className="lg:col-span-8 xl:col-span-9 h-full min-h-0 flex flex-col gap-4">
@@ -313,7 +396,12 @@ export default function AgentLabPage() {
                 </Card>
                 {debugInfo && (
                     <div className="flex-shrink-0">
-                        <DebugInfoCard title="Información de Depuración de la Herramienta" description="Resultados devueltos por las herramientas de Genkit en el último turno." data={debugInfo} />
+                        <DebugInfoCard title="Información de Depuración" description="Resultados devueltos por las herramientas de Genkit en el último turno." data={debugInfo} />
+                    </div>
+                )}
+                {user && (
+                    <div className="flex-shrink-0">
+                        <KnowledgeBaseManager user={user} toast={toast} key={knowledgeBaseKey} onUpdate={() => setKnowledgeBaseKey(k => k + 1)}/>
                     </div>
                 )}
             </div>
