@@ -6,7 +6,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { BrainCircuit, TestTube2, RotateCcw, Bot, LogIn, Trash2, MessageSquare, PlusCircle, Database, FileText, Check, X } from 'lucide-react';
+import { BrainCircuit, TestTube2, RotateCcw, Bot, Trash2, MessageSquare, PlusCircle, Database, FileText, Check, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Label } from '@/components/ui/label';
 import ChatWidget from '@/components/chat/ChatWidget';
@@ -78,38 +78,40 @@ const SessionList = ({ sessions, onSelect, onDelete, activeSessionId, isLoading 
      </div>
 );
 
-const MetadataModal = ({ session, onOpenChange }: { session: ChatSession | null, onOpenChange: (open: boolean) => void }) => {
+const MetadataModal = ({ session, isOpen, onOpenChange }: { session: ChatSession | null, isOpen: boolean, onOpenChange: (open: boolean) => void }) => {
     const formatCurrency = (value: number = 0) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', minimumFractionDigits: 5 }).format(value);
     
     return (
-        <DialogContent className="sm:max-w-xl">
-             <DialogHeader>
-                <DialogTitle className="flex items-center gap-2"><BrainCircuit/> Metadatos de la Sesión</DialogTitle>
-                <DialogDescription>Información técnica sobre la conversación actual para depuración.</DialogDescription>
-             </DialogHeader>
-             {session ? (
-                <div className="space-y-4 text-sm py-4">
-                    <div className="flex justify-between font-bold"><span>Coste Total:</span> <span className="font-mono">{formatCurrency(session.totalCost)}</span></div>
-                    <Separator/>
-                    <div className="flex justify-between"><span>Tokens Totales:</span> <span className="font-mono">{(session.totalTokens || 0).toLocaleString()}</span></div>
-                    <div className="flex justify-between text-muted-foreground"><span>└─ Input:</span> <span className="font-mono">{(session.totalInputTokens || 0).toLocaleString()}</span></div>
-                    <div className="flex justify-between text-muted-foreground"><span>└─ Output:</span> <span className="font-mono">{(session.totalOutputTokens || 0).toLocaleString()}</span></div>
-                    <Separator/>
-                     <div>
-                        <Label>Modelo Utilizado</Label>
-                         <p className="text-xs whitespace-pre-wrap font-mono p-3 border rounded-md bg-muted">
-                            {session.agentConfig?.model || '(No disponible aún)'}
-                        </p>
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent className="sm:max-w-xl">
+                <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2"><BrainCircuit/> Metadatos de la Sesión</DialogTitle>
+                    <DialogDescription>Información técnica sobre la conversación actual para depuración.</DialogDescription>
+                </DialogHeader>
+                {session ? (
+                    <div className="space-y-4 text-sm py-4">
+                        <div className="flex justify-between font-bold"><span>Coste Total:</span> <span className="font-mono">{formatCurrency(session.totalCost)}</span></div>
+                        <Separator/>
+                        <div className="flex justify-between"><span>Tokens Totales:</span> <span className="font-mono">{(session.totalTokens || 0).toLocaleString()}</span></div>
+                        <div className="flex justify-between text-muted-foreground"><span>└─ Input:</span> <span className="font-mono">{(session.totalInputTokens || 0).toLocaleString()}</span></div>
+                        <div className="flex justify-between text-muted-foreground"><span>└─ Output:</span> <span className="font-mono">{(session.totalOutputTokens || 0).toLocaleString()}</span></div>
+                        <Separator/>
+                        <div>
+                            <Label>Modelo Utilizado</Label>
+                            <p className="text-xs whitespace-pre-wrap font-mono p-3 border rounded-md bg-muted">
+                                {session.agentConfig?.model || '(No disponible aún)'}
+                            </p>
+                        </div>
                     </div>
-                </div>
-             ) : (
-                <div className="text-center py-8 text-muted-foreground text-sm">No hay una sesión activa para mostrar metadatos.</div>
-             )}
-        </DialogContent>
+                ) : (
+                    <div className="text-center py-8 text-muted-foreground text-sm">No hay una sesión activa para mostrar metadatos.</div>
+                )}
+            </DialogContent>
+        </Dialog>
     )
 }
 
-const KnowledgeBaseManager = ({ user, toast, onUpdate, sessionId }: { user: any, toast: any, onUpdate: () => void, sessionId: string | null }) => {
+const KnowledgeContextModal = ({ user, toast, onUpdate, sessionId, isOpen, onOpenChange }: { user: any, toast: any, onUpdate: () => void, sessionId: string | null, isOpen: boolean, onOpenChange: (open: boolean) => void }) => {
     const [documents, setDocuments] = useState<KnowledgeDocument[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isDeleting, startDeleteTransition] = useTransition();
@@ -123,7 +125,6 @@ const KnowledgeBaseManager = ({ user, toast, onUpdate, sessionId }: { user: any,
         setIsLoading(true);
         try {
             const idToken = await user.getIdToken();
-            // This API call now fetches global AND session-specific documents
             const response = await fetch(`/api/knowledge-base?sessionId=${sessionId}`, { headers: { Authorization: `Bearer ${idToken}` } });
             if (!response.ok) throw new Error('Failed to fetch documents for session');
             const data = await response.json();
@@ -136,8 +137,10 @@ const KnowledgeBaseManager = ({ user, toast, onUpdate, sessionId }: { user: any,
     }, [user, toast, sessionId]);
 
     useEffect(() => {
-        fetchDocuments();
-    }, [fetchDocuments]);
+        if (isOpen) {
+            fetchDocuments();
+        }
+    }, [isOpen, fetchDocuments]);
 
     const handleDelete = (docId: string) => {
         if (!confirm("¿Estás seguro de que quieres eliminar este documento y todos sus fragmentos?")) return;
@@ -147,7 +150,7 @@ const KnowledgeBaseManager = ({ user, toast, onUpdate, sessionId }: { user: any,
                 const response = await fetch(`/api/knowledge-base/${docId}`, { method: 'DELETE', headers: { Authorization: `Bearer ${idToken}` } });
                 if (!response.ok) throw new Error('Error al eliminar');
                 toast({ title: 'Documento Eliminado' });
-                fetchDocuments(); // Refetch to update the list
+                fetchDocuments();
                 onUpdate();
             } catch (error) {
                  toast({ variant: 'destructive', title: 'Error', description: 'No se pudo eliminar el documento.' });
@@ -156,13 +159,13 @@ const KnowledgeBaseManager = ({ user, toast, onUpdate, sessionId }: { user: any,
     }
 
     return (
-        <Card className="flex-shrink-0">
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2"><Database/> Documentos en Contexto</CardTitle>
-                <CardDescription>Documentos globales (admin) y de sesión (usuario) disponibles para la IA.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <div className="border rounded-md max-h-60 overflow-y-auto">
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent className="sm:max-w-2xl">
+                 <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2"><Database/> Documentos en Contexto</DialogTitle>
+                    <DialogDescription>Documentos globales (admin) y de sesión (usuario) disponibles para la IA en esta conversación.</DialogDescription>
+                </DialogHeader>
+                <div className="border rounded-md max-h-[60vh] overflow-y-auto mt-4">
                     <Table>
                         <TableHeader>
                             <TableRow>
@@ -198,8 +201,8 @@ const KnowledgeBaseManager = ({ user, toast, onUpdate, sessionId }: { user: any,
                         </TableBody>
                     </Table>
                 </div>
-            </CardContent>
-        </Card>
+            </DialogContent>
+        </Dialog>
     );
 }
 
@@ -213,7 +216,9 @@ export default function AgentLabPage() {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [isLoadingSessions, setIsLoadingSessions] = useState(true);
   const [deletingSessionId, setDeletingSessionId] = useState<string | null>(null);
+  
   const [isMetadataModalOpen, setMetadataModalOpen] = useState(false);
+  const [isKnowledgeModalOpen, setIsKnowledgeModalOpen] = useState(false);
   const [knowledgeBaseKey, setKnowledgeBaseKey] = useState(0);
 
   const [debugInfo, setDebugInfo] = useState<any | null>(null);
@@ -376,15 +381,16 @@ export default function AgentLabPage() {
                 <Card className="flex-1 flex flex-col min-h-0">
                     <CardHeader className="flex-row items-center justify-between p-3 h-14">
                         <CardTitle className="text-base">Simulador de Chat</CardTitle>
-                        <Dialog open={isMetadataModalOpen} onOpenChange={setMetadataModalOpen}>
-                            <DialogTrigger asChild>
-                                <Button variant="ghost" size="icon" disabled={!activeSession}>
-                                    <BrainCircuit className="h-5 w-5"/>
-                                    <span className="sr-only">Ver Metadatos</span>
-                                </Button>
-                            </DialogTrigger>
-                            <MetadataModal session={activeSession} onOpenChange={setMetadataModalOpen}/>
-                        </Dialog>
+                         <div className="flex items-center gap-1">
+                            <Button variant="ghost" size="icon" onClick={() => setIsKnowledgeModalOpen(true)} disabled={!activeSession}>
+                                <Database className="h-5 w-5"/>
+                                <span className="sr-only">Ver Base de Conocimiento en Contexto</span>
+                            </Button>
+                             <Button variant="ghost" size="icon" onClick={() => setMetadataModalOpen(true)} disabled={!activeSession}>
+                                <BrainCircuit className="h-5 w-5"/>
+                                <span className="sr-only">Ver Metadatos</span>
+                            </Button>
+                        </div>
                     </CardHeader>
                     <CardContent className="flex-1 overflow-hidden p-0">
                         {activeSession?.id ? (
@@ -409,15 +415,6 @@ export default function AgentLabPage() {
                     {debugInfo && (
                         <DebugInfoCard title="Información de Depuración (Último Mensaje)" description="Resultados devueltos por las herramientas de Genkit en el último turno." data={debugInfo} />
                     )}
-                    {user && activeSession && (
-                         <KnowledgeBaseManager 
-                            user={user} 
-                            toast={toast} 
-                            key={knowledgeBaseKey} 
-                            onUpdate={() => setKnowledgeBaseKey(k => k + 1)}
-                            sessionId={activeSession.id}
-                        />
-                    )}
                 </div>
             </div>
         </div>
@@ -438,7 +435,21 @@ export default function AgentLabPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <MetadataModal 
+        session={activeSession} 
+        isOpen={isMetadataModalOpen}
+        onOpenChange={setMetadataModalOpen}
+      />
+      
+      <KnowledgeContextModal
+        user={user}
+        toast={toast}
+        onUpdate={() => setKnowledgeBaseKey(k => k + 1)}
+        sessionId={activeSession?.id || null}
+        isOpen={isKnowledgeModalOpen}
+        onOpenChange={setIsKnowledgeModalOpen}
+      />
     </>
   );
 }
-
