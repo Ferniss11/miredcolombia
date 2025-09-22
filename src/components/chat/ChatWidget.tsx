@@ -21,6 +21,7 @@ import { useChat } from '@/context/ChatContext';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '../ui/tooltip';
 import { useAuth } from '@/context/AuthContext';
+import { Progress } from '../ui/progress';
 
 // --- Welcome Form Sub-component ---
 const signUpFormSchema = z.object({
@@ -123,6 +124,30 @@ const LoginForm = ({ onLoginSuccess, onBackClick }: { onLoginSuccess: () => void
     )
 }
 
+// --- File Message Sub-component ---
+const FileMessage = ({ file, progress }: { file: NonNullable<ChatMessage['file']>, progress: number }) => {
+  const isProcessing = file.status === 'processing';
+  return (
+    <div className="bg-muted p-3 rounded-lg flex items-center gap-3 w-full max-w-lg">
+      <FileText className="h-6 w-6 text-muted-foreground" />
+      <div className="flex-1">
+        <p className="text-sm font-medium truncate">{file.name}</p>
+        <div className="flex items-center gap-2 mt-1">
+          {isProcessing ? (
+            <Progress value={progress} className="h-1.5 flex-1" />
+          ) : (
+            <CheckCircle className="h-4 w-4 text-green-500" />
+          )}
+          <span className="text-xs text-muted-foreground">
+            {isProcessing ? `${Math.round(progress)}% - Procesando...` : 'Documento listo'}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+
 // --- Main Chat Widget Component ---
 const AGENT_AVATAR_URL = "https://firebasestorage.googleapis.com/v0/b/colombia-en-esp.firebasestorage.app/o/web%2FImagen%20de%20WhatsApp%202025-08-09%20a%20las%2018.20.39_3c2b6161.jpg?alt=media&token=41ebe34a-f846-41fc-937f-4141f1240ee8";
 
@@ -146,6 +171,8 @@ export default function ChatWidget({ isLabMode = false, labConfig, initialHistor
   const [attachedFile, setAttachedFile] = useState<File | null>(null);
   const [view, setView] = useState<'loading' | 'welcome' | 'login' | 'chat'>('loading');
   const [session, setSession] = useState<ChatSession | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
+
   
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -212,7 +239,7 @@ export default function ChatWidget({ isLabMode = false, labConfig, initialHistor
             setView('welcome');
         }
     }
-  }, [user, userProfile, authLoading, isChatOpen, isInDashboard, isLabMode, initialHistory, chatContext, session]);
+  }, [user, userProfile, authLoading, isChatOpen, isInDashboard, isLabMode, initialHistory, chatContext, session, toast]);
 
   const handleSendMessage = async (messageText: string, file?: File | null) => {
     const activeSessionId = isLabMode ? labConfig?.sessionId : session?.id;
@@ -225,26 +252,32 @@ export default function ChatWidget({ isLabMode = false, labConfig, initialHistor
     }
     
     let userMessageText = messageText.trim();
-    if (file) {
-      // Append a clear text message indicating a file was uploaded.
-      userMessageText = messageText.trim() 
-        ? `${messageText.trim()}\n\n(He adjuntado el documento: ${file.name})`
-        : `He adjuntado el documento: ${file.name}`;
-    }
-
+    const tempUserMessageId = `temp_user_${Date.now()}`;
     const optimisticUserMessage: ChatMessage = {
-      id: `temp_user_${Date.now()}`,
+      id: tempUserMessageId,
       text: userMessageText,
       role: 'user',
       timestamp: new Date().toISOString(),
       replyTo: null,
     };
+
+    if (file) {
+      optimisticUserMessage.file = { name: file.name, status: 'processing', progress: 0 };
+    }
     
     setMessages(prev => [...prev, optimisticUserMessage]);
-    
     setCurrentMessage('');
     setAttachedFile(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
+    
+    if (file) {
+        setUploadProgress(0);
+        const progressInterval = setInterval(() => {
+            setUploadProgress(prev => Math.min(prev + 10, 90));
+        }, 200);
+        setTimeout(() => clearInterval(progressInterval), 2000);
+    }
+    
     setIsAiResponding(true);
 
     const formData = new FormData();
@@ -267,6 +300,16 @@ export default function ChatWidget({ isLabMode = false, labConfig, initialHistor
         const result = await response.json();
         if (!response.ok) throw new Error(result.error?.message || 'Error en el servidor');
         
+        // Finalize progress for file upload message
+        if (file) {
+            setMessages(prev => prev.map(msg => 
+                msg.id === tempUserMessageId && msg.file
+                    ? { ...msg, text: `He adjuntado el documento: ${file.name}`, file: { ...msg.file, status: 'ready', progress: 100 } }
+                    : msg
+            ));
+            toast({ title: "Documento procesado", description: "Valeria ahora puede acceder a la información de tu archivo." });
+        }
+        
         setMessages(result.history || []);
         if (isLabMode && onMessageReceived && result.lastResponse) {
              onMessageReceived(result.lastResponse);
@@ -275,9 +318,10 @@ export default function ChatWidget({ isLabMode = false, labConfig, initialHistor
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : "Un error desconocido ocurrió.";
         toast({ variant: 'destructive', title: 'Error', description: errorMessage });
-        setMessages(prev => prev.filter(m => m.id !== optimisticUserMessage.id));
+        setMessages(prev => prev.filter(m => m.id !== tempUserMessageId));
     } finally {
         setIsAiResponding(false);
+        setUploadProgress(100);
     }
   };
 
@@ -311,9 +355,13 @@ export default function ChatWidget({ isLabMode = false, labConfig, initialHistor
                         <div key={msg.id || index} className={cn("flex items-end gap-2 w-full", isUser ? 'justify-end' : 'justify-start')}>
                            {!isUser && avatar}
                             <div className="flex flex-col gap-1 w-full max-w-lg">
-                                <div className={cn('p-3 rounded-lg shadow-sm w-fit', isUser ? 'bg-primary text-primary-foreground ml-auto rounded-br-none' : 'bg-muted mr-auto rounded-bl-none')}>
-                                    <p className="text-sm whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: (msg.text || '').replace(/\\n/g, '<br />') }} />
-                                </div>
+                                {msg.file ? (
+                                    <FileMessage file={msg.file} progress={uploadProgress} />
+                                ) : (
+                                    <div className={cn('p-3 rounded-lg shadow-sm w-fit', isUser ? 'bg-primary text-primary-foreground ml-auto rounded-br-none' : 'bg-muted mr-auto rounded-bl-none')}>
+                                        <p className="text-sm whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: (msg.text || '').replace(/\\n/g, '<br />') }} />
+                                    </div>
+                                )}
                             </div>
                             {isUser && avatar}
                         </div>

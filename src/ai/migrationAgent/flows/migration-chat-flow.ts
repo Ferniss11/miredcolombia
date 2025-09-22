@@ -75,11 +75,14 @@ const migrationChatFlow = ai.defineFlow(
             throw new Error('La respuesta de la IA fue vacía.');
         }
 
-        // Extract tool invocations from the history for debugging
-        const toolInvocations = history.map((step) => ({
-            tool: step.toolRequest.name,
-            result: step.toolResponse.output,
-        }));
+        // Safely extract tool invocations from the history for debugging
+        const toolInvocations = (history || [])
+            .filter(step => step.toolRequest) // Ensure the step has a tool request
+            .map((step) => ({
+                tool: step.toolRequest?.name || 'unknown_tool',
+                result: step.toolResponse?.output || { error: 'No tool response found' },
+            }));
+
 
         return {
             response: output.response,

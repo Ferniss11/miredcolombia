@@ -1,5 +1,4 @@
 
-
 import { z } from 'zod';
 
 // --- Core Enums and Schemas ---
@@ -43,7 +42,6 @@ export const ChatMessageSchema = z.object({
       name: z.string(),
       status: z.enum(['processing', 'ready', 'error']),
       progress: z.number().optional(),
-      error: z.string().optional(),
   }).optional(),
 });
 export type ChatMessage = z.infer<typeof ChatMessageSchema>;
