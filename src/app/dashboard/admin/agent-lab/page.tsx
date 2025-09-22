@@ -140,6 +140,13 @@ export default function AgentLabPage() {
 
 
   const handleStartNewSession = () => {
+    if (activeSession) {
+      // If a session is active, this button acts as a reset
+      setActiveSession(null);
+      setInitialHistory([]);
+      return;
+    }
+    
     if (!user) {
       toast({ variant: 'destructive', title: 'Error', description: 'Debes estar autenticado.' });
       return;
@@ -166,11 +173,6 @@ export default function AgentLabPage() {
         toast({ variant: 'destructive', title: 'Error', description: error instanceof Error ? error.message : 'Error desconocido' });
       }
     });
-  };
-
-  const handleResetSession = () => {
-    setActiveSession(null);
-    setInitialHistory([]);
   };
   
   const handleSelectSession = (session: ChatSession) => {
@@ -200,7 +202,8 @@ export default function AgentLabPage() {
             if (!response.ok) throw new Error((await response.json()).error?.message);
             toast({ title: 'Sesión eliminada' });
             if (activeSession?.id === deletingSessionId) {
-                handleResetSession();
+                setActiveSession(null);
+                setInitialHistory([]);
             }
             setDeletingSessionId(null);
             await fetchLabSessions();
@@ -225,33 +228,29 @@ export default function AgentLabPage() {
 
   return (
     <>
-    <div className="h-full flex flex-col space-y-6">
+    <div className="h-full flex flex-col space-y-4">
       <div className="flex items-center gap-4">
         <TestTube2 className="w-8 h-8 text-primary" />
         <h1 className="text-3xl font-bold font-headline">Laboratorio de Agentes IA</h1>
       </div>
       
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start flex-1 min-h-0">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start flex-1 min-h-0 h-[calc(100vh-10rem)]">
         
         <div className="lg:col-span-4 xl:col-span-3 h-full flex flex-col gap-4">
              <Card>
-                 <CardContent className="p-4 space-y-4">
-                     <div className="space-y-2">
-                         <Label htmlFor="agent-selector">Seleccionar Agente</Label>
-                        <Select value={selectedAgent} onValueChange={(value: 'global' | 'valeria_premium') => setSelectedAgent(value)} disabled={!!activeSession}>
-                            <SelectTrigger id="agent-selector">
-                                <SelectValue placeholder="Selecciona un agente" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="global">Agente Global (Gratis)</SelectItem>
-                                <SelectItem value="valeria_premium">Valeria Premium (con RAG)</SelectItem>
-                            </SelectContent>
-                        </Select>
-                     </div>
-                      <Button className="w-full" onClick={activeSession ? handleResetSession : handleStartNewSession} disabled={isLoading}>
-                        {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (activeSession ? <RotateCcw className="mr-2 h-4 w-4"/> : <PlusCircle className="mr-2 h-4 w-4" />)}
-                        {activeSession ? 'Empezar Nueva Prueba' : 'Iniciar Sesión de Prueba'}
-                    </Button>
+                 <CardContent className="p-2 flex flex-row items-center gap-2">
+                    <Select value={selectedAgent} onValueChange={(value: 'global' | 'valeria_premium') => setSelectedAgent(value)} disabled={!!activeSession}>
+                        <SelectTrigger id="agent-selector">
+                            <SelectValue placeholder="Selecciona un agente" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="global">Agente Global (Gratis)</SelectItem>
+                            <SelectItem value="valeria_premium">Valeria Premium (con RAG)</SelectItem>
+                        </SelectContent>
+                    </Select>
+                      <Button variant="outline" size="icon" onClick={handleStartNewSession} disabled={isLoading}>
+                        {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : (activeSession ? <RotateCcw className="h-4 w-4"/> : <PlusCircle className="h-4 w-4" />)}
+                      </Button>
                  </CardContent>
              </Card>
              <div className="flex-1 min-h-0">
@@ -319,5 +318,3 @@ export default function AgentLabPage() {
     </>
   );
 }
-
-    
