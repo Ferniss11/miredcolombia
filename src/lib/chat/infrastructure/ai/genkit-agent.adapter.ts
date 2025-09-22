@@ -102,7 +102,13 @@ export class GenkitAgentAdapter implements AgentAdapter {
 
         const usage = aiResponse.usage || { inputTokens: 0, outputTokens: 0, totalTokens: 0 };
         const cost = calculateCost(agentConfig.model, usage.inputTokens, usage.outputTokens);
-        return { response: aiResponse.response, usage, cost, agentConfig };
+        return { 
+            response: aiResponse.response, 
+            usage, 
+            cost, 
+            agentConfig,
+            debugInfo: { toolInvocations: aiResponse.toolInvocations },
+        };
 
     } else { // Global Chat Mode
         agentConfig = await this.getAgentConfigForUser(input.chatHistory);
@@ -127,6 +133,12 @@ export class GenkitAgentAdapter implements AgentAdapter {
     // Return the config that was actually used
     const usedConfig = { model: agentConfig.model, systemPrompt: finalSystemPrompt };
     
-    return { response: aiResponse.response, usage, cost, agentConfig: usedConfig };
+    return { 
+        response: aiResponse.response, 
+        usage, 
+        cost, 
+        agentConfig: usedConfig,
+        debugInfo: { toolInvocations: aiResponse.toolInvocations },
+    };
   }
 }

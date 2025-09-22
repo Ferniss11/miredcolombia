@@ -17,6 +17,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Separator } from '@/components/ui/separator';
+import DebugInfoCard from '@/components/debug/DebugInfoCard';
+
 
 interface ResponseMetadata {
     usage: TokenUsage;
@@ -27,40 +29,42 @@ interface ResponseMetadata {
 // --- Session List Component ---
 const SessionList = ({ sessions, onSelect, onDelete, activeSessionId, isLoading }: { sessions: ChatSession[], onSelect: (session: ChatSession) => void, onDelete: (sessionId: string) => void, activeSessionId: string | null, isLoading: boolean }) => {
     return (
-        <div className="h-full flex flex-col">
-             <ScrollArea className="flex-1 -mx-4">
-                <div className="space-y-2 p-4">
-                    {isLoading ? (
-                        Array.from({ length: 5 }).map((_, i) => <div key={i} className="h-16 bg-muted rounded-md animate-pulse" />)
-                    ) : sessions.length === 0 ? (
-                        <div className="text-center text-sm text-muted-foreground py-10">No hay sesiones de prueba.</div>
-                    ) : (
-                        sessions.map(session => (
-                            <div
-                                key={session.id}
-                                className={cn(
-                                    "p-2 border rounded-md cursor-pointer hover:bg-muted/50 transition-colors group",
-                                    activeSessionId === session.id && "bg-primary/10 border-primary"
-                                )}
-                                onClick={() => onSelect(session)}
-                            >
-                                <div className="flex justify-between items-start">
-                                    <p className="font-semibold text-sm line-clamp-1">{session.userName || 'Sesión de Laboratorio'}</p>
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity text-destructive"
-                                        onClick={(e) => { e.stopPropagation(); onDelete(session.id!); }}
-                                    >
-                                        <Trash2 className="h-4 w-4" />
-                                    </Button>
+        <div className="relative h-full flex flex-col">
+             <div className="absolute inset-0">
+                <ScrollArea className="h-full">
+                    <div className="space-y-2 p-4">
+                        {isLoading ? (
+                            Array.from({ length: 5 }).map((_, i) => <div key={i} className="h-16 bg-muted rounded-md animate-pulse" />)
+                        ) : sessions.length === 0 ? (
+                            <div className="text-center text-sm text-muted-foreground py-10">No hay sesiones de prueba.</div>
+                        ) : (
+                            sessions.map(session => (
+                                <div
+                                    key={session.id}
+                                    className={cn(
+                                        "p-2 border rounded-md cursor-pointer hover:bg-muted/50 transition-colors group",
+                                        activeSessionId === session.id && "bg-primary/10 border-primary"
+                                    )}
+                                    onClick={() => onSelect(session)}
+                                >
+                                    <div className="flex justify-between items-start">
+                                        <p className="font-semibold text-sm line-clamp-1">{session.userName || 'Sesión de Laboratorio'}</p>
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity text-destructive"
+                                            onClick={(e) => { e.stopPropagation(); onDelete(session.id!); }}
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">{new Date(session.createdAt).toLocaleString('es-ES')}</p>
                                 </div>
-                                <p className="text-xs text-muted-foreground">{new Date(session.createdAt).toLocaleString('es-ES')}</p>
-                            </div>
-                        ))
-                    )}
-                </div>
-            </ScrollArea>
+                            ))
+                        )}
+                    </div>
+                </ScrollArea>
+             </div>
         </div>
     );
 };
@@ -113,6 +117,9 @@ export default function AgentLabPage() {
   const [deletingSessionId, setDeletingSessionId] = useState<string | null>(null);
   const [isMetadataModalOpen, setMetadataModalOpen] = useState(false);
 
+  // New state for debug info
+  const [debugInfo, setDebugInfo] = useState<any | null>(null);
+
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -143,6 +150,7 @@ export default function AgentLabPage() {
     if (activeSession) {
       setActiveSession(null);
       setInitialHistory([]);
+      setDebugInfo(null);
       return;
     }
     
@@ -167,6 +175,7 @@ export default function AgentLabPage() {
         const { session, history } = await response.json();
         setActiveSession(session);
         setInitialHistory(history);
+        setDebugInfo(null);
         await fetchLabSessions();
       } catch (error) {
         toast({ variant: 'destructive', title: 'Error', description: error instanceof Error ? error.message : 'Error desconocido' });
@@ -184,6 +193,7 @@ export default function AgentLabPage() {
             const { session: fullSession, messages } = await response.json();
             setActiveSession(fullSession);
             setInitialHistory(messages);
+            setDebugInfo(null);
             const agentId = fullSession.userName?.includes('valeria_premium') ? 'valeria_premium' : 'global';
             setSelectedAgent(agentId);
         } catch (error) {
@@ -203,6 +213,7 @@ export default function AgentLabPage() {
             if (activeSession?.id === deletingSessionId) {
                 setActiveSession(null);
                 setInitialHistory([]);
+                setDebugInfo(null);
             }
             setDeletingSessionId(null);
             await fetchLabSessions();
@@ -213,15 +224,20 @@ export default function AgentLabPage() {
   }
 
   const handleMessageReceived = (lastResponse: any) => {
-    if (lastResponse && activeSession) {
-        setActiveSession(prev => prev ? ({
-            ...prev,
-            totalCost: (prev.totalCost || 0) + (lastResponse.cost || 0),
-            totalInputTokens: (prev.totalInputTokens || 0) + (lastResponse.usage?.inputTokens || 0),
-            totalOutputTokens: (prev.totalOutputTokens || 0) + (lastResponse.usage?.outputTokens || 0),
-            totalTokens: (prev.totalTokens || 0) + (lastResponse.usage?.totalTokens || 0),
-            agentConfig: lastResponse.agentConfig,
-        }) : null);
+    if (lastResponse) {
+        // Update session metadata
+        if (activeSession) {
+            setActiveSession(prev => prev ? ({
+                ...prev,
+                totalCost: (prev.totalCost || 0) + (lastResponse.cost || 0),
+                totalInputTokens: (prev.totalInputTokens || 0) + (lastResponse.usage?.inputTokens || 0),
+                totalOutputTokens: (prev.totalOutputTokens || 0) + (lastResponse.usage?.outputTokens || 0),
+                totalTokens: (prev.totalTokens || 0) + (lastResponse.usage?.totalTokens || 0),
+                agentConfig: lastResponse.agentConfig,
+            }) : null);
+        }
+        // Update debug info
+        setDebugInfo(lastResponse.debugInfo || null);
     }
   }
 
@@ -252,21 +268,19 @@ export default function AgentLabPage() {
                         </Button>
                     </CardContent>
                 </Card>
-                <div className="relative h-full flex-1 flex flex-col">
-                    <div className="absolute inset-0">
-                         <SessionList 
-                            sessions={sessions}
-                            onSelect={handleSelectSession}
-                            onDelete={(id) => setDeletingSessionId(id)}
-                            activeSessionId={activeSession?.id || null}
-                            isLoading={isLoadingSessions}
-                        />
-                    </div>
+                <div className="relative flex-1 min-h-0">
+                    <SessionList 
+                        sessions={sessions}
+                        onSelect={handleSelectSession}
+                        onDelete={(id) => setDeletingSessionId(id)}
+                        activeSessionId={activeSession?.id || null}
+                        isLoading={isLoadingSessions}
+                    />
                 </div>
             </div>
 
-            <div className="lg:col-span-8 xl:col-span-9 h-full min-h-0">
-                <Card className="h-full flex flex-col">
+            <div className="lg:col-span-8 xl:col-span-9 h-full min-h-0 flex flex-col gap-4">
+                <Card className="flex-1 flex flex-col min-h-0">
                     <CardHeader className="flex-row items-center justify-between p-3 h-14">
                         <CardTitle className="text-base">Simulador de Chat</CardTitle>
                         <Dialog open={isMetadataModalOpen} onOpenChange={setMetadataModalOpen}>
@@ -297,6 +311,11 @@ export default function AgentLabPage() {
                         )}
                     </CardContent>
                 </Card>
+                {debugInfo && (
+                    <div className="flex-shrink-0">
+                        <DebugInfoCard title="Información de Depuración de la Herramienta" description="Resultados devueltos por las herramientas de Genkit en el último turno." data={debugInfo} />
+                    </div>
+                )}
             </div>
         </div>
     </div>
@@ -319,4 +338,3 @@ export default function AgentLabPage() {
     </>
   );
 }
-

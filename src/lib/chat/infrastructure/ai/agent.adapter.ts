@@ -10,6 +10,10 @@ export type AgentCompletionOutput = {
   usage: TokenUsage;
   cost: number;
   agentConfig: AgentConfig; // Now includes the config used
+  // Add a field to hold debug information from tool calls
+  debugInfo?: {
+    toolInvocations?: Array<{ tool: string; result: any }>;
+  };
 };
 
 

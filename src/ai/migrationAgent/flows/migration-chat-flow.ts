@@ -66,7 +66,7 @@ const migrationChatFlow = ai.defineFlow(
     async (input) => {
         // Dynamically set the model for the prompt execution
         // Pass the session ID to the tool through the prompt context
-        const { output, usage } = await prompt(input, { 
+        const { output, usage, history } = await prompt(input, { 
             model: input.model as any,
             context: { sessionId: input.sessionId } 
         });
@@ -75,13 +75,20 @@ const migrationChatFlow = ai.defineFlow(
             throw new Error('La respuesta de la IA fue vacía.');
         }
 
+        // Extract tool invocations from the history for debugging
+        const toolInvocations = history.map((step) => ({
+            tool: step.toolRequest.name,
+            result: step.toolResponse.output,
+        }));
+
         return {
             response: output.response,
             usage: {
                 inputTokens: usage.inputTokens || 0,
                 outputTokens: usage.outputTokens || 0,
                 totalTokens: usage.totalTokens || 0,
-            }
+            },
+            toolInvocations,
         };
     }
 );

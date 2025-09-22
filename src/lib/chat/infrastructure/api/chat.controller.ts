@@ -27,7 +27,7 @@ const chunkText = (text: string, chunkSize = 1500, overlap = 200): string[] => {
     return chunks;
 };
 
-async function ingestSessionDocument(file: File, sessionId: string, userId: string) {
+async function ingestSessionDocument(file: File, sessionId: string, userId: string): Promise<string[]> {
     if (!adminDb) {
         throw new Error('Firestore not initialized for document ingestion.');
     }
@@ -66,6 +66,7 @@ async function ingestSessionDocument(file: File, sessionId: string, userId: stri
 
     await batch.commit();
     console.log(`[ChatController] Indexed ${chunks.length} chunks for session ${sessionId}.`);
+    return chunks; // Return the generated chunks for debugging
 }
 
 
@@ -141,15 +142,16 @@ export class ChatController {
   
   async postMessage(payload: PostMessagePayload): Promise<ApiResponse> {
       let { userMessage, userId, sessionId, businessId, document, agentId } = payload;
-      
+      let generatedChunks: string[] | undefined = undefined;
+
       if (!sessionId) {
           return ApiResponse.badRequest('Session ID is missing.');
       }
       
       if (document && userId) {
-          await ingestSessionDocument(document, sessionId, userId);
+          generatedChunks = await ingestSessionDocument(document, sessionId, userId);
           if (!userMessage) {
-              userMessage = `Acabo de subir el documento "${document.name}". ¿Puedes resumirlo por mí?`;
+              userMessage = `He adjuntado el documento "${document.name}".`;
           }
       }
 
@@ -166,7 +168,14 @@ export class ChatController {
 
       return ApiResponse.success({
         history: updatedHistory.map(m => ({ ...m, timestamp: m.timestamp.toISOString() })),
-        lastResponse, // Also return the last response for metadata purposes in the lab
+        // Also return the last response for metadata purposes in the lab
+        lastResponse: {
+          ...lastResponse,
+          debugInfo: {
+            ...lastResponse.debugInfo,
+            generatedChunks, // Add generated chunks to debug info
+          }
+        },
       });
   }
 

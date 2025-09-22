@@ -83,10 +83,15 @@ export type BusinessAgentConfig = AgentConfig;
 
 
 // --- AI Flow I/O Schemas ---
+const ToolInvocationSchema = z.object({
+    tool: z.string(),
+    result: z.any(),
+});
 
 export const ChatOutputSchema = z.object({
   response: z.string().describe('The AI\'s response.'),
   usage: TokenUsageSchema.optional(),
+  toolInvocations: z.array(ToolInvocationSchema).optional().describe('A list of tools that were called and their results.'),
 });
 export type ChatOutput = z.infer<typeof ChatOutputSchema>;
 
