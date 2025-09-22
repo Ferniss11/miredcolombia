@@ -3,7 +3,7 @@ import type { ChatMessage } from '../../domain/chat-message.entity';
 import type { ChatSession } from '../../domain/chat-session.entity';
 import type { ChatRepository } from '../../domain/chat.repository';
 import { adminDb, adminInstance } from '@/lib/firebase/admin-config';
-import type { DocumentData, QueryDocumentSnapshot, DocumentSnapshot } from 'firebase-admin/firestore';
+import type { DocumentData, QueryDocumentSnapshot, DocumentSnapshot, CollectionReference } from 'firebase-admin/firestore';
 
 const FieldValue = adminInstance?.firestore.FieldValue;
 const GLOBAL_SESSIONS_COLLECTION = 'chatSessions';
@@ -54,12 +54,6 @@ export class FirestoreChatRepository implements ChatRepository {
     return adminDb;
   }
   
-  /**
-   * Creates a new chat session and its initial message in a single atomic transaction.
-   * @param sessionData - The initial data for the session.
-   * @param initialMessageText - The text for the first message (usually a welcome message).
-   * @returns The newly created ChatSession and the initial ChatMessage.
-   */
   async createSessionWithInitialMessage(
     sessionData: Omit<ChatSession, 'id'>,
     initialMessageText: string
@@ -76,7 +70,7 @@ export class FirestoreChatRepository implements ChatRepository {
       ...sessionData,
       createdAt: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),
-      messageCount: 0, // Explicitly initialize message count to 0
+      messageCount: 0,
     };
 
     const initialMessageData: any = {
@@ -87,20 +81,17 @@ export class FirestoreChatRepository implements ChatRepository {
       authorName: 'Valeria',
     };
 
-    // Sanitize data: Ensure `businessId` is not undefined when saving.
     if (sessionData.businessId) {
         initialMessageData.businessId = sessionData.businessId;
     } else {
-        delete finalSessionData.businessId; // Remove undefined property for global chats
+        delete finalSessionData.businessId;
     }
 
-    // Run as a transaction to ensure both documents are created atomically
     await db.runTransaction(async (transaction) => {
       transaction.set(sessionRef, finalSessionData);
       transaction.set(messageRef, initialMessageData);
     });
     
-    // Get the created documents to return them
     const newSessionDoc = await sessionRef.get();
     const newMessageDoc = await messageRef.get();
 
@@ -110,17 +101,10 @@ export class FirestoreChatRepository implements ChatRepository {
     };
   }
 
-  /**
-   * Saves a message to a session's "messages" subcollection and updates
-   * the parent session's metadata in a single transaction.
-   * @param messageData - The message data to save.
-   * @returns The saved ChatMessage entity.
-   */
   async saveMessage(messageData: Omit<ChatMessage, 'id' | 'timestamp'> & { timestamp?: Date }): Promise<ChatMessage> {
     const db = this.getDb();
     const { sessionId, businessId, ...restOfMessage } = messageData as any;
     
-    // Correctly build the path to the session document, whether it's global or nested.
     const sessionDocPath = businessId
         ? `directory/${businessId}/businessChatSessions/${sessionId}`
         : `${GLOBAL_SESSIONS_COLLECTION}/${sessionId}`;
@@ -145,7 +129,6 @@ export class FirestoreChatRepository implements ChatRepository {
             updatedAt: FieldValue.serverTimestamp(),
         };
         
-        // Increment message count only for user messages
         if (messageData.role === 'user') {
             sessionUpdate.messageCount = FieldValue.increment(1);
         }
@@ -158,8 +141,6 @@ export class FirestoreChatRepository implements ChatRepository {
             sessionUpdate.totalOutputTokens = FieldValue.increment(messageData.usage.outputTokens || 0);
             sessionUpdate.totalTokens = FieldValue.increment(messageData.usage.totalTokens || 0);
         }
-
-        // Perform the update on the correctly referenced session document.
         transaction.update(sessionRef, sessionUpdate);
     });
     
@@ -167,12 +148,6 @@ export class FirestoreChatRepository implements ChatRepository {
     return toChatMessage(savedDoc);
   }
 
-  /**
-   * Retrieves the message history for a specific chat session.
-   * @param sessionId - The ID of the session.
-   * @param businessId - Optional ID of the business for context.
-   * @returns An array of ChatMessage entities.
-   */
   async getHistory(sessionId: string, businessId?: string): Promise<ChatMessage[]> {
     const db = this.getDb();
     const collectionPath = businessId
@@ -184,12 +159,6 @@ export class FirestoreChatRepository implements ChatRepository {
     return snapshot.docs.map(toChatMessage);
   }
   
-  /**
-   * Finds a session by its ID.
-   * @param sessionId - The ID of the session.
-   * @param businessId - Optional ID of the business for context.
-   * @returns The ChatSession entity or null.
-   */
   async findSessionById(sessionId: string, businessId?: string): Promise<ChatSession | null> {
     const db = this.getDb();
      const collectionPath = businessId
@@ -221,15 +190,36 @@ export class FirestoreChatRepository implements ChatRepository {
     return toChatSession(snapshot.docs[0]);
   }
   
-  /**
-   * Retrieves all global chat sessions.
-   * Note: This currently only gets global sessions. A more complex implementation
-   * would be needed to fetch sessions from all businesses.
-   * @returns An array of all ChatSession entities.
-   */
-  async findAllSessions(): Promise<ChatSession[]> {
+  async findAllSessions(filters?: { userId?: string, isLabSession?: boolean }): Promise<ChatSession[]> {
     const db = this.getDb();
-    const snapshot = await db.collection(GLOBAL_SESSIONS_COLLECTION).orderBy('updatedAt', 'desc').get();
+    let query: FirebaseFirestore.Query<DocumentData> = db.collection(GLOBAL_SESSIONS_COLLECTION);
+    
+    if (filters?.userId) {
+        query = query.where('userId', '==', filters.userId);
+    }
+    if (filters?.isLabSession) {
+        query = query.where('isLabSession', '==', true);
+    }
+    
+    const snapshot = await query.orderBy('updatedAt', 'desc').get();
     return snapshot.docs.map(toChatSession);
+  }
+
+  async deleteSession(sessionId: string): Promise<void> {
+    const db = this.getDb();
+    const sessionRef = db.collection(GLOBAL_SESSIONS_COLLECTION).doc(sessionId);
+
+    // Delete subcollection recursively
+    const messagesSnapshot = await sessionRef.collection('messages').get();
+    if (!messagesSnapshot.empty) {
+        const batch = db.batch();
+        messagesSnapshot.docs.forEach(doc => {
+            batch.delete(doc.ref);
+        });
+        await batch.commit();
+    }
+
+    // Delete the main session document
+    await sessionRef.delete();
   }
 }

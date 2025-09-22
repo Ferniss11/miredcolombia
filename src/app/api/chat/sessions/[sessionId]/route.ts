@@ -11,3 +11,9 @@ type RouteContext = { params: { sessionId: string } };
 export const GET = apiHandler((req: NextRequest, { params }: RouteContext) =>
   chatController.getSessionDetails(req, { params: { sessionId: params.sessionId } })
 , ['Admin', 'SAdmin', 'Advertiser']);
+
+
+// New DELETE endpoint for the Agent Lab
+export const DELETE = apiHandler((req: NextRequest, { params }: RouteContext) =>
+  chatController.deleteSession(req, { params: { sessionId: params.sessionId } })
+, ['Admin', 'SAdmin']);

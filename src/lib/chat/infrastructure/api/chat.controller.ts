@@ -95,23 +95,24 @@ export class ChatController {
   private getAllSessionsUseCase: GetAllChatSessionsUseCase;
   private getSessionByIdUseCase: GetSessionByIdUseCase;
   private getChatHistoryUseCase: GetChatHistoryUseCase;
+  private chatRepository: FirestoreChatRepository;
   
   constructor() {
-    const chatRepository = new FirestoreChatRepository();
+    this.chatRepository = new FirestoreChatRepository();
     const agentAdapter = new GenkitAgentAdapter();
     const userRepository = new FirestoreUserRepository();
     
-    const startChatSessionUseCase = new StartChatSessionUseCase(chatRepository);
-    this.getChatHistoryUseCase = new GetChatHistoryUseCase(chatRepository);
-    this.getSessionByIdUseCase = new GetSessionByIdUseCase(chatRepository);
+    const startChatSessionUseCase = new StartChatSessionUseCase(this.chatRepository);
+    this.getChatHistoryUseCase = new GetChatHistoryUseCase(this.chatRepository);
+    this.getSessionByIdUseCase = new GetSessionByIdUseCase(this.chatRepository);
     this.startOrResumeChatUseCase = new StartOrResumeChatUseCase(
         startChatSessionUseCase,
         this.getChatHistoryUseCase,
         userRepository,
         this.getSessionByIdUseCase
     );
-    this.postMessageUseCase = new PostMessageUseCase(chatRepository, agentAdapter);
-    this.getAllSessionsUseCase = new GetAllChatSessionsUseCase(chatRepository);
+    this.postMessageUseCase = new PostMessageUseCase(this.chatRepository, agentAdapter);
+    this.getAllSessionsUseCase = new GetAllChatSessionsUseCase(this.chatRepository);
   }
 
   async startSession(req: NextRequest): Promise<ApiResponse> {
@@ -170,8 +171,12 @@ export class ChatController {
   }
 
   async getAllSessions(req: NextRequest): Promise<ApiResponse> {
-    const sessions = await this.getAllSessionsUseCase.execute();
-    return ApiResponse.success(sessions.map(s => ({ ...s, createdAt: s.createdAt.toISOString() })));
+    const { searchParams } = new URL(req.url);
+    const userId = searchParams.get('userId') || undefined;
+    const isLabSession = searchParams.get('isLabSession') === 'true';
+
+    const sessions = await this.chatRepository.findAllSessions({ userId, isLabSession });
+    return ApiResponse.success(sessions.map(s => ({ ...s, createdAt: s.createdAt.toISOString(), updatedAt: s.updatedAt?.toISOString() })));
   }
 
   async getSessionDetails(req: NextRequest, { params }: { params: { sessionId: string } }): Promise<ApiResponse> {
@@ -186,8 +191,17 @@ export class ChatController {
       const messages = await this.getChatHistoryUseCase.execute({ sessionId, businessId });
 
       return ApiResponse.success({
-          session: { ...session, createdAt: session.createdAt.toISOString() },
+          session: { ...session, createdAt: session.createdAt.toISOString(), updatedAt: session.updatedAt?.toISOString() },
           messages: messages.map(m => ({ ...m, timestamp: m.timestamp.toISOString() })),
       });
+  }
+
+  async deleteSession(req: NextRequest, { params }: { params: { sessionId: string } }): Promise<ApiResponse> {
+    const { sessionId } = params;
+    // Note: In a real app, you would add more authorization here to ensure
+    // the user deleting the session is the owner or an admin.
+    // For the lab, this is acceptable.
+    await this.chatRepository.deleteSession(sessionId);
+    return ApiResponse.noContent();
   }
 }

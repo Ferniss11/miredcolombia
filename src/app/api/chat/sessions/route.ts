@@ -12,7 +12,7 @@ export const POST = apiHandler((req: NextRequest) =>
 );
 
 
-// This endpoint is protected for admins to get all sessions.
+// This endpoint is protected. It can now filter sessions by userId.
 export const GET = apiHandler((req: NextRequest) =>
     chatController.getAllSessions(req)
 , ['Admin', 'SAdmin']);

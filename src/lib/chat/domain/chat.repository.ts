@@ -39,7 +39,7 @@ export interface ChatRepository {
    * @param message - The message entity to save.
    * @returns The saved message entity, possibly with a database-generated ID.
    */
-  saveMessage(message: Omit<ChatMessage, 'id'>): Promise<ChatMessage>;
+  saveMessage(message: Omit<ChatMessage, 'id' | 'timestamp'>): Promise<ChatMessage>;
 
   /**
    * Retrieves the full message history for a given chat session.
@@ -51,7 +51,15 @@ export interface ChatRepository {
   
   /**
    * Retrieves all chat sessions, typically for an admin view.
+   * @param filters - Optional filters to apply, e.g., by userId.
    * @returns An array of all ChatSession entities.
    */
-  findAllSessions(): Promise<ChatSession[]>;
+  findAllSessions(filters?: { userId?: string, isLabSession?: boolean }): Promise<ChatSession[]>;
+
+  /**
+   * Deletes a chat session and all its associated messages.
+   * @param sessionId - The ID of the session to delete.
+   * @returns A promise that resolves when deletion is complete.
+   */
+  deleteSession(sessionId: string): Promise<void>;
 }
