@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect, useTransition, useCallback } from 'react';
@@ -199,7 +200,8 @@ export default function AgentLabPage() {
       </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start flex-1 min-h-0">
-        <div className="lg:col-span-3 h-full">
+        
+        <div className="lg:col-span-3 h-full min-h-0">
              <SessionList 
                 sessions={sessions}
                 onSelect={handleSelectSession}
@@ -209,7 +211,7 @@ export default function AgentLabPage() {
              />
         </div>
 
-        <div className="lg:col-span-9 h-full flex flex-col gap-6">
+        <div className="lg:col-span-9 h-full flex flex-col gap-6 min-h-0">
              {/* -- New Header Area -- */}
             <Card>
                 <CardContent className="p-4">
@@ -304,3 +306,4 @@ export default function AgentLabPage() {
     </>
   );
 }
+
