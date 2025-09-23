@@ -9,7 +9,8 @@
 import { ai } from '@/ai/genkit';
 import { adminDb } from '@/lib/firebase/admin-config';
 import { z } from 'zod';
-import type { VectorQuery, VectorQueryResult } from 'firebase-admin/firestore';
+// CORRECTED: Import vector types from the correct Google Cloud SDK package
+import type { VectorQuery, VectorQuerySnapshot } from '@google-cloud/firestore';
 
 const KnowledgeSearchResultSchema = z.object({
   content: z.string().describe('A chunk of text from the knowledge base relevant to the user query.'),
@@ -39,14 +40,14 @@ export const knowledgeBaseSearch = ai.defineTool(
     try {
       const collectionRef = adminDb.collection('knowledge_base');
       
-      // Use the findNearest method from the SDK
+      // CORRECTED: Use the findNearest method from the SDK and apply the correct types
       const vectorQuery: VectorQuery = collectionRef.findNearest('embedding', {
         query: query,
         limit: 10, // Fetch more results initially to allow for filtering
         distanceMeasure: 'COSINE',
       });
       
-      const querySnapshot = await vectorQuery.get();
+      const querySnapshot: VectorQuerySnapshot = await vectorQuery.get();
 
       let finalResults = querySnapshot.docs;
 
