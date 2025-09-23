@@ -37,9 +37,10 @@ export const knowledgeBaseSearch = ai.defineTool(
     }
 
     try {
-      // Step 1: Generate an embedding for the user's query text using the correct Genkit method.
-      const queryEmbedding = await ai.embed({
-        model: 'googleai/text-embedding-004',
+      // Step 1: Generate an embedding for the user's query text.
+      // THE FIX: Use ai.embed() with the correct syntax and destructure the 'embedding' property from the result.
+      const { embedding } = await ai.embed({
+        embedder: 'googleai/text-embedding-004',
         content: query,
       });
 
@@ -48,8 +49,8 @@ export const knowledgeBaseSearch = ai.defineTool(
       // Step 2: Use findNearest with the correct single-object argument structure.
       const vectorQuery: VectorQuery = collectionRef.findNearest({
         vectorField: 'embedding',
-        queryVector: queryEmbedding,
-        limit: 10, // Fetch more results initially to allow for filtering
+        queryVector: embedding, // Pass the extracted embedding vector here.
+        limit: 10,
         distanceMeasure: 'COSINE',
       });
       
