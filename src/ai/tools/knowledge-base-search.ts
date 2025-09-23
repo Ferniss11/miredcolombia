@@ -9,6 +9,7 @@
 import { ai } from '@/ai/genkit';
 import { adminDb } from '@/lib/firebase/admin-config';
 import { z } from 'zod';
+import { findNearest, type VectorQuery, type VectorQueryResult } from 'firebase-admin/firestore';
 
 const KnowledgeSearchResultSchema = z.object({
   content: z.string().describe('A chunk of text from the knowledge base relevant to the user query.'),
@@ -36,20 +37,24 @@ export const knowledgeBaseSearch = ai.defineTool(
     }
 
     try {
-      // The Firebase Vector Search extension makes documents searchable via the findNeighbors operator.
-      const vectorQuery = await adminDb.collection('knowledge_base').findNeighbors('embedding', {
+      const collectionRef = adminDb.collection('knowledge_base');
+      
+      // Use the findNearest method from the SDK
+      const vectorQuery: VectorQuery = collectionRef.findNearest('embedding', {
         query: query,
-        limit: 5,
+        limit: 10, // Fetch more results initially to allow for filtering
         distanceMeasure: 'COSINE',
       });
       
-      let finalResults = vectorQuery;
+      const querySnapshot = await vectorQuery.get();
+
+      let finalResults = querySnapshot.docs;
 
       // If a session ID is provided, we need to filter the results to include
       // either global knowledge OR documents from this specific session.
       if (sessionId) {
-        finalResults = vectorQuery.filter(neighbor => {
-          const metadata = neighbor.document.data().metadata;
+        finalResults = querySnapshot.docs.filter(doc => {
+          const metadata = doc.data().metadata;
           if (!metadata) return false;
           
           // Condition 1: It's a global document from the admin knowledge base
@@ -62,8 +67,8 @@ export const knowledgeBaseSearch = ai.defineTool(
         });
       } else {
         // If no session ID, only return global knowledge base documents.
-        finalResults = vectorQuery.filter(neighbor => {
-            const metadata = neighbor.document.data().metadata;
+        finalResults = querySnapshot.docs.filter(doc => {
+            const metadata = doc.data().metadata;
             return metadata?.source === 'admin_kb';
         });
       }
@@ -73,9 +78,12 @@ export const knowledgeBaseSearch = ai.defineTool(
         console.log('[Knowledge Base] No relevant documents found after filtering.');
         return { results: [] };
       }
+      
+      // Take the top 5 results after filtering
+      const topResults = finalResults.slice(0, 5);
 
-      const searchResults = finalResults.map(neighbor => {
-        const data = neighbor.document.data();
+      const searchResults = topResults.map(doc => {
+        const data = doc.data();
         return {
           content: data.content || '', // The text chunk
           source: data.metadata?.doc_title || 'Fuente desconocida', // The source of the info

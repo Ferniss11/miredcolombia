@@ -1,4 +1,3 @@
-
 'use server';
 
 /**
@@ -44,17 +43,16 @@ const prompt = ai.definePrompt({
     output: { schema: ChatOutputSchema },
     tools: [knowledgeBaseSearch], // Ensure the tool is explicitly passed to the prompt
     prompt: `{{{systemPrompt}}}
----
-TASK: Based on the conversation history and using your tools to search for information, generate the next response for the 'model'. If the user's question seems related to a document they may have uploaded, be sure to use the 'sessionId' when searching the knowledge base.
+        ---
+        TASK: Based on the conversation history and using your tools to search for information, generate the next response for the 'model'. If the user's question seems related to a document they may have uploaded, be sure to use the 'sessionId' when searching the knowledge base.
 
-CONVERSATION:
-{{#each chatHistory}}
-- {{this.role}}: {{{this.text}}}
-{{/each}}
-- user: {{{currentMessage}}}
-
-OUTPUT (must be valid JSON that conforms to the schema):
-`,
+        CONVERSATION:
+        {{#each chatHistory}}
+        - {{this.role}}: {{{this.text}}}
+        {{/each}}
+        - user: {{{currentMessage}}}
+        OUTPUT (must be valid JSON that conforms to the schema):
+        `,
 });
 
 const migrationChatFlow = ai.defineFlow(
@@ -78,6 +76,7 @@ const migrationChatFlow = ai.defineFlow(
         // Safely extract tool invocations from the history for debugging
         const toolInvocations = (history || [])
             .map((step) => {
+                // THE FIX: Check for the existence of `toolRequest` before trying to access its properties.
                 if (step.toolRequest) {
                     return {
                         tool: step.toolRequest.name || 'unknown_tool',

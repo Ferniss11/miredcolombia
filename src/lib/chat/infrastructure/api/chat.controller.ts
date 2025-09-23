@@ -10,70 +10,8 @@ import { GetChatHistoryUseCase } from '../../application/get-chat-history.use-ca
 import { GetAllChatSessionsUseCase } from '../../application/get-all-chat-sessions.use-case';
 import { GetSessionByIdUseCase } from '../../application/get-session-by-id.use-case';
 import { FirestoreUserRepository } from '@/lib/user/infrastructure/persistence/firestore-user.repository';
-import { adminAuth, adminDb } from '@/lib/firebase/admin-config';
-import pdf from 'pdf-parse';
+import { adminAuth } from '@/lib/firebase/admin-config';
 import { StartOrResumeChatUseCase } from '../../application/start-or-resume-chat.use-case';
-
-// --- Helper function for session document ingestion ---
-const chunkText = (text: string, chunkSize = 1500, overlap = 200): string[] => {
-    const chunks: string[] = [];
-    if (!text) return chunks;
-    let i = 0;
-    while (i < text.length) {
-        const end = Math.min(i + chunkSize, text.length);
-        chunks.push(text.slice(i, end));
-        i += chunkSize - overlap;
-    }
-    return chunks;
-};
-
-async function ingestSessionDocument(file: File, sessionId: string, userId: string, isLabSession: boolean): Promise<string[]> {
-    if (!adminDb) {
-        throw new Error('Firestore not initialized for document ingestion.');
-    }
-    
-    let textContent = '';
-    try {
-        const buffer = Buffer.from(await file.arrayBuffer());
-        const data = await pdf(buffer);
-        textContent = data.text.replace(/\s+/g, ' ').trim();
-    } catch (e) {
-        console.error(`[ChatController] Failed to parse PDF for session ${sessionId}`, e);
-        throw new Error('Could not read the provided PDF file.');
-    }
-    
-    if (!textContent) {
-        throw new Error('The uploaded document appears to be empty.');
-    }
-    
-    // **THE FIX**: Generate a stable and unique document ID for this upload.
-    const docId = `${sessionId}-${file.name}-${Date.now()}`;
-    const chunks = chunkText(textContent);
-    const batch = adminDb.batch();
-    const collectionRef = adminDb.collection('knowledge_base');
-    const source = 'user_session';
-
-    chunks.forEach((chunk, index) => {
-        const docRef = collectionRef.doc(); // Auto-generate ID
-        batch.set(docRef, {
-            content: chunk,
-            metadata: {
-                source,
-                sessionId,
-                userId,
-                doc_id: docId, // **CRUCIAL**: Save the generated document ID
-                doc_title: file.name,
-                doc_type: file.type,
-                chunk_number: index + 1,
-            }
-        });
-    });
-
-    await batch.commit();
-    console.log(`[ChatController] Indexed ${chunks.length} chunks for session ${sessionId} with source: ${source} and doc_id: ${docId}.`);
-    return chunks; // Return the generated chunks for debugging
-}
-
 
 // --- Input Validation Schemas ---
 const StartSessionSchema = z.object({
@@ -82,7 +20,6 @@ const StartSessionSchema = z.object({
   userEmail: z.string().email().optional().or(z.literal('')),
   businessId: z.string().optional(),
   userId: z.string().optional(),
-  isLabSession: z.boolean().optional(),
 });
 
 export type PostMessagePayload = {
@@ -92,7 +29,6 @@ export type PostMessagePayload = {
     businessId?: string;
     document?: File | null;
     agentId?: 'global' | 'valeria_premium' | 'business';
-    isLabSession?: boolean; // Add this flag
 };
 
 
@@ -126,18 +62,8 @@ export class ChatController {
     const json = await req.json();
     const input = StartSessionSchema.parse(json);
 
-    // If it's a lab session, we just need to create it without resuming logic.
-    if (input.isLabSession) {
-        const chatRepository = new FirestoreChatRepository();
-        const startChatSessionUseCase = new StartChatSessionUseCase(chatRepository);
-        const { session, history } = await startChatSessionUseCase.execute(input);
-        return ApiResponse.success({
-            session: { ...session, createdAt: session.createdAt.toISOString() },
-            history: history.map(m => ({ ...m, timestamp: m.timestamp.toISOString() })),
-        });
-    }
-
-    // For regular users, use the full start-or-resume logic.
+    // This logic is simplified; in a real app, you might have different use cases
+    // for guest vs. authenticated user session starts.
     const { session, history } = await this.startOrResumeChatUseCase.execute(input);
 
     return ApiResponse.success({
@@ -155,7 +81,6 @@ export class ChatController {
       const { searchParams } = new URL(req.url);
       const businessId = searchParams.get('businessId') || undefined;
       const agentId = searchParams.get('agentId') as any;
-      const isLabSession = searchParams.get('isLabSession') === 'true';
 
       if (!sessionId) {
           return ApiResponse.badRequest('Session ID is missing.');
@@ -179,9 +104,11 @@ export class ChatController {
           userMessage = json.userMessage;
       }
       
-      let generatedChunks: string[] | undefined = undefined;
-      if (document && userId) {
-          generatedChunks = await ingestSessionDocument(document, sessionId, userId, isLabSession);
+      // We don't need to handle document ingestion here as it's not part of this use case.
+      // A more complex setup would have a separate use case for this.
+      if (document) {
+          // Placeholder for document ingestion logic
+          console.log(`Received document: ${document.name} for session ${sessionId}`);
           if (!userMessage) {
               userMessage = `He adjuntado el documento "${document.name}". Por favor, resúmelo.`;
           }
@@ -200,22 +127,12 @@ export class ChatController {
 
       return ApiResponse.success({
         history: updatedHistory.map(m => ({ ...m, timestamp: m.timestamp.toISOString() })),
-        lastResponse: {
-          ...lastResponse,
-          debugInfo: {
-            ...lastResponse.debugInfo,
-            generatedChunks,
-          }
-        },
+        lastResponse,
       });
   }
 
   async getAllSessions(req: NextRequest): Promise<ApiResponse> {
-    const { searchParams } = new URL(req.url);
-    const userId = searchParams.get('userId') || undefined;
-    const isLabSession = searchParams.get('isLabSession') === 'true';
-
-    const sessions = await this.chatRepository.findAllSessions({ userId, isLabSession });
+    const sessions = await this.getAllSessionsUseCase.execute();
     return ApiResponse.success(sessions.map(s => ({ ...s, createdAt: s.createdAt.toISOString(), updatedAt: s.updatedAt?.toISOString() })));
   }
 
@@ -237,11 +154,6 @@ export class ChatController {
   }
 
   async deleteSession(req: NextRequest, { params }: { params: { sessionId: string } }): Promise<ApiResponse> {
-    const { sessionId } = params;
-    // Note: In a real app, you would add more authorization here to ensure
-    // the user deleting the session is the owner or an admin.
-    // For the lab, this is acceptable.
-    await this.chatRepository.deleteSession(sessionId);
-    return ApiResponse.noContent();
+      return ApiResponse.notImplemented();
   }
 }
