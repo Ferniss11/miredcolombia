@@ -5,7 +5,7 @@ import type { ChatMessage } from '../domain/chat-message.entity';
 
 export type StartChatSessionInput = {
   userName: string;
-  userPhone: string;
+  userPhone?: string; // Made optional
   userEmail?: string;
   businessId?: string; // Optional context for business-specific chats
 };
@@ -25,6 +25,7 @@ export class StartChatSessionUseCase {
   async execute(input: StartChatSessionInput): Promise<StartChatSessionOutput> {
     const sessionData: Omit<ChatSession, 'id'> = {
       ...input,
+      userPhone: input.userPhone || '', // Ensure userPhone is a string
       createdAt: new Date(),
       totalTokens: 0,
       totalInputTokens: 0,

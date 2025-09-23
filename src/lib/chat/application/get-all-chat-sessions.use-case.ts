@@ -2,6 +2,11 @@
 import type { ChatSession } from '../domain/chat-session.entity';
 import type { ChatRepository } from '../domain/chat.repository';
 
+export type GetAllSessionsFilters = {
+    userId?: string;
+    isLabSession?: boolean;
+}
+
 /**
  * Use case for retrieving all chat sessions.
  * This is typically used for admin panels or analytics.
@@ -9,7 +14,7 @@ import type { ChatRepository } from '../domain/chat.repository';
 export class GetAllChatSessionsUseCase {
   constructor(private readonly chatRepository: ChatRepository) {}
 
-  async execute(): Promise<ChatSession[]> {
-    return this.chatRepository.findAllSessions();
+  async execute(filters?: GetAllSessionsFilters): Promise<ChatSession[]> {
+    return this.chatRepository.findAllSessions(filters);
   }
 }

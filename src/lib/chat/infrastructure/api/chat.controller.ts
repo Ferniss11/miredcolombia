@@ -63,8 +63,6 @@ export class ChatController {
     const json = await req.json();
     const input = StartSessionSchema.parse(json);
 
-    // This logic is simplified; in a real app, you might have different use cases
-    // for guest vs. authenticated user session starts.
     const { session, history } = await this.startOrResumeChatUseCase.execute(input);
 
     return ApiResponse.success({
