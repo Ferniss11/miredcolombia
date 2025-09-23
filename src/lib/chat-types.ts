@@ -49,6 +49,7 @@ export type ChatMessage = z.infer<typeof ChatMessageSchema>;
 
 export const ChatSessionSchema = z.object({
   id: z.string().optional(),
+  userId: z.string().optional(), // Added userId to match the domain entity
   userName: z.string(),
   userPhone: z.string(),
   userEmail: z.string().optional(),

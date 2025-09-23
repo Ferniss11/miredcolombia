@@ -81,10 +81,11 @@ export class FirestoreChatRepository implements ChatRepository {
       authorName: 'Valeria',
     };
 
+    // Explicitly set businessId if it exists, otherwise don't include it.
     if (sessionData.businessId) {
         initialMessageData.businessId = sessionData.businessId;
     } else {
-        delete finalSessionData.businessId;
+        delete finalSessionData.businessId; // Ensure it's not present for global chats
     }
 
     await db.runTransaction(async (transaction) => {
