@@ -1,5 +1,5 @@
 // src/lib/chat/infrastructure/api/chat.controller.ts
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { ApiResponse } from '@/lib/platform/api/api-response';
 import { FirestoreChatRepository } from '../persistence/firestore-chat.repository';
@@ -20,6 +20,7 @@ const StartSessionSchema = z.object({
   userEmail: z.string().email().optional().or(z.literal('')),
   businessId: z.string().optional(),
   userId: z.string().optional(),
+  isLabSession: z.boolean().optional(), // For agent lab
 });
 
 export type PostMessagePayload = {
@@ -58,7 +59,7 @@ export class ChatController {
     this.getAllSessionsUseCase = new GetAllChatSessionsUseCase(this.chatRepository);
   }
 
-  async startSession(req: NextRequest): Promise<ApiResponse> {
+  async startSession(req: NextRequest): Promise<NextResponse> {
     const json = await req.json();
     const input = StartSessionSchema.parse(json);
 
@@ -72,7 +73,7 @@ export class ChatController {
     });
   }
   
-  async postMessage(req: NextRequest, { params }: { params: { sessionId: string } }): Promise<ApiResponse> {
+  async postMessage(req: NextRequest, { params }: { params: { sessionId: string } }): Promise<NextResponse> {
       let userMessage: string;
       let document: File | null = null;
       let userId: string | undefined = undefined;
@@ -131,12 +132,18 @@ export class ChatController {
       });
   }
 
-  async getAllSessions(req: NextRequest): Promise<ApiResponse> {
-    const sessions = await this.getAllSessionsUseCase.execute();
+  async getAllSessions(req: NextRequest): Promise<NextResponse> {
+    const { searchParams } = new URL(req.url);
+    const filters = {
+        userId: searchParams.get('userId') || undefined,
+        isLabSession: searchParams.has('isLabSession'),
+    };
+    
+    const sessions = await this.getAllSessionsUseCase.execute(filters);
     return ApiResponse.success(sessions.map(s => ({ ...s, createdAt: s.createdAt.toISOString(), updatedAt: s.updatedAt?.toISOString() })));
   }
 
-  async getSessionDetails(req: NextRequest, { params }: { params: { sessionId: string } }): Promise<ApiResponse> {
+  async getSessionDetails(req: NextRequest, { params }: { params: { sessionId: string } }): Promise<NextResponse> {
       const { sessionId } = params;
       const businessId = req.nextUrl.searchParams.get('businessId') || undefined;
 
@@ -153,7 +160,9 @@ export class ChatController {
       });
   }
 
-  async deleteSession(req: NextRequest, { params }: { params: { sessionId: string } }): Promise<ApiResponse> {
-      return ApiResponse.notImplemented();
+  async deleteSession(req: NextRequest, { params }: { params: { sessionId: string } }): Promise<NextResponse> {
+      const { sessionId } = params;
+      await this.chatRepository.deleteSession(sessionId);
+      return ApiResponse.noContent();
   }
 }
