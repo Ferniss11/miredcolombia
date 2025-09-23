@@ -38,11 +38,19 @@ export const knowledgeBaseSearch = ai.defineTool(
 
     try {
       // Step 1: Generate an embedding for the user's query text.
-      const { embedding } = await ai.embed({
+      // ai.embed returns an array of results, even for a single input.
+      const embeddingResult = await ai.embed({
         embedder: 'googleai/text-embedding-004',
         content: query,
       });
 
+      // Extract the embedding vector from the first (and only) result.
+      const embedding = embeddingResult[0].embedding;
+
+      if (!embedding) {
+        throw new Error("Failed to generate embedding for the query.");
+      }
+      
       const collectionRef = adminDb.collection('knowledge_base');
       
       // Step 2: Use findNearest with the correct single-object argument structure.
