@@ -9,7 +9,6 @@
 import { ai } from '@/ai/genkit';
 import { adminDb } from '@/lib/firebase/admin-config';
 import { z } from 'zod';
-import { embedContent } from '@genkit-ai/googleai';
 import type { VectorQuery, VectorQuerySnapshot } from '@google-cloud/firestore';
 
 const KnowledgeSearchResultSchema = z.object({
@@ -38,9 +37,10 @@ export const knowledgeBaseSearch = ai.defineTool(
     }
 
     try {
-      // Step 1: Generate an embedding for the user's query text.
-      const queryEmbedding = await embedContent({
-        content: query
+      // Step 1: Generate an embedding for the user's query text using the correct Genkit method.
+      const queryEmbedding = await ai.embed({
+        model: 'googleai/text-embedding-004',
+        content: query,
       });
 
       const collectionRef = adminDb.collection('knowledge_base');
