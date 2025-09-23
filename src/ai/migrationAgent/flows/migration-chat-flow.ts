@@ -64,17 +64,17 @@ const migrationChatFlow = ai.defineFlow(
     async (input) => {
         // Dynamically set the model for the prompt execution
         // Pass the session ID to the tool through the prompt context
-        const { output, usage, history } = await prompt(input, { 
+        const llmResponse = await prompt(input, { 
             model: input.model as any,
             context: { sessionId: input.sessionId } 
         });
 
-        if (!output) {
+        if (!llmResponse.output) {
             throw new Error('La respuesta de la IA fue vacía.');
         }
 
         // Safely extract tool invocations from the history for debugging
-        const toolInvocations = (history || [])
+        const toolInvocations = (llmResponse.history || [])
             .map((step) => {
                 // THE FIX: Check for the existence of `toolRequest` before trying to access its properties.
                 if (step.toolRequest) {
@@ -89,11 +89,11 @@ const migrationChatFlow = ai.defineFlow(
 
 
         return {
-            response: output.response,
+            response: llmResponse.output.response,
             usage: {
-                inputTokens: usage.inputTokens || 0,
-                outputTokens: usage.outputTokens || 0,
-                totalTokens: usage.totalTokens || 0,
+                inputTokens: llmResponse.usage.inputTokens || 0,
+                outputTokens: llmResponse.usage.outputTokens || 0,
+                totalTokens: llmResponse.usage.totalTokens || 0,
             },
             toolInvocations,
         };
