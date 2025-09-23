@@ -9,7 +9,7 @@
 import { ai } from '@/ai/genkit';
 import { adminDb } from '@/lib/firebase/admin-config';
 import { z } from 'zod';
-// CORRECTED: Import vector types from the correct Google Cloud SDK package
+import { embedContent } from '@genkit-ai/googleai';
 import type { VectorQuery, VectorQuerySnapshot } from '@google-cloud/firestore';
 
 const KnowledgeSearchResultSchema = z.object({
@@ -38,11 +38,17 @@ export const knowledgeBaseSearch = ai.defineTool(
     }
 
     try {
+      // Step 1: Generate an embedding for the user's query text.
+      const queryEmbedding = await embedContent({
+        content: query
+      });
+
       const collectionRef = adminDb.collection('knowledge_base');
       
-      // CORRECTED: Use the findNearest method from the SDK and apply the correct types
-      const vectorQuery: VectorQuery = collectionRef.findNearest('embedding', {
-        query: query,
+      // Step 2: Use findNearest with the correct single-object argument structure.
+      const vectorQuery: VectorQuery = collectionRef.findNearest({
+        vectorField: 'embedding',
+        queryVector: queryEmbedding,
         limit: 10, // Fetch more results initially to allow for filtering
         distanceMeasure: 'COSINE',
       });
@@ -73,7 +79,6 @@ export const knowledgeBaseSearch = ai.defineTool(
             return metadata?.source === 'admin_kb';
         });
       }
-
 
       if (!finalResults || finalResults.length === 0) {
         console.log('[Knowledge Base] No relevant documents found after filtering.');
