@@ -9,7 +9,7 @@
 import { ai } from '@/ai/genkit';
 import { adminDb } from '@/lib/firebase/admin-config';
 import { z } from 'zod';
-import { findNearest, type VectorQuery, type VectorQueryResult } from 'firebase-admin/firestore';
+import type { VectorQuery, VectorQueryResult } from 'firebase-admin/firestore';
 
 const KnowledgeSearchResultSchema = z.object({
   content: z.string().describe('A chunk of text from the knowledge base relevant to the user query.'),
