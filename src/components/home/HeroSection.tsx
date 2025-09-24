@@ -35,7 +35,7 @@ export default function HeroSection() {
                     Tu puente de Colombia a España: empleo, vivienda y papeles en regla sin perderte en el camino.
                 </h1>
                 <p className="mt-4 max-w-3xl text-lg md:text-xl text-gray-200 font-body">
-                    Con Valeria (IA) y nuestro equipo tendrás acompañamiento real en cada paso. Servicios completos de viaje, onboarding y consultoría.
+                    COn nuestra Inteligencia Artificial, ValerIA, y nuestro equipo juridico profesional, tendrás el acompañamiento que necesitas en tu proceso de migración. 
                 </p>
                 <div className="mt-8 flex flex-col gap-4 sm:flex-row w-full max-w-md">
                     <Button asChild size="lg" className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-6 text-base">
@@ -53,4 +53,3 @@ export default function HeroSection() {
         </section>
     );
 }
-
