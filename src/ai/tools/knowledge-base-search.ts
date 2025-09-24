@@ -33,19 +33,17 @@ export const knowledgeBaseSearch = ai.defineTool(
 
     if (!adminDb) {
       console.error("[Knowledge Base] Firestore not initialized.");
-      return { results: [] };
+      return { results: [{ content: 'Error: La base de datos no está inicializada.', source: 'Sistema' }] };
     }
 
     try {
       // Step 1: Generate an embedding for the user's query text.
-      // ai.embed returns an array of results, even for a single input.
       const embeddingResult = await ai.embed({
         embedder: 'googleai/text-embedding-004',
         content: query,
       });
 
-      // Extract the embedding vector from the first (and only) result.
-      const embedding = embeddingResult[0].embedding;
+      const embedding = embeddingResult[0]?.embedding;
 
       if (!embedding) {
         throw new Error("Failed to generate embedding for the query.");
@@ -53,10 +51,9 @@ export const knowledgeBaseSearch = ai.defineTool(
       
       const collectionRef = adminDb.collection('knowledge_base');
       
-      // Step 2: Use findNearest with the correct single-object argument structure.
       const vectorQuery: VectorQuery = collectionRef.findNearest({
         vectorField: 'embedding',
-        queryVector: embedding, // Pass the extracted embedding vector here.
+        queryVector: embedding,
         limit: 10,
         distanceMeasure: 'COSINE',
       });
@@ -65,42 +62,41 @@ export const knowledgeBaseSearch = ai.defineTool(
 
       let finalResults = querySnapshot.docs;
 
-      // If a session ID is provided, we need to filter the results to include
-      // either global knowledge OR documents from this specific session.
       if (sessionId) {
         finalResults = querySnapshot.docs.filter(doc => {
           const metadata = doc.data().metadata;
           if (!metadata) return false;
           
-          // Condition 1: It's a global document from the admin knowledge base
           const isGlobalDoc = metadata.source === 'admin_kb';
-          
-          // Condition 2: It's a document from the current user's session
           const isSessionDoc = metadata.source === 'user_session' && metadata.sessionId === sessionId;
           
           return isGlobalDoc || isSessionDoc;
         });
       } else {
-        // If no session ID, only return global knowledge base documents.
         finalResults = querySnapshot.docs.filter(doc => {
             const metadata = doc.data().metadata;
             return metadata?.source === 'admin_kb';
         });
       }
 
-      if (!finalResults || finalResults.length === 0) {
+      if (finalResults.length === 0) {
         console.log('[Knowledge Base] No relevant documents found after filtering.');
-        return { results: [] };
+        // **THE FIX**: Return a helpful message to the AI instead of an empty array.
+        return {
+          results: [{
+            content: `No se encontró información en la base de conocimiento sobre: "${query}". Informa al usuario amablemente que no tienes información sobre ese tema y pregúntale si puede ser más específico o proporcionar el documento.`,
+            source: 'Sistema de Búsqueda Interno',
+          }]
+        };
       }
       
-      // Take the top 5 results after filtering
       const topResults = finalResults.slice(0, 5);
 
       const searchResults = topResults.map(doc => {
         const data = doc.data();
         return {
-          content: data.content || '', // The text chunk
-          source: data.metadata?.doc_title || 'Fuente desconocida', // The source of the info
+          content: data.content || '',
+          source: data.metadata?.doc_title || 'Fuente desconocida',
         };
       });
       
@@ -111,7 +107,7 @@ export const knowledgeBaseSearch = ai.defineTool(
       console.error("[Knowledge Base] Error performing vector search:", error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       
-      return { results: [] };
+      return { results: [{ content: `Error durante la búsqueda: ${errorMessage}`, source: 'Sistema' }] };
     }
   }
 );
