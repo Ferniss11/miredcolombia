@@ -5,9 +5,10 @@ import type { ChatMessage } from '../domain/chat-message.entity';
 
 export type StartChatSessionInput = {
   userName: string;
-  userPhone?: string; // Made optional
+  userPhone?: string;
   userEmail?: string;
   businessId?: string; // Optional context for business-specific chats
+  isLabSession?: boolean; // Flag to identify sessions created in the Agent Lab
 };
 
 export type StartChatSessionOutput = {

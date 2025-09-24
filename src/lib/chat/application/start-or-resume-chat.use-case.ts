@@ -25,7 +25,14 @@ export class StartOrResumeChatUseCase {
 
   ) {}
 
-  async execute(input: StartChatSessionInput & { userId?: string }): Promise<StartOrResumeChatOutput> {
+  async execute(input: StartChatSessionInput & { userId?: string, isLabSession?: boolean }): Promise<StartOrResumeChatOutput> {
+    
+    // Priority 0: If it's an explicit lab session, ALWAYS create a new one.
+    if (input.isLabSession) {
+      const { session, history } = await this.startChatSessionUseCase.execute(input);
+      return { session, history };
+    }
+
     // Priority 1: If a user ID is provided, this is a logged-in user.
     if (input.userId) {
         const userProfile = await this.userRepository.findByUid(input.userId);
