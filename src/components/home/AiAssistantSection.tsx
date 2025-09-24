@@ -76,7 +76,7 @@ export default function AiAssistantSection({ onOpenChatModal }: { onOpenChatModa
                         />
                     </div>
                     
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 items-start mt-12">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 items-stretch mt-12">
                          {valeriaPlans.map((plan) => (
                             <Card 
                                 key={plan.name} 
