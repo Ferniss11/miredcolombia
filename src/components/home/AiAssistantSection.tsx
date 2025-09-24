@@ -3,7 +3,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Check, MessageCircle, PlayCircle } from "lucide-react";
+import { Check, MessageCircle, PlayCircle, X } from "lucide-react";
 import Link from "next/link";
 import { valeriaPlans } from "@/lib/placeholder-data";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,6 +17,20 @@ import type { ValeriaPlan } from "@/lib/types";
 type AiAssistantSectionProps = {
     onOpenChatModal: () => void;
     variant?: 'full' | 'compact';
+};
+
+const allFeatures = [
+    { key: 'consultas', label: 'Consultas al mes' },
+    { key: 'base_conocimiento', label: 'Base de conocimiento' },
+    { key: 'analisis_documentos', label: 'Análisis de documentos' },
+    { key: 'alertas', label: 'Alertas de empleo y vivienda' },
+];
+
+const featureData: { [key: string]: { free: string | boolean; premium: string | boolean } } = {
+    consultas: { free: 'Hasta 3', premium: 'Ilimitadas' },
+    base_conocimiento: { free: true, premium: true },
+    analisis_documentos: { free: false, premium: true },
+    alertas: { free: false, premium: true },
 };
 
 
@@ -70,11 +84,11 @@ export default function AiAssistantSection({ onOpenChatModal, variant = 'full' }
                            {isFullVariant ? "Con Valeria nunca estarás solo" : "Potencia tu Migración con Valeria"}
                         </h2>
                         <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed font-body">
-                           Tu asesora IA 24/7. Gratis para empezar, y con planes Premium que incluyen alertas de empleo, vivienda y guías exclusivas para que tu proceso sea aún más fácil.
+                           Tu asesora IA 24/7. Gratis para empezar, y con un plan Premium que desbloquea todo su potencial para que tu proceso sea aún más fácil.
                         </p>
                     </div>
                     
-                    {isFullVariant && (
+                    {isFullVariant ? (
                         <div className="w-full aspect-video rounded-xl shadow-lg overflow-hidden my-8">
                             <video
                                 className="w-full h-full object-cover"
@@ -84,47 +98,70 @@ export default function AiAssistantSection({ onOpenChatModal, variant = 'full' }
                                 playsInline
                             />
                         </div>
-                    )}
-                    
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 items-stretch mt-12">
-                         {valeriaPlans.map((plan) => (
-                            <Card 
-                                key={plan.name} 
-                                className={cn(
-                                    "flex flex-col shadow-lg transition-shadow duration-300 w-full", 
-                                    plan.name === "Valeria Premium" && "border-primary border-2 shadow-primary/20"
-                                )}
-                            >
-                                {plan.name === "Valeria Premium" && (
-                                    <div className="bg-primary text-primary-foreground text-center py-1.5 text-xs font-semibold">
-                                        Recomendado
+                    ) : (
+                        // -- Comparative Table Variant --
+                         <div className="w-full max-w-4xl mx-auto border rounded-xl shadow-lg bg-card">
+                            <div className="grid grid-cols-3">
+                                {/* Feature Headers Column */}
+                                <div className="p-4 sm:p-6 border-r">
+                                    <h3 className="font-bold h-12 flex items-end">Características</h3>
+                                </div>
+                                {/* Free Plan Column */}
+                                <div className="p-4 sm:p-6 border-r text-center">
+                                    <h3 className="font-bold h-12 flex items-end justify-center">{valeriaPlans[0].name}</h3>
+                                </div>
+                                {/* Premium Plan Column */}
+                                <div className="p-4 sm:p-6 text-center bg-primary/5 rounded-tr-xl">
+                                    <h3 className="font-bold h-12 flex items-end justify-center text-primary">{valeriaPlans[1].name}</h3>
+                                </div>
+                            </div>
+                            
+                            {/* Feature Rows */}
+                            {allFeatures.map((feature, index) => (
+                                <div key={feature.key} className="grid grid-cols-3 border-t">
+                                    <div className="p-4 sm:p-6 border-r flex items-center">{feature.label}</div>
+                                    <div className="p-4 sm:p-6 border-r flex items-center justify-center">
+                                        {typeof featureData[feature.key].free === 'boolean' ? (
+                                            featureData[feature.key].free ? <Check className="h-6 w-6 text-green-500"/> : <X className="h-6 w-6 text-muted-foreground"/>
+                                        ) : <span className="font-semibold text-sm">{featureData[feature.key].free}</span>}
                                     </div>
-                                )}
-                                <CardHeader className="items-center text-center">
-                                    <CardTitle className="font-headline text-xl">{plan.name}</CardTitle>
-                                    <div className="flex items-baseline">
-                                        <span className="text-3xl font-bold">{typeof plan.price === 'number' ? `${plan.price.toLocaleString('es-ES', { minimumFractionDigits: 2 })}€` : plan.price}</span>
-                                        <span className="text-muted-foreground ml-1 text-sm">{plan.priceDetails}</span>
+                                    <div className="p-4 sm:p-6 flex items-center justify-center bg-primary/5">
+                                         {typeof featureData[feature.key].premium === 'boolean' ? (
+                                            featureData[feature.key].premium ? <Check className="h-6 w-6 text-green-500"/> : <X className="h-6 w-6 text-muted-foreground"/>
+                                        ) : <span className="font-semibold text-primary text-sm">{featureData[feature.key].premium}</span>}
                                     </div>
-                                </CardHeader>
-                                <CardContent className="flex-grow">
-                                    <ul className="space-y-3 text-sm">
-                                        {plan.features.map((feature, index) => (
-                                            <li key={index} className="flex items-start">
-                                                <Check className="h-4 w-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
-                                                <span>{feature}</span>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </CardContent>
-                                <CardFooter>
-                                    <Button className="w-full" variant={plan.variant as any} onClick={() => handlePlanSelection(plan)}>
-                                        {plan.cta}
+                                </div>
+                            ))}
+
+                             {/* Price Row */}
+                            <div className="grid grid-cols-3 border-t">
+                                <div className="p-4 sm:p-6 border-r flex items-center font-bold">Precio</div>
+                                <div className="p-4 sm:p-6 border-r flex flex-col items-center justify-center">
+                                    <span className="text-2xl font-bold">{valeriaPlans[0].price}</span>
+                                    <span className="text-xs text-muted-foreground">{valeriaPlans[0].priceDetails}</span>
+                                </div>
+                                <div className="p-4 sm:p-6 flex flex-col items-center justify-center bg-primary/5">
+                                     <span className="text-2xl font-bold text-primary">{valeriaPlans[1].price}€</span>
+                                    <span className="text-xs text-muted-foreground">{valeriaPlans[1].priceDetails}</span>
+                                </div>
+                            </div>
+
+                             {/* CTA Row */}
+                            <div className="grid grid-cols-3 border-t rounded-b-xl">
+                                <div className="p-4 sm:p-6 border-r"></div>
+                                <div className="p-4 sm:p-6 border-r flex items-center justify-center">
+                                    <Button variant="outline" className="w-full" onClick={() => handlePlanSelection(valeriaPlans[0])}>
+                                        {valeriaPlans[0].cta}
                                     </Button>
-                                </CardFooter>
-                            </Card>
-                        ))}
-                    </div>
+                                </div>
+                                <div className="p-4 sm:p-6 flex items-center justify-center bg-primary/5 rounded-br-xl">
+                                     <Button className="w-full" onClick={() => handlePlanSelection(valeriaPlans[1])}>
+                                        {valeriaPlans[1].cta}
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </section>
 
