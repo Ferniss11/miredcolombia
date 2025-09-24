@@ -47,9 +47,11 @@ const migrationChatFlow = ai.defineFlow(
     },
     async (input) => {
         // Construct the prompt history programmatically, which is the correct Genkit v1.x approach for chat.
+        // CRITICAL FIX: Map the history to the format { role, text } that the AI model expects.
+        // The previous implementation was sending the entire database object, causing a silent failure.
         const history = input.chatHistory.map(message => ({
-            text: message.text,
-            role: message.role,
+            text: message.role === 'admin' ? `[Mensaje del Administrador: ${message.text}]` : message.text,
+            role: message.role === 'user' ? 'user' : 'model', // Treat 'admin' messages as if they came from the 'model'
         }));
         
         try {
@@ -67,7 +69,7 @@ const migrationChatFlow = ai.defineFlow(
             
             const output = llmResponse.output;
 
-            if (!output) {
+            if (!output || !llmResponse.text) {
                 // If the model truly returns nothing, provide a graceful fallback.
                 return {
                     response: "Lo siento, no he podido procesar esa respuesta. ¿Podrías intentarlo de nuevo?",
@@ -91,9 +93,12 @@ const migrationChatFlow = ai.defineFlow(
             };
         } catch (error) {
             console.error('[migrationChatFlow] Error during generation:', error);
-            const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
-            // It's better to throw so the api-handler can catch and format the error response
-            throw new Error(`AI Generation failed: ${errorMessage}`);
+            // It's better to throw so the api-handler can catch and format the error response.
+            // This provides more detailed error messages on the client side for debugging.
+            if (error instanceof Error) {
+                throw new Error(`AI Generation failed: ${error.message}`);
+            }
+            throw new Error('An unknown error occurred during AI generation.');
         }
     }
 );
