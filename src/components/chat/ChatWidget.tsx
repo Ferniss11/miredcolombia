@@ -227,6 +227,7 @@ export default function ChatWidget({ isLabMode = false, labConfig, initialHistor
         setView('loading');
     } else if (isChatOpen || isInDashboard) {
         if (user && userProfile) {
+            // FIX: Only start a new session if one doesn't exist for the current user.
             if (!session || session.userId !== user.uid) {
                 startSessionForUser();
             } else {
