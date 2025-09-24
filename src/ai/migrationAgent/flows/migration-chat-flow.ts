@@ -44,14 +44,19 @@ const prompt = ai.definePrompt({
     output: { schema: ChatOutputSchema },
     tools: [knowledgeBaseSearch], // Ensure the tool is explicitly passed to the prompt
     prompt: `{{{systemPrompt}}}
----
-Based on the following conversation history, generate the next 'model' response.
 
-CONVERSATION HISTORY:
 {{#each chatHistory}}
-- {{this.role}}: {{{this.text}}}
+{{#if @last}}
+{{else}}
+{{#if (eq this.role "user")}}
+user: {{{this.text}}}
+{{else}}
+model: {{{this.text}}}
+{{/if}}
+{{/if}}
 {{/each}}
-- user: {{{currentMessage}}}
+user: {{{currentMessage}}}
+model: 
 `,
 });
 
@@ -89,3 +94,4 @@ const migrationChatFlow = ai.defineFlow(
         };
     }
 );
+
