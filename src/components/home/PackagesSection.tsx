@@ -4,10 +4,10 @@
 import { useState } from "react";
 import { Card, CardHeader, CardContent, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, MessageSquare, Briefcase, Plane } from "lucide-react";
+import { MessageSquare, Briefcase, Plane } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import RequestQuoteSheet from "./RequestQuoteSheet"; // Import the new component
+import RequestQuoteSheet from "./RequestQuoteSheet";
 
 export default function PackagesSection() {
     const [isSheetOpen, setIsSheetOpen] = useState(false);
@@ -20,7 +20,7 @@ export default function PackagesSection() {
             price: "39€",
             id: "pack_consultoria",
             description: "Resuelve tus dudas con un experto y empieza con seguridad.",
-            link: "/checkout/pack_consultoria", // Direct checkout link
+            link: "/checkout/pack_consultoria",
             actionType: "link" as const,
             color: "bg-[#003893]" // Colombia Blue
         },
@@ -46,7 +46,7 @@ export default function PackagesSection() {
         }
     ];
 
-    const handleButtonClick = (pkg: typeof packages[0]) => {
+    const handleCardClick = (pkg: typeof packages[0]) => {
         if (pkg.actionType === 'modal') {
             setSelectedPackage(pkg.title);
             setIsSheetOpen(true);
@@ -64,32 +64,29 @@ export default function PackagesSection() {
                         </p>
                     </div>
                     <div className="mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
-                        {packages.map((pkg) => (
-                            <Card key={pkg.title} className="flex flex-col overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 group">
-                                 <div className={cn("h-2 w-full", pkg.color)}></div>
-                                <CardHeader className="text-center pt-8">
-                                    <div className="mx-auto p-4 bg-primary/10 rounded-full inline-flex mb-4">
-                                         <pkg.icon className="w-8 h-8 text-primary" />
-                                    </div>
-                                    <CardTitle className="font-headline text-2xl">{pkg.title}</CardTitle>
-                                    <CardDescription className="font-semibold text-lg">{pkg.price}</CardDescription>
-                                </CardHeader>
-                                <CardContent className="text-center flex-grow">
-                                    <p className="text-muted-foreground">{pkg.description}</p>
-                                </CardContent>
-                                 <CardFooter className="p-6 bg-secondary/30 dark:bg-card/50">
-                                     {pkg.actionType === 'link' ? (
-                                        <Button asChild className="w-full">
-                                            <Link href={pkg.link}>Contratar ahora</Link>
-                                        </Button>
-                                     ) : (
-                                        <Button onClick={() => handleButtonClick(pkg)} className="w-full">
-                                            Solicitar Presupuesto <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
-                                        </Button>
-                                     )}
-                                </CardFooter>
-                            </Card>
-                        ))}
+                        {packages.map((pkg) => {
+                            const CardWrapper = pkg.actionType === 'link' ? Link : 'div';
+                            return (
+                                <CardWrapper key={pkg.title} href={pkg.link || '#'}>
+                                    <Card 
+                                        className="flex flex-col overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 group h-full cursor-pointer"
+                                        onClick={pkg.actionType === 'modal' ? () => handleCardClick(pkg) : undefined}
+                                    >
+                                        <div className={cn("h-2 w-full", pkg.color)}></div>
+                                        <CardHeader className="text-center pt-8">
+                                            <div className="mx-auto p-4 bg-primary/10 rounded-full inline-flex mb-4">
+                                                <pkg.icon className="w-8 h-8 text-primary" />
+                                            </div>
+                                            <CardTitle className="font-headline text-2xl">{pkg.title}</CardTitle>
+                                            <CardDescription className="font-semibold text-lg">{pkg.price}</CardDescription>
+                                        </CardHeader>
+                                        <CardContent className="text-center flex-grow">
+                                            <p className="text-muted-foreground">{pkg.description}</p>
+                                        </CardContent>
+                                    </Card>
+                                </CardWrapper>
+                            );
+                        })}
                     </div>
                 </div>
             </section>

@@ -8,7 +8,6 @@ import type { PlaceDetails, BlogPost, JobsCtaSectionProps } from '@/lib/types';
 import HeroSection from './HeroSection';
 import StepsSection from './StepsSection';
 import AiAssistantSection from './AiAssistantSection';
-import BlogSection from './BlogSection';
 import TestimonialsSection from './TestimonialsSection';
 import { useChat } from '@/context/ChatContext';
 import HowWeHelpSection from './HowWeHelpSection';
@@ -32,11 +31,10 @@ export default function HomePageClient({ eurToCopRate, initialPosts, initialGuid
       <main className="flex-1">
         <HeroSection />
         <AiAssistantSection onOpenChatModal={openChat} />
-        <HowWeHelpSection />
         <PackagesSection />
-        <TestimonialsSection />
+        <HowWeHelpSection />
         <GuidesSection guides={initialGuides} />
-        <BlogSection posts={initialPosts} />
+        <TestimonialsSection />
       </main>
     </div>
   );

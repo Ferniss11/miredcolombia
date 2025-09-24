@@ -12,8 +12,21 @@ export default function GuidesSection({ guides }: { guides: Guide[] }) {
     }
 
     return (
-        <section className="w-full py-12 md:py-24 lg:py-32 bg-background">
-            <div className="container px-4 md:px-6 max-w-6xl">
+        <section className="w-full py-12 md:py-24 lg:py-32 bg-background relative overflow-hidden">
+            {/* Subtle SVG Background */}
+            <div className="absolute inset-0 -z-10 opacity-5">
+                <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <pattern id="guide-pattern" patternUnits="userSpaceOnUse" width="80" height="80" patternTransform="scale(1) rotate(45)">
+                        <path d="M10 10h60v60h-60z" stroke="hsl(var(--foreground))" strokeWidth="0.5" fill="none" />
+                        <path d="M20 20h40v40h-40z" stroke="hsl(var(--foreground))" strokeWidth="0.5" fill="none" />
+                        </pattern>
+                    </defs>
+                    <rect width="100%" height="100%" fill="url(#guide-pattern)" />
+                </svg>
+            </div>
+            
+            <div className="container px-4 md:px-6 max-w-6xl relative">
                 <div className="flex flex-col items-center justify-center space-y-4 text-center mb-12">
                      <div className="inline-block rounded-lg bg-primary/10 px-3 py-1 text-sm text-primary font-semibold">Recursos Gratuitos</div>
                     <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl font-headline">Guías Descargables para Empezar con Buen Pie</h2>
