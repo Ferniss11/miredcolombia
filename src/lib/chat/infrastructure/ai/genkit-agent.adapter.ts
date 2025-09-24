@@ -15,12 +15,11 @@ import { GooglePlacesAdapter } from '@/lib/directory/infrastructure/search/googl
 import { FirestoreCacheAdapter } from '@/lib/directory/infrastructure/cache/firestore-cache.adapter';
 
 
-// REFINED: This prompt is now a guideline, not an absolute command.
 const BASE_TOOL_PROMPT = `### INSTRUCCIONES DE HERRAMIENTAS
 - Tienes una herramienta llamada \`knowledgeBaseSearch\` que te da acceso a una base de conocimiento interna con guías, artículos y leyes.
-- **CUÁNDO USARLA:** Si la pregunta del usuario es sobre trámites de migración, requisitos, vivienda, trabajo o cualquier tema que requiera información específica y detallada, DEBES usar esta herramienta para encontrar la respuesta más precisa.
+- **CUÁNDO USARLA:** Si la pregunta del usuario es sobre trámites de migración, requisitos, vivienda, trabajo o cualquier tema que requiera información específica y detallada, considera usar esta herramienta para encontrar la respuesta más precisa.
 - **CUÁNDO NO USARLA:** Si el usuario simplemente saluda ("Hola", "¿cómo estás?") o la conversación es casual, responde de forma natural sin usar la herramienta.
-- **DOCUMENTOS EN SESIÓN:** Si el usuario menciona que ha subido un documento o te pide que revises uno, DEBES usar la herramienta \`knowledgeBaseSearch\` e incluir el \`sessionId\` en tu búsqueda para encontrar la información de ese documento específico.
+- **DOCUMENTOS EN SESIÓN:** Si el usuario menciona que ha subido un documento o te pide que revises uno, DEBES usar la herramienta \`knowledgeBaseSearch\` para encontrar la información de ese documento específico en la sesión actual.
 - Basa tus respuestas principalmente en los resultados de la búsqueda. Si no encuentras información, indícalo amablemente en lugar de inventar una respuesta.`;
 
 
@@ -141,12 +140,16 @@ export class GenkitAgentAdapter implements AgentAdapter {
     // Return the config that was actually used
     const usedConfig = { model: agentConfig.model, systemPrompt: finalSystemPrompt };
     
+    // Return the config and tool invocations in the debug info
     return { 
         response: aiResponse.response, 
         usage, 
         cost, 
         agentConfig: usedConfig,
-        debugInfo: { toolInvocations: aiResponse.toolInvocations || [] },
+        debugInfo: { 
+            toolInvocations: aiResponse.toolInvocations || [],
+            systemPrompt: finalSystemPrompt // Add the full system prompt to the debug info
+        },
     };
   }
 }

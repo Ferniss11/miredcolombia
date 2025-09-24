@@ -47,8 +47,23 @@ export default function DebugInfoCard({ title, description, data }: DebugInfoCar
                 </CollapsibleTrigger>
                 <CollapsibleContent>
                     <CardContent>
-                        {data?.toolInvocations ? (
-                           renderToolInvocations()
+                        {data?.toolInvocations || data?.systemPrompt ? (
+                            <div className="space-y-4">
+                                {data.toolInvocations && (
+                                    <div>
+                                        <h4 className="text-sm font-semibold mb-1">Invocación de Herramientas</h4>
+                                        {renderToolInvocations()}
+                                    </div>
+                                )}
+                                {data.systemPrompt && (
+                                    <div>
+                                        <h4 className="text-sm font-semibold mb-1">System Prompt Utilizado</h4>
+                                         <pre className="mt-2 w-full max-h-80 overflow-auto rounded-md bg-muted p-4 text-xs">
+                                            {data.systemPrompt}
+                                        </pre>
+                                    </div>
+                                )}
+                            </div>
                         ) : (
                              <pre className="mt-2 w-full max-h-80 overflow-auto rounded-md bg-muted p-4 text-sm">
                                 {data ? JSON.stringify(data, null, 2) : 'No hay datos disponibles.'}
