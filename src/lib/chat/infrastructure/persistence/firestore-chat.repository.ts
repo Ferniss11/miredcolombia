@@ -198,6 +198,7 @@ export class FirestoreChatRepository implements ChatRepository {
     if (filters?.userId) {
         query = query.where('userId', '==', filters.userId);
     }
+    // Corrected: Add the filter for lab sessions
     if (filters?.isLabSession) {
         query = query.where('isLabSession', '==', true);
     }

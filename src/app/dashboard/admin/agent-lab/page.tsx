@@ -231,6 +231,7 @@ export default function AgentLabPage() {
     setIsLoadingSessions(true);
     try {
       const token = await user.getIdToken();
+      // Corrected: Add isLabSession=true to filter for only lab sessions
       const response = await fetch(`/api/chat/sessions?userId=${user.uid}&isLabSession=true`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -285,7 +286,7 @@ export default function AgentLabPage() {
             body: JSON.stringify({
                 userName: `Lab: ${selectedAgent}`,
                 userId: user.uid,
-                isLabSession: true,
+                isLabSession: true, // Corrected: Mark this as a lab session
             }),
             });
             if (!response.ok) throw new Error((await response.json()).error?.message);
