@@ -51,42 +51,49 @@ const migrationChatFlow = ai.defineFlow(
             text: message.text,
             role: message.role,
         }));
-
-        const llmResponse = await ai.generate({
-            model: input.model as any,
-            tools: [knowledgeBaseSearch],
-            prompt: [
-                { system: input.systemPrompt },     // System prompt with instructions
-                ...history,                         // Spread the existing conversation history
-                { text: input.currentMessage },     // The user's latest message
-            ],
-            // Pass the session ID to the tool context
-            context: { sessionId: input.sessionId }, 
-        });
         
-        const output = llmResponse.output;
+        try {
+            const llmResponse = await ai.generate({
+                model: input.model as any,
+                tools: [knowledgeBaseSearch],
+                system: input.systemPrompt, // Pass the system instructions here
+                prompt: [
+                    ...history, // Spread the existing conversation history
+                    { text: input.currentMessage, role: 'user' }, // The user's latest message
+                ],
+                // Pass the session ID to the tool context
+                context: { sessionId: input.sessionId }, 
+            });
+            
+            const output = llmResponse.output;
 
-        if (!output) {
-            // If the model truly returns nothing, provide a graceful fallback.
+            if (!output) {
+                // If the model truly returns nothing, provide a graceful fallback.
+                return {
+                    response: "Lo siento, no he podido procesar esa respuesta. ¿Podrías intentarlo de nuevo?",
+                    usage: { inputTokens: 0, outputTokens: 0, totalTokens: 0 },
+                    toolInvocations: [],
+                };
+            }
+
             return {
-                response: "Lo siento, no he podido procesar esa respuesta. ¿Podrías intentarlo de nuevo?",
-                usage: { inputTokens: 0, outputTokens: 0, totalTokens: 0 },
-                toolInvocations: [],
+                response: llmResponse.text,
+                usage: {
+                    inputTokens: llmResponse.usage?.inputTokens || 0,
+                    outputTokens: llmResponse.usage?.outputTokens || 0,
+                    totalTokens: llmResponse.usage?.totalTokens || 0,
+                },
+                // Map tool calls to the expected format if they exist
+                toolInvocations: llmResponse.toolRequests?.map(tr => ({
+                    tool: tr.name,
+                    result: tr.output,
+                })) || [],
             };
+        } catch (error) {
+            console.error('[migrationChatFlow] Error during generation:', error);
+            const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+            // It's better to throw so the api-handler can catch and format the error response
+            throw new Error(`AI Generation failed: ${errorMessage}`);
         }
-
-        return {
-            response: llmResponse.text,
-            usage: {
-                inputTokens: llmResponse.usage.inputTokens || 0,
-                outputTokens: llmResponse.usage.outputTokens || 0,
-                totalTokens: llmResponse.usage.totalTokens || 0,
-            },
-            // Map tool calls to the expected format if they exist
-            toolInvocations: llmResponse.toolRequests.map(tr => ({
-                tool: tr.name,
-                result: tr.output,
-            })),
-        };
     }
 );
