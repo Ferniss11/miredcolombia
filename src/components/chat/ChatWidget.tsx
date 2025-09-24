@@ -283,14 +283,16 @@ export default function ChatWidget({ isLabMode = false, labConfig, initialHistor
     formData.append('currentMessage', userMessageText);
     if (file) formData.append('document', file);
     
-    if (chatContext?.businessId) formData.append('businessId', chatContext.businessId);
-    if (isLabMode && labConfig?.agentId) formData.append('agentId', labConfig.agentId);
+    const apiPath = new URL(`${window.location.origin}/api/chat/sessions/${activeSessionId}/messages`);
+    
+    if (chatContext?.businessId) apiPath.searchParams.append('businessId', chatContext.businessId);
+    if (isLabMode && labConfig?.agentId) apiPath.searchParams.append('agentId', labConfig.agentId);
 
     try {
         const idToken = await user?.getIdToken();
         const headers: HeadersInit = idToken ? { 'Authorization': `Bearer ${idToken}` } : {};
 
-        const response = await fetch(`/api/chat/sessions/${activeSessionId}/messages`, {
+        const response = await fetch(apiPath.toString(), {
             method: 'POST',
             headers,
             body: formData,
