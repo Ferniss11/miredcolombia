@@ -46,13 +46,10 @@ const prompt = ai.definePrompt({
     prompt: `{{{systemPrompt}}}
 
 {{#each chatHistory}}
-{{#if @last}}
-{{else}}
-{{#if (eq this.role "user")}}
+{{#if (eq role "user")}}
 user: {{{this.text}}}
 {{else}}
 model: {{{this.text}}}
-{{/if}}
 {{/if}}
 {{/each}}
 user: {{{currentMessage}}}
@@ -94,4 +91,3 @@ const migrationChatFlow = ai.defineFlow(
         };
     }
 );
-
