@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -12,7 +13,6 @@ import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import { ChatOutputSchema, ChatRoleSchema } from '@/lib/chat-types';
 import { knowledgeBaseSearch } from '@/ai/tools/knowledge-base-search';
-import { part } from 'genkit';
 
 
 // Define the input schema for the migration chat flow
@@ -39,7 +39,6 @@ export async function migrationChat(input: MigrationChatInput) {
 
 
 // REFACTORED: The prompt object is no longer needed. We will call the model directly.
-
 const migrationChatFlow = ai.defineFlow(
     {
         name: 'migrationChatFlow',
@@ -48,17 +47,18 @@ const migrationChatFlow = ai.defineFlow(
     },
     async (input) => {
         // Construct the prompt history programmatically, which is the correct Genkit v1.x approach for chat.
-        const history = input.chatHistory.map(message =>
-            part(message.text, message.role)
-        );
+        const history = input.chatHistory.map(message => ({
+            text: message.text,
+            role: message.role,
+        }));
 
         const llmResponse = await ai.generate({
             model: input.model as any,
             tools: [knowledgeBaseSearch],
             prompt: [
-                part(input.systemPrompt, 'system'), // System prompt with instructions
+                { system: input.systemPrompt },     // System prompt with instructions
                 ...history,                         // Spread the existing conversation history
-                part(input.currentMessage, 'user'), // The user's latest message
+                { text: input.currentMessage },     // The user's latest message
             ],
             // Pass the session ID to the tool context
             context: { sessionId: input.sessionId }, 
