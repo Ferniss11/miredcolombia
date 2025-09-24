@@ -44,16 +44,17 @@ const prompt = ai.definePrompt({
     output: { schema: ChatOutputSchema },
     tools: [knowledgeBaseSearch], // Ensure the tool is explicitly passed to the prompt
     prompt: `{{{systemPrompt}}}
-        ---
-        TASK: Based on the conversation history and using your tools to search for information, generate the next response for the 'model'. If the user's question seems related to a document they may have uploaded, be sure to use the 'sessionId' when searching the knowledge base. Also, populate the toolInvocations output field with any tools you use.
+---
+Based on the following conversation history, generate the next 'model' response.
 
-        CONVERSATION:
-        {{#each chatHistory}}
-        - {{this.role}}: {{{this.text}}}
-        {{/each}}
-        - user: {{{currentMessage}}}
-        OUTPUT (must be valid JSON that conforms to the schema):
-        `,
+CONVERSATION HISTORY:
+{{#each chatHistory}}
+- {{this.role}}: {{{this.text}}}
+{{/each}}
+- user: {{{currentMessage}}}
+
+MODEL RESPONSE:
+`,
 });
 
 const migrationChatFlow = ai.defineFlow(
@@ -71,10 +72,15 @@ const migrationChatFlow = ai.defineFlow(
         });
 
         if (!llmResponse.output) {
-            throw new Error('La respuesta de la IA fue vacía.');
+            // If the model truly returns nothing, provide a graceful fallback.
+            return {
+                response: "Lo siento, no he podido procesar esa respuesta. ¿Podrías intentarlo de nuevo?",
+                usage: { inputTokens: 0, outputTokens: 0, totalTokens: 0 },
+                toolInvocations: [],
+            };
         }
 
-        // The toolInvocations are now part of the structured output as defined by ChatOutputSchema.
+        // The toolInvocations are part of the structured output as defined by ChatOutputSchema.
         // We directly return them from the output object.
         return {
             response: llmResponse.output.response,
