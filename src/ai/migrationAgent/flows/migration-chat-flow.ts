@@ -52,8 +52,6 @@ CONVERSATION HISTORY:
 - {{this.role}}: {{{this.text}}}
 {{/each}}
 - user: {{{currentMessage}}}
-
-MODEL RESPONSE:
 `,
 });
 
@@ -80,8 +78,6 @@ const migrationChatFlow = ai.defineFlow(
             };
         }
 
-        // The toolInvocations are part of the structured output as defined by ChatOutputSchema.
-        // We directly return them from the output object.
         return {
             response: llmResponse.output.response,
             usage: {

@@ -60,19 +60,18 @@ export const knowledgeBaseSearch = ai.defineTool(
       
       const querySnapshot: VectorQuerySnapshot = await vectorQuery.get();
 
-      let finalResults = querySnapshot.docs;
+      let finalResults;
 
       if (sessionId) {
+        // When a session is active, search both global docs and docs for that specific session
         finalResults = querySnapshot.docs.filter(doc => {
           const metadata = doc.data().metadata;
-          if (!metadata) return false;
-          
-          const isGlobalDoc = metadata.source === 'admin_kb';
-          const isSessionDoc = metadata.source === 'user_session' && metadata.sessionId === sessionId;
-          
+          const isGlobalDoc = metadata?.source === 'admin_kb';
+          const isSessionDoc = metadata?.source === 'user_session' && metadata.sessionId === sessionId;
           return isGlobalDoc || isSessionDoc;
         });
       } else {
+        // If no session, only search global docs
         finalResults = querySnapshot.docs.filter(doc => {
             const metadata = doc.data().metadata;
             return metadata?.source === 'admin_kb';
@@ -90,6 +89,7 @@ export const knowledgeBaseSearch = ai.defineTool(
         };
       }
       
+      // Limit to top 5 results after filtering
       const topResults = finalResults.slice(0, 5);
 
       const searchResults = topResults.map(doc => {
