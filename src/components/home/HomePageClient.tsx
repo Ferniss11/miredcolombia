@@ -30,7 +30,7 @@ export default function HomePageClient({ eurToCopRate, initialPosts, initialGuid
     <div className="flex flex-col min-h-[100dvh]">
       <main className="flex-1">
         <HeroSection />
-        <AiAssistantSection onOpenChatModal={openChat} />
+        <AiAssistantSection onOpenChatModal={openChat} variant="full" />
         <PackagesSection />
         <AiAssistantSection onOpenChatModal={openChat} variant="compact" />
         <HowWeHelpSection />

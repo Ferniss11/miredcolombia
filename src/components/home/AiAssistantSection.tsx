@@ -89,34 +89,70 @@ export default function AiAssistantSection({ onOpenChatModal, variant = 'full' }
                     </div>
                     
                     {isFullVariant ? (
-                        <div className="w-full aspect-video rounded-xl shadow-lg overflow-hidden my-8">
-                            <video
-                                className="w-full h-full object-cover"
-                                src="https://firebasestorage.googleapis.com/v0/b/colombia-en-esp.firebasestorage.app/o/web%2Fvaleria.mp4?alt=media&token=676a4910-9fc7-4e7b-ad39-9f1cb313b2b5"
-                                controls
-                                controlsList="nodownload"
-                                playsInline
-                            />
+                        <div className="mx-auto grid max-w-4xl grid-cols-1 items-center gap-8">
+                            <div className="w-full aspect-video rounded-xl shadow-lg overflow-hidden">
+                                <video
+                                    className="w-full h-full object-cover"
+                                    src="https://firebasestorage.googleapis.com/v0/b/colombia-en-esp.firebasestorage.app/o/web%2Fvaleria.mp4?alt=media&token=676a4910-9fc7-4e7b-ad39-9f1cb313b2b5"
+                                    controls
+                                    controlsList="nodownload"
+                                    playsInline
+                                />
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                {valeriaPlans.map((plan) => (
+                                    <Card 
+                                        key={plan.name} 
+                                        className={cn(
+                                            "flex flex-col shadow-lg hover:shadow-2xl transition-shadow duration-300", 
+                                            plan.name === "Valeria Premium" && "border-primary border-2 shadow-primary/20"
+                                        )}
+                                    >
+                                        {plan.name === "Valeria Premium" && (
+                                        <div className="bg-primary text-primary-foreground text-center py-1.5 text-sm font-semibold">
+                                            Recomendado
+                                        </div>
+                                        )}
+                                        <CardHeader className="items-center text-center">
+                                            <CardTitle className="font-headline text-2xl">{plan.name}</CardTitle>
+                                            <div className="flex items-baseline">
+                                                <span className="text-4xl font-bold">{typeof plan.price === 'number' ? `${plan.price.toLocaleString('es-ES', { minimumFractionDigits: 2 })}€` : plan.price}</span>
+                                                <span className="text-muted-foreground ml-1">{plan.priceDetails}</span>
+                                            </div>
+                                        </CardHeader>
+                                        <CardContent className="flex-grow">
+                                            <ul className="space-y-4">
+                                                {plan.features.map((feature, index) => (
+                                                <li key={index} className="flex items-start">
+                                                    <Check className="h-5 w-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
+                                                    <span>{feature}</span>
+                                                </li>
+                                                ))}
+                                            </ul>
+                                        </CardContent>
+                                        <CardFooter>
+                                            <Button className="w-full" variant={plan.variant as any} onClick={() => handlePlanSelection(plan)}>
+                                                {plan.cta}
+                                            </Button>
+                                        </CardFooter>
+                                    </Card>
+                                ))}
+                            </div>
                         </div>
                     ) : (
-                        // -- Comparative Table Variant --
                          <div className="w-full max-w-4xl mx-auto border rounded-xl shadow-lg bg-card">
                             <div className="grid grid-cols-3">
-                                {/* Feature Headers Column */}
                                 <div className="p-4 sm:p-6 border-r">
                                     <h3 className="font-bold h-12 flex items-end">Características</h3>
                                 </div>
-                                {/* Free Plan Column */}
                                 <div className="p-4 sm:p-6 border-r text-center">
                                     <h3 className="font-bold h-12 flex items-end justify-center">{valeriaPlans[0].name}</h3>
                                 </div>
-                                {/* Premium Plan Column */}
                                 <div className="p-4 sm:p-6 text-center bg-primary/5 rounded-tr-xl">
                                     <h3 className="font-bold h-12 flex items-end justify-center text-primary">{valeriaPlans[1].name}</h3>
                                 </div>
                             </div>
                             
-                            {/* Feature Rows */}
                             {allFeatures.map((feature, index) => (
                                 <div key={feature.key} className="grid grid-cols-3 border-t">
                                     <div className="p-4 sm:p-6 border-r flex items-center">{feature.label}</div>
@@ -133,7 +169,6 @@ export default function AiAssistantSection({ onOpenChatModal, variant = 'full' }
                                 </div>
                             ))}
 
-                             {/* Price Row */}
                             <div className="grid grid-cols-3 border-t">
                                 <div className="p-4 sm:p-6 border-r flex items-center font-bold">Precio</div>
                                 <div className="p-4 sm:p-6 border-r flex flex-col items-center justify-center">
@@ -146,7 +181,6 @@ export default function AiAssistantSection({ onOpenChatModal, variant = 'full' }
                                 </div>
                             </div>
 
-                             {/* CTA Row */}
                             <div className="grid grid-cols-3 border-t rounded-b-xl">
                                 <div className="p-4 sm:p-6 border-r"></div>
                                 <div className="p-4 sm:p-6 border-r flex items-center justify-center">
