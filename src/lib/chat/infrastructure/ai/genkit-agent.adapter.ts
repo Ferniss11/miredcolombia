@@ -75,14 +75,19 @@ export class GenkitAgentAdapter implements AgentAdapter {
 
     let agentConfig: AgentConfig;
 
-    if (input.agentId) { // Lab Mode
+    // --- Agent Selection Logic ---
+    
+    // Priority 1: Lab Mode (explicit agentId is provided)
+    if (input.agentId) { 
         if (input.agentId === 'business' && input.businessId) {
              const user = await this.userRepository.findUserByBusinessId(input.businessId);
              agentConfig = user?.businessProfile?.agentConfig || await this.userRepository.getAgentConfig('global');
         } else {
              agentConfig = await this.userRepository.getAgentConfig(input.agentId);
         }
-    } else if (input.businessId) { // Business Chat Mode
+    
+    // Priority 2: Business Chat Mode (a businessId is provided)
+    } else if (input.businessId) { 
         const businessDetails = await this.getBusinessDetailsUseCase.execute(input.businessId);
         if (!businessDetails || !businessDetails.ownerUid) {
             throw new Error(`Business with ID ${input.businessId} not found or has no owner.`);
@@ -109,12 +114,13 @@ export class GenkitAgentAdapter implements AgentAdapter {
             agentConfig,
             debugInfo: { toolInvocations: aiResponse.toolInvocations || [] },
         };
-
-    } else { // Global Chat Mode
+    
+    // Priority 3: Default Global Chat (check user's plan)
+    } else { 
         agentConfig = await this.getAgentConfigForUser(input.chatHistory);
     }
     
-    // --- For Global, Premium, and Lab agents that use the 'migrationChat' flow ---
+    // --- Execution for Global, Premium, and Lab agents (all use 'migrationChat' flow) ---
     
     // Combine the base tool prompt with the specific personality prompt from the database.
     const finalSystemPrompt = `${agentConfig.systemPrompt}\n\n${BASE_TOOL_PROMPT}`;

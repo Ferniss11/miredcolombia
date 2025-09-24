@@ -13,7 +13,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { X, Send, User, Bot, Loader2, Sparkles, Phone, Building, MessageSquareQuote, UserCog, Clock, RotateCcw, Package, Paperclip, FileText, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
-import type { ChatMessage, ChatSession, UserRole, AgentConfig } from '@/lib/chat-types';
+import type { ChatMessage, ChatSession, AgentConfig } from '@/lib/chat-types';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '../ui/sheet';
 import { useChat } from '@/context/ChatContext';
