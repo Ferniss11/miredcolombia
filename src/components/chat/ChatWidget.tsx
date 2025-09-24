@@ -185,61 +185,67 @@ export default function ChatWidget({ isLabMode = false, labConfig, initialHistor
     }
   }, [messages]);
 
+  const startSessionForUser = useCallback(async (firebaseUser, profile) => {
+    setView('loading');
+    try {
+        const response = await fetch('/api/chat/sessions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${await firebaseUser.getIdToken()}` },
+            body: JSON.stringify({
+                userId: firebaseUser.uid,
+                userName: profile.name,
+                userPhone: profile.businessProfile?.phone || '',
+                userEmail: profile.email,
+                businessId: chatContext?.businessId
+            }),
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error?.message);
+
+        setSession(result.session);
+        setMessages(result.history);
+        setView('chat');
+    } catch (e) {
+        const errorMessage = e instanceof Error ? e.message : 'No se pudo iniciar tu sesión de chat.';
+        toast({ variant: 'destructive', title: 'Error', description: errorMessage });
+        setView('welcome');
+    }
+  }, [chatContext, toast]);
+
+
   useEffect(() => {
     if (isLabMode) {
       setMessages(initialHistory);
-      setView('chat'); // Go directly to chat in lab mode
+      setView('chat');
       if (labConfig?.sessionId && (!session || session.id !== labConfig.sessionId)) {
           setSession({id: labConfig.sessionId} as ChatSession);
       }
       return;
     }
     
-    const startSessionForUser = async () => {
-        if (!user || !userProfile) return;
-        setView('loading');
-        try {
-            const response = await fetch('/api/chat/sessions', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${await user.getIdToken()}` },
-                body: JSON.stringify({
-                    userId: user.uid,
-                    userName: userProfile.name,
-                    userPhone: userProfile.businessProfile?.phone || '',
-                    userEmail: userProfile.email,
-                    businessId: chatContext?.businessId
-                }),
-            });
-            const result = await response.json();
-            if (!response.ok) throw new Error(result.error?.message);
-
-            setSession(result.session);
-            setMessages(result.history);
-            setView('chat');
-        } catch (e) {
-            const errorMessage = e instanceof Error ? e.message : 'No se pudo iniciar tu sesión de chat.';
-            toast({ variant: 'destructive', title: 'Error', description: errorMessage });
-            setView('welcome'); // Fallback to welcome view on error
-        }
-    };
-
     if (authLoading) {
         setView('loading');
-    } else if (isChatOpen || isInDashboard) {
+        return;
+    }
+
+    if (isChatOpen || isInDashboard) {
         if (user && userProfile) {
-            // FIX: Only start a new session if one doesn't exist for the current user.
+            // Only start a new session if one doesn't exist or if the user has changed.
             if (!session || session.userId !== user.uid) {
-                startSessionForUser();
+                startSessionForUser(user, userProfile);
             } else {
-                 setView('chat');
+                setView('chat');
             }
         } else {
-            setSession(null);
-            setMessages([]);
-            setView('welcome');
+            // Not logged in, show welcome/login
+            if(view !== 'welcome' && view !== 'login') {
+                setSession(null);
+                setMessages([]);
+                setView('welcome');
+            }
         }
     }
-  }, [user, userProfile, authLoading, isChatOpen, isInDashboard, isLabMode, initialHistory, chatContext, session, toast]);
+  }, [user, userProfile, authLoading, isChatOpen, isInDashboard, isLabMode, initialHistory, session, startSessionForUser, view]);
 
   const handleSendMessage = async (messageText: string, file?: File | null) => {
     const activeSessionId = isLabMode ? labConfig?.sessionId : session?.id;
