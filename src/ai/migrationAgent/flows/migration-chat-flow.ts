@@ -1,4 +1,3 @@
-
 'use server';
 
 /**
@@ -13,6 +12,7 @@ import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import { ChatOutputSchema, ChatRoleSchema } from '@/lib/chat-types';
 import { knowledgeBaseSearch } from '@/ai/tools/knowledge-base-search';
+import { part } from 'genkit';
 
 
 // Define the input schema for the migration chat flow
@@ -38,24 +38,7 @@ export async function migrationChat(input: MigrationChatInput) {
 }
 
 
-const prompt = ai.definePrompt({
-    name: 'migrationChatPrompt',
-    input: { schema: MigrationChatInputSchema },
-    output: { schema: ChatOutputSchema },
-    tools: [knowledgeBaseSearch], // Ensure the tool is explicitly passed to the prompt
-    prompt: `{{{systemPrompt}}}
-
-{{#each chatHistory}}
-{{#if (eq role "user")}}
-user: {{{this.text}}}
-{{else}}
-model: {{{this.text}}}
-{{/if}}
-{{/each}}
-user: {{{currentMessage}}}
-model: 
-`,
-});
+// REFACTORED: The prompt object is no longer needed. We will call the model directly.
 
 const migrationChatFlow = ai.defineFlow(
     {
@@ -64,14 +47,26 @@ const migrationChatFlow = ai.defineFlow(
         outputSchema: ChatOutputSchema,
     },
     async (input) => {
-        // Dynamically set the model for the prompt execution
-        // Pass the session ID to the tool through the prompt context
-        const llmResponse = await prompt(input, { 
-            model: input.model as any,
-            context: { sessionId: input.sessionId } 
-        });
+        // Construct the prompt history programmatically, which is the correct Genkit v1.x approach for chat.
+        const history = input.chatHistory.map(message =>
+            part(message.text, message.role)
+        );
 
-        if (!llmResponse.output) {
+        const llmResponse = await ai.generate({
+            model: input.model as any,
+            tools: [knowledgeBaseSearch],
+            prompt: [
+                part(input.systemPrompt, 'system'), // System prompt with instructions
+                ...history,                         // Spread the existing conversation history
+                part(input.currentMessage, 'user'), // The user's latest message
+            ],
+            // Pass the session ID to the tool context
+            context: { sessionId: input.sessionId }, 
+        });
+        
+        const output = llmResponse.output;
+
+        if (!output) {
             // If the model truly returns nothing, provide a graceful fallback.
             return {
                 response: "Lo siento, no he podido procesar esa respuesta. ¿Podrías intentarlo de nuevo?",
@@ -81,13 +76,17 @@ const migrationChatFlow = ai.defineFlow(
         }
 
         return {
-            response: llmResponse.output.response,
+            response: llmResponse.text,
             usage: {
                 inputTokens: llmResponse.usage.inputTokens || 0,
                 outputTokens: llmResponse.usage.outputTokens || 0,
                 totalTokens: llmResponse.usage.totalTokens || 0,
             },
-            toolInvocations: llmResponse.output.toolInvocations || [],
+            // Map tool calls to the expected format if they exist
+            toolInvocations: llmResponse.toolRequests.map(tr => ({
+                tool: tr.name,
+                result: tr.output,
+            })),
         };
     }
 );
