@@ -1,4 +1,3 @@
-
 // src/lib/chat/infrastructure/ai/genkit-agent.adapter.ts
 import type { AgentAdapter, AgentCompletionOutput } from './agent.adapter';
 import type { ChatMessage } from '../../domain/chat-message.entity';
@@ -16,11 +15,13 @@ import { GooglePlacesAdapter } from '@/lib/directory/infrastructure/search/googl
 import { FirestoreCacheAdapter } from '@/lib/directory/infrastructure/cache/firestore-cache.adapter';
 
 
-// This is the base system prompt that gives the model its core capabilities and tool instructions.
-const BASE_TOOL_PROMPT = `### PROCESO DE BÚSQUEDA OBLIGATORIO
-Antes de responder cualquier pregunta, SIEMPRE debes usar la herramienta \`knowledgeBaseSearch\` para buscar en tu base de conocimiento. Esta es tu fuente principal de verdad.
-- Si el usuario menciona un documento o archivo, o si el contexto sugiere que acaba de subir uno, DEBES incluir el \`sessionId\` en tu búsqueda para encontrar información relevante a esta conversación.
-- Basa tu respuesta principalmente en los resultados de la búsqueda. Si no encuentras información relevante, indícalo amablemente en lugar de inventar una respuesta.`;
+// REFINED: This prompt is now a guideline, not an absolute command.
+const BASE_TOOL_PROMPT = `### INSTRUCCIONES DE HERRAMIENTAS
+- Tienes una herramienta llamada \`knowledgeBaseSearch\` que te da acceso a una base de conocimiento interna con guías, artículos y leyes.
+- **CUÁNDO USARLA:** Si la pregunta del usuario es sobre trámites de migración, requisitos, vivienda, trabajo o cualquier tema que requiera información específica y detallada, DEBES usar esta herramienta para encontrar la respuesta más precisa.
+- **CUÁNDO NO USARLA:** Si el usuario simplemente saluda ("Hola", "¿cómo estás?") o la conversación es casual, responde de forma natural sin usar la herramienta.
+- **DOCUMENTOS EN SESIÓN:** Si el usuario menciona que ha subido un documento o te pide que revises uno, DEBES usar la herramienta \`knowledgeBaseSearch\` e incluir el \`sessionId\` en tu búsqueda para encontrar la información de ese documento específico.
+- Basa tus respuestas principalmente en los resultados de la búsqueda. Si no encuentras información, indícalo amablemente en lugar de inventar una respuesta.`;
 
 
 /**
@@ -64,7 +65,8 @@ export class GenkitAgentAdapter implements AgentAdapter {
     chatHistory: Omit<ChatMessage, 'id' | 'timestamp'>[];
     currentMessage: string;
     businessId?: string;
-    sessionId?: string;
+    sessionId?: string; // Add sessionId to the interface
+    // New optional field to explicitly specify an agent, used by the Agent Lab
     agentId?: 'global' | 'valeria_premium' | 'business';
   }): Promise<AgentCompletionOutput> {
     
