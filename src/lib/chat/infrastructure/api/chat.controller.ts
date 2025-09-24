@@ -23,15 +23,6 @@ const StartSessionSchema = z.object({
   isLabSession: z.boolean().optional(), // For agent lab
 });
 
-export type PostMessagePayload = {
-    userMessage: string;
-    userId?: string;
-    sessionId: string;
-    businessId?: string;
-    document?: File | null;
-    agentId?: 'global' | 'valeria_premium' | 'business';
-};
-
 
 export class ChatController {
   private startOrResumeChatUseCase: StartOrResumeChatUseCase;
@@ -103,25 +94,20 @@ export class ChatController {
           userMessage = json.userMessage;
       }
       
-      // We don't need to handle document ingestion here as it's not part of this use case.
-      // A more complex setup would have a separate use case for this.
-      if (document) {
-          // Placeholder for document ingestion logic
-          console.log(`Received document: ${document.name} for session ${sessionId}`);
-          if (!userMessage) {
-              userMessage = `He adjuntado el documento "${document.name}". Por favor, resúmelo.`;
-          }
+      if (document && !userMessage) {
+        userMessage = `He adjuntado el documento: ${document.name}. Por favor, resúmelo y dime si tienes alguna pregunta sobre él.`;
       }
+
 
       const { lastResponse } = await this.postMessageUseCase.execute({
           sessionId,
           userMessage,
+          document,
           userId,
           businessId,
           agentId
       });
 
-      // After posting, always fetch the full, updated history to return to the client.
       const updatedHistory = await this.getChatHistoryUseCase.execute({ sessionId, businessId });
 
       return ApiResponse.success({

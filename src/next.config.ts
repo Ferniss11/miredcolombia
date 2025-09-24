@@ -52,7 +52,7 @@ const nextConfig: NextConfig = {
       }
     ],
   },
-  serverExternalPackages: ['firebase-admin', 'teeny-request', 'google-auth-library'],
+  serverExternalPackages: ['firebase-admin', 'teeny-request', 'google-auth-library', 'pdf-parse'],
 };
 
 export default nextConfig;

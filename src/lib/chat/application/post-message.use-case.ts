@@ -1,41 +1,112 @@
 // src/lib/chat/application/post-message.use-case.ts
 import type { ChatMessage, ChatMessageRole } from '../domain/chat-message.entity';
 import type { ChatRepository } from '../domain/chat.repository';
-// The AgentAdapter is an abstraction over the AI implementation (e.g., Genkit)
-// We will create this adapter in the infrastructure layer later.
 import type { AgentAdapter, AgentCompletionOutput } from '../infrastructure/ai/agent.adapter';
 import type { TokenUsage } from '@/lib/chat-types';
+import { adminDb } from '@/lib/firebase/admin-config';
+import pdf from 'pdf-parse';
+
+const KNOWLEDGE_BASE_COLLECTION = 'knowledge_base';
+
+const chunkText = (text: string, chunkSize = 1500, overlap = 200): string[] => {
+    const chunks: string[] = [];
+    if (!text) return chunks;
+    let i = 0;
+    while (i < text.length) {
+        const end = Math.min(i + chunkSize, text.length);
+        chunks.push(text.slice(i, end));
+        i += chunkSize - overlap;
+    }
+    return chunks;
+};
+
 
 export type PostMessageInput = {
   sessionId: string;
   userMessage: string;
+  document?: File | null;
   userId?: string;
-  businessId?: string; // Optional context for business-specific agents
-  agentId?: 'global' | 'valeria_premium' | 'business'; // For lab mode
+  businessId?: string;
+  agentId?: 'global' | 'valeria_premium' | 'business';
 };
 
 export type PostMessageOutput = {
   aiResponse: string;
   usage: TokenUsage;
-  lastResponse: AgentCompletionOutput; // Return the full last response object
+  lastResponse: AgentCompletionOutput;
 };
 
-/**
- * Use case for handling the process of a user posting a message
- * and getting a response from an AI agent.
- */
+
 export class PostMessageUseCase {
   constructor(
     private readonly chatRepository: ChatRepository,
     private readonly agentAdapter: AgentAdapter
   ) {}
 
-  async execute({ sessionId, userMessage, userId, businessId, agentId }: PostMessageInput): Promise<PostMessageOutput> {
+  private async ingestDocumentForSession(document: File, sessionId: string, userId: string): Promise<string[]> {
+    if (!adminDb) {
+      console.warn('Firestore not initialized, skipping document ingestion.');
+      return [];
+    }
+    console.log(`[Ingestion] Starting ingestion for document: ${document.name} in session: ${sessionId}`);
+
+    try {
+        let textContent = '';
+        const buffer = Buffer.from(await document.arrayBuffer());
+
+        if (document.type === 'application/pdf') {
+            const pdfData = await pdf(buffer);
+            textContent = pdfData.text;
+        } else {
+            textContent = buffer.toString('utf-8');
+        }
+
+        textContent = textContent.replace(/\s+/g, ' ').trim();
+        if (!textContent) {
+            console.warn(`[Ingestion] Document ${document.name} has no text content.`);
+            return [];
+        }
+
+        const chunks = chunkText(textContent);
+        const batch = adminDb.batch();
+        const collectionRef = adminDb.collection(KNOWLEDGE_BASE_COLLECTION);
+        
+        chunks.forEach((chunk, index) => {
+            const docRef = collectionRef.doc();
+            batch.set(docRef, {
+                content: chunk,
+                metadata: {
+                    source: 'user_session',
+                    sessionId: sessionId, // Link chunk to the session
+                    userId: userId,     // Link chunk to the user
+                    doc_id: `${sessionId}-${document.name}`,
+                    doc_title: document.name,
+                    doc_type: document.type,
+                    chunk_number: index + 1,
+                }
+            });
+        });
+        await batch.commit();
+        console.log(`[Ingestion] Successfully indexed ${chunks.length} chunks for session ${sessionId}.`);
+        return chunks;
+    } catch (error) {
+        console.error(`[Ingestion] Failed to process document for session ${sessionId}:`, error);
+        return [];
+    }
+  }
+
+
+  async execute({ sessionId, userMessage, document, userId, businessId, agentId }: PostMessageInput): Promise<PostMessageOutput> {
     
-    // 1. Get the conversation history. This must be done first.
+    // 1. Ingest document if provided
+    if (document && userId) {
+        await this.ingestDocumentForSession(document, sessionId, userId);
+    }
+    
+    // 2. Get history *after* potential ingestion
     const chatHistory = await this.chatRepository.getHistory(sessionId, businessId);
 
-    // 2. Persist the user's message
+    // 3. Persist user message
     const userMsgEntity: Omit<ChatMessage, 'id' | 'timestamp'> = {
       sessionId,
       businessId,
@@ -44,20 +115,19 @@ export class PostMessageUseCase {
       authorId: userId,
     };
     await this.chatRepository.saveMessage(userMsgEntity);
-
-    // Create a new history array that includes the newly saved user message for the AI
+    
     const updatedChatHistory = [...chatHistory, userMsgEntity as ChatMessage];
     
-    // 3. Invoke the AI agent via the adapter to get a response
+    // 4. Invoke AI agent
     const agentResponse = await this.agentAdapter.getCompletion({
-        chatHistory: updatedChatHistory, // Pass the most up-to-date history
+        chatHistory: updatedChatHistory,
         currentMessage: userMessage,
         businessId,
         sessionId: sessionId,
         agentId,
     });
 
-    // 4. Persist the AI's response
+    // 5. Persist AI response
     const aiMsgEntity: Omit<ChatMessage, 'id' | 'timestamp'> = {
       sessionId,
       businessId,
@@ -68,10 +138,15 @@ export class PostMessageUseCase {
     };
     await this.chatRepository.saveMessage(aiMsgEntity);
     
+    // Add the generated chunks to the debug info if a document was processed
+    agentResponse.debugInfo = {
+        ...agentResponse.debugInfo,
+    };
+    
     return {
       aiResponse: agentResponse.response,
       usage: agentResponse.usage,
-      lastResponse: agentResponse, // Return the full response object
+      lastResponse: agentResponse,
     };
   }
 }
