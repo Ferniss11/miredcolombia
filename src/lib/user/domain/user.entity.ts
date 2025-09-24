@@ -1,4 +1,5 @@
 // Defines the core shapes of user-related data (entities).
+import { BusinessAgentConfig } from '@/lib/chat-types';
 
 export type UserRole = 'Admin' | 'Advertiser' | 'User' | 'SAdmin' | 'Guest';
 
@@ -20,6 +21,7 @@ export interface BusinessProfile {
   verificationStatus: 'pending' | 'approved' | 'rejected' | 'unclaimed';
   isAgentEnabled: boolean;
   googleCalendarConnected?: boolean;
+  agentConfig?: BusinessAgentConfig;
 }
 
 /**
