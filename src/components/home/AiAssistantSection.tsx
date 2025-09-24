@@ -3,7 +3,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Check, MessageCircle } from "lucide-react";
+import { Check, MessageCircle, PlayCircle } from "lucide-react";
 import Link from "next/link";
 import { valeriaPlans } from "@/lib/placeholder-data";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,7 +14,13 @@ import { useToast } from "@/hooks/use-toast";
 import { createSubscriptionCheckoutSessionAction } from "@/lib/payment-actions";
 import type { ValeriaPlan } from "@/lib/types";
 
-export default function AiAssistantSection({ onOpenChatModal }: { onOpenChatModal: () => void }) {
+type AiAssistantSectionProps = {
+    onOpenChatModal: () => void;
+    variant?: 'full' | 'compact';
+};
+
+
+export default function AiAssistantSection({ onOpenChatModal, variant = 'full' }: AiAssistantSectionProps) {
     const { user } = useAuth();
     const { toast } = useToast();
     const [isSheetOpen, setIsSheetOpen] = useState(false);
@@ -51,30 +57,34 @@ export default function AiAssistantSection({ onOpenChatModal }: { onOpenChatModa
             }
         }
     };
+    
+    const isFullVariant = variant === 'full';
 
     return (
         <>
-            <section id="asistente-ia" className="w-full py-12 md:py-24 lg:py-32 bg-secondary dark:bg-card">
+            <section id="asistente-ia" className={cn("w-full", isFullVariant ? "py-12 md:py-24 lg:py-32 bg-secondary dark:bg-card" : "py-12 md:py-24 bg-background")}>
                 <div className="container px-4 md:px-6 max-w-5xl">
                     <div className="flex flex-col items-center justify-center space-y-4 text-center mb-12">
                         <div className="inline-block rounded-lg bg-primary/10 px-3 py-1 text-sm font-semibold text-primary">Asistente IA</div>
                         <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl font-headline">
-                            Con Valeria nunca estarás solo
+                           {isFullVariant ? "Con Valeria nunca estarás solo" : "Potencia tu Migración con Valeria"}
                         </h2>
                         <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed font-body">
                            Tu asesora IA 24/7. Gratis para empezar, y con planes Premium que incluyen alertas de empleo, vivienda y guías exclusivas para que tu proceso sea aún más fácil.
                         </p>
                     </div>
                     
-                    <div className="w-full aspect-video rounded-xl shadow-lg overflow-hidden my-8">
-                        <video
-                            className="w-full h-full object-cover"
-                            src="https://firebasestorage.googleapis.com/v0/b/colombia-en-esp.firebasestorage.app/o/web%2Fvaleria.mp4?alt=media&token=676a4910-9fc7-4e7b-ad39-9f1cb313b2b5"
-                            controls
-                            controlsList="nodownload"
-                            playsInline
-                        />
-                    </div>
+                    {isFullVariant && (
+                        <div className="w-full aspect-video rounded-xl shadow-lg overflow-hidden my-8">
+                            <video
+                                className="w-full h-full object-cover"
+                                src="https://firebasestorage.googleapis.com/v0/b/colombia-en-esp.firebasestorage.app/o/web%2Fvaleria.mp4?alt=media&token=676a4910-9fc7-4e7b-ad39-9f1cb313b2b5"
+                                controls
+                                controlsList="nodownload"
+                                playsInline
+                            />
+                        </div>
+                    )}
                     
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 items-stretch mt-12">
                          {valeriaPlans.map((plan) => (

@@ -32,6 +32,7 @@ export default function HomePageClient({ eurToCopRate, initialPosts, initialGuid
         <HeroSection />
         <AiAssistantSection onOpenChatModal={openChat} />
         <PackagesSection />
+        <AiAssistantSection onOpenChatModal={openChat} variant="compact" />
         <HowWeHelpSection />
         <GuidesSection guides={initialGuides} />
         <TestimonialsSection />
