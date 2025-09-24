@@ -38,7 +38,8 @@ export async function migrationChat(input: MigrationChatInput) {
 }
 
 
-// REFACTORED: The prompt object is no longer needed. We will call the model directly.
+// REFACTORED: This flow is now built according to official Genkit chat documentation.
+// It programmatically constructs the prompt array instead of using a string template.
 const migrationChatFlow = ai.defineFlow(
     {
         name: 'migrationChatFlow',
@@ -46,9 +47,8 @@ const migrationChatFlow = ai.defineFlow(
         outputSchema: ChatOutputSchema,
     },
     async (input) => {
-        // Construct the prompt history programmatically, which is the correct Genkit v1.x approach for chat.
-        // CRITICAL FIX: Map the history to the format { role, text } that the AI model expects.
-        // The previous implementation was sending the entire database object, causing a silent failure.
+        // CRITICAL FIX: Map the history to the format { text, role } that the AI model expects.
+        // This was the root cause of the previous silent failures.
         const history = input.chatHistory.map(message => ({
             text: message.role === 'admin' ? `[Mensaje del Administrador: ${message.text}]` : message.text,
             role: message.role === 'user' ? 'user' : 'model', // Treat 'admin' messages as if they came from the 'model'
@@ -58,12 +58,12 @@ const migrationChatFlow = ai.defineFlow(
             const llmResponse = await ai.generate({
                 model: input.model as any,
                 tools: [knowledgeBaseSearch],
-                system: input.systemPrompt, // Pass the system instructions here
+                system: input.systemPrompt, // Pass the system instructions via the dedicated `system` property
                 prompt: [
-                    ...history, // Spread the existing conversation history
+                    ...history, // Spread the existing, correctly-formatted conversation history
                     { text: input.currentMessage, role: 'user' }, // The user's latest message
                 ],
-                // Pass the session ID to the tool context
+                // Pass the session ID to the tool context, so tools like knowledgeBaseSearch can use it
                 context: { sessionId: input.sessionId }, 
             });
             
@@ -71,6 +71,7 @@ const migrationChatFlow = ai.defineFlow(
 
             if (!output || !llmResponse.text) {
                 // If the model truly returns nothing, provide a graceful fallback.
+                console.warn('[migrationChatFlow] LLM response was empty. Falling back.');
                 return {
                     response: "Lo siento, no he podido procesar esa respuesta. ¿Podrías intentarlo de nuevo?",
                     usage: { inputTokens: 0, outputTokens: 0, totalTokens: 0 },
