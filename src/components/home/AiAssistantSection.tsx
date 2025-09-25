@@ -104,7 +104,7 @@ export default function AiAssistantSection({ onOpenChatModal, variant = 'full' }
                                     <Card 
                                         key={plan.name} 
                                         className={cn(
-                                            "flex flex-col shadow-lg hover:shadow-2xl transition-shadow duration-300", 
+                                            "flex flex-col shadow-lg hover:shadow-2xl transition-shadow duration-300 h-full", 
                                             plan.name === "Valeria Premium" && "border-primary border-2 shadow-primary/20"
                                         )}
                                     >
@@ -140,58 +140,60 @@ export default function AiAssistantSection({ onOpenChatModal, variant = 'full' }
                             </div>
                         </div>
                     ) : (
-                         <div className="w-full max-w-4xl mx-auto border rounded-xl shadow-lg bg-card">
-                            <div className="grid grid-cols-3">
-                                <div className="p-4 sm:p-6 border-r">
-                                    <h3 className="font-bold h-12 flex items-end">Características</h3>
+                         <div className="w-full max-w-4xl mx-auto overflow-x-auto">
+                            <div className="border rounded-xl shadow-lg bg-card min-w-[600px]">
+                                <div className="grid grid-cols-3">
+                                    <div className="p-4 sm:p-6 border-r">
+                                        <h3 className="font-bold h-12 flex items-end">Características</h3>
+                                    </div>
+                                    <div className="p-4 sm:p-6 border-r text-center">
+                                        <h3 className="font-bold h-12 flex items-end justify-center">{valeriaPlans[0].name}</h3>
+                                    </div>
+                                    <div className="p-4 sm:p-6 text-center bg-primary/5 rounded-tr-xl">
+                                        <h3 className="font-bold h-12 flex items-end justify-center text-primary">{valeriaPlans[1].name}</h3>
+                                    </div>
                                 </div>
-                                <div className="p-4 sm:p-6 border-r text-center">
-                                    <h3 className="font-bold h-12 flex items-end justify-center">{valeriaPlans[0].name}</h3>
+                                
+                                {allFeatures.map((feature, index) => (
+                                    <div key={feature.key} className="grid grid-cols-3 border-t">
+                                        <div className="p-4 sm:p-6 border-r flex items-center">{feature.label}</div>
+                                        <div className="p-4 sm:p-6 border-r flex items-center justify-center">
+                                            {typeof featureData[feature.key].free === 'boolean' ? (
+                                                featureData[feature.key].free ? <Check className="h-6 w-6 text-green-500"/> : <X className="h-6 w-6 text-muted-foreground"/>
+                                            ) : <span className="font-semibold text-sm">{featureData[feature.key].free}</span>}
+                                        </div>
+                                        <div className="p-4 sm:p-6 flex items-center justify-center bg-primary/5">
+                                            {typeof featureData[feature.key].premium === 'boolean' ? (
+                                                featureData[feature.key].premium ? <Check className="h-6 w-6 text-green-500"/> : <X className="h-6 w-6 text-muted-foreground"/>
+                                            ) : <span className="font-semibold text-primary text-sm">{featureData[feature.key].premium}</span>}
+                                        </div>
+                                    </div>
+                                ))}
+
+                                <div className="grid grid-cols-3 border-t">
+                                    <div className="p-4 sm:p-6 border-r flex items-center font-bold">Precio</div>
+                                    <div className="p-4 sm:p-6 border-r flex flex-col items-center justify-center">
+                                        <span className="text-2xl font-bold">{valeriaPlans[0].price}</span>
+                                        <span className="text-xs text-muted-foreground">{valeriaPlans[0].priceDetails}</span>
+                                    </div>
+                                    <div className="p-4 sm:p-6 flex flex-col items-center justify-center bg-primary/5">
+                                        <span className="text-2xl font-bold text-primary">{valeriaPlans[1].price}€</span>
+                                        <span className="text-xs text-muted-foreground">{valeriaPlans[1].priceDetails}</span>
+                                    </div>
                                 </div>
-                                <div className="p-4 sm:p-6 text-center bg-primary/5 rounded-tr-xl">
-                                    <h3 className="font-bold h-12 flex items-end justify-center text-primary">{valeriaPlans[1].name}</h3>
-                                </div>
-                            </div>
-                            
-                            {allFeatures.map((feature, index) => (
-                                <div key={feature.key} className="grid grid-cols-3 border-t">
-                                    <div className="p-4 sm:p-6 border-r flex items-center">{feature.label}</div>
+
+                                <div className="grid grid-cols-3 border-t rounded-b-xl">
+                                    <div className="p-4 sm:p-6 border-r"></div>
                                     <div className="p-4 sm:p-6 border-r flex items-center justify-center">
-                                        {typeof featureData[feature.key].free === 'boolean' ? (
-                                            featureData[feature.key].free ? <Check className="h-6 w-6 text-green-500"/> : <X className="h-6 w-6 text-muted-foreground"/>
-                                        ) : <span className="font-semibold text-sm">{featureData[feature.key].free}</span>}
+                                        <Button variant="outline" className="w-full" onClick={() => handlePlanSelection(valeriaPlans[0])}>
+                                            {valeriaPlans[0].cta}
+                                        </Button>
                                     </div>
-                                    <div className="p-4 sm:p-6 flex items-center justify-center bg-primary/5">
-                                         {typeof featureData[feature.key].premium === 'boolean' ? (
-                                            featureData[feature.key].premium ? <Check className="h-6 w-6 text-green-500"/> : <X className="h-6 w-6 text-muted-foreground"/>
-                                        ) : <span className="font-semibold text-primary text-sm">{featureData[feature.key].premium}</span>}
+                                    <div className="p-4 sm:p-6 flex items-center justify-center bg-primary/5 rounded-br-xl">
+                                        <Button className="w-full" onClick={() => handlePlanSelection(valeriaPlans[1])}>
+                                            {valeriaPlans[1].cta}
+                                        </Button>
                                     </div>
-                                </div>
-                            ))}
-
-                            <div className="grid grid-cols-3 border-t">
-                                <div className="p-4 sm:p-6 border-r flex items-center font-bold">Precio</div>
-                                <div className="p-4 sm:p-6 border-r flex flex-col items-center justify-center">
-                                    <span className="text-2xl font-bold">{valeriaPlans[0].price}</span>
-                                    <span className="text-xs text-muted-foreground">{valeriaPlans[0].priceDetails}</span>
-                                </div>
-                                <div className="p-4 sm:p-6 flex flex-col items-center justify-center bg-primary/5">
-                                     <span className="text-2xl font-bold text-primary">{valeriaPlans[1].price}€</span>
-                                    <span className="text-xs text-muted-foreground">{valeriaPlans[1].priceDetails}</span>
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-3 border-t rounded-b-xl">
-                                <div className="p-4 sm:p-6 border-r"></div>
-                                <div className="p-4 sm:p-6 border-r flex items-center justify-center">
-                                    <Button variant="outline" className="w-full" onClick={() => handlePlanSelection(valeriaPlans[0])}>
-                                        {valeriaPlans[0].cta}
-                                    </Button>
-                                </div>
-                                <div className="p-4 sm:p-6 flex items-center justify-center bg-primary/5 rounded-br-xl">
-                                     <Button className="w-full" onClick={() => handlePlanSelection(valeriaPlans[1])}>
-                                        {valeriaPlans[1].cta}
-                                    </Button>
                                 </div>
                             </div>
                         </div>
