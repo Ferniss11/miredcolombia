@@ -1,13 +1,13 @@
-
 'use client';
 
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import ChatWidget from '@/components/chat/ChatWidget';
+import { Loader2 } from 'lucide-react';
 
 // A simple embedded chat experience for premium users
 export default function ValeriaDashboardPage() {
-    const { user, claims } = useAuth();
+    const { claims } = useAuth();
     const [isClient, setIsClient] = useState(false);
 
     useEffect(() => {
@@ -20,7 +20,7 @@ export default function ValeriaDashboardPage() {
 
     if (!isClient) {
         // You can return a skeleton loader here
-        return null;
+        return <div className="flex justify-center p-12"><Loader2 className="h-8 w-8 animate-spin text-primary"/></div>;
     }
 
     return (
@@ -36,7 +36,7 @@ export default function ValeriaDashboardPage() {
                   By rendering it here, we provide a dedicated space for the chat.
                 */}
                 <div className="h-full w-full rounded-lg border bg-card">
-                   <ChatWidget />
+                   <ChatWidget isInline={true} />
                 </div>
             </main>
         </div>

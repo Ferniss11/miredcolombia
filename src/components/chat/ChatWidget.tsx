@@ -190,9 +190,10 @@ interface ChatWidgetProps {
     initialHistory?: ChatMessage[];
     onReset?: () => void;
     onMessageReceived?: (message: ChatMessage & { agentConfig?: AgentConfig }) => void;
+    isInline?: boolean; // New prop for inline mode
 }
 
-export default function ChatWidget({ isLabMode = false, labConfig, initialHistory = [], onReset, onMessageReceived }: ChatWidgetProps) {
+export default function ChatWidget({ isLabMode = false, labConfig, initialHistory = [], onReset, onMessageReceived, isInline = false }: ChatWidgetProps) {
   const { isChatOpen, setChatOpen, chatContext, isChatVisible } = useChat();
   const { toast } = useToast();
   const { user, userProfile, claims, loading: authLoading } = useAuth();
@@ -211,7 +212,9 @@ export default function ChatWidget({ isLabMode = false, labConfig, initialHistor
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isPremiumUser = claims?.valeria_plan === 'valeria_premium';
-  const isInDashboard = pathname.startsWith('/dashboard/valeria');
+  
+  // Determine if the chat should be active. For inline mode, it's always active.
+  const isChatActive = isInline || isChatOpen;
 
   useEffect(() => {
     if (scrollAreaRef.current) {
@@ -257,14 +260,12 @@ export default function ChatWidget({ isLabMode = false, labConfig, initialHistor
       return;
     }
     
-    const shouldStartSession = isChatOpen || isInDashboard;
-
-    if (authLoading && shouldStartSession) {
+    if (authLoading && isChatActive) {
         setView('loading');
         return;
     }
     
-    if (shouldStartSession) {
+    if (isChatActive) {
         if (user && userProfile) {
             if (!session || session.userId !== user.uid) {
                 startSessionForUser(user, userProfile);
@@ -280,7 +281,7 @@ export default function ChatWidget({ isLabMode = false, labConfig, initialHistor
         }
     }
 
-  }, [user, userProfile, authLoading, isChatOpen, isInDashboard, isLabMode, initialHistory, session, startSessionForUser, view, labConfig?.sessionId]);
+  }, [user, userProfile, authLoading, isChatActive, isLabMode, initialHistory, session, startSessionForUser, view, labConfig?.sessionId]);
 
   const handleSendMessage = async (messageText: string, file?: File | null) => {
     const activeSessionId = isLabMode ? labConfig?.sessionId : session?.id;
@@ -455,6 +456,14 @@ export default function ChatWidget({ isLabMode = false, labConfig, initialHistor
     }
   };
   
+  if (isInline) {
+      return (
+        <div className="h-full flex flex-col">
+            {renderChatContent()}
+        </div>
+      )
+  }
+
   if (isLabMode) {
       return (
         <div className="h-full flex flex-col">
