@@ -26,7 +26,7 @@ const valeriaPlans: ValeriaPlan[] = [
     {
       id: 'valeria_premium',
       name: 'Valeria Premium',
-      price: '4,97€',
+      price: 4.99,
       priceDetails: '/mes',
       features: [],
       cta: 'Probar Premium',
@@ -69,7 +69,7 @@ export default function AiAssistantSection({ onOpenChatModal }: AiAssistantSecti
             toast({
                 title: "Necesitas una cuenta",
                 description: "Por favor, regístrate o inicia sesión para suscribirte.",
-                action: <Button onClick={() => window.location.href='/signup'}>Registrarse</Button>,
+                action: <Button asChild><Link href="/signup">Registrarse</Link></Button>,
             });
             return;
         }
@@ -200,7 +200,7 @@ export default function AiAssistantSection({ onOpenChatModal }: AiAssistantSecti
             <VideoModal
                 isOpen={isVideoOpen}
                 setIsOpen={setIsVideoOpen}
-                videoUrl="https://firebasestorage.googleapis.com/v0/b/colombia-en-esp.firebasestorage.app/o/web%2Fvaleria-demo-1.mp4?alt=media&token=866a4f21-75e1-4566-a36c-939a3f909193"
+                videoUrl="https://firebasestorage.googleapis.com/v0/b/colombia-en-esp.firebasestorage.app/o/web%2Fvaleria.mp4?alt=media&token=676a4910-9fc7-4e7b-ad39-9f1cb313b2b5"
                 title="Demostración de Valeria IA"
             />
         </>
