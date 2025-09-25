@@ -10,6 +10,7 @@ import { ai } from '@/ai/genkit';
 import { adminDb } from '@/lib/firebase/admin-config';
 import { z } from 'zod';
 import type { VectorQuery, VectorQuerySnapshot } from '@google-cloud/firestore';
+import { googleAI } from '@genkit-ai/googleai';
 
 const KNOWLEDGE_BASE_COLLECTION = 'knowledge_base';
 
@@ -27,7 +28,7 @@ async function waitForEmbedding(docRef: FirebaseFirestore.DocumentReference, tim
         if (data?.embedding) {
             return data.embedding;
         }
-        await new Promise(resolve => setTimeout(resolve, 500)); // Wait before polling again
+        await new Promise(resolve => setTimeout(resolve, 500));
     }
     throw new Error('Timeout waiting for embedding generation from Firebase extension.');
 }
