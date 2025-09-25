@@ -141,16 +141,21 @@ export class PostMessageUseCase {
     };
     await this.chatRepository.saveMessage(aiMsgEntity);
     
-    // Add the generated chunks to the debug info if a document was processed
-    agentResponse.debugInfo = {
-        ...agentResponse.debugInfo,
-        generatedChunks,
+    // Add the system prompt and generated chunks to the debug info
+    const debugInfo = {
+        ...(agentResponse.debugInfo || {}),
+        generatedChunks: generatedChunks.length > 0 ? generatedChunks : undefined,
     };
+
+    const finalResponse = {
+        ...agentResponse,
+        debugInfo: Object.keys(debugInfo).length > 0 ? debugInfo : undefined,
+    }
     
     return {
       aiResponse: agentResponse.response,
       usage: agentResponse.usage,
-      lastResponse: agentResponse,
+      lastResponse: finalResponse,
     };
   }
 }
