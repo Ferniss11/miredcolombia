@@ -37,8 +37,9 @@ export const knowledgeBaseSearch = ai.defineTool(
       }
 
       debugLogs.push("Paso 2: Generando embedding para la consulta: \"" + query + "\" usando el modelo 'text-embedding-004'.");
+      
       const embeddingResult = await ai.embed({
-        embedder: googleAI.embedder('text-embedding-004'), // CORRECTED: Use the correct embedder reference and model name
+        embedder: googleAI.embedder('text-embedding-004'),
         content: query,
       });
       
@@ -91,6 +92,8 @@ export const knowledgeBaseSearch = ai.defineTool(
 
     } catch (error) {
       debugLogs.push('!!! ERROR CAPTURADO EN LA HERRAMIENTA !!!');
+      
+      // Serialize the full error object for detailed debugging
       const fullError = JSON.stringify(error, Object.getOwnPropertyNames(error), 2);
       
       const debugObject = {
@@ -100,6 +103,7 @@ export const knowledgeBaseSearch = ai.defineTool(
         error_completo: fullError,
       };
 
+      // Return the full debug object as a string
       return JSON.stringify(debugObject, null, 2);
     }
   }
