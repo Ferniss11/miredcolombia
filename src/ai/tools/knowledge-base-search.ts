@@ -27,23 +27,23 @@ export const knowledgeBaseSearch = ai.defineTool(
   async ({ query }, { context }) => {
     
     const sessionId = (context as any)?.sessionId as string | undefined;
-    const debugLogs: string[] = [];
+    const debugLogs: any[] = [];
     let queryVector: number[] | undefined;
 
     try {
-      debugLogs.push('Paso 1: Iniciando la herramienta `knowledgeBaseSearch`.');
+      debugLogs.push("Paso 1: Iniciando la herramienta `knowledgeBaseSearch`.");
       if (!adminDb) {
         throw new Error("[Tool Error] Firestore (adminDb) no está inicializado.");
       }
 
-      debugLogs.push(`Paso 2: Generando embedding para la consulta: "${query}" usando el modelo 'embedding-004'.`);
+      debugLogs.push("Paso 2: Generando embedding para la consulta: \"" + query + "\" usando el modelo 'text-embedding-004'.");
       const embeddingResult = await ai.embed({
-        embedder: googleAI.embedder('embedding-004'), // CORRECTED: Use the embedder reference
+        embedder: googleAI.embedder('text-embedding-004'), // CORRECTED: Use the correct embedder reference and model name
         content: query,
       });
       
       queryVector = embeddingResult.embedding;
-      debugLogs.push(`Paso 3: Verificando el resultado del embedding. Vector recibido: ${queryVector ? 'Sí' : 'No'}.`);
+      debugLogs.push("Paso 3: Verificando el resultado del embedding. Vector recibido: " + (queryVector ? `Sí (${queryVector.length} dimensiones)` : 'No'));
 
       if (!queryVector) {
         throw new Error("La API no devolvió un vector de embedding.");
@@ -51,7 +51,7 @@ export const knowledgeBaseSearch = ai.defineTool(
       
       const collectionRef = adminDb.collection(KNOWLEDGE_BASE_COLLECTION);
       
-      debugLogs.push('Paso 4: Construyendo la consulta de búsqueda de vectores (findNearest).');
+      debugLogs.push("Paso 4: Construyendo la consulta de búsqueda de vectores (findNearest).");
       const vectorQuery: VectorQuery = collectionRef.findNearest({
         vectorField: 'embedding',
         queryVector: queryVector,
