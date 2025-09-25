@@ -12,6 +12,7 @@ import { createSubscriptionCheckoutSessionAction } from '@/lib/payment-actions';
 import { cn } from '@/lib/utils';
 import type { ValeriaPlan } from '@/lib/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import TestimonialsSection from '@/components/home/TestimonialsSection';
 
 
 const AGENT_AVATAR_URL = "https://firebasestorage.googleapis.com/v0/b/colombia-en-esp.firebasestorage.app/o/web%2Fvaleria_avatar.jpg?alt=media&token=baccf93a-2420-473e-9b70-ea28b874a960";
@@ -51,22 +52,6 @@ const WhoIsItForCard = ({ icon: Icon, title, description }: { icon: React.Elemen
     </Card>
 );
 
-const TestimonialCard = ({ text, author }: { text: string, author: string }) => (
-     <Card className="bg-background">
-        <CardContent className="p-6">
-            <div className="flex gap-1 text-yellow-400 mb-2">
-                <Star className="w-5 h-5 fill-current" />
-                <Star className="w-5 h-5 fill-current" />
-                <Star className="w-5 h-5 fill-current" />
-                <Star className="w-5 h-5 fill-current" />
-                <Star className="w-5 h-5 fill-current" />
-            </div>
-            <blockquote className="text-lg italic">“{text}”</blockquote>
-            <p className="mt-4 font-semibold text-right">- {author}</p>
-        </CardContent>
-    </Card>
-);
-
 function ValeriaPageContent() {
     const { user } = useAuth();
     const { toast } = useToast();
@@ -95,7 +80,7 @@ function ValeriaPageContent() {
             {/* --- HERO SECTION --- */}
             <section className="py-20 text-center">
                 <div className="container max-w-4xl flex flex-col items-center">
-                    <Avatar className="w-24 h-24 mb-6 border-4 border-primary/20 shadow-lg">
+                    <Avatar className="w-32 h-32 mb-6 border-4 border-primary/20 shadow-lg">
                         <AvatarImage src={AGENT_AVATAR_URL} alt="Avatar de Valeria" className="object-cover" />
                         <AvatarFallback>V</AvatarFallback>
                     </Avatar>
@@ -190,16 +175,7 @@ function ValeriaPageContent() {
             </section>
 
              {/* --- TESTIMONIALS --- */}
-             <section className="py-20 bg-background">
-                 <div className="container max-w-5xl">
-                    <h2 className="text-3xl font-bold text-center mb-12 font-headline">Opiniones (Reales Próximamente)</h2>
-                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <TestimonialCard text="En 72 horas tenía plan y CV al estilo España. Me ahorré semanas de búsqueda a ciegas." author="Usuario Piloto 1"/>
-                        <TestimonialCard text="Evité una estafa de habitación patera gracias a las alertas." author="Usuario Piloto 2"/>
-                        <TestimonialCard text="Su checklist de llegada me salvó con el empadronamiento y la cita." author="Usuario Piloto 3"/>
-                    </div>
-                </div>
-            </section>
+            <TestimonialsSection />
 
              {/* --- FAQ --- */}
             <section className="py-20">
