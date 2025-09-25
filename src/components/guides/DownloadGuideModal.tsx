@@ -14,6 +14,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Loader2, Download, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
 import type { Guide } from '@/lib/guide/domain/guide.entity';
+import Image from 'next/image';
 
 const DownloadSchema = z.object({
   firstName: z.string().min(2, "Tu nombre es requerido."),
@@ -85,41 +86,60 @@ export default function DownloadGuideModal({ isOpen, onOpenChange, guide }: Down
 
     return (
         <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-            <DialogContent className="sm:max-w-md">
-                {isSuccess ? (
-                     <div className="flex flex-col items-center justify-center text-center p-6">
-                        <CheckCircle className="w-16 h-16 text-green-500 mb-4" />
-                        <h2 className="text-2xl font-bold font-headline">¡Listo!</h2>
-                        <p className="text-muted-foreground mt-2">
-                           Tu descarga debería haber comenzado. Revisa tu carpeta de descargas.
-                           ¡Gracias por tu interés!
-                        </p>
-                        <Button onClick={() => handleOpenChange(false)} className="mt-6">Cerrar</Button>
-                    </div>
-                ) : (
-                    <>
+            <DialogContent className="sm:max-w-4xl p-0">
+                <div className="grid grid-cols-1 md:grid-cols-2">
+                    {/* Left Column: Guide Info */}
+                    <div className="p-8 bg-secondary/50 dark:bg-card/50 flex flex-col justify-center rounded-l-lg">
+                        <Image
+                            src={guide.coverImageUrl}
+                            alt={guide.title}
+                            width={400}
+                            height={200}
+                            className="w-full h-auto object-cover rounded-lg shadow-md mb-6"
+                        />
                         <DialogHeader>
-                            <DialogTitle>Descargar: {guide.title}</DialogTitle>
-                            <DialogDescription>
-                                Completa tus datos para recibir esta guía gratuita y mantenerte informado con nuestras novedades.
+                            <DialogTitle className="text-2xl font-headline">{guide.title}</DialogTitle>
+                            <DialogDescription className="text-base pt-2">
+                                {guide.description}
                             </DialogDescription>
                         </DialogHeader>
-                        <div className="py-4">
-                            <Form {...form}>
-                                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                                    <FormField control={form.control} name="firstName" render={({ field }) => (<FormItem><FormLabel>Nombre</FormLabel><FormControl><Input placeholder="Tu nombre" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                    <FormField control={form.control} name="email" render={({ field }) => (<FormItem><FormLabel>Email</FormLabel><FormControl><Input placeholder="tu@email.com" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                    <FormField control={form.control} name="phone" render={({ field }) => (<FormItem><FormLabel>Teléfono (Opcional)</FormLabel><FormControl><Input placeholder="+34 600 000 000" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                    <FormField control={form.control} name="agreeToTerms" render={({ field }) => (<FormItem className="flex flex-row items-start space-x-3 space-y-0 pt-2"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><div className="space-y-1 leading-none"><FormLabel className="text-xs">Acepto los <Link href="/legal/terminos" className="text-primary hover:underline">términos</Link> y la <Link href="/legal/privacidad" className="text-primary hover:underline">política de privacidad</Link>.</FormLabel><FormMessage /></div></FormItem>)} />
-                                    <Button type="submit" className="w-full" disabled={isPending}>
-                                        {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
-                                        Descargar Ahora
-                                    </Button>
-                                </form>
-                            </Form>
-                        </div>
-                    </>
-                )}
+                    </div>
+                    
+                    {/* Right Column: Form or Success Message */}
+                    <div className="p-8">
+                        {isSuccess ? (
+                             <div className="flex flex-col items-center justify-center text-center h-full">
+                                <CheckCircle className="w-16 h-16 text-green-500 mb-4" />
+                                <h2 className="text-2xl font-bold font-headline">¡Listo!</h2>
+                                <p className="text-muted-foreground mt-2">
+                                   Tu descarga debería haber comenzado. ¡Esperamos que la guía te sea de gran ayuda!
+                                </p>
+                                <Button onClick={() => handleOpenChange(false)} className="mt-6">Cerrar</Button>
+                            </div>
+                        ) : (
+                            <>
+                                <DialogHeader className="mb-6">
+                                    <DialogTitle>Completa tus datos para descargar</DialogTitle>
+                                    <DialogDescription>
+                                        Recibirás la guía y te mantendremos informado con nuestras novedades.
+                                    </DialogDescription>
+                                </DialogHeader>
+                                <Form {...form}>
+                                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                                        <FormField control={form.control} name="firstName" render={({ field }) => (<FormItem><FormLabel>Nombre</FormLabel><FormControl><Input placeholder="Tu nombre" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                        <FormField control={form.control} name="email" render={({ field }) => (<FormItem><FormLabel>Email</FormLabel><FormControl><Input placeholder="tu@email.com" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                        <FormField control={form.control} name="phone" render={({ field }) => (<FormItem><FormLabel>Teléfono (Opcional)</FormLabel><FormControl><Input placeholder="+34 600 000 000" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                        <FormField control={form.control} name="agreeToTerms" render={({ field }) => (<FormItem className="flex flex-row items-start space-x-3 space-y-0 pt-2"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><div className="space-y-1 leading-none"><FormLabel className="text-xs">Acepto los <Link href="/legal/terminos" className="text-primary hover:underline">términos</Link> y la <Link href="/legal/privacidad" className="text-primary hover:underline">política de privacidad</Link>.</FormLabel><FormMessage /></div></FormItem>)} />
+                                        <Button type="submit" className="w-full" disabled={isPending}>
+                                            {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+                                            Descargar Ahora
+                                        </Button>
+                                    </form>
+                                </Form>
+                            </>
+                        )}
+                    </div>
+                </div>
             </DialogContent>
         </Dialog>
     );

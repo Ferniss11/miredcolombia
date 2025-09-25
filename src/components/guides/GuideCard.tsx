@@ -23,16 +23,17 @@ export default function GuideCard({ guide }: GuideCardProps) {
                      <Image
                         src={guide.coverImageUrl}
                         alt={guide.title}
-                        width={400}
-                        height={200}
-                        className="w-full h-40 object-cover transition-transform duration-300 group-hover:scale-105"
+                        width={500}
+                        height={280}
+                        className="w-full h-56 object-cover transition-transform duration-300 group-hover:scale-105"
                     />
                 </CardHeader>
-                <CardContent className="p-4 flex-grow">
-                    <h3 className="font-bold font-headline text-lg leading-snug line-clamp-2 h-14">{guide.title}</h3>
-                    <p className="text-xs text-muted-foreground mt-1">{guide.category}</p>
+                <CardContent className="p-6 flex-grow">
+                    <p className="text-sm font-semibold text-primary mb-2">{guide.category}</p>
+                    <h3 className="font-bold font-headline text-xl leading-snug line-clamp-2 h-14">{guide.title}</h3>
+                    <p className="text-sm text-muted-foreground mt-2 line-clamp-3 h-[60px]">{guide.description}</p>
                 </CardContent>
-                <CardFooter className="p-2 border-t mt-auto">
+                <CardFooter className="p-4 border-t mt-auto bg-muted/30">
                     <Button onClick={() => setIsModalOpen(true)} className="w-full">
                         <Download className="mr-2 h-4 w-4"/> Descargar Guía
                     </Button>
