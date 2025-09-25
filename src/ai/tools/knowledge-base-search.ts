@@ -29,6 +29,9 @@ export const knowledgeBaseSearch = ai.defineTool(
   },
   // The 'context' parameter is automatically populated by Genkit from the flow's call context
   async ({ query }, { context }) => {
+    // Digital Marker: Log when the tool is invoked.
+    console.log(`[knowledgeBaseSearch Tool] Invoked. Query: "${query}".`);
+
     const sessionId = (context as any)?.sessionId as string | undefined;
     console.log(`[Knowledge Base] Searching for: "${query}" (Session: ${sessionId || 'None'})`);
 
