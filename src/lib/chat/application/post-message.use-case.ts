@@ -63,7 +63,7 @@ export class PostMessageUseCase {
 
         textContent = textContent.replace(/\s+/g, ' ').trim();
         if (!textContent) {
-            console.warn(`[Ingestion] Document ${document.name} has no text content.`);
+            console.warn(`[Ingestion] Document ${document.name} has no text content. Skipping.`);
             return [];
         }
 
@@ -71,6 +71,8 @@ export class PostMessageUseCase {
         const batch = adminDb.batch();
         const collectionRef = adminDb.collection(KNOWLEDGE_BASE_COLLECTION);
         
+        const docId = `${sessionId}-${document.name}-${Date.now()}`;
+
         chunks.forEach((chunk, index) => {
             const docRef = collectionRef.doc();
             batch.set(docRef, {
@@ -79,7 +81,7 @@ export class PostMessageUseCase {
                     source: 'user_session',
                     sessionId: sessionId, // Link chunk to the session
                     userId: userId,     // Link chunk to the user
-                    doc_id: `${sessionId}-${document.name}`,
+                    doc_id: docId,
                     doc_title: document.name,
                     doc_type: document.type,
                     chunk_number: index + 1,
@@ -99,8 +101,9 @@ export class PostMessageUseCase {
   async execute({ sessionId, userMessage, document, userId, businessId, agentId }: PostMessageInput): Promise<PostMessageOutput> {
     
     // 1. Ingest document if provided
+    let generatedChunks: string[] = [];
     if (document && userId) {
-        await this.ingestDocumentForSession(document, sessionId, userId);
+        generatedChunks = await this.ingestDocumentForSession(document, sessionId, userId);
     }
     
     // 2. Get history *after* potential ingestion
@@ -141,6 +144,7 @@ export class PostMessageUseCase {
     // Add the generated chunks to the debug info if a document was processed
     agentResponse.debugInfo = {
         ...agentResponse.debugInfo,
+        generatedChunks,
     };
     
     return {
