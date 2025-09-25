@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useRef, useEffect, useCallback, useTransition, Fragment } from 'react';
@@ -22,7 +21,7 @@ import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '../ui/tooltip';
 import { useAuth } from '@/context/AuthContext';
 import { Progress } from '../ui/progress';
-import { createSubscriptionCheckoutSessionAction } from '@/lib/payment-actions';
+import { createSubscriptionCheckoutSessionAction } from "@/lib/payment-actions";
 
 // --- Welcome Form Sub-component ---
 const signUpFormSchema = z.object({
@@ -258,21 +257,21 @@ export default function ChatWidget({ isLabMode = false, labConfig, initialHistor
       return;
     }
     
-    if (authLoading) {
+    const shouldStartSession = isChatOpen || isInDashboard;
+
+    if (authLoading && shouldStartSession) {
         setView('loading');
         return;
     }
-
-    if (isChatOpen || isInDashboard) {
+    
+    if (shouldStartSession) {
         if (user && userProfile) {
-            // Only start a new session if one doesn't exist or if the user has changed.
             if (!session || session.userId !== user.uid) {
                 startSessionForUser(user, userProfile);
             } else {
                 setView('chat');
             }
         } else {
-            // Not logged in, show welcome/login
             if(view !== 'welcome' && view !== 'login') {
                 setSession(null);
                 setMessages([]);
@@ -280,6 +279,7 @@ export default function ChatWidget({ isLabMode = false, labConfig, initialHistor
             }
         }
     }
+
   }, [user, userProfile, authLoading, isChatOpen, isInDashboard, isLabMode, initialHistory, session, startSessionForUser, view, labConfig?.sessionId]);
 
   const handleSendMessage = async (messageText: string, file?: File | null) => {
