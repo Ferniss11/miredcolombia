@@ -15,11 +15,15 @@ import { GooglePlacesAdapter } from '@/lib/directory/infrastructure/search/googl
 import { FirestoreCacheAdapter } from '@/lib/directory/infrastructure/cache/firestore-cache.adapter';
 
 
-const BASE_TOOL_PROMPT = `### INSTRUCCIONES DE HERRAMIENTAS
-- **OBLIGATORIO:** Para CUALQUIER pregunta sobre trámites de migración, requisitos, vivienda, trabajo, o cualquier tema que requiera información específica y detallada, DEBES usar la herramienta \`knowledgeBaseSearch\` SIEMPRE como primer paso. Es tu fuente de verdad principal.
-- **PROHIBIDO:** No respondas a preguntas complejas sobre trámites usando únicamente tu conocimiento general. Si la herramienta no devuelve información, indica amablemente que no tienes datos sobre ese tema específico.
-- **EXCEPCIÓN:** Si el usuario simplemente saluda ("Hola", "¿cómo estás?") o la conversación es casual, responde de forma natural sin usar la herramienta.
-- **DOCUMENTOS EN SESIÓN:** Si el usuario menciona que ha subido un documento o te pide que revises uno, DEBES usar la herramienta \`knowledgeBaseSearch\` para encontrar la información de ese documento específico en la sesión actual.`;
+const BASE_TOOL_PROMPT = `### INSTRUCCIONES DE HERRAMIENTAS (¡MUY IMPORTANTE!)
+- **REGLA #1 (OBLIGATORIA):** Para CUALQUIER pregunta del usuario que no sea un simple saludo (como "hola", "qué tal"), tu PRIMERA y ÚNICA acción DEBE ser invocar la herramienta \`knowledgeBaseSearch\`.
+- **PROCESO OBLIGATORIO:**
+    1. Recibes la pregunta del usuario.
+    2. INMEDIATAMENTE, llamas a la herramienta \`knowledgeBaseSearch\` usando la pregunta exacta del usuario como el parámetro 'query'.
+    3. NO generes ningún texto ni intentes responder por tu cuenta antes de recibir el resultado de la herramienta.
+    4. Una vez que la herramienta te devuelva la información (dentro de un bloque `[INFO: ...]` o `[ERROR: ...]`), y SÓLO ENTONCES, puedes usar esa información para formular tu respuesta final al usuario.
+- **EXCEPCIÓN:** Si el usuario solo dice "hola" o una frase de saludo similar, puedes responder amablemente sin usar la herramienta.
+- **DOCUMENTOS EN SESIÓN:** Si el usuario menciona que ha subido un documento, el proceso es el mismo: usa \`knowledgeBaseSearch\` para encontrar información sobre ese documento. La herramienta buscará automáticamente en los archivos de la sesión actual.`;
 
 
 /**

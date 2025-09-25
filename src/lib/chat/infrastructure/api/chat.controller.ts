@@ -112,7 +112,7 @@ export class ChatController {
       
       // We pass the full debug info back to the client
       return ApiResponse.success({
-        history: updatedHistory.map(m => ({ ...m, timestamp: m.timestamp.toISOString() })),
+        history: updatedHistory.map(m => ({ ...m, timestamp: (m.timestamp as any).toISOString() })),
         lastResponse,
       });
   }
@@ -141,7 +141,7 @@ export class ChatController {
 
       return ApiResponse.success({
           session: { ...session, createdAt: session.createdAt.toISOString(), updatedAt: session.updatedAt?.toISOString() },
-          messages: messages.map(m => ({ ...m, timestamp: m.timestamp.toISOString() })),
+          messages: messages.map(m => ({ ...m, timestamp: (m.timestamp as any).toISOString() })),
       });
   }
 

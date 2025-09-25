@@ -106,10 +106,7 @@ export class PostMessageUseCase {
         generatedChunks = await this.ingestDocumentForSession(document, sessionId, userId);
     }
     
-    // 2. Get history *after* potential ingestion
-    const chatHistory = await this.chatRepository.getHistory(sessionId, businessId);
-
-    // 3. Persist user message
+    // 2. Persist user message
     const userMsgEntity: Omit<ChatMessage, 'id' | 'timestamp'> = {
       sessionId,
       businessId,
@@ -119,7 +116,8 @@ export class PostMessageUseCase {
     };
     await this.chatRepository.saveMessage(userMsgEntity);
     
-    const updatedChatHistory = [...chatHistory, userMsgEntity as ChatMessage];
+    // 3. Get history *after* saving user message
+    const updatedChatHistory = await this.chatRepository.getHistory(sessionId, businessId);
     
     // 4. Invoke AI agent
     const agentResponse = await this.agentAdapter.getCompletion({

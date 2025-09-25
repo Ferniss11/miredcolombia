@@ -45,7 +45,7 @@ const SessionList = ({ sessions, onSelect, onDelete, activeSessionId, isLoading 
         <ScrollArea className="absolute inset-0">
             <div className="space-y-2 p-4">
                 {isLoading ? (
-                    Array.from({ length: 5 }).map((_, i) => <div key={i} className="h-16 bg-muted rounded-md animate-pulse" />)
+                    Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-16 w-full" />)
                 ) : sessions.length === 0 ? (
                     <div className="text-center text-sm text-muted-foreground py-10">No hay sesiones de prueba.</div>
                 ) : (
