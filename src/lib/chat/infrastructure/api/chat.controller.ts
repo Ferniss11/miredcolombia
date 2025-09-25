@@ -109,10 +109,14 @@ export class ChatController {
       });
 
       const updatedHistory = await this.getChatHistoryUseCase.execute({ sessionId, businessId });
+      const currentSession = await this.getSessionByIdUseCase.execute({ sessionId, businessId });
 
       return ApiResponse.success({
         history: updatedHistory.map(m => ({ ...m, timestamp: m.timestamp.toISOString() })),
-        lastResponse,
+        lastResponse: {
+          ...lastResponse,
+          agentConfig: currentSession?.agentConfig // Include the full agent config in the response
+        },
       });
   }
 

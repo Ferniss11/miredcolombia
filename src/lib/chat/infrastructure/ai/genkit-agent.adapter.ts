@@ -1,4 +1,3 @@
-
 // src/lib/chat/infrastructure/ai/genkit-agent.adapter.ts
 import type { AgentAdapter, AgentCompletionOutput } from './agent.adapter';
 import type { ChatMessage } from '../../domain/chat-message.entity';
@@ -17,7 +16,7 @@ import { FirestoreCacheAdapter } from '@/lib/directory/infrastructure/cache/fire
 
 
 const BASE_TOOL_PROMPT = `### INSTRUCCIONES DE HERRAMIENTAS
-- **OBLIGATORIO:** Para cualquier pregunta sobre trámites de migración, requisitos, vivienda, trabajo o cualquier tema que requiera información específica y detallada, DEBES usar la herramienta \`knowledgeBaseSearch\` como primer paso. Es tu fuente de verdad principal.
+- **OBLIGATORIO:** Para CUALQUIER pregunta sobre trámites de migración, requisitos, vivienda, trabajo, o cualquier tema que requiera información específica y detallada, DEBES usar la herramienta \`knowledgeBaseSearch\` SIEMPRE como primer paso. Es tu fuente de verdad principal.
 - **PROHIBIDO:** No respondas a preguntas complejas sobre trámites usando únicamente tu conocimiento general. Si la herramienta no devuelve información, indica amablemente que no tienes datos sobre ese tema específico.
 - **EXCEPCIÓN:** Si el usuario simplemente saluda ("Hola", "¿cómo estás?") o la conversación es casual, responde de forma natural sin usar la herramienta.
 - **DOCUMENTOS EN SESIÓN:** Si el usuario menciona que ha subido un documento o te pide que revises uno, DEBES usar la herramienta \`knowledgeBaseSearch\` para encontrar la información de ese documento específico en la sesión actual.`;
@@ -126,29 +125,51 @@ export class GenkitAgentAdapter implements AgentAdapter {
     // Combine the base tool prompt with the specific personality prompt from the database.
     const finalSystemPrompt = `${agentConfig.systemPrompt}\n\n${BASE_TOOL_PROMPT}`;
 
-    // Execute the flow and pass the sessionId in the context
-    const aiResponse = await migrationChat({
-        model: agentConfig.model,
-        systemPrompt: finalSystemPrompt,
-        chatHistory: chatHistoryForAI,
-        currentMessage: input.currentMessage,
-        sessionId: input.sessionId,
-    });
-    
-    const usage = aiResponse.usage || { inputTokens: 0, outputTokens: 0, totalTokens: 0 };
-    const cost = calculateCost(agentConfig.model, usage.inputTokens, usage.outputTokens);
-    
-    const usedConfig = { model: agentConfig.model, systemPrompt: finalSystemPrompt };
-    
-    return { 
-        response: aiResponse.response, 
-        usage, 
-        cost, 
-        agentConfig: usedConfig,
-        debugInfo: { 
-            toolInvocations: aiResponse.toolInvocations || [],
-            systemPrompt: finalSystemPrompt
-        },
-    };
+    try {
+        // Execute the flow and pass the sessionId in the context
+        const aiResponse = await migrationChat({
+            model: agentConfig.model,
+            systemPrompt: finalSystemPrompt,
+            chatHistory: chatHistoryForAI,
+            currentMessage: input.currentMessage,
+            sessionId: input.sessionId,
+        });
+        
+        const usage = aiResponse.usage || { inputTokens: 0, outputTokens: 0, totalTokens: 0 };
+        const cost = calculateCost(agentConfig.model, usage.inputTokens, usage.outputTokens);
+        
+        const usedConfig = { model: agentConfig.model, systemPrompt: finalSystemPrompt };
+        
+        return { 
+            response: aiResponse.response, 
+            usage, 
+            cost, 
+            agentConfig: usedConfig,
+            debugInfo: { 
+                toolInvocations: aiResponse.toolInvocations || [],
+                systemPrompt: finalSystemPrompt
+            },
+        };
+    } catch (error) {
+        console.error("[GenkitAgentAdapter] Error during AI generation:", error);
+        
+        // **NEW ERROR HANDLING LOGIC**
+        // Return a structured error object with the full stack trace for debugging
+        const fullError = {
+            message: error instanceof Error ? error.message : "Unknown error",
+            stack: error instanceof Error ? error.stack : undefined,
+        };
+
+        return {
+            response: "Lo siento, ha ocurrido un error inesperado al procesar tu solicitud. Mi equipo técnico ha sido notificado.",
+            usage: { inputTokens: 0, outputTokens: 0, totalTokens: 0 },
+            cost: 0,
+            agentConfig: agentConfig,
+            debugInfo: {
+                error: fullError,
+                systemPrompt: finalSystemPrompt
+            }
+        };
+    }
   }
 }

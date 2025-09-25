@@ -141,21 +141,23 @@ export class PostMessageUseCase {
     };
     await this.chatRepository.saveMessage(aiMsgEntity);
     
-    // Add the system prompt and generated chunks to the debug info
-    const debugInfo = {
-        ...(agentResponse.debugInfo || {}),
-        generatedChunks: generatedChunks.length > 0 ? generatedChunks : undefined,
+    // Enrich the debug info from the agent adapter with any data from this use case
+    const finalDebugInfo = {
+        ...agentResponse.debugInfo,
+        generatedChunks: generatedChunks.length > 0 ? { count: generatedChunks.length, firstChunk: generatedChunks[0] } : undefined,
     };
 
-    const finalResponse = {
+    const lastResponse: AgentCompletionOutput = {
         ...agentResponse,
-        debugInfo: Object.keys(debugInfo).length > 0 ? debugInfo : undefined,
-    }
+        debugInfo: Object.keys(finalDebugInfo).some(key => finalDebugInfo[key as keyof typeof finalDebugInfo] !== undefined)
+            ? finalDebugInfo
+            : undefined,
+    };
     
     return {
       aiResponse: agentResponse.response,
       usage: agentResponse.usage,
-      lastResponse: finalResponse,
+      lastResponse: lastResponse,
     };
   }
 }

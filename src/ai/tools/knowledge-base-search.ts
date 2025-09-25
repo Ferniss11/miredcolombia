@@ -86,7 +86,7 @@ export const knowledgeBaseSearch = ai.defineTool(
 
     } catch (error) {
       console.error("[Knowledge Base Tool] Error performing vector search:", error);
-      // Serialize the full error object for detailed debugging.
+      // **NEW**: Serialize the full error object for detailed debugging.
       const fullError = JSON.stringify(error, Object.getOwnPropertyNames(error), 2);
       return `[ERROR: La herramienta de búsqueda de conocimiento falló. Error completo: ${fullError}]`;
     }
