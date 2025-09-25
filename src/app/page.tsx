@@ -49,7 +49,7 @@ export default async function HomePage() {
     .filter(post => post.status === 'Published')
     .slice(0, 5); // We now want 5 posts for the home page
 
-  const featuredGuides = allGuides.slice(0, 4);
+  const featuredGuides = allGuides.slice(0, 3);
 
 
   return (

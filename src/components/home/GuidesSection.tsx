@@ -1,9 +1,21 @@
 
+
 'use client';
 
 import { BookOpen } from "lucide-react";
 import GuideCard from "../guides/GuideCard";
 import type { Guide } from "@/lib/guide/domain/guide.entity";
+
+const PlaceholderVector = () => (
+  <div className="absolute top-0 right-0 h-full w-1/3 -z-10 opacity-10 dark:opacity-20 hidden lg:block">
+    <svg width="100%" height="100%" viewBox="0 0 400 400" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-primary">
+        <path d="M400 0C400 110.457 310.457 200 200 200C89.543 200 0 289.543 0 400" stroke="currentColor" strokeWidth="2" />
+        <path d="M400 100C400 166.274 346.274 220 280 220C213.726 220 160 273.726 160 340" stroke="currentColor" strokeWidth="2" strokeDasharray="4 4" />
+        <path d="M400 50C400 132.843 332.843 200 250 200C167.157 200 100 267.157 100 350" stroke="currentColor" strokeWidth="1" />
+    </svg>
+  </div>
+);
+
 
 export default function GuidesSection({ guides }: { guides: Guide[] }) {
 
@@ -34,12 +46,13 @@ export default function GuidesSection({ guides }: { guides: Guide[] }) {
                         Hemos preparado guías detalladas en PDF para los trámites más importantes. Descárgalas gratis y prepárate para tu nueva vida en España.
                     </p>
                 </div>
-                <div className="mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                <div className="mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
                     {guides.map((guide) => (
                         <GuideCard key={guide.id} guide={guide} />
                     ))}
                 </div>
             </div>
+             {guides.length < 3 && <PlaceholderVector />}
         </section>
     );
 }
