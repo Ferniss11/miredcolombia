@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -10,6 +11,7 @@ import { ai } from '@/ai/genkit';
 import { adminDb } from '@/lib/firebase/admin-config';
 import { z } from 'zod';
 import type { VectorQuery, VectorQuerySnapshot } from '@google-cloud/firestore';
+import { googleAI } from '@genkit-ai/googleai'; // Import the googleAI object
 
 const KNOWLEDGE_BASE_COLLECTION = 'knowledge_base';
 
@@ -20,10 +22,8 @@ export const knowledgeBaseSearch = ai.defineTool(
     inputSchema: z.object({
       query: z.string().describe('The user\'s question or topic to search for.'),
     }),
-    // The tool now returns a single formatted string for the LLM to process.
     outputSchema: z.string(),
   },
-  // The 'context' parameter is automatically populated by Genkit from the flow's call context
   async ({ query }, { context }) => {
     
     const sessionId = (context as any)?.sessionId as string | undefined;
@@ -36,21 +36,21 @@ export const knowledgeBaseSearch = ai.defineTool(
         throw new Error("[Tool Error] Firestore (adminDb) no está inicializado.");
       }
 
-      // Step 2: Generate an embedding for the user's query.
       debugLogs.push(`Paso 2: Generando embedding para la consulta: "${query}" usando el modelo 'embedding-004'.`);
       const embeddingResult = await ai.embed({
-        embedder: 'embedding-004',
+        embedder: googleAI.embedder('embedding-004'), // CORRECTED: Use the embedder reference
         content: query,
       });
       
       queryVector = embeddingResult.embedding;
       debugLogs.push(`Paso 3: Verificando el resultado del embedding. Vector recibido: ${queryVector ? 'Sí' : 'No'}.`);
 
-      if (!queryVector) throw new Error("La API no devolvió un vector de embedding.");
+      if (!queryVector) {
+        throw new Error("La API no devolvió un vector de embedding.");
+      }
       
       const collectionRef = adminDb.collection(KNOWLEDGE_BASE_COLLECTION);
       
-      // Step 4: Perform vector search to find the nearest neighbors.
       debugLogs.push('Paso 4: Construyendo la consulta de búsqueda de vectores (findNearest).');
       const vectorQuery: VectorQuery = collectionRef.findNearest({
         vectorField: 'embedding',
@@ -63,14 +63,11 @@ export const knowledgeBaseSearch = ai.defineTool(
       const querySnapshot: VectorQuerySnapshot = await vectorQuery.get();
       debugLogs.push(`Paso 6: Búsqueda completada. ${querySnapshot.docs.length} documentos encontrados inicialmente.`);
 
-      // Step 7: Filter the results based on the context (session or global)
       const finalResults = querySnapshot.docs.filter(doc => {
         const metadata = doc.data().metadata;
         if (!metadata) return false;
 
-        // Include global 'admin_kb' documents
         if (metadata.source === 'admin_kb') return true;
-        // Include session-specific documents if a sessionId is present
         if (sessionId && metadata.source === 'user_session' && metadata.sessionId === sessionId) return true;
 
         return false;
@@ -81,7 +78,6 @@ export const knowledgeBaseSearch = ai.defineTool(
         return `[INFO: Búsqueda completada, no se encontraron documentos relevantes para la consulta: "${query}". Informa al usuario amablemente que no tienes información sobre ese tema y pregúntale si puede ser más específico.]`;
       }
       
-      // Step 8: Limit to top N results and format the output into a single string.
       const topResults = finalResults.slice(0, 5);
 
       const searchResultsText = topResults.map(doc => {
