@@ -28,24 +28,30 @@ export const knowledgeBaseSearch = ai.defineTool(
   async ({ query }, { context }) => {
     
     const sessionId = (context as any)?.sessionId as string | undefined;
+    const debugLogs: string[] = [];
+    let queryVector: number[] | undefined;
 
     try {
+      debugLogs.push('Iniciando la herramienta `knowledgeBaseSearch`.');
       if (!adminDb) {
-        throw new Error("[Tool Error] Firestore not initialized.");
+        throw new Error("[Tool Error] Firestore (adminDb) no está inicializado.");
       }
 
       // Step 1: Generate an embedding for the user's query.
+      debugLogs.push(`Generando embedding para la consulta: "${query}"`);
       const embeddingResult = await ai.embed({
         embedder: 'googleai/text-embedding-004',
         content: query,
       });
-
-      const queryVector = embeddingResult.embedding;
-      if (!queryVector) throw new Error("Failed to generate embedding for the query.");
+      
+      queryVector = embeddingResult.embedding;
+      if (!queryVector) throw new Error("La API no devolvió un vector de embedding.");
+      debugLogs.push('Embedding generado con éxito.');
       
       const collectionRef = adminDb.collection(KNOWLEDGE_BASE_COLLECTION);
       
       // Step 2: Perform vector search to find the nearest neighbors.
+      debugLogs.push('Construyendo la consulta de búsqueda de vectores (findNearest).');
       const vectorQuery: VectorQuery = collectionRef.findNearest({
         vectorField: 'embedding',
         queryVector: queryVector,
@@ -53,7 +59,9 @@ export const knowledgeBaseSearch = ai.defineTool(
         distanceMeasure: 'COSINE',
       });
       
+      debugLogs.push('Ejecutando la búsqueda de vectores en Firestore.');
       const querySnapshot: VectorQuerySnapshot = await vectorQuery.get();
+      debugLogs.push(`Búsqueda completada. ${querySnapshot.docs.length} documentos encontrados inicialmente.`);
 
       // Step 3: Filter the results based on the context (session or global)
       const finalResults = querySnapshot.docs.filter(doc => {
@@ -67,6 +75,7 @@ export const knowledgeBaseSearch = ai.defineTool(
 
         return false;
       });
+      debugLogs.push(`Filtrado completado. ${finalResults.length} documentos relevantes para el contexto actual.`);
 
       if (finalResults.length === 0) {
         return `[INFO: Búsqueda completada, no se encontraron documentos relevantes para la consulta: "${query}". Informa al usuario amablemente que no tienes información sobre ese tema y pregúntale si puede ser más específico.]`;
@@ -86,9 +95,19 @@ export const knowledgeBaseSearch = ai.defineTool(
 
     } catch (error) {
       console.error("[Knowledge Base Tool] Error performing vector search:", error);
-      // **NEW**: Serialize the full error object for detailed debugging.
+      debugLogs.push('!!! ERROR CAPTURADO EN LA HERRAMIENTA !!!');
+      // Serialize the full error object for detailed debugging.
       const fullError = JSON.stringify(error, Object.getOwnPropertyNames(error), 2);
-      return `[ERROR: La herramienta de búsqueda de conocimiento falló. Error completo: ${fullError}]`;
+      
+      // Return a detailed error report FOR THE DEBUGGER. The LLM will likely ignore this format.
+      const debugObject = {
+        error: `La herramienta de búsqueda de conocimiento falló.`,
+        causa: error instanceof Error ? error.message : "Error desconocido",
+        pasos_ejecutados: debugLogs,
+        error_completo: fullError,
+      };
+
+      return JSON.stringify(debugObject, null, 2);
     }
   }
 );
