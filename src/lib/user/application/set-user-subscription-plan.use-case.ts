@@ -1,11 +1,12 @@
 
+
 // src/lib/user/application/set-user-subscription-plan.use-case.ts
 import { adminAuth } from '@/lib/firebase/admin-config';
 import type { UserRepository } from '../domain/user.repository';
 
 export type SetUserSubscriptionPlanInput = {
   userId: string;
-  planId: string; // This is our internal planId, e.g., 'valeria_premium'
+  planId: string; // This is our internal planId, e.g., 'valeria_premium' or 'valeria_premium_quarterly'
 };
 
 /**
@@ -20,10 +21,10 @@ export class SetUserSubscriptionPlanUseCase {
       throw new Error('Firebase Admin Auth is not initialized.');
     }
     
-    // Convert our internal plan ID to the claim value
+    // Convert our internal plan ID to the claim value. Both quarterly and monthly plans grant the same 'premium' access level.
     let planClaimValue: 'valeria_premium' | 'free' = 'free';
 
-    if (planId === 'valeria_premium') {
+    if (planId === 'valeria_premium' || planId === 'valeria_premium_quarterly') {
         planClaimValue = 'valeria_premium';
     }
 

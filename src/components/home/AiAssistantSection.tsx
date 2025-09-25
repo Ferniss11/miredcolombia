@@ -33,7 +33,6 @@ const featureData: { [key: string]: { free: string | boolean; premium: string | 
     alertas: { free: false, premium: true },
 };
 
-
 export default function AiAssistantSection({ onOpenChatModal, variant = 'full' }: AiAssistantSectionProps) {
     const { user } = useAuth();
     const { toast } = useToast();

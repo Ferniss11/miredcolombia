@@ -1,183 +1,255 @@
 
 'use client';
 
-import { useState, useEffect, Suspense } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import React, { Suspense } from 'react';
 import { Button } from "@/components/ui/button";
-import { Check, MessageCircle, PlayCircle, Loader2 } from "lucide-react";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
-import Link from "next/link";
-import Image from "next/image";
-import { useChat } from "@/context/ChatContext";
-import { valeriaPlans } from "@/lib/placeholder-data";
-import { useAuth } from "@/context/AuthContext";
-import CheckoutSheet from "@/components/checkout/CheckoutSheet";
-import type { ValeriaPlan } from '@/lib/types';
-import { useToast } from "@/hooks/use-toast";
-import VideoModal from "@/components/ui/video-modal";
-import { createSubscriptionCheckoutSessionAction } from "@/lib/payment-actions";
+import { Check, User, Target, Shield, Users, HelpCircle, ArrowRight, Star } from "lucide-react";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
+import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/context/AuthContext';
+import { createSubscriptionCheckoutSessionAction } from '@/lib/payment-actions';
+import { cn } from '@/lib/utils';
+import type { Metadata } from 'next';
+
+// SEO Metadata (though it won't be applied dynamically from here in a client component, it's good practice)
+export const metadata: Metadata = {
+  title: 'Valeria IA: empleo, vivienda y papeles en España | 4,97 €/mes',
+  description: 'Valeria te guía paso a paso para emigrar de Colombia a España: empleo, vivienda y trámites legales al día. Checklists, plantillas y alertas 24/7.',
+};
+
+
+const ValuePropItem = ({ icon: Icon, children }: { icon: React.ElementType, children: React.ReactNode }) => (
+    <div className="flex items-start gap-4">
+        <div className="bg-primary/10 text-primary p-3 rounded-full">
+            <Icon className="w-6 h-6" />
+        </div>
+        <div>
+            <p className="text-lg text-muted-foreground">{children}</p>
+        </div>
+    </div>
+);
+
+const HowItWorksStep = ({ number, title, description }: { number: string, title: string, description: string }) => (
+    <div className="flex items-start gap-4">
+        <div className="flex items-center justify-center w-12 h-12 rounded-full bg-primary text-primary-foreground font-bold text-xl flex-shrink-0">
+            {number}
+        </div>
+        <div>
+            <h3 className="font-bold text-lg">{title}</h3>
+            <p className="text-muted-foreground">{description}</p>
+        </div>
+    </div>
+);
+
+const WhoIsItForCard = ({ icon: Icon, title, description }: { icon: React.ElementType, title: string, description: string }) => (
+    <Card className="text-center h-full">
+        <CardContent className="p-6">
+            <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                <Icon className="w-8 h-8 text-primary" />
+            </div>
+            <h3 className="font-bold font-headline text-xl">{title}</h3>
+            <p className="text-muted-foreground mt-2">{description}</p>
+        </CardContent>
+    </Card>
+);
+
+const TestimonialCard = ({ text, author }: { text: string, author: string }) => (
+     <Card className="bg-background">
+        <CardContent className="p-6">
+            <div className="flex gap-1 text-yellow-400 mb-2">
+                <Star className="w-5 h-5 fill-current" />
+                <Star className="w-5 h-5 fill-current" />
+                <Star className="w-5 h-5 fill-current" />
+                <Star className="w-5 h-5 fill-current" />
+                <Star className="w-5 h-5 fill-current" />
+            </div>
+            <blockquote className="text-lg italic">“{text}”</blockquote>
+            <p className="mt-4 font-semibold text-right">- {author}</p>
+        </CardContent>
+    </Card>
+);
 
 function ValeriaPageContent() {
-  const { openChat } = useChat();
-  const { user } = useAuth();
-  const [isSheetOpen, setIsSheetOpen] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState<ValeriaPlan | null>(null);
-  const [isVideoModalOpen, setVideoModalOpen] = useState(false);
+    const { user } = useAuth();
+    const { toast } = useToast();
 
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const { toast } = useToast();
+    const handleCheckout = async (planId: 'monthly' | 'quarterly') => {
+        if (!user) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Debes iniciar sesión o crear una cuenta para suscribirte.' });
+            // Potentially open a login/signup modal here
+            return;
+        }
+        
+        const internalPlanId = planId === 'monthly' ? 'valeria_premium' : 'valeria_premium_quarterly';
 
-  const videoUrl = "https://firebasestorage.googleapis.com/v0/b/colombia-en-esp.firebasestorage.app/o/web%2FVideo%20de%20WhatsApp%202025-08-12%20a%20las%2014.29.54_0ca7af14.mp4?alt=media&token=ac0427e9-ff6e-4897-afba-3684d6ff5585";
-
-
-  useEffect(() => {
-    const paymentStatus = searchParams.get('payment');
-    if (paymentStatus === 'cancelled') {
-      toast({
-        title: 'Pago Cancelado',
-        description: 'El proceso de pago fue cancelado. Puedes intentarlo de nuevo cuando quieras.',
-        variant: 'default',
-        duration: 5000,
-      });
-      // Remove the query parameter from the URL
-      router.replace('/valeria', { scroll: false });
-    }
-  }, [searchParams, router, toast]);
-
-
-  const handlePlanSelection = async (plan: ValeriaPlan) => {
-    if (!user) {
-      if (plan.id === 'plan_free') {
-        openChat();
-      } else {
-        setSelectedPlan(plan);
-        setIsSheetOpen(true);
-      }
-      return;
-    }
-
-    if (plan.id === 'plan_free') {
-        openChat();
-    } else {
-        // User is logged in, proceed to Stripe checkout
         const result = await createSubscriptionCheckoutSessionAction({
-            planId: plan.id, // Pass our internal plan id (e.g., 'valeria_premium')
+            planId: internalPlanId,
             userId: user.uid,
             userEmail: user.email!,
         });
 
-        if (result.error) {
-            toast({
-                variant: 'destructive',
-                title: 'Error al Iniciar Pago',
-                description: result.error,
-            });
-        } else if (result.checkoutUrl) {
-            // Redirect to Stripe's hosted checkout page
+        if (result.error || !result.checkoutUrl) {
+            toast({ variant: 'destructive', title: 'Error', description: result.error || 'No se pudo crear la sesión de pago.' });
+        } else {
             window.location.href = result.checkoutUrl;
         }
-    }
-  };
+    };
 
-
-  return (
-    <>
-    <div className="bg-secondary/50 dark:bg-card">
-        <div className="container mx-auto px-4 py-12 md:py-24">
-            <div className="text-center mb-8">
-                <Image
-                    src="https://firebasestorage.googleapis.com/v0/b/colombia-en-esp.firebasestorage.app/o/web%2FImagen%20de%20WhatsApp%202025-08-09%20a%20las%2018.20.39_3c2b6161.jpg?alt=media&token=41ebe34a-f846-41fc-937f-4141f1240ee8"
-                    alt="Avatar de Valeria, la asistente IA"
-                    width={120}
-                    height={120}
-                    className="rounded-full mb-4 mx-auto border-4 border-primary/20 shadow-lg"
-                />
-                <h1 className="text-4xl md:text-5xl font-bold font-headline">Valeria, tu Asistente IA</h1>
-                <p className="text-lg text-muted-foreground mt-2 font-body max-w-2xl mx-auto">
-                    Valeria es la primera IA especializada en migración de Colombia a España. Disponible 24/7, habla tu idioma y responde al instante.
-                </p>
-                 <div className="mt-6 flex flex-col sm:flex-row gap-4 justify-center">
-                    <Button size="lg" onClick={openChat}>
-                        <MessageCircle className="mr-2 h-5 w-5" />
-                        Empieza ahora con Valeria
-                    </Button>
-                    <Button size="lg" variant="outline" onClick={() => setVideoModalOpen(true)}>
-                        <PlayCircle className="mr-2 h-5 w-5" />
-                        Ver Demo
-                    </Button>
-                </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto mt-16">
-                {valeriaPlans.map((plan) => (
-                <Card 
-                    key={plan.name} 
-                    className={cn(
-                        "flex flex-col shadow-lg hover:shadow-2xl transition-shadow duration-300", 
-                        plan.name === "Valeria Premium" && "border-primary border-2 shadow-primary/20"
-                    )}
-                >
-                    {plan.name === "Valeria Premium" && (
-                    <div className="bg-primary text-primary-foreground text-center py-1.5 text-sm font-semibold">
-                        Recomendado
-                    </div>
-                    )}
-                    <CardHeader className="items-center text-center">
-                    <CardTitle className="font-headline text-2xl">{plan.name}</CardTitle>
-                    <div className="flex items-baseline">
-                        <span className="text-4xl font-bold">{typeof plan.price === 'number' ? `${plan.price.toLocaleString('es-ES', { minimumFractionDigits: 2 })}€` : plan.price}</span>
-                        <span className="text-muted-foreground ml-1">{plan.priceDetails}</span>
-                    </div>
-                    </CardHeader>
-                    <CardContent className="flex-grow">
-                    <ul className="space-y-4">
-                        {plan.features.map((feature, index) => (
-                        <li key={index} className="flex items-start">
-                            <Check className="h-5 w-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
-                            <span>{feature}</span>
-                        </li>
-                        ))}
-                    </ul>
-                    </CardContent>
-                    <CardFooter>
-                        <Button className="w-full" variant={plan.variant as any} onClick={() => handlePlanSelection(plan)}>
-                            {plan.cta}
+    return (
+        <div className="bg-secondary/30 dark:bg-card/30">
+            {/* --- HERO SECTION --- */}
+            <section className="py-20 text-center">
+                <div className="container max-w-4xl">
+                    <h1 className="text-4xl md:text-6xl font-extrabold font-headline tracking-tight">Tu Puente de Colombia a España Empieza Hoy</h1>
+                    <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
+                        <Button size="lg" className="text-lg h-12 px-8" onClick={() => handleCheckout('monthly')}>
+                           Probar Valeria por 4,97 €/mes
                         </Button>
-                    </CardFooter>
-                </Card>
-                ))}
-            </div>
-            <div className="text-center mt-16">
-                 <h3 className="text-xl font-bold font-headline">¿Necesitas ayuda personalizada?</h3>
-                <p className="text-muted-foreground mt-2 mb-4">Nuestro equipo de expertos está listo para ayudarte con tus necesidades específicas.</p>
-                <Button size="lg" asChild className="bg-gradient-to-r from-yellow-400 to-red-500 text-white shadow-lg hover:shadow-xl transition-shadow">
-                    <Link href="/packs"> 
-                        Contactar con un Asesor
-                    </Link>
-                </Button>
-            </div>
+                        <Button size="lg" variant="outline" className="text-lg h-12 px-8" onClick={() => handleCheckout('quarterly')}>
+                           Quiero el pack lanzamiento 3 meses
+                        </Button>
+                    </div>
+                    <p className="text-muted-foreground text-sm mt-4">
+                        Actualizada con normativa española vigente · Guías prácticas · Lenguaje claro · Cancelas cuando quieras
+                    </p>
+                </div>
+            </section>
+
+            {/* --- VALUE PROPOSITION --- */}
+            <section className="py-20 bg-background">
+                <div className="container max-w-4xl grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
+                   <ValuePropItem icon={Check}>Consigue <strong>empleo legal</strong>: CV optimizado para España, portales que sí funcionan y pasos para contratos sin fraudes.</ValuePropItem>
+                   <ValuePropItem icon={Check}>Encuentra <strong>vivienda real</strong>: filtros, documentación que piden las inmobiliarias y cómo evitar estafas.</ValuePropItem>
+                   <ValuePropItem icon={Check}><strong>Papeles en regla</strong>: rutas legales para tu caso (estudios, trabajo, arraigo, familiar, etc.), requisitos y citas.</ValuePropItem>
+                   <ValuePropItem icon={Check}>Todo <strong>explicado fácil</strong>: listas de verificación, plantillas y mensajes listos para enviar.</ValuePropItem>
+                </div>
+            </section>
+            
+            {/* --- HOW IT WORKS --- */}
+            <section className="py-20">
+                 <div className="container max-w-4xl">
+                    <h2 className="text-3xl font-bold text-center mb-12 font-headline">¿Cómo te ayuda Valeria?</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                       <HowItWorksStep number="1" title="Dime tu situación" description="Cuéntale tu perfil, ciudad de destino y tu objetivo principal." />
+                       <HowItWorksStep number="2" title="Recibe un plan paso a paso" description="Obtén un plan claro sobre qué hacer hoy, esta semana y este mes." />
+                       <HowItWorksStep number="3" title="Ejecuta con plantillas" description="Usa emails, formularios, CVs y mensajes listos para enviar." />
+                       <HowItWorksStep number="4" title="Accede a recursos verificados" description="Consigue enlaces útiles y recordatorios clave para citas, plazos y documentos." />
+                    </div>
+                </div>
+            </section>
+
+            {/* --- FOR WHOM --- */}
+             <section className="py-20 bg-background">
+                <div className="container max-w-5xl">
+                    <h2 className="text-3xl font-bold text-center mb-12 font-headline">Perfecto para...</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <WhoIsItForCard icon={User} title="Recién Llegados" description="Quienes van a emigrar o acaban de llegar a España." />
+                        <WhoIsItForCard icon={Target} title="Buscando Orden" description="Quien necesita un plan claro para papeles, empleo y vivienda." />
+                        <WhoIsItForCard icon={Shield} title="Evitando Estafas" description="Quien quiere evitar fraudes con alquileres o 'contratos fantasma'." />
+                        <WhoIsItForCard icon={Users} title="Equipos de Apoyo" description="Quienes atienden a migrantes y necesitan respuestas rápidas y consistentes." />
+                    </div>
+                </div>
+            </section>
+            
+            {/* --- PRICING --- */}
+            <section className="py-20">
+                <div className="container max-w-4xl">
+                    <h2 className="text-3xl font-bold text-center mb-12 font-headline">Precios Flexibles</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <Card className="flex flex-col">
+                            <CardHeader>
+                                <CardTitle>Plan Mensual</CardTitle>
+                                <CardDescription>Acceso completo, sin permanencia.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="flex-grow">
+                                <p className="text-5xl font-bold">4,97€<span className="text-lg font-normal text-muted-foreground">/mes</span></p>
+                                <p className="text-sm text-muted-foreground mt-2">Menos de lo que cuesta un café a la semana.</p>
+                            </CardContent>
+                            <CardFooter>
+                                <Button className="w-full" onClick={() => handleCheckout('monthly')}>Empezar Ahora</Button>
+                            </CardFooter>
+                        </Card>
+                         <Card className="border-primary border-2 flex flex-col relative">
+                             <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground px-3 py-1 text-sm font-semibold rounded-full">Oferta Lanzamiento</div>
+                            <CardHeader>
+                                <CardTitle>Pack 3 Meses</CardTitle>
+                                <CardDescription>Ideal para cubrir preparación y llegada.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="flex-grow">
+                                <p className="text-5xl font-bold">12,99€<span className="text-lg font-normal text-muted-foreground">/pago único</span></p>
+                                <p className="text-sm text-muted-foreground mt-2">Un solo pago para tus primeros 90 días.</p>
+                            </CardContent>
+                             <CardFooter>
+                                <Button className="w-full" variant="default" onClick={() => handleCheckout('quarterly')}>Aprovechar Oferta</Button>
+                            </CardFooter>
+                        </Card>
+                    </div>
+                </div>
+            </section>
+
+             {/* --- TESTIMONIALS --- */}
+             <section className="py-20 bg-background">
+                 <div className="container max-w-5xl">
+                    <h2 className="text-3xl font-bold text-center mb-12 font-headline">Opiniones (Reales Próximamente)</h2>
+                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <TestimonialCard text="En 72 horas tenía plan y CV al estilo España. Me ahorré semanas de búsqueda a ciegas." author="Usuario Piloto 1"/>
+                        <TestimonialCard text="Evité una estafa de habitación patera gracias a las alertas." author="Usuario Piloto 2"/>
+                        <TestimonialCard text="Su checklist de llegada me salvó con el empadronamiento y la cita." author="Usuario Piloto 3"/>
+                    </div>
+                </div>
+            </section>
+
+             {/* --- FAQ --- */}
+            <section className="py-20">
+                <div className="container max-w-3xl">
+                    <h2 className="text-3xl font-bold text-center mb-12 font-headline">Preguntas Frecuentes</h2>
+                    <Accordion type="single" collapsible className="w-full">
+                        <AccordionItem value="item-1">
+                            <AccordionTrigger>¿Valeria sustituye a un abogado?</AccordionTrigger>
+                            <AccordionContent>No. Valeria no es asesoría legal personalizada ni sustituye a un profesional colegiado. Te ofrece información actualizada, rutas y plantillas para que avances con seguridad y sepas cuándo y a quién acudir.</AccordionContent>
+                        </AccordionItem>
+                        <AccordionItem value="item-2">
+                            <AccordionTrigger>¿La información está al día?</AccordionTrigger>
+                            <AccordionContent>Valeria se entrena con normativa y procedimientos vigentes en España y buenas prácticas. Si una regla cambia, te lo señala y te propone el nuevo paso a paso.</AccordionContent>
+                        </AccordionItem>
+                        <AccordionItem value="item-3">
+                            <AccordionTrigger>¿Puedo cancelar cuando quiera?</AccordionTrigger>
+                            <AccordionContent>Sí, el plan mensual es sin permanencia. El pack 3 meses es promocional y no fraccionable.</AccordionContent>
+                        </AccordionItem>
+                         <AccordionItem value="item-4">
+                            <AccordionTrigger>¿Qué pasa si mi caso es complejo?</AccordionTrigger>
+                            <AccordionContent>Valeria te da el mapa y te avisa cuando conviene elevar tu caso a un abogado/gestor. También te ayuda a preparar la consulta (documentos y preguntas clave).</AccordionContent>
+                        </AccordionItem>
+                        <AccordionItem value="item-5">
+                            <AccordionTrigger>¿Sirve si todavía estoy en Colombia?</AccordionTrigger>
+                            <AccordionContent>Sí. Incluye una sección “antes de viajar”: documentos a traer, apostillas, convalidaciones, gastos reales y cómo ahorrar tiempo y dinero al llegar.</AccordionContent>
+                        </AccordionItem>
+                    </Accordion>
+                </div>
+            </section>
+            
+            {/* --- FINAL CTA --- */}
+             <section className="py-20 bg-primary text-primary-foreground">
+                <div className="container text-center">
+                     <h2 className="text-3xl md:text-4xl font-extrabold font-headline">Tu puente de Colombia a España empieza hoy.</h2>
+                     <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
+                         <Button size="lg" variant="secondary" className="text-lg h-12 px-8" onClick={() => handleCheckout('monthly')}>
+                            <ArrowRight className="mr-2 h-5 w-5" /> Probar Valeria por 4,97 €/mes
+                        </Button>
+                        <Button size="lg" variant="outline" className="text-lg h-12 px-8 border-white text-white hover:bg-white hover:text-primary" onClick={() => handleCheckout('quarterly')}>
+                           Quiero el pack lanzamiento 3 meses
+                        </Button>
+                    </div>
+                </div>
+            </section>
         </div>
-    </div>
-    <CheckoutSheet
-        isOpen={isSheetOpen}
-        onOpenChange={setIsSheetOpen}
-        plan={selectedPlan}
-    />
-     <VideoModal 
-        isOpen={isVideoModalOpen}
-        setIsOpen={setVideoModalOpen}
-        videoUrl={videoUrl}
-        title="Demostración de Valeria, tu Asistente IA"
-    />
-    </>
-  );
+    );
 }
 
 export default function ValeriaPage() {
     return (
-        <Suspense fallback={<div className="flex justify-center p-12"><Loader2 className="h-8 w-8 animate-spin text-primary"/></div>}>
+        <Suspense fallback={<div>Cargando...</div>}>
             <ValeriaPageContent />
         </Suspense>
     );

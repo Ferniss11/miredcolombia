@@ -127,11 +127,9 @@ export async function createSubscriptionCheckoutSessionAction(input: CreateSubsc
     let stripePriceId: string | undefined;
     if (planId === 'valeria_premium') {
         stripePriceId = process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_VALERIA_PREMIUM;
-    } 
-    // Add other plans here in the future if needed
-    // else if (planId === 'valeria_pro') {
-    //     stripePriceId = process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_IA_PRO;
-    // }
+    } else if (planId === 'valeria_premium_quarterly') {
+        stripePriceId = process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_VALERIA_QUARTERLY;
+    }
 
     if (!stripePriceId) {
         throw new Error(`Stripe Price ID for plan '${planId}' is not configured in environment variables.`);

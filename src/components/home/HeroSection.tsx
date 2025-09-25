@@ -31,15 +31,15 @@ export default function HeroSection() {
                   className="mb-6 rounded-2xl shadow-lg"
                 />
                 <h1 className="text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl lg:text-7xl font-headline">
-                    Tu puente de Colombia a España: empleo, vivienda y papeles en regla sin perderte en el camino.
+                    Empleo, vivienda y papeles en regla: Valeria te guía paso a paso
                 </h1>
                 <p className="mt-4 max-w-3xl text-lg md:text-xl text-gray-200 font-body">
-                    Con nuestra Inteligencia Artificial, Valeria, y nuestro equipo juridico profesional, tendrás el acompañamiento que necesitas en tu proceso de migración. 
+                    Asesoría 24/7 con instrucciones claras, checklists y respuestas actualizadas para que tomes decisiones rápidas y seguras. Sin vueltas, sin miedo, sin errores.
                 </p>
                 <div className="mt-8">
                     <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-6 text-base" onClick={openChat}>
                         <MessageCircle className="mr-2 h-5 w-5" />
-                        Hablar con Valeria
+                        Pon a prueba a Valeria
                     </Button>
                 </div>
             </div>
