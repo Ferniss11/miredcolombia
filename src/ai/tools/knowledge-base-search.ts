@@ -1,4 +1,3 @@
-
 'use server';
 
 /**
@@ -32,26 +31,27 @@ export const knowledgeBaseSearch = ai.defineTool(
     let queryVector: number[] | undefined;
 
     try {
-      debugLogs.push('Iniciando la herramienta `knowledgeBaseSearch`.');
+      debugLogs.push('Paso 1: Iniciando la herramienta `knowledgeBaseSearch`.');
       if (!adminDb) {
         throw new Error("[Tool Error] Firestore (adminDb) no está inicializado.");
       }
 
-      // Step 1: Generate an embedding for the user's query.
-      debugLogs.push(`Generando embedding para la consulta: "${query}"`);
+      // Step 2: Generate an embedding for the user's query.
+      debugLogs.push(`Paso 2: Generando embedding para la consulta: "${query}" usando el modelo 'embedding-004'.`);
       const embeddingResult = await ai.embed({
-        embedder: 'googleai/text-embedding-004',
+        embedder: 'embedding-004',
         content: query,
       });
       
       queryVector = embeddingResult.embedding;
+      debugLogs.push(`Paso 3: Verificando el resultado del embedding. Vector recibido: ${queryVector ? 'Sí' : 'No'}.`);
+
       if (!queryVector) throw new Error("La API no devolvió un vector de embedding.");
-      debugLogs.push('Embedding generado con éxito.');
       
       const collectionRef = adminDb.collection(KNOWLEDGE_BASE_COLLECTION);
       
-      // Step 2: Perform vector search to find the nearest neighbors.
-      debugLogs.push('Construyendo la consulta de búsqueda de vectores (findNearest).');
+      // Step 4: Perform vector search to find the nearest neighbors.
+      debugLogs.push('Paso 4: Construyendo la consulta de búsqueda de vectores (findNearest).');
       const vectorQuery: VectorQuery = collectionRef.findNearest({
         vectorField: 'embedding',
         queryVector: queryVector,
@@ -59,11 +59,11 @@ export const knowledgeBaseSearch = ai.defineTool(
         distanceMeasure: 'COSINE',
       });
       
-      debugLogs.push('Ejecutando la búsqueda de vectores en Firestore.');
+      debugLogs.push('Paso 5: Ejecutando la búsqueda de vectores en Firestore.');
       const querySnapshot: VectorQuerySnapshot = await vectorQuery.get();
-      debugLogs.push(`Búsqueda completada. ${querySnapshot.docs.length} documentos encontrados inicialmente.`);
+      debugLogs.push(`Paso 6: Búsqueda completada. ${querySnapshot.docs.length} documentos encontrados inicialmente.`);
 
-      // Step 3: Filter the results based on the context (session or global)
+      // Step 7: Filter the results based on the context (session or global)
       const finalResults = querySnapshot.docs.filter(doc => {
         const metadata = doc.data().metadata;
         if (!metadata) return false;
@@ -75,13 +75,13 @@ export const knowledgeBaseSearch = ai.defineTool(
 
         return false;
       });
-      debugLogs.push(`Filtrado completado. ${finalResults.length} documentos relevantes para el contexto actual.`);
+      debugLogs.push(`Paso 7: Filtrado completado. ${finalResults.length} documentos relevantes para el contexto actual.`);
 
       if (finalResults.length === 0) {
         return `[INFO: Búsqueda completada, no se encontraron documentos relevantes para la consulta: "${query}". Informa al usuario amablemente que no tienes información sobre ese tema y pregúntale si puede ser más específico.]`;
       }
       
-      // Step 4: Limit to top N results and format the output into a single string.
+      // Step 8: Limit to top N results and format the output into a single string.
       const topResults = finalResults.slice(0, 5);
 
       const searchResultsText = topResults.map(doc => {
@@ -94,12 +94,9 @@ export const knowledgeBaseSearch = ai.defineTool(
       return `[INFO: Búsqueda completada. Documentos encontrados:\n${searchResultsText}]`;
 
     } catch (error) {
-      console.error("[Knowledge Base Tool] Error performing vector search:", error);
       debugLogs.push('!!! ERROR CAPTURADO EN LA HERRAMIENTA !!!');
-      // Serialize the full error object for detailed debugging.
       const fullError = JSON.stringify(error, Object.getOwnPropertyNames(error), 2);
       
-      // Return a detailed error report FOR THE DEBUGGER. The LLM will likely ignore this format.
       const debugObject = {
         error: `La herramienta de búsqueda de conocimiento falló.`,
         causa: error instanceof Error ? error.message : "Error desconocido",
