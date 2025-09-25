@@ -7,8 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { debugUnsplashSearchAction, debugAdminInitAction } from '@/lib/ai-actions';
-import { Loader2, Search, Bug, Server } from 'lucide-react';
+import { debugUnsplashSearchAction, debugAdminInitAction, debugKnowledgeBaseSearchAction } from '@/lib/ai-actions';
+import { Loader2, Search, Bug, Server, BrainCircuit } from 'lucide-react';
 import Image from 'next/image';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
@@ -19,31 +19,35 @@ type UnsplashResult = {
 
 export default function AdminDebugPage() {
   const { toast } = useToast();
-  const [isSearching, startSearchTransition] = useTransition();
+  const [isSearchingUnsplash, startUnsplashSearchTransition] = useTransition();
   const [isCheckingAdmin, startAdminCheckTransition] = useTransition();
+  const [isSearchingKb, startKbSearchTransition] = useTransition();
 
-  const [query, setQuery] = useState('colombian food');
+  const [unsplashQuery, setUnsplashQuery] = useState('colombian food');
   const [unsplashResult, setUnsplashResult] = useState<UnsplashResult>(null);
   const [unsplashError, setUnsplashError] = useState<string | null>(null);
 
   const [adminStatus, setAdminStatus] = useState<string | null>(null);
 
-  const handleSearch = () => {
-    if (!query) {
+  const [kbQuery, setKbQuery] = useState('visa de trabajo');
+  const [kbResult, setKbResult] = useState<string | null>(null);
+  const [kbError, setKbError] = useState<string | null>(null);
+
+  const handleUnsplashSearch = () => {
+    if (!unsplashQuery) {
       toast({ variant: 'destructive', title: 'Error', description: 'Por favor, introduce una consulta.' });
       return;
     }
-
-    startSearchTransition(async () => {
+    startUnsplashSearchTransition(async () => {
       setUnsplashResult(null);
       setUnsplashError(null);
-      const actionResult = await debugUnsplashSearchAction(query);
+      const actionResult = await debugUnsplashSearchAction(unsplashQuery);
       if (actionResult.error) {
         setUnsplashError(actionResult.error);
         toast({ variant: 'destructive', title: 'Error en la Búsqueda', description: actionResult.error });
       } else if (actionResult.result) {
         setUnsplashResult(actionResult.result as UnsplashResult);
-        toast({ title: 'Búsqueda Exitosa', description: `Se encontró una imagen para "${query}".` });
+        toast({ title: 'Búsqueda Exitosa', description: `Se encontró una imagen para "${unsplashQuery}".` });
       }
     });
   };
@@ -56,12 +60,76 @@ export default function AdminDebugPage() {
     });
   };
 
+  const handleKbSearch = () => {
+     if (!kbQuery) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Por favor, introduce una consulta para la base de conocimiento.' });
+      return;
+    }
+    startKbSearchTransition(async () => {
+      setKbResult(null);
+      setKbError(null);
+      const actionResult = await debugKnowledgeBaseSearchAction(kbQuery);
+      if (actionResult.error) {
+        setKbError(actionResult.error);
+      } else {
+        setKbResult(actionResult.result ?? "La herramienta no devolvió ningún resultado.");
+      }
+    });
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
         <Bug className="w-8 h-8 text-destructive" />
         <h1 className="text-3xl font-bold font-headline">Depuración de Herramientas IA</h1>
       </div>
+
+       <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2"><BrainCircuit className="w-5 h-5"/>Probar Herramienta: Knowledge Base Search</CardTitle>
+          <CardDescription>
+            Invoca directamente la herramienta de búsqueda vectorial para verificar si está funcionando y qué resultados devuelve desde Firestore.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-2">
+            <div className="grid w-full gap-1.5">
+              <Label htmlFor="kb-query">Consulta de Búsqueda</Label>
+              <Input
+                id="kb-query"
+                placeholder="Ej: ¿cómo homologar mi título?"
+                value={kbQuery}
+                onChange={(e) => setKbQuery(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleKbSearch()}
+              />
+            </div>
+            <Button onClick={handleKbSearch} disabled={isSearchingKb} className="self-end">
+              {isSearchingKb ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Search className="mr-2 h-4 w-4" />}
+              Probar
+            </Button>
+          </div>
+            {isSearchingKb && (
+                <div className="text-center p-4"><Loader2 className="mx-auto h-6 w-6 animate-spin text-primary" /><p className="text-sm text-muted-foreground mt-2">Buscando en la base de conocimiento...</p></div>
+            )}
+            {kbError && (
+              <Alert variant="destructive" className="mt-4">
+                  <AlertTitle>Error en la Herramienta</AlertTitle>
+                  <AlertDescription>
+                      <pre className="text-xs whitespace-pre-wrap break-all font-mono">{kbError}</pre>
+                  </AlertDescription>
+              </Alert>
+            )}
+            {kbResult && (
+              <Alert className="mt-4">
+                  <AlertTitle>Respuesta de la Herramienta</AlertTitle>
+                  <AlertDescription>
+                      <pre className="text-xs whitespace-pre-wrap break-all font-mono">{kbResult}</pre>
+                  </AlertDescription>
+              </Alert>
+            )}
+        </CardContent>
+      </Card>
+
 
       <Card>
         <CardHeader>
@@ -107,20 +175,20 @@ export default function AdminDebugPage() {
               <Input
                 id="search-query"
                 placeholder="Ej: madrid cityscape, legal documents"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                value={unsplashQuery}
+                onChange={(e) => setUnsplashQuery(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleUnsplashSearch()}
               />
             </div>
-            <Button onClick={handleSearch} disabled={isSearching} className="self-end">
-              {isSearching ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Search className="mr-2 h-4 w-4" />}
+            <Button onClick={handleUnsplashSearch} disabled={isSearchingUnsplash} className="self-end">
+              {isSearchingUnsplash ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Search className="mr-2 h-4 w-4" />}
               Buscar
             </Button>
           </div>
         </CardContent>
       </Card>
 
-      {isSearching && (
+      {isSearchingUnsplash && (
         <div className="text-center p-8 space-y-4">
           <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" />
           <p className="text-muted-foreground">Buscando en Unsplash...</p>
