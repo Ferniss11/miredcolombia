@@ -13,6 +13,8 @@ export type AgentCompletionOutput = {
   // Add a field to hold debug information from tool calls
   debugInfo?: {
     toolInvocations?: Array<{ tool: string; result: any }>;
+    systemPrompt?: string; // Include the exact system prompt used
+    [key: string]: any; // Allow for other debug info
   };
 };
 

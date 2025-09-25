@@ -14,7 +14,7 @@ type DebugInfoCardProps = {
 };
 
 export default function DebugInfoCard({ title, description, data }: DebugInfoCardProps) {
-    const [isOpen, setIsOpen] = useState(false);
+    const [isOpen, setIsOpen] = useState(true); // Default to open for better DX
 
     // Safely render tool invocations
     const renderToolInvocations = () => {

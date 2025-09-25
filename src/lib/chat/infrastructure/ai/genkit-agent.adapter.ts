@@ -138,13 +138,14 @@ export class GenkitAgentAdapter implements AgentAdapter {
         const usage = aiResponse.usage || { inputTokens: 0, outputTokens: 0, totalTokens: 0 };
         const cost = calculateCost(agentConfig.model, usage.inputTokens, usage.outputTokens);
         
+        // Pass the full used config to the output for display in the lab
         const usedConfig = { model: agentConfig.model, systemPrompt: finalSystemPrompt };
         
         return { 
             response: aiResponse.response, 
             usage, 
             cost, 
-            agentConfig: usedConfig,
+            agentConfig: usedConfig, // Pass the merged config
             debugInfo: { 
                 toolInvocations: aiResponse.toolInvocations || [],
                 systemPrompt: finalSystemPrompt
@@ -153,8 +154,6 @@ export class GenkitAgentAdapter implements AgentAdapter {
     } catch (error) {
         console.error("[GenkitAgentAdapter] Error during AI generation:", error);
         
-        // **NEW ERROR HANDLING LOGIC**
-        // Return a structured error object with the full stack trace for debugging
         const fullError = {
             message: error instanceof Error ? error.message : "Unknown error",
             stack: error instanceof Error ? error.stack : undefined,

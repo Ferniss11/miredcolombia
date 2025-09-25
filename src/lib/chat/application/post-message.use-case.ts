@@ -149,9 +149,7 @@ export class PostMessageUseCase {
 
     const lastResponse: AgentCompletionOutput = {
         ...agentResponse,
-        debugInfo: Object.keys(finalDebugInfo).some(key => finalDebugInfo[key as keyof typeof finalDebugInfo] !== undefined)
-            ? finalDebugInfo
-            : undefined,
+        debugInfo: Object.keys(finalDebugInfo).length > 0 ? finalDebugInfo : undefined,
     };
     
     return {
