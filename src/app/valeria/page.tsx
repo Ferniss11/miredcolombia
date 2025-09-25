@@ -11,7 +11,10 @@ import { useAuth } from '@/context/AuthContext';
 import { createSubscriptionCheckoutSessionAction } from '@/lib/payment-actions';
 import { cn } from '@/lib/utils';
 import type { ValeriaPlan } from '@/lib/types';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
+
+const AGENT_AVATAR_URL = "https://firebasestorage.googleapis.com/v0/b/colombia-en-esp.firebasestorage.app/o/web%2Fvaleria_avatar.jpg?alt=media&token=baccf93a-2420-473e-9b70-ea28b874a960";
 
 const ValuePropItem = ({ icon: Icon, children }: { icon: React.ElementType, children: React.ReactNode }) => (
     <div className="flex items-start gap-4">
@@ -68,16 +71,14 @@ function ValeriaPageContent() {
     const { user } = useAuth();
     const { toast } = useToast();
 
-    const handleCheckout = async (planId: 'monthly' | 'quarterly') => {
+    const handleCheckout = async (planId: 'valeria_premium' | 'valeria_premium_quarterly') => {
         if (!user) {
             toast({ variant: 'destructive', title: 'Error', description: 'Debes iniciar sesión o crear una cuenta para suscribirte.' });
             return;
         }
         
-        const internalPlanId = planId === 'monthly' ? 'valeria_premium' : 'valeria_premium_quarterly';
-
         const result = await createSubscriptionCheckoutSessionAction({
-            planId: internalPlanId,
+            planId: planId,
             userId: user.uid,
             userEmail: user.email!,
         });
@@ -93,13 +94,17 @@ function ValeriaPageContent() {
         <div className="bg-secondary/30 dark:bg-card/30">
             {/* --- HERO SECTION --- */}
             <section className="py-20 text-center">
-                <div className="container max-w-4xl">
+                <div className="container max-w-4xl flex flex-col items-center">
+                    <Avatar className="w-24 h-24 mb-6 border-4 border-primary/20 shadow-lg">
+                        <AvatarImage src={AGENT_AVATAR_URL} alt="Avatar de Valeria" className="object-cover" />
+                        <AvatarFallback>V</AvatarFallback>
+                    </Avatar>
                     <h1 className="text-4xl md:text-6xl font-extrabold font-headline tracking-tight">Tu Puente de Colombia a España Empieza Hoy</h1>
                     <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
-                        <Button size="lg" className="text-lg h-12 px-8" onClick={() => handleCheckout('monthly')}>
+                        <Button size="lg" className="text-lg h-12 px-8" onClick={() => handleCheckout('valeria_premium')}>
                            Comprar Premium por 4,97 €/mes
                         </Button>
-                        <Button size="lg" variant="outline" className="text-lg h-12 px-8" onClick={() => handleCheckout('quarterly')}>
+                        <Button size="lg" variant="outline" className="text-lg h-12 px-8" onClick={() => handleCheckout('valeria_premium_quarterly')}>
                            Oferta: 3 meses por 9,97 €
                         </Button>
                     </div>
@@ -160,7 +165,7 @@ function ValeriaPageContent() {
                                 <p className="text-sm text-muted-foreground mt-2">Menos de lo que cuesta un café a la semana.</p>
                             </CardContent>
                             <CardFooter>
-                                <Button className="w-full" onClick={() => handleCheckout('monthly')}>Empezar Ahora por 4,97€</Button>
+                                <Button className="w-full" onClick={() => handleCheckout('valeria_premium')}>Empezar Ahora por 4,97€</Button>
                             </CardFooter>
                         </Card>
                          <Card className="border-primary border-2 flex flex-col relative">
@@ -174,7 +179,7 @@ function ValeriaPageContent() {
                                 <p className="text-sm text-muted-foreground mt-2">Equivale a 3,32€/mes. ¡Ahorra!</p>
                             </CardContent>
                              <CardFooter>
-                                <Button className="w-full" variant="default" onClick={() => handleCheckout('quarterly')}>Aprovechar Oferta 3 Meses</Button>
+                                <Button className="w-full" variant="default" onClick={() => handleCheckout('valeria_premium_quarterly')}>Aprovechar Oferta 3 Meses</Button>
                             </CardFooter>
                         </Card>
                     </div>
@@ -230,10 +235,10 @@ function ValeriaPageContent() {
                 <div className="container text-center">
                      <h2 className="text-3xl md:text-4xl font-extrabold font-headline">Tu puente de Colombia a España empieza hoy.</h2>
                      <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
-                         <Button size="lg" variant="secondary" className="text-lg h-12 px-8" onClick={() => handleCheckout('monthly')}>
+                         <Button size="lg" variant="secondary" className="text-lg h-12 px-8" onClick={() => handleCheckout('valeria_premium')}>
                             <ArrowRight className="mr-2 h-5 w-5" /> Comprar Premium por 4,97 €/mes
                         </Button>
-                        <Button size="lg" variant="outline" className="text-lg h-12 px-8 border-white text-white hover:bg-white hover:text-primary" onClick={() => handleCheckout('quarterly')}>
+                        <Button size="lg" variant="outline" className="text-lg h-12 px-8 border-white text-white hover:bg-white hover:text-primary" onClick={() => handleCheckout('valeria_premium_quarterly')}>
                            Oferta: 3 meses por 9,97 €
                         </Button>
                     </div>

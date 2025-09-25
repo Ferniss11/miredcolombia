@@ -183,7 +183,7 @@ const UpgradeButton = () => {
 
 
 // --- Main Chat Widget Component ---
-const AGENT_AVATAR_URL = "https://firebasestorage.googleapis.com/v0/b/colombia-en-esp.firebasestorage.app/o/web%2FImagen%20de%20WhatsApp%202025-08-09%20a%20las%2018.20.39_3c2b6161.jpg?alt=media&token=41ebe34a-f846-41fc-937f-4141f1240ee8";
+const AGENT_AVATAR_URL = "https://firebasestorage.googleapis.com/v0/b/colombia-en-esp.firebasestorage.app/o/web%2Fvaleria_avatar.jpg?alt=media&token=baccf93a-2420-473e-9b70-ea28b874a960";
 
 interface ChatWidgetProps {
     isLabMode?: boolean;

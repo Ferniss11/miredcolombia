@@ -28,8 +28,8 @@ export default function HomePageClient({ initialGuides }: HomePageClientProps) {
         <AiAssistantSection onOpenChatModal={openChat} />
         <TestimonialsSection />
         <FinalCtaBanner />
-        <HowWeHelpSection />
         <PackagesSection />
+        <HowWeHelpSection />
         <GuidesSection guides={initialGuides} />
       </main>
     </div>
