@@ -221,8 +221,6 @@ export default function AgentLabPage() {
   const [isKnowledgeModalOpen, setIsKnowledgeModalOpen] = useState(false);
   const [knowledgeBaseKey, setKnowledgeBaseKey] = useState(0);
 
-  const [debugInfo, setDebugInfo] = useState<any | null>(null);
-
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -253,7 +251,6 @@ export default function AgentLabPage() {
   const handleStartNewSession = () => {
     setActiveSession(null);
     setInitialHistory([]);
-    setDebugInfo(null);
   };
   
   const handleSelectSession = (session: ChatSession) => {
@@ -266,7 +263,6 @@ export default function AgentLabPage() {
             const { session: fullSession, messages } = await response.json();
             setActiveSession(fullSession);
             setInitialHistory(messages);
-            setDebugInfo(null);
             const agentId = fullSession.userName?.includes('valeria_premium') ? 'valeria_premium' : 'global';
             setSelectedAgent(agentId);
         } catch (error) {
@@ -294,7 +290,6 @@ export default function AgentLabPage() {
             const { session, history } = await response.json();
             setActiveSession(session);
             setInitialHistory(history);
-            setDebugInfo(null);
             await fetchLabSessions();
         } catch (error) {
             toast({ variant: 'destructive', title: 'Error', description: error instanceof Error ? error.message : 'Error desconocido' });
@@ -313,7 +308,6 @@ export default function AgentLabPage() {
             if (activeSession?.id === deletingSessionId) {
                 setActiveSession(null);
                 setInitialHistory([]);
-                setDebugInfo(null);
             }
             setDeletingSessionId(null);
             await fetchLabSessions();
@@ -335,7 +329,6 @@ export default function AgentLabPage() {
                 agentConfig: lastResponse.agentConfig,
             }) : null);
         }
-        setDebugInfo(lastResponse.debugInfo || null);
         if (lastResponse.debugInfo?.generatedChunks) {
             setKnowledgeBaseKey(prev => prev + 1);
         }
@@ -411,12 +404,6 @@ export default function AgentLabPage() {
                         )}
                     </CardContent>
                 </Card>
-                
-                 <div className="flex-shrink-0 space-y-4">
-                    {debugInfo && (
-                        <DebugInfoCard title="Información de Depuración (Último Mensaje)" description="Resultados devueltos por las herramientas de Genkit en el último turno." data={debugInfo} />
-                    )}
-                </div>
             </div>
         </div>
     </div>
