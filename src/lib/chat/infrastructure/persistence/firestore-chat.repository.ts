@@ -1,7 +1,7 @@
 // src/lib/chat/infrastructure/persistence/firestore-chat.repository.ts
 import type { ChatMessage } from '../../domain/chat-message.entity';
 import type { ChatSession } from '../../domain/chat-session.entity';
-import type { ChatRepository } from '../../domain/chat.repository';
+import type { ChatRepository } from '../domain/chat.repository';
 import { adminDb, adminInstance } from '@/lib/firebase/admin-config';
 import type { DocumentData, QueryDocumentSnapshot, DocumentSnapshot, CollectionReference } from 'firebase-admin/firestore';
 import { AgentConfig } from '@/lib/chat-types';
@@ -103,9 +103,9 @@ export class FirestoreChatRepository implements ChatRepository {
     };
   }
 
-  async saveMessage(messageData: Omit<ChatMessage, 'id' | 'timestamp'> & { timestamp?: Date, agentConfig?: AgentConfig }): Promise<ChatMessage> {
+  async saveMessage(messageData: Omit<ChatMessage, 'id' | 'timestamp'>, agentConfig?: AgentConfig): Promise<ChatMessage> {
     const db = this.getDb();
-    const { sessionId, businessId, agentConfig, ...restOfMessage } = messageData as any;
+    const { sessionId, businessId, ...restOfMessage } = messageData as any;
     
     const sessionDocPath = businessId
         ? `directory/${businessId}/businessChatSessions/${sessionId}`

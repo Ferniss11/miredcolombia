@@ -1,4 +1,5 @@
 // src/lib/chat/domain/chat.repository.ts
+import type { AgentConfig } from '@/lib/chat-types';
 import type { ChatMessage } from './chat-message.entity';
 import type { ChatSession } from './chat-session.entity';
 
@@ -37,9 +38,10 @@ export interface ChatRepository {
   /**
    * Saves a new message to a specific chat session.
    * @param message - The message entity to save.
+   * @param agentConfig - Optional agent configuration used to generate this message.
    * @returns The saved message entity, possibly with a database-generated ID.
    */
-  saveMessage(message: Omit<ChatMessage, 'id' | 'timestamp'>): Promise<ChatMessage>;
+  saveMessage(message: Omit<ChatMessage, 'id' | 'timestamp'>, agentConfig?: AgentConfig): Promise<ChatMessage>;
 
   /**
    * Retrieves the full message history for a given chat session.

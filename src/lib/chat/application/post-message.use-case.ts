@@ -139,7 +139,7 @@ export class PostMessageUseCase {
       usage: agentResponse.usage,
       cost: agentResponse.cost,
     };
-    await this.chatRepository.saveMessage(aiMsgEntity);
+    await this.chatRepository.saveMessage(aiMsgEntity, agentResponse.agentConfig);
     
     // Enrich the debug info from the agent adapter with any data from this use case
     const finalDebugInfo = {
