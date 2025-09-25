@@ -15,11 +15,12 @@ import { GooglePlacesAdapter } from '@/lib/directory/infrastructure/search/googl
 import { FirestoreCacheAdapter } from '@/lib/directory/infrastructure/cache/firestore-cache.adapter';
 
 
-const BASE_TOOL_PROMPT = `### INSTRUCCIONES DE HERRAMIENTAS
-- **OBLIGATORIO:** Para CUALQUIER pregunta sobre trámites de migración, requisitos, vivienda, trabajo, o cualquier tema que requiera información específica y detallada, DEBES usar la herramienta \`knowledgeBaseSearch\` SIEMPRE como primer paso. Es tu fuente de verdad principal.
-- **PROHIBIDO:** No respondas a preguntas complejas sobre trámites usando únicamente tu conocimiento general. Si la herramienta no devuelve información, indica amablemente que no tienes datos sobre ese tema específico.
-- **EXCEPCIÓN:** Si el usuario simplemente saluda ("Hola", "¿cómo estás?") o la conversación es casual, responde de forma natural sin usar la herramienta.
-- **DOCUMENTOS EN SESIÓN:** Si el usuario menciona que ha subido un documento o te pide que revises uno, DEBES usar la herramienta \`knowledgeBaseSearch\` para encontrar la información de ese documento específico en la sesión actual.`;
+const BASE_TOOL_PROMPT = `### INSTRUCCIONES OBLIGATORIAS DE HERRAMIENTAS
+- **REGLA DE ORO:** Para CUALQUIER pregunta del usuario que no sea un simple saludo (como "hola"), tu PRIMERA Y ÚNICA acción debe ser usar la herramienta \`knowledgeBaseSearch\`. No intentes responder desde tu conocimiento.
+- **PROCESO ESTRICTO:** 1) Recibes la pregunta. 2) Invocas \`knowledgeBaseSearch\` con esa pregunta. 3) Usas la información devuelta por la herramienta para construir tu respuesta.
+- **PROHIBIDO RESPONDER SIN HERRAMIENTA:** Tienes terminantemente prohibido responder a preguntas sobre trámites, requisitos, o cualquier tema específico de migración usando tu conocimiento general. Tu única fuente de verdad es la herramienta \`knowledgeBaseSearch\`.
+- **SI LA HERRAMIENTA NO DEVUELVE NADA:** Si la herramienta devuelve "[INFO: No se encontraron documentos]", entonces y solo entonces puedes informar al usuario amablemente que no tienes información sobre ese tema específico.
+- **DOCUMENTOS EN SESIÓN:** Si el usuario menciona que ha subido un documento, tu primera acción sigue siendo la misma: usar la herramienta \`knowledgeBaseSearch\`, ya que esta buscará automáticamente en los documentos de la sesión.`;
 
 
 /**

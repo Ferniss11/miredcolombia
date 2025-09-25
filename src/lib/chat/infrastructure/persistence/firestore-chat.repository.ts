@@ -4,6 +4,7 @@ import type { ChatSession } from '../../domain/chat-session.entity';
 import type { ChatRepository } from '../../domain/chat.repository';
 import { adminDb, adminInstance } from '@/lib/firebase/admin-config';
 import type { DocumentData, QueryDocumentSnapshot, DocumentSnapshot, CollectionReference } from 'firebase-admin/firestore';
+import { AgentConfig } from '@/lib/chat-types';
 
 const FieldValue = adminInstance?.firestore.FieldValue;
 const GLOBAL_SESSIONS_COLLECTION = 'chatSessions';
@@ -102,9 +103,9 @@ export class FirestoreChatRepository implements ChatRepository {
     };
   }
 
-  async saveMessage(messageData: Omit<ChatMessage, 'id' | 'timestamp'> & { timestamp?: Date }): Promise<ChatMessage> {
+  async saveMessage(messageData: Omit<ChatMessage, 'id' | 'timestamp'> & { timestamp?: Date, agentConfig?: AgentConfig }): Promise<ChatMessage> {
     const db = this.getDb();
-    const { sessionId, businessId, ...restOfMessage } = messageData as any;
+    const { sessionId, businessId, agentConfig, ...restOfMessage } = messageData as any;
     
     const sessionDocPath = businessId
         ? `directory/${businessId}/businessChatSessions/${sessionId}`
@@ -142,6 +143,11 @@ export class FirestoreChatRepository implements ChatRepository {
             sessionUpdate.totalOutputTokens = FieldValue.increment(messageData.usage.outputTokens || 0);
             sessionUpdate.totalTokens = FieldValue.increment(messageData.usage.totalTokens || 0);
         }
+
+        if (agentConfig) {
+            sessionUpdate.agentConfig = agentConfig;
+        }
+
         transaction.update(sessionRef, sessionUpdate);
     });
     
