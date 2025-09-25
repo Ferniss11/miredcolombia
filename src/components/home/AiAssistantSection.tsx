@@ -3,14 +3,14 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Check, ArrowRight, MessageSquare, Shield, PlayCircle, X } from "lucide-react";
+import { Check, MessageSquare, Shield, PlayCircle, ArrowRight, Sparkles } from "lucide-react";
+import Link from "next/link";
+import { Card, CardContent } from "../ui/card";
+import Image from "next/image";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { createSubscriptionCheckoutSessionAction } from "@/lib/payment-actions";
 import type { ValeriaPlan } from "@/lib/types";
-import Link from "next/link";
-import { Card, CardContent } from "../ui/card";
-import Image from "next/image";
 
 const valeriaPlans: ValeriaPlan[] = [
     {
@@ -19,16 +19,16 @@ const valeriaPlans: ValeriaPlan[] = [
       price: 0,
       priceDetails: '',
       features: [],
-      cta: 'Chatear Gratis',
+      cta: 'Empezar Gratis',
       variant: 'outline'
     },
     {
       id: 'valeria_premium',
       name: 'Valeria Premium',
-      price: 4.99,
+      price: 4.97,
       priceDetails: '/mes',
       features: [],
-      cta: 'Probar Premium',
+      cta: 'Comprar Premium',
       variant: 'default'
     },
 ];
@@ -107,11 +107,6 @@ export default function AiAssistantSection({ onOpenChatModal }: AiAssistantSecti
                             <li className="flex items-start gap-3"><Check className="h-5 w-5 text-green-500 mt-1 flex-shrink-0"/><span><strong>Vivienda real:</strong> Filtros, documentación y alertas para evitar estafas.</span></li>
                             <li className="flex items-start gap-3"><Check className="h-5 w-5 text-green-500 mt-1 flex-shrink-0"/><span><strong>Papeles en regla:</strong> Rutas legales claras para tu caso (estudios, trabajo, arraigo).</span></li>
                         </ul>
-                        <div className="pt-2">
-                            <Button size="lg" onClick={onOpenChatModal}>
-                                <MessageSquare className="mr-2 h-5 w-5"/> Hablar con Valeria
-                            </Button>
-                        </div>
                     </div>
                     
                     <div className="flex items-center justify-center">
@@ -161,36 +156,51 @@ export default function AiAssistantSection({ onOpenChatModal }: AiAssistantSecti
                                 <div className="p-4 sm:p-6 border-r flex items-center">{feature.label}</div>
                                 <div className="p-4 sm:p-6 border-r flex items-center justify-center">
                                     {typeof featureData[feature.key].free === 'boolean' ? (
-                                        featureData[feature.key].free ? <Check className="h-6 w-6 text-green-500"/> : <X className="h-6 w-6 text-muted-foreground"/>
+                                        featureData[feature.key].free ? <Check className="h-6 w-6 text-green-500"/> : <div className="h-6 w-6 flex items-center justify-center text-muted-foreground">-</div>
                                     ) : <span className="font-semibold text-sm">{featureData[feature.key].free}</span>}
                                 </div>
                                 <div className="p-4 sm:p-6 flex items-center justify-center bg-primary/5">
                                     {typeof featureData[feature.key].premium === 'boolean' ? (
-                                        featureData[feature.key].premium ? <Check className="h-6 w-6 text-green-500"/> : <X className="h-6 w-6 text-muted-foreground"/>
+                                        featureData[feature.key].premium ? <Check className="h-6 w-6 text-green-500"/> : <div className="h-6 w-6 flex items-center justify-center text-muted-foreground">-</div>
                                     ) : <span className="font-semibold text-primary text-sm">{featureData[feature.key].premium}</span>}
                                 </div>
                             </div>
                         ))}
-                        <div className="grid grid-cols-3 border-t rounded-b-xl">
-                            <div className="p-4 sm:p-6 border-r flex flex-col justify-center">
-                               <Button variant="link" asChild className="p-0 justify-start">
-                                    <Link href="/valeria">Ver todas las características <ArrowRight className="ml-1 h-4 w-4"/></Link>
-                                </Button>
-                            </div>
-                            <div className="p-4 sm:p-6 border-r flex items-center justify-center">
+                         <div className="grid grid-cols-3 border-t">
+                            <div className="p-4 sm:p-6 border-r flex items-center justify-center"></div>
+                            <div className="p-4 sm:p-6 border-r text-center space-y-2">
+                                <p className="text-2xl font-bold">Gratis</p>
                                 <Button variant="outline" className="w-full" onClick={() => handlePlanSelection(valeriaPlans[0])}>{valeriaPlans[0].cta}</Button>
                             </div>
-                            <div className="p-4 sm:p-6 flex items-center justify-center bg-primary/5 rounded-br-xl">
+                            <div className="p-4 sm:p-6 text-center space-y-2 bg-primary/5">
+                                <p className="text-2xl font-bold">4,97€<span className="text-sm font-normal text-muted-foreground">/mes</span></p>
                                 <Button className="w-full" onClick={() => handlePlanSelection(valeriaPlans[1])}>{valeriaPlans[1].cta}</Button>
                             </div>
                         </div>
+                        <div className="grid grid-cols-3 border-t rounded-b-xl">
+                            <div className="p-4 sm:p-6 border-r flex items-center justify-center"></div>
+                             <div className="p-4 sm:p-6 border-r flex items-center justify-center"></div>
+                            <div className="p-4 sm:p-6 flex items-center justify-center bg-primary/5 rounded-br-xl">
+                                <Card className="bg-yellow-100 dark:bg-yellow-900/30 border-yellow-400 w-full">
+                                    <CardContent className="p-3 text-center">
+                                        <p className="font-bold text-yellow-900 dark:text-yellow-200">Oferta de Lanzamiento</p>
+                                        <p className="text-sm text-yellow-800 dark:text-yellow-300">Paga 3 meses por <strong>9,97€</strong></p>
+                                    </CardContent>
+                                </Card>
+                            </div>
+                        </div>
                     </div>
-                     <Card className="mt-8 bg-secondary/50">
+                     <div className="mt-8 text-center">
+                         <Button variant="link" asChild className="text-primary">
+                            <Link href="/valeria">Ver todas las características y preguntas frecuentes <ArrowRight className="ml-1 h-4 w-4"/></Link>
+                        </Button>
+                    </div>
+                     <Card className="mt-4 bg-secondary/50">
                         <CardContent className="p-4">
                              <div className="flex items-center gap-3">
                                 <Shield className="w-5 h-5 text-muted-foreground flex-shrink-0"/>
                                 <p className="text-xs text-muted-foreground">
-                                    Valeria es una herramienta informativa basada en IA y no constituye asesoramiento jurídico. Para decisiones legales específicas, consulta siempre a un profesional colegiado.
+                                    Valeria es una herramienta informativa basada en IA. No constituye asesoramiento jurídico. Para decisiones legales, consulta siempre a un profesional colegiado.
                                 </p>
                             </div>
                         </CardContent>

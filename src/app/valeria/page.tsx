@@ -71,7 +71,6 @@ function ValeriaPageContent() {
     const handleCheckout = async (planId: 'monthly' | 'quarterly') => {
         if (!user) {
             toast({ variant: 'destructive', title: 'Error', description: 'Debes iniciar sesión o crear una cuenta para suscribirte.' });
-            // Potentially open a login/signup modal here
             return;
         }
         
@@ -98,10 +97,10 @@ function ValeriaPageContent() {
                     <h1 className="text-4xl md:text-6xl font-extrabold font-headline tracking-tight">Tu Puente de Colombia a España Empieza Hoy</h1>
                     <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
                         <Button size="lg" className="text-lg h-12 px-8" onClick={() => handleCheckout('monthly')}>
-                           Probar Valeria por 4,97 €/mes
+                           Comprar Premium por 4,97 €/mes
                         </Button>
                         <Button size="lg" variant="outline" className="text-lg h-12 px-8" onClick={() => handleCheckout('quarterly')}>
-                           Quiero el pack lanzamiento 3 meses
+                           Oferta: 3 meses por 9,97 €
                         </Button>
                     </div>
                     <p className="text-muted-foreground text-sm mt-4">
@@ -161,7 +160,7 @@ function ValeriaPageContent() {
                                 <p className="text-sm text-muted-foreground mt-2">Menos de lo que cuesta un café a la semana.</p>
                             </CardContent>
                             <CardFooter>
-                                <Button className="w-full" onClick={() => handleCheckout('monthly')}>Empezar Ahora</Button>
+                                <Button className="w-full" onClick={() => handleCheckout('monthly')}>Empezar Ahora por 4,97€</Button>
                             </CardFooter>
                         </Card>
                          <Card className="border-primary border-2 flex flex-col relative">
@@ -171,13 +170,16 @@ function ValeriaPageContent() {
                                 <CardDescription>Ideal para cubrir preparación y llegada.</CardDescription>
                             </CardHeader>
                             <CardContent className="flex-grow">
-                                <p className="text-5xl font-bold">12,99€<span className="text-lg font-normal text-muted-foreground">/pago único</span></p>
-                                <p className="text-sm text-muted-foreground mt-2">Un solo pago para tus primeros 90 días.</p>
+                                <p className="text-5xl font-bold">9,97€<span className="text-lg font-normal text-muted-foreground">/pago único</span></p>
+                                <p className="text-sm text-muted-foreground mt-2">Equivale a 3,32€/mes. ¡Ahorra!</p>
                             </CardContent>
                              <CardFooter>
-                                <Button className="w-full" variant="default" onClick={() => handleCheckout('quarterly')}>Aprovechar Oferta</Button>
+                                <Button className="w-full" variant="default" onClick={() => handleCheckout('quarterly')}>Aprovechar Oferta 3 Meses</Button>
                             </CardFooter>
                         </Card>
+                    </div>
+                    <div className="mt-8 text-center text-sm text-muted-foreground">
+                        <p><strong>Garantía de tranquilidad:</strong> Si en los primeros 7 días sientes que Valeria no te aporta claridad, te ayudamos a ajustar tu plan (y si no te encaja, cancelas sin lío).</p>
                     </div>
                 </div>
             </section>
@@ -217,7 +219,7 @@ function ValeriaPageContent() {
                         </AccordionItem>
                         <AccordionItem value="item-5">
                             <AccordionTrigger>¿Sirve si todavía estoy en Colombia?</AccordionTrigger>
-                            <AccordionContent>Sí. Incluye una sección “antes de viajar”: documentos a traer, apostillas, convalidaciones, gastos reales y cómo ahorrar tiempo y dinero al llegar.</AccordionContent>
+                            <AccordionContent>Sí. Incluye “antes de viajar”: documentos a traer, apostillas, convalidaciones, gastos reales y cómo ahorrar tiempo y dinero al llegar.</AccordionContent>
                         </AccordionItem>
                     </Accordion>
                 </div>
@@ -229,10 +231,10 @@ function ValeriaPageContent() {
                      <h2 className="text-3xl md:text-4xl font-extrabold font-headline">Tu puente de Colombia a España empieza hoy.</h2>
                      <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
                          <Button size="lg" variant="secondary" className="text-lg h-12 px-8" onClick={() => handleCheckout('monthly')}>
-                            <ArrowRight className="mr-2 h-5 w-5" /> Probar Valeria por 4,97 €/mes
+                            <ArrowRight className="mr-2 h-5 w-5" /> Comprar Premium por 4,97 €/mes
                         </Button>
                         <Button size="lg" variant="outline" className="text-lg h-12 px-8 border-white text-white hover:bg-white hover:text-primary" onClick={() => handleCheckout('quarterly')}>
-                           Quiero el pack lanzamiento 3 meses
+                           Oferta: 3 meses por 9,97 €
                         </Button>
                     </div>
                 </div>
