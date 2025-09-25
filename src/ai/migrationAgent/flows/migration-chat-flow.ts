@@ -50,8 +50,8 @@ const migrationChatFlow = ai.defineFlow(
         // CRITICAL FIX: Map the history to the format { text, role } that the AI model expects.
         // This was the root cause of the previous silent failures.
         const history = input.chatHistory.map(message => ({
-            text: message.role === 'admin' ? `[Mensaje del Administrador: ${message.text}]` : message.text,
-            role: message.role === 'user' ? 'user' : 'model', // Treat 'admin' messages as if they came from the 'model'
+            role: message.role === 'admin' ? 'model' : message.role, // Treat 'admin' messages as if they came from the 'model'
+            content: [{ text: message.role === 'admin' ? `[Mensaje del Administrador: ${message.text}]` : message.text }],
         }));
         
         try {
@@ -59,17 +59,15 @@ const migrationChatFlow = ai.defineFlow(
                 model: input.model as any,
                 tools: [knowledgeBaseSearch],
                 system: input.systemPrompt, // Pass the system instructions via the dedicated `system` property
-                prompt: [
-                    ...history, // Spread the existing, correctly-formatted conversation history
-                    { text: input.currentMessage, role: 'user' }, // The user's latest message
-                ],
+                history: history, // Pass the existing, correctly-formatted conversation history
+                prompt: input.currentMessage, // The user's latest message
                 // Pass the session ID to the tool context, so tools like knowledgeBaseSearch can use it
                 context: { sessionId: input.sessionId }, 
             });
             
-            const output = llmResponse.output;
+            const output = llmResponse.output();
 
-            if (!output || !llmResponse.text) {
+            if (!output || !llmResponse.text()) {
                 // If the model truly returns nothing, provide a graceful fallback.
                 console.warn('[migrationChatFlow] LLM response was empty. Falling back.');
                 return {
@@ -80,14 +78,14 @@ const migrationChatFlow = ai.defineFlow(
             }
 
             return {
-                response: llmResponse.text,
+                response: llmResponse.text(),
                 usage: {
-                    inputTokens: llmResponse.usage?.inputTokens || 0,
-                    outputTokens: llmResponse.usage?.outputTokens || 0,
-                    totalTokens: llmResponse.usage?.totalTokens || 0,
+                    inputTokens: llmResponse.usage().input || 0,
+                    outputTokens: llmResponse.usage().output || 0,
+                    totalTokens: llmResponse.usage().total,
                 },
                 // Map tool calls to the expected format if they exist
-                toolInvocations: llmResponse.toolRequests?.map(tr => ({
+                toolInvocations: llmResponse.toolRequests().map(tr => ({
                     tool: tr.name,
                     result: tr.output,
                 })) || [],
@@ -103,3 +101,4 @@ const migrationChatFlow = ai.defineFlow(
         }
     }
 );
+
