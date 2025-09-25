@@ -64,9 +64,9 @@ const migrationChatFlow = ai.defineFlow(
                 context: context, // Pass the received context down to the generate call
             });
             
-            const output = llmResponse.output();
+            const output = llmResponse.output;
 
-            if (!output || !llmResponse.text()) {
+            if (!output || !llmResponse.text) {
                 console.warn('[migrationChatFlow] LLM response was empty. Falling back.');
                 return {
                     response: "Lo siento, no he podido procesar esa respuesta. ¿Podrías intentarlo de nuevo?",
@@ -76,7 +76,7 @@ const migrationChatFlow = ai.defineFlow(
             }
 
             return {
-                response: llmResponse.text(),
+                response: llmResponse.text,
                 usage: {
                     inputTokens: llmResponse.usage().input || 0,
                     outputTokens: llmResponse.usage().output || 0,

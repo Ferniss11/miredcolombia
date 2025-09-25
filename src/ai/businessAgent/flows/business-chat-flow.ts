@@ -101,15 +101,15 @@ La fecha y hora actual es: ${now.toLocaleString('es-ES', { timeZone: 'Europe/Mad
             context: context, // Pass context to the tools
         });
         
-        const output = llmResponse.output();
+        const output = llmResponse.output;
         const usage = llmResponse.usage();
         
-        if (!output || !llmResponse.text()) {
+        if (!output || !llmResponse.text) {
             throw new Error('La respuesta de la IA fue vacía.');
         }
 
         return {
-            response: llmResponse.text(),
+            response: llmResponse.text,
             usage: {
                 inputTokens: usage.input || 0,
                 outputTokens: usage.output || 0,
