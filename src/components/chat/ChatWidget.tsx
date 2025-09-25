@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useRef, useEffect, useCallback, useTransition, Fragment } from 'react';
@@ -213,14 +214,19 @@ export default function ChatWidget({ isLabMode = false, labConfig, initialHistor
 
   const isPremiumUser = claims?.valeria_plan === 'valeria_premium';
   
-  // Determine if the chat should be active. For inline mode, it's always active.
   const isChatActive = isInline || isChatOpen;
+  
+  const scrollToBottom = useCallback(() => {
+    if (scrollAreaRef.current) {
+        setTimeout(() => {
+             scrollAreaRef.current?.scrollTo({ top: scrollAreaRef.current.scrollHeight, behavior: 'smooth' });
+        }, 100);
+    }
+  }, []);
 
   useEffect(() => {
-    if (scrollAreaRef.current) {
-      scrollAreaRef.current.scrollTo({ top: scrollAreaRef.current.scrollHeight, behavior: 'smooth' });
-    }
-  }, [messages]);
+    scrollToBottom();
+  }, [messages, scrollToBottom]);
 
   const startSessionForUser = useCallback(async (firebaseUser, profile) => {
     setView('loading');
