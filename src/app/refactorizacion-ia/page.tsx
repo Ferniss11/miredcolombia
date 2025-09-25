@@ -1,5 +1,5 @@
 
-import { CheckCircle, Layers, Milestone, Bot, Search, BrainCircuit } from 'lucide-react';
+import { CheckCircle, Layers, Milestone, Bot, Search, BrainCircuit, TestTube2 } from 'lucide-react';
 import type { Metadata } from 'next';
 import fs from 'fs/promises';
 import path from 'path';
@@ -48,27 +48,25 @@ async function parseRoadmap(): Promise<{ objective: string; phases: Phase[] }> {
       steps: [],
     };
     
-    let isReadingObjective = false;
     let isReadingActions = false;
 
     for (let i = 1; i < lines.length; i++) {
         const line = lines[i].trim();
+
         if (line.startsWith('*   **Objetivo:**')) {
             phase.objective = line.replace('*   **Objetivo:**', '').trim();
-            isReadingObjective = true;
-            isReadingActions = false;
-            continue;
-        }
-        if (line.startsWith('*   **Acciones:**')) {
-            isReadingActions = true;
-            isReadingObjective = false;
+            isReadingActions = false; // Stop reading actions if objective is found
             continue;
         }
 
-        if (isReadingActions && line.startsWith('    ' || '1.')) { // list items
-             phase.steps.push({ text: line.replace(/^\s*(\d\.)?\s*/, '') });
-        } else if(isReadingObjective) {
-             phase.objective += ' ' + line;
+        if (line.startsWith('*   **Acciones:**')) {
+            isReadingActions = true;
+            continue;
+        }
+
+        // Corrected logic to read multi-line steps
+        if (isReadingActions && (line.startsWith('1.') || line.startsWith('2.') || line.startsWith('3.') || line.startsWith('4.'))) {
+             phase.steps.push({ text: line.replace(/^\d\.\s*/, '') });
         }
     }
     phases.push(phase);
@@ -81,6 +79,7 @@ const getIconForPhase = (title: string): React.ReactNode => {
     if (title.toLowerCase().includes('adaptador')) return <Layers className="w-5 h-5"/>;
     if (title.toLowerCase().includes('búsqueda')) return <Search className="w-5 h-5"/>;
     if (title.toLowerCase().includes('análisis')) return <BrainCircuit className="w-5 h-5"/>;
+    if (title.toLowerCase().includes('pruebas')) return <TestTube2 className="w-5 h-5"/>;
     return <span className="font-bold">{title.match(/\d+/)?.[0]}</span>;
 }
 
