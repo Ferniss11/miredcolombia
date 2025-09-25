@@ -68,13 +68,17 @@ export default function PaymentSuccessPage() {
                 setTimeout(() => {
                     router.replace('/dashboard/valeria');
                 }, 1500);
-            } else {
-                 console.log(`PaymentSuccessPage: Plan is '${plan}', waiting for 'valeria_premium'.`);
+            } else if(claims.roles) { // Also check for roles if valeria_plan isn't immediately available
+                 console.log(`PaymentSuccessPage: Plan is '${plan}', waiting for 'valeria_premium'. Checking periodically.`);
+                 // Check again after a delay in case the webhook is slow
+                 setTimeout(() => {
+                    forceTokenRefresh();
+                 }, 2500);
             }
         } else {
             console.log("PaymentSuccessPage: Waiting for claims...");
         }
-    }, [claims, router]);
+    }, [claims, router, forceTokenRefresh]);
 
 
     return (

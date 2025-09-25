@@ -14,7 +14,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { X, Send, User, Bot, Loader2, Sparkles, Phone, Building, MessageSquareQuote, UserCog, Clock, RotateCcw, Package, Paperclip, FileText, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
-import type { ChatMessage, ChatSession, AgentConfig } from '@/lib/chat-types';
+import type { ChatMessage, ChatSession, AgentConfig, ValeriaPlan } from '@/lib/types';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '../ui/sheet';
 import { useChat } from '@/context/ChatContext';
@@ -22,6 +22,7 @@ import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '../ui/tooltip';
 import { useAuth } from '@/context/AuthContext';
 import { Progress } from '../ui/progress';
+import { createSubscriptionCheckoutSessionAction } from '@/lib/payment-actions';
 
 // --- Welcome Form Sub-component ---
 const signUpFormSchema = z.object({
@@ -147,6 +148,39 @@ const FileMessage = ({ file, progress }: { file: NonNullable<ChatMessage['file']
   );
 };
 
+// --- Upgrade CTA Button ---
+const UpgradeButton = () => {
+    const { user } = useAuth();
+    const { toast } = useToast();
+    const [isPending, startTransition] = useTransition();
+
+    const handleUpgrade = () => {
+        if (!user) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Debes iniciar sesión para actualizar.' });
+            return;
+        }
+        startTransition(async () => {
+            const result = await createSubscriptionCheckoutSessionAction({
+                planId: 'valeria_premium',
+                userId: user.uid,
+                userEmail: user.email!,
+            });
+            if (result.error) {
+                toast({ variant: 'destructive', title: 'Error', description: result.error });
+            } else if (result.checkoutUrl) {
+                window.location.href = result.checkoutUrl;
+            }
+        });
+    }
+
+    return (
+        <Button onClick={handleUpgrade} disabled={isPending} size="sm" className="mt-2 w-full">
+            {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+            Actualizar a Premium por 4,99€/mes
+        </Button>
+    )
+}
+
 
 // --- Main Chat Widget Component ---
 const AGENT_AVATAR_URL = "https://firebasestorage.googleapis.com/v0/b/colombia-en-esp.firebasestorage.app/o/web%2FImagen%20de%20WhatsApp%202025-08-09%20a%20las%2018.20.39_3c2b6161.jpg?alt=media&token=41ebe34a-f846-41fc-937f-4141f1240ee8";
@@ -246,7 +280,7 @@ export default function ChatWidget({ isLabMode = false, labConfig, initialHistor
             }
         }
     }
-  }, [user, userProfile, authLoading, isChatOpen, isInDashboard, isLabMode, initialHistory, session, startSessionForUser, view]);
+  }, [user, userProfile, authLoading, isChatOpen, isInDashboard, isLabMode, initialHistory, session, startSessionForUser, view, labConfig?.sessionId]);
 
   const handleSendMessage = async (messageText: string, file?: File | null) => {
     const activeSessionId = isLabMode ? labConfig?.sessionId : session?.id;
@@ -394,10 +428,8 @@ export default function ChatWidget({ isLabMode = false, labConfig, initialHistor
                            <Sparkles className="h-4 w-4 text-primary" />
                            <AlertTitle className="font-bold">Límite Gratuito Alcanzado</AlertTitle>
                            <AlertDescription>
-                               Has usado tus 3 mensajes gratis. ¡Actualiza al plan premium por tan solo 4,99€/mes para seguir chateando!
-                                <Button asChild size="sm" className="mt-2 w-full">
-                                    <Link href="/valeria">Ver Planes de Valeria</Link>
-                                </Button>
+                               Has usado tus 3 mensajes gratis. ¡Actualiza para continuar chateando!
+                               <UpgradeButton />
                            </AlertDescription>
                        </Alert>
                   ) : (
@@ -457,5 +489,3 @@ export default function ChatWidget({ isLabMode = false, labConfig, initialHistor
     </Sheet>
   );
 }
-
-    
