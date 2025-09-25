@@ -1,3 +1,4 @@
+
 // src/lib/chat/infrastructure/ai/genkit-agent.adapter.ts
 import type { AgentAdapter, AgentCompletionOutput } from './agent.adapter';
 import type { ChatMessage } from '../../domain/chat-message.entity';
@@ -17,7 +18,7 @@ import { FirestoreCacheAdapter } from '@/lib/directory/infrastructure/cache/fire
 
 const BASE_TOOL_PROMPT = `### INSTRUCCIONES DE HERRAMIENTAS (¡MUY IMPORTANTE!)
 - **PROCESO OBLIGATORIO Y SECUENCIAL:**
-    1. Para CUALQUIER pregunta del usuario que no sea un simple saludo (como "hola", "¿qué tal?"), tu ÚNICA acción posible como primer paso es invocar la herramienta \`knowledgeBaseSearch\`.
+    1. Para CUALQUIER pregunta del usuario que no sea un simple saludo (como 'hola', '¿qué tal?'), tu ÚNICA acción posible como primer paso es invocar la herramienta \`knowledgeBaseSearch\`.
     2. INMEDIATAMENTE, llamas a la herramienta \`knowledgeBaseSearch\` usando la pregunta exacta del usuario como el parámetro 'query'.
     3. NO generes ningún texto ni intentes responder por tu cuenta antes de recibir el resultado de la herramienta.
     4. Una vez que la herramienta te devuelva la información (dentro de un bloque '[INFO: ...]' o '[ERROR: ...]'), y SÓLO ENTONCES, puedes usar esa información para formular tu respuesta final al usuario.
