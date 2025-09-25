@@ -138,15 +138,6 @@ export class ChatController {
       }
 
       const messages = await this.getChatHistoryUseCase.execute({ sessionId, businessId });
-      
-      // Get the latest agent config used in the session for the metadata modal
-      const lastAiMessage = messages.slice().reverse().find(m => m.role === 'model');
-      if (lastAiMessage?.usage) { // A proxy to check if it was an AI message with config
-        // This is a bit of a hack. A better solution would be to store the config on the session itself.
-        // For now, we'll try to get it from the last AI message's debug info if it exists.
-        // The PostMessage use case should now be returning the config.
-      }
-
 
       return ApiResponse.success({
           session: { ...session, createdAt: session.createdAt.toISOString(), updatedAt: session.updatedAt?.toISOString() },
