@@ -11,10 +11,19 @@ import { adminDb } from '@/lib/firebase/admin-config';
 import { z } from 'zod';
 import type { VectorQuery, VectorQuerySnapshot } from '@google-cloud/firestore';
 
+const KNOWLEDGE_BASE_COLLECTION = 'knowledge_base';
+
 const KnowledgeSearchResultSchema = z.object({
   content: z.string().describe('A chunk of text from the knowledge base relevant to the user query.'),
   source: z.string().describe('The source document or URL for the content chunk.'),
 });
+
+// The output schema is enhanced to always return a status for better debugging.
+const ToolOutputSchema = z.object({
+    status: z.string().describe("A message indicating the outcome of the search operation."),
+    results: z.array(KnowledgeSearchResultSchema).describe('A list of relevant knowledge base chunks.'),
+});
+
 
 export const knowledgeBaseSearch = ai.defineTool(
   {
@@ -23,21 +32,20 @@ export const knowledgeBaseSearch = ai.defineTool(
     inputSchema: z.object({
       query: z.string().describe('The user\'s question or topic to search for.'),
     }),
-    outputSchema: z.object({
-      results: z.array(KnowledgeSearchResultSchema).describe('A list of relevant knowledge base chunks.'),
-    }),
+    outputSchema: ToolOutputSchema,
   },
   // The 'context' parameter is automatically populated by Genkit from the flow's call context
   async ({ query }, { context }) => {
-    // Digital Marker: Log when the tool is invoked.
-    console.log(`[knowledgeBaseSearch Tool] Invoked. Query: "${query}".`);
+    
+    // This is our "digital marker". Its presence in the debug info confirms invocation.
+    const digitalMarker = `[knowledgeBaseSearch Tool] Invoked with query: "${query}".`;
+    console.log(digitalMarker); // Keep console log for server-side debugging if available.
 
     const sessionId = (context as any)?.sessionId as string | undefined;
-    console.log(`[Knowledge Base] Searching for: "${query}" (Session: ${sessionId || 'None'})`);
 
     if (!adminDb) {
-      console.error("[Knowledge Base] Firestore not initialized.");
-      return { results: [{ content: 'Error: La base de datos no está inicializada.', source: 'Sistema' }] };
+      const errorMsg = "Error: Firestore not initialized.";
+      return { status: `[Tool Error] ${errorMsg}`, results: [{ content: errorMsg, source: 'Sistema' }] };
     }
 
     try {
@@ -52,11 +60,11 @@ export const knowledgeBaseSearch = ai.defineTool(
       
       const collectionRef = adminDb.collection(KNOWLEDGE_BASE_COLLECTION);
       
-      // Step 2: Perform the vector search to find the nearest neighbors.
+      // Step 2: Perform vector search to find the nearest neighbors.
       const vectorQuery: VectorQuery = collectionRef.findNearest({
         vectorField: 'embedding',
         queryVector: queryVector,
-        limit: 10, // Get more initial results to filter from
+        limit: 10,
         distanceMeasure: 'COSINE',
       });
       
@@ -67,18 +75,15 @@ export const knowledgeBaseSearch = ai.defineTool(
         const metadata = doc.data().metadata;
         if (!metadata) return false;
 
-        // Document is global and available to all
         if (metadata.source === 'admin_kb') return true;
-
-        // Document is session-specific and matches the current session
         if (sessionId && metadata.source === 'user_session' && metadata.sessionId === sessionId) return true;
 
         return false;
       });
 
       if (finalResults.length === 0) {
-        console.log('[Knowledge Base] No relevant documents found after filtering.');
         return {
+          status: "Search completed. No relevant documents found after filtering.",
           results: [{
             content: `No se encontró información en la base de conocimiento sobre: "${query}". Informa al usuario amablemente que no tienes información sobre ese tema y pregúntale si puede ser más específico o proporcionar el documento.`,
             source: 'Sistema de Búsqueda Interno',
@@ -86,7 +91,7 @@ export const knowledgeBaseSearch = ai.defineTool(
         };
       }
       
-      // Step 4: Limit to top N results after filtering and format the output.
+      // Step 4: Limit to top N results and format the output.
       const topResults = finalResults.slice(0, 5);
 
       const searchResults = topResults.map(doc => {
@@ -97,14 +102,17 @@ export const knowledgeBaseSearch = ai.defineTool(
         };
       });
       
-      console.log(`[Knowledge Base] Found ${searchResults.length} relevant chunks.`);
-      return { results: searchResults };
+      return { 
+        status: `Search completed. Found ${searchResults.length} relevant chunks.`,
+        results: searchResults 
+      };
 
     } catch (error) {
       console.error("[Knowledge Base] Error performing vector search:", error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      // Return a helpful error message to the LLM.
+      // Return a helpful error message to the LLM and for debugging.
       return { 
+          status: `[Tool Error] ${errorMessage}`,
           results: [{ 
               content: `Error durante la búsqueda en la base de conocimiento: ${errorMessage}. Informa al usuario que ha habido un problema técnico al buscar la información.`, 
               source: 'Sistema de Errores' 
