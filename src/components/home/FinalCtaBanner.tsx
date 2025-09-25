@@ -47,9 +47,12 @@ export default function FinalCtaBanner() {
                      <Button size="lg" variant="secondary" className="text-lg h-12 px-8" onClick={() => handleCheckout('valeria_premium')}>
                         <ArrowRight className="mr-2 h-5 w-5" /> Comprar Premium por 4,97 €/mes
                     </Button>
-                    <Button size="lg" variant="secondary" className="text-lg h-12 px-8" onClick={() => handleCheckout('valeria_premium_quarterly')}>
-                       Oferta: 3 meses por 9,97 €
-                    </Button>
+                    <div className="flex flex-col items-center">
+                        <Button size="lg" variant="secondary" className="text-lg h-12 px-8" onClick={() => handleCheckout('valeria_premium_quarterly')}>
+                           Lanzamiento 3 meses por sólo 9,97€
+                        </Button>
+                        <p className="text-xs font-bold text-yellow-300 mt-1">¡Ahorra un 33%!</p>
+                    </div>
                 </div>
             </div>
         </section>

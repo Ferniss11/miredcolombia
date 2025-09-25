@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from "react";
@@ -98,10 +99,10 @@ export default function AiAssistantSection({ onOpenChatModal }: AiAssistantSecti
     
     return (
         <section id="asistente-ia" className="w-full py-12 md:py-24 lg:py-32 bg-background">
-            <div className="container max-w-6xl mx-auto px-4 md:px-6 space-y-16">
+            <div className="container px-4 md:px-6 space-y-16">
                 
                 {/* --- Main Info & Video --- */}
-                <div className="grid lg:grid-cols-2 gap-12 items-center">
+                <div className="grid lg:grid-cols-2 gap-12 items-center max-w-6xl mx-auto">
                     <div className="space-y-6">
                         <div className="inline-block rounded-lg bg-primary/10 px-3 py-1 text-sm font-semibold text-primary">Asistente IA</div>
                         <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl font-headline">
