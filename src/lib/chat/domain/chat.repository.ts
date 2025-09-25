@@ -53,7 +53,7 @@ export interface ChatRepository {
   
   /**
    * Retrieves all chat sessions, typically for an admin view.
-   * @param filters - Optional filters to apply, e.g., by userId.
+   * @param filters - Optional filters to apply, e.g., by userId or if it's a lab session.
    * @returns An array of all ChatSession entities.
    */
   findAllSessions(filters?: { userId?: string, isLabSession?: boolean }): Promise<ChatSession[]>;
