@@ -55,11 +55,16 @@ const migrationChatFlow = ai.defineFlow(
         }));
         
         try {
+            // CRITICAL CHANGE: Instead of using the `system` parameter, we inject the system prompt
+            // as the first message in the history with the 'system' role. This often forces
+            // stricter adherence to instructions for some models.
             const llmResponse = await ai.generate({
                 model: input.model as any,
                 tools: [knowledgeBaseSearch],
-                system: input.systemPrompt,
-                history: history,
+                history: [
+                    { role: 'system', content: [{ text: input.systemPrompt }] },
+                    ...history
+                ],
                 prompt: input.currentMessage,
                 context: context, // Pass the received context down to the generate call
             });
