@@ -27,19 +27,13 @@ export const knowledgeBaseSearch = ai.defineTool(
   // The 'context' parameter is automatically populated by Genkit from the flow's call context
   async ({ query }, { context }) => {
     
-    // This is our "digital marker". Its presence confirms invocation.
-    console.log(`[knowledgeBaseSearch Tool] Invoked with query: "${query}".`);
-
     const sessionId = (context as any)?.sessionId as string | undefined;
 
-    if (!adminDb) {
-      const errorMsg = "[Tool Error] Firestore not initialized.";
-      console.error(errorMsg);
-      // Return a string that the LLM can understand and report.
-      return `Error: No se pudo conectar a la base de conocimiento. Informa al usuario que hay un problema de configuración del servidor.`;
-    }
-
     try {
+      if (!adminDb) {
+        throw new Error("[Tool Error] Firestore not initialized.");
+      }
+
       // Step 1: Generate an embedding for the user's query.
       const embeddingResult = await ai.embed({
         embedder: 'googleai/text-embedding-004',
@@ -91,10 +85,10 @@ export const knowledgeBaseSearch = ai.defineTool(
       return `[INFO: Búsqueda completada. Documentos encontrados:\n${searchResultsText}]`;
 
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       console.error("[Knowledge Base Tool] Error performing vector search:", error);
-      // Return a helpful error message string to the LLM.
-      return `[ERROR: La herramienta de búsqueda de conocimiento falló. Causa: ${errorMessage}. Informa al usuario que ha habido un problema técnico al buscar la información.]`;
+      // Serialize the full error object for detailed debugging.
+      const fullError = JSON.stringify(error, Object.getOwnPropertyNames(error), 2);
+      return `[ERROR: La herramienta de búsqueda de conocimiento falló. Error completo: ${fullError}]`;
     }
   }
 );
