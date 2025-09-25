@@ -1,4 +1,3 @@
-
 'use client';
 
 import React from 'react';
@@ -11,6 +10,7 @@ import HowWeHelpSection from './HowWeHelpSection';
 import PackagesSection from './PackagesSection';
 import GuidesSection from './GuidesSection';
 import { Guide } from '@/lib/guide/domain/guide.entity';
+import FinalCtaBanner from './FinalCtaBanner';
 
 
 type HomePageClientProps = {
@@ -27,6 +27,7 @@ export default function HomePageClient({ initialGuides }: HomePageClientProps) {
         <HeroSection />
         <AiAssistantSection onOpenChatModal={openChat} />
         <TestimonialsSection />
+        <FinalCtaBanner />
         <HowWeHelpSection />
         <PackagesSection />
         <GuidesSection guides={initialGuides} />
