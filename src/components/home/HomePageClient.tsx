@@ -2,8 +2,6 @@
 'use client';
 
 import React from 'react';
-import type { PlaceDetails, BlogPost, JobsCtaSectionProps } from '@/lib/types';
-
 // Import sections directly
 import HeroSection from './HeroSection';
 import StepsSection from './StepsSection';
@@ -17,13 +15,11 @@ import { Guide } from '@/lib/guide/domain/guide.entity';
 
 
 type HomePageClientProps = {
-  eurToCopRate: number;
-  initialPosts: BlogPost[];
   initialGuides: Guide[];
 }
 
 
-export default function HomePageClient({ eurToCopRate, initialPosts, initialGuides }: HomePageClientProps) {
+export default function HomePageClient({ initialGuides }: HomePageClientProps) {
   const { openChat } = useChat();
 
   return (
@@ -31,11 +27,11 @@ export default function HomePageClient({ eurToCopRate, initialPosts, initialGuid
       <main className="flex-1">
         <HeroSection />
         <AiAssistantSection onOpenChatModal={openChat} variant="full" />
+        <TestimonialsSection />
         <PackagesSection />
         <AiAssistantSection onOpenChatModal={openChat} variant="compact" />
         <HowWeHelpSection />
         <GuidesSection guides={initialGuides} />
-        <TestimonialsSection />
       </main>
     </div>
   );
