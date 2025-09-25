@@ -64,8 +64,6 @@ const migrationChatFlow = ai.defineFlow(
                 context: context, // Pass the received context down to the generate call
             });
             
-            // CORRECTED: For text-based chat, we only need to check llmResponse.text.
-            // The `output` property is for structured output (JSON).
             if (!llmResponse.text) {
                 console.warn('[migrationChatFlow] LLM text response was empty. Falling back.');
                 return {
@@ -75,14 +73,16 @@ const migrationChatFlow = ai.defineFlow(
                 };
             }
 
+            const usage = llmResponse.usage;
+
             return {
                 response: llmResponse.text,
                 usage: {
-                    inputTokens: llmResponse.usage().input || 0,
-                    outputTokens: llmResponse.usage().output || 0,
-                    totalTokens: llmResponse.usage().total,
+                    inputTokens: usage.inputTokens || 0,
+                    outputTokens: usage.outputTokens || 0,
+                    totalTokens: usage.totalTokens,
                 },
-                toolInvocations: llmResponse.toolRequests().map(tr => ({
+                toolInvocations: llmResponse.toolRequests?.map(tr => ({
                     tool: tr.name,
                     result: tr.output,
                 })) || [],

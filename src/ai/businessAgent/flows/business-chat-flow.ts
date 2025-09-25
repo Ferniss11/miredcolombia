@@ -101,21 +101,21 @@ La fecha y hora actual es: ${now.toLocaleString('es-ES', { timeZone: 'Europe/Mad
             context: context, // Pass context to the tools
         });
         
-        const usage = llmResponse.usage();
-        
         if (!llmResponse.text) {
             console.error('[businessChatFlow] LLM response was empty or falsy.');
             throw new Error('La respuesta de la IA fue vacía.');
         }
+        
+        const usage = llmResponse.usage;
 
         return {
             response: llmResponse.text,
             usage: {
-                inputTokens: usage.input || 0,
-                outputTokens: usage.output || 0,
-                totalTokens: usage.total,
+                inputTokens: usage.inputTokens || 0,
+                outputTokens: usage.outputTokens || 0,
+                totalTokens: usage.totalTokens,
             },
-            toolInvocations: llmResponse.toolRequests().map(tr => ({
+            toolInvocations: llmResponse.toolRequests?.map(tr => ({
                 tool: tr.name,
                 result: tr.output,
             })) || [],
