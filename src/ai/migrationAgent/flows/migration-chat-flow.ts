@@ -13,14 +13,14 @@ import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import { ChatOutputSchema, ChatRoleSchema } from '@/lib/chat-types';
 import { knowledgeBaseSearch } from '@/ai/tools/knowledge-base-search';
-
+import { google } from 'googleapis';
 
 // Define the input schema for the migration chat flow
 const MigrationChatInputSchema = z.object({
   model: z.string().describe("The AI model to use for the response (e.g., 'googleai/gemini-1.5-flash-latest')."),
   systemPrompt: z.string().describe("The system prompt that defines the agent's personality and instructions."),
   chatHistory: z.array(z.object({
-    role: ChatRoleSchema,
+    role: z.union([ChatRoleSchema, z.literal('system')]),
     text: z.string(),
   })).describe("The history of the conversation so far, including user, AI (model), and admin messages."),
   currentMessage: z.string().describe("The user's latest message."),
@@ -34,7 +34,7 @@ export type MigrationChatInput = z.infer<typeof MigrationChatInputSchema>;
  * It triggers the Genkit flow.
  */
 export async function migrationChat(input: MigrationChatInput) {
-    return migrationChatFlow(input);
+    return migrationChatFlow(input, { context: { sessionId: input.sessionId }});
 }
 
 
@@ -46,29 +46,27 @@ const migrationChatFlow = ai.defineFlow(
         inputSchema: MigrationChatInputSchema,
         outputSchema: ChatOutputSchema,
     },
-    async (input) => {
-        // CRITICAL FIX: Map the history to the format { text, role } that the AI model expects.
-        // This was the root cause of the previous silent failures.
+    async (input, { context }) => { // The context is passed here by the caller
+        
+        // Map our simple {role, text} history to the format Genkit's `generate` expects
         const history = input.chatHistory.map(message => ({
-            role: message.role === 'admin' ? 'model' : message.role, // Treat 'admin' messages as if they came from the 'model'
-            content: [{ text: message.role === 'admin' ? `[Mensaje del Administrador: ${message.text}]` : message.text }],
+            role: message.role,
+            content: [{ text: message.text }],
         }));
         
         try {
             const llmResponse = await ai.generate({
                 model: input.model as any,
                 tools: [knowledgeBaseSearch],
-                system: input.systemPrompt, // Pass the system instructions via the dedicated `system` property
-                history: history, // Pass the existing, correctly-formatted conversation history
-                prompt: input.currentMessage, // The user's latest message
-                // Pass the session ID to the tool context, so tools like knowledgeBaseSearch can use it
-                context: { sessionId: input.sessionId }, 
+                system: input.systemPrompt,
+                history: history,
+                prompt: input.currentMessage,
+                context: context, // Pass the received context down to the generate call
             });
             
             const output = llmResponse.output();
 
             if (!output || !llmResponse.text()) {
-                // If the model truly returns nothing, provide a graceful fallback.
                 console.warn('[migrationChatFlow] LLM response was empty. Falling back.');
                 return {
                     response: "Lo siento, no he podido procesar esa respuesta. ¿Podrías intentarlo de nuevo?",
@@ -84,7 +82,6 @@ const migrationChatFlow = ai.defineFlow(
                     outputTokens: llmResponse.usage().output || 0,
                     totalTokens: llmResponse.usage().total,
                 },
-                // Map tool calls to the expected format if they exist
                 toolInvocations: llmResponse.toolRequests().map(tr => ({
                     tool: tr.name,
                     result: tr.output,
@@ -92,8 +89,6 @@ const migrationChatFlow = ai.defineFlow(
             };
         } catch (error) {
             console.error('[migrationChatFlow] Error during generation:', error);
-            // It's better to throw so the api-handler can catch and format the error response.
-            // This provides more detailed error messages on the client side for debugging.
             if (error instanceof Error) {
                 throw new Error(`AI Generation failed: ${error.message}`);
             }
@@ -101,4 +96,3 @@ const migrationChatFlow = ai.defineFlow(
         }
     }
 );
-

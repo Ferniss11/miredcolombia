@@ -64,8 +64,7 @@ export class GenkitAgentAdapter implements AgentAdapter {
     chatHistory: Omit<ChatMessage, 'id' | 'timestamp'>[];
     currentMessage: string;
     businessId?: string;
-    sessionId?: string; // Add sessionId to the interface
-    // New optional field to explicitly specify an agent, used by the Agent Lab
+    sessionId?: string;
     agentId?: 'global' | 'valeria_premium' | 'business';
   }): Promise<AgentCompletionOutput> {
     
@@ -98,6 +97,7 @@ export class GenkitAgentAdapter implements AgentAdapter {
         
         const businessContext = `Nombre: ${businessDetails.displayName}\nCategoría: ${businessDetails.category}\nDirección: ${businessDetails.formattedAddress}\nTeléfono: ${businessDetails.internationalPhoneNumber}\nDescripción: ${businessDetails.editorialSummary || ''}`;
 
+        // Pass the owner's UID in the context for the tools to use
         const aiResponse = await businessChat({
             ownerUid: businessDetails.ownerUid,
             chatHistory: chatHistoryForAI,
@@ -126,21 +126,20 @@ export class GenkitAgentAdapter implements AgentAdapter {
     // Combine the base tool prompt with the specific personality prompt from the database.
     const finalSystemPrompt = `${agentConfig.systemPrompt}\n\n${BASE_TOOL_PROMPT}`;
 
+    // Execute the flow and pass the sessionId in the context
     const aiResponse = await migrationChat({
         model: agentConfig.model,
         systemPrompt: finalSystemPrompt,
         chatHistory: chatHistoryForAI,
         currentMessage: input.currentMessage,
-        sessionId: input.sessionId, // Pass sessionId to the flow
+        sessionId: input.sessionId,
     });
     
     const usage = aiResponse.usage || { inputTokens: 0, outputTokens: 0, totalTokens: 0 };
     const cost = calculateCost(agentConfig.model, usage.inputTokens, usage.outputTokens);
     
-    // Return the config that was actually used
     const usedConfig = { model: agentConfig.model, systemPrompt: finalSystemPrompt };
     
-    // Return the config and tool invocations in the debug info
     return { 
         response: aiResponse.response, 
         usage, 
@@ -148,7 +147,7 @@ export class GenkitAgentAdapter implements AgentAdapter {
         agentConfig: usedConfig,
         debugInfo: { 
             toolInvocations: aiResponse.toolInvocations || [],
-            systemPrompt: finalSystemPrompt // Add the full system prompt to the debug info
+            systemPrompt: finalSystemPrompt
         },
     };
   }

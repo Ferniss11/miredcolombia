@@ -28,7 +28,7 @@ export const knowledgeBaseSearch = ai.defineTool(
     }),
   },
   // The 'context' parameter is automatically populated by Genkit from the flow's call context
-  async ({ query }, context) => {
+  async ({ query }, { context }) => {
     const sessionId = (context as any)?.sessionId as string | undefined;
     console.log(`[Knowledge Base] Searching for: "${query}" (Session: ${sessionId || 'None'})`);
 
