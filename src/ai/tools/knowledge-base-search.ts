@@ -3,18 +3,15 @@
 
 /**
  * @fileOverview Defines a Genkit tool for searching the knowledge base vector store.
- * This tool now leverages the `firebase/firestore-vector-search` extension to generate
- * embeddings, ensuring consistency with the indexing process and bypassing environment-specific
- * authentication issues with direct `ai.embed()` calls.
+ * This tool leverages the `firebase/firestore-vector-search` extension by creating a temporary
+ * document to get a query vector, and then using that vector to search for neighbors.
  */
 import { ai } from '@/ai/genkit';
 import { adminDb } from '@/lib/firebase/admin-config';
 import { z } from 'zod';
 import type { VectorQuery, VectorQuerySnapshot } from '@google-cloud/firestore';
-import { googleAI } from '@genkit-ai/googleai';
 
 const KNOWLEDGE_BASE_COLLECTION = 'knowledge_base';
-const TEMP_QUERY_COLLECTION = 'temp_query_vectors'; // Use a separate collection for temporary queries
 
 /**
  * Waits for the Firestore vector search extension to process a document and add an embedding.
@@ -27,7 +24,6 @@ async function waitForEmbedding(docRef: FirebaseFirestore.DocumentReference, tim
     while (Date.now() - startTime < timeout) {
         const docSnap = await docRef.get();
         const data = docSnap.data();
-        // The extension writes the embedding into this field
         if (data?.embedding) {
             return data.embedding;
         }
@@ -58,19 +54,28 @@ export const knowledgeBaseSearch = ai.defineTool(
         throw new Error("[Tool Error] Firestore (adminDb) no está inicializado.");
       }
 
-      debugLogs.push(`Paso 2: Creando documento temporal en '${TEMP_QUERY_COLLECTION}' con la consulta: "${query}".`);
-      
-      // Create a temporary document that the extension will process
-      tempDocRef = adminDb.collection(TEMP_QUERY_COLLECTION).doc();
-      await tempDocRef.set({ content: query });
+      // CORRECCIÓN: Escribir en la misma colección que la extensión está escuchando.
+      tempDocRef = adminDb.collection(KNOWLEDGE_BASE_COLLECTION).doc(); 
+      debugLogs.push(`Paso 2: Creando documento temporal en '${KNOWLEDGE_BASE_COLLECTION}' (ID: ${tempDocRef.id}) con la consulta: "${query}".`);
+
+      await tempDocRef.set({ 
+          content: query,
+          metadata: { source: 'temp_query' } // Marcar como temporal para no interferir en búsquedas
+      });
       
       debugLogs.push(`Paso 3: Esperando a que la extensión de Firebase genere el vector para el doc temporal '${tempDocRef.id}'.`);
       const queryVector = await waitForEmbedding(tempDocRef);
       debugLogs.push(`Paso 4: Vector recibido de la extensión con ${queryVector.length} dimensiones.`);
+      
+      // Eliminar el documento temporal tan pronto como tengamos el vector.
+      await tempDocRef.delete();
+      tempDocRef = null; // Marcar como nulo para no intentar borrarlo de nuevo en `finally`.
+      debugLogs.push(`Paso 5: Documento temporal eliminado.`);
+
 
       const collectionRef = adminDb.collection(KNOWLEDGE_BASE_COLLECTION);
       
-      debugLogs.push("Paso 5: Construyendo la consulta de búsqueda de vectores (findNearest).");
+      debugLogs.push("Paso 6: Construyendo la consulta de búsqueda de vectores (findNearest).");
       const vectorQuery: VectorQuery = collectionRef.findNearest({
         vectorField: 'embedding',
         queryVector: queryVector,
@@ -78,18 +83,19 @@ export const knowledgeBaseSearch = ai.defineTool(
         distanceMeasure: 'COSINE',
       });
       
-      debugLogs.push('Paso 6: Ejecutando la búsqueda de vectores en Firestore.');
+      debugLogs.push('Paso 7: Ejecutando la búsqueda de vectores en Firestore.');
       const querySnapshot: VectorQuerySnapshot = await vectorQuery.get();
-      debugLogs.push(`Paso 7: Búsqueda completada. ${querySnapshot.docs.length} documentos encontrados inicialmente.`);
+      debugLogs.push(`Paso 8: Búsqueda completada. ${querySnapshot.docs.length} documentos encontrados inicialmente.`);
 
       const finalResults = querySnapshot.docs.filter(doc => {
         const metadata = doc.data().metadata;
         if (!metadata) return false;
-        if (metadata.source === 'admin_kb') return true;
+        // Filtrar para incluir solo documentos de conocimiento real (no otras consultas temporales)
+        if (metadata.source === 'admin_kb') return true; 
         if (sessionId && metadata.source === 'user_session' && metadata.sessionId === sessionId) return true;
         return false;
       });
-      debugLogs.push(`Paso 8: Filtrado completado. ${finalResults.length} documentos relevantes para el contexto actual.`);
+      debugLogs.push(`Paso 9: Filtrado completado. ${finalResults.length} documentos relevantes para el contexto actual.`);
 
       if (finalResults.length === 0) {
         return `[INFO: Búsqueda completada, no se encontraron documentos relevantes para la consulta: "${query}". Informa al usuario amablemente que no tienes información sobre ese tema y pregúntale si puede ser más específico.]`;
@@ -117,10 +123,14 @@ export const knowledgeBaseSearch = ai.defineTool(
       };
       return JSON.stringify(debugObject, null, 2);
     } finally {
-        // Clean up the temporary document
+        // Limpieza final en caso de que el borrado intermedio fallara.
         if (tempDocRef) {
-            await tempDocRef.delete();
-            debugLogs.push(`Paso final: Documento temporal '${tempDocRef.id}' eliminado.`);
+            try {
+              await tempDocRef.delete();
+              debugLogs.push(`Paso final (cleanup): Documento temporal '${tempDocRef.id}' eliminado.`);
+            } catch (cleanupError) {
+              console.error("Failed to cleanup temporary document:", cleanupError);
+            }
         }
     }
   }
