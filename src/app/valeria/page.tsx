@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { Suspense } from 'react';
+import React, { Suspense, useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Check, User, Target, Shield, Users, HelpCircle, ArrowRight, Star } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -10,13 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
 import { createSubscriptionCheckoutSessionAction } from '@/lib/payment-actions';
 import { cn } from '@/lib/utils';
-import type { Metadata } from 'next';
-
-// SEO Metadata (though it won't be applied dynamically from here in a client component, it's good practice)
-export const metadata: Metadata = {
-  title: 'Valeria IA: empleo, vivienda y papeles en España | 4,97 €/mes',
-  description: 'Valeria te guía paso a paso para emigrar de Colombia a España: empleo, vivienda y trámites legales al día. Checklists, plantillas y alertas 24/7.',
-};
+import type { ValeriaPlan } from '@/lib/types';
 
 
 const ValuePropItem = ({ icon: Icon, children }: { icon: React.ElementType, children: React.ReactNode }) => (
