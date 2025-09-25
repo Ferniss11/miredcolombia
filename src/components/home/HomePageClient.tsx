@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -11,6 +12,7 @@ import PackagesSection from './PackagesSection';
 import GuidesSection from './GuidesSection';
 import { Guide } from '@/lib/guide/domain/guide.entity';
 import FinalCtaBanner from './FinalCtaBanner';
+import FaqCtaSection from './FaqCtaSection';
 
 
 type HomePageClientProps = {
@@ -31,6 +33,7 @@ export default function HomePageClient({ initialGuides }: HomePageClientProps) {
         <PackagesSection />
         <HowWeHelpSection />
         <GuidesSection guides={initialGuides} />
+        <FaqCtaSection />
       </main>
     </div>
   );
