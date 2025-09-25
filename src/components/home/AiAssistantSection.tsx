@@ -77,7 +77,7 @@ export default function AiAssistantSection({ onOpenChatModal, variant = 'full' }
     return (
         <>
             <section id="asistente-ia" className={cn("w-full", isFullVariant ? "py-12 md:py-24 lg:py-32 bg-secondary dark:bg-card" : "py-12 md:py-24 bg-background")}>
-                <div className="container px-4 md:px-6 max-w-5xl">
+                <div className="container px-4 md:px-6 max-w-6xl">
                     <div className="flex flex-col items-center justify-center space-y-4 text-center mb-12">
                         <div className="inline-block rounded-lg bg-primary/10 px-3 py-1 text-sm font-semibold text-primary">Asistente IA</div>
                         <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl font-headline">
@@ -89,7 +89,7 @@ export default function AiAssistantSection({ onOpenChatModal, variant = 'full' }
                     </div>
                     
                     {isFullVariant ? (
-                        <div className="mx-auto grid max-w-4xl grid-cols-1 items-center gap-8">
+                        <div className="mx-auto grid max-w-6xl grid-cols-1 items-center gap-8">
                             <div className="w-full aspect-video rounded-xl shadow-lg overflow-hidden">
                                 <video
                                     className="w-full h-full object-cover"

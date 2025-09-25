@@ -2,9 +2,8 @@
 'use client';
 
 import { Button } from "@/components/ui/button";
-import { Package, MessageCircle } from "lucide-react";
+import { MessageCircle } from "lucide-react";
 import Image from "next/image";
-import Link from "next/link";
 import { useChat } from "@/context/ChatContext";
 
 
@@ -35,18 +34,12 @@ export default function HeroSection() {
                     Tu puente de Colombia a España: empleo, vivienda y papeles en regla sin perderte en el camino.
                 </h1>
                 <p className="mt-4 max-w-3xl text-lg md:text-xl text-gray-200 font-body">
-                    COn nuestra Inteligencia Artificial, ValerIA, y nuestro equipo juridico profesional, tendrás el acompañamiento que necesitas en tu proceso de migración. 
+                    Con nuestra Inteligencia Artificial, Valeria, y nuestro equipo juridico profesional, tendrás el acompañamiento que necesitas en tu proceso de migración. 
                 </p>
-                <div className="mt-8 flex flex-col gap-4 sm:flex-row w-full max-w-md">
-                    <Button asChild size="lg" className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-6 text-base">
-                        <Link href="/packs">
-                            <Package className="mr-2 h-5 w-5" />
-                            Ver Packs de servicios
-                        </Link>
-                    </Button>
-                    <Button size="lg" variant="outline" className="w-full sm:w-auto border-white text-white bg-transparent hover:bg-white/10 px-8 py-6 text-base" onClick={openChat}>
+                <div className="mt-8">
+                    <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-6 text-base" onClick={openChat}>
                         <MessageCircle className="mr-2 h-5 w-5" />
-                        Habla con Valeria ahora
+                        Hablar con Valeria
                     </Button>
                 </div>
             </div>
