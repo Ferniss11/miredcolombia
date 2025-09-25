@@ -101,10 +101,10 @@ La fecha y hora actual es: ${now.toLocaleString('es-ES', { timeZone: 'Europe/Mad
             context: context, // Pass context to the tools
         });
         
-        const output = llmResponse.output;
         const usage = llmResponse.usage();
         
-        if (!output || !llmResponse.text) {
+        if (!llmResponse.text) {
+            console.error('[businessChatFlow] LLM response was empty or falsy.');
             throw new Error('La respuesta de la IA fue vacía.');
         }
 

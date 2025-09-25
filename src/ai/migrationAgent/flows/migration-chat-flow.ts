@@ -64,10 +64,10 @@ const migrationChatFlow = ai.defineFlow(
                 context: context, // Pass the received context down to the generate call
             });
             
-            const output = llmResponse.output;
-
-            if (!output || !llmResponse.text) {
-                console.warn('[migrationChatFlow] LLM response was empty. Falling back.');
+            // CORRECTED: For text-based chat, we only need to check llmResponse.text.
+            // The `output` property is for structured output (JSON).
+            if (!llmResponse.text) {
+                console.warn('[migrationChatFlow] LLM text response was empty. Falling back.');
                 return {
                     response: "Lo siento, no he podido procesar esa respuesta. ¿Podrías intentarlo de nuevo?",
                     usage: { inputTokens: 0, outputTokens: 0, totalTokens: 0 },
