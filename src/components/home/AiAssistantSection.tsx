@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from "react";
@@ -31,6 +30,15 @@ const valeriaPlans: ValeriaPlan[] = [
       cta: 'Comprar Premium',
       variant: 'default'
     },
+    {
+      id: 'valeria_premium_quarterly',
+      name: 'Valeria Premium Trimestral',
+      price: 9.97,
+      priceDetails: '/trimestre',
+      features: [],
+      cta: 'Comprar Pack 3 Meses',
+      variant: 'default'
+    }
 ];
 
 const allFeatures = [
@@ -127,7 +135,7 @@ export default function AiAssistantSection({ onOpenChatModal }: AiAssistantSecti
                                 aria-label="Play Valeria's Video"
                             >
                                 <Image 
-                                    src="https://firebasestorage.googleapis.com/v0/b/colombia-en-esp.firebasestorage.app/o/web%2Fvaleria-cover.jpg?alt=media&token=86d52253-176c-4856-96a9-83955d5b306b"
+                                    src="https://firebasestorage.googleapis.com/v0/b/colombia-en-esp.firebasestorage.app/o/web%2Fvaleria_avatar_horizontal.jpg?alt=media&token=ad7b4b6a-8c97-4984-b480-b4ed38936e1a"
                                     alt="Video de presentación de Valeria"
                                     layout="fill"
                                     objectFit="cover"
@@ -144,12 +152,12 @@ export default function AiAssistantSection({ onOpenChatModal }: AiAssistantSecti
                 </div>
 
                 {/* --- Comparison Table & CTA --- */}
-                <div>
+                <div className="max-w-4xl mx-auto">
                     <div className="border rounded-xl shadow-lg bg-card">
                         <div className="grid grid-cols-3">
                             <div className="p-4 sm:p-6 border-r"><h3 className="font-bold h-12 flex items-end">Características</h3></div>
-                            <div className="p-4 sm:p-6 border-r text-center"><h3 className="font-bold h-12 flex items-end justify-center">{valeriaPlans[0].name}</h3></div>
-                            <div className="p-4 sm:p-6 text-center bg-primary/5 rounded-tr-xl"><h3 className="font-bold h-12 flex items-end justify-center text-primary">{valeriaPlans[1].name}</h3></div>
+                            <div className="p-4 sm:p-6 border-r text-center"><h3 className="font-bold h-12 flex items-end justify-center">Gratis</h3></div>
+                            <div className="p-4 sm:p-6 text-center bg-primary/5 rounded-tr-xl"><h3 className="font-bold h-12 flex items-end justify-center text-primary">Premium</h3></div>
                         </div>
                         {allFeatures.map((feature) => (
                             <div key={feature.key} className="grid grid-cols-3 border-t">
@@ -174,7 +182,7 @@ export default function AiAssistantSection({ onOpenChatModal }: AiAssistantSecti
                             </div>
                             <div className="p-4 sm:p-6 text-center space-y-2 bg-primary/5">
                                 <p className="text-2xl font-bold">4,97€<span className="text-sm font-normal text-muted-foreground">/mes</span></p>
-                                <Button className="w-full" onClick={() => handlePlanSelection(valeriaPlans[1])}>{valeriaPlans[1].cta}</Button>
+                                <Button className="w-full" onClick={() => handlePlanSelection(valeriaPlans[1])}>Comprar Premium</Button>
                             </div>
                         </div>
                         <div className="grid grid-cols-3 border-t rounded-b-xl">
@@ -183,8 +191,11 @@ export default function AiAssistantSection({ onOpenChatModal }: AiAssistantSecti
                             <div className="p-4 sm:p-6 flex items-center justify-center bg-primary/5 rounded-br-xl">
                                 <Card className="bg-yellow-100 dark:bg-yellow-900/30 border-yellow-400 w-full">
                                     <CardContent className="p-3 text-center">
-                                        <p className="font-bold text-yellow-900 dark:text-yellow-200">Oferta de Lanzamiento</p>
+                                        <p className="font-bold text-yellow-900 dark:text-yellow-200">Oferta Lanzamiento</p>
                                         <p className="text-sm text-yellow-800 dark:text-yellow-300">Paga 3 meses por <strong>9,97€</strong></p>
+                                        <Button variant="link" className="text-yellow-900 dark:text-yellow-100 p-0 h-auto text-xs mt-1" onClick={() => handlePlanSelection(valeriaPlans[2])}>
+                                            Aprovechar oferta <ArrowRight className="ml-1 h-3 w-3" />
+                                        </Button>
                                     </CardContent>
                                 </Card>
                             </div>
