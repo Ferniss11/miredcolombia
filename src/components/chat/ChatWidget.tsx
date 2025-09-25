@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useRef, useEffect, useCallback, useTransition, Fragment } from 'react';
@@ -26,7 +27,7 @@ import { Progress } from '../ui/progress';
 const signUpFormSchema = z.object({
   name: z.string().min(2, { message: 'El nombre es obligatorio.' }),
   email: z.string().email({ message: 'Debe ser un email válido.' }),
-  password: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres.')
+  password: z.string().min(6, { message: 'La contraseña debe tener al menos 6 caracteres.' }),
 });
 type SignUpFormValues = z.infer<typeof signUpFormSchema>;
 
@@ -252,7 +253,7 @@ export default function ChatWidget({ isLabMode = false, labConfig, initialHistor
     if ((!messageText.trim() && !file) || isAiResponding || !activeSessionId) return;
 
     const isLimitReached = !isPremiumUser && messages.filter(m => m.role === 'user').length >= 3;
-    if (!isLabMode && isLimitReached) {
+    if (isLabMode ? (labConfig?.agentId === 'global' && isLimitReached) : isLimitReached) {
         toast({ title: 'Límite Gratuito Alcanzado', description: 'Actualiza a un plan premium para continuar.', variant: 'destructive' });
         return;
     }
@@ -347,7 +348,9 @@ export default function ChatWidget({ isLabMode = false, labConfig, initialHistor
         case 'login':
             return <LoginForm onLoginSuccess={() => {}} onBackClick={() => setView('welcome')} />;
         case 'chat':
-          const isLimitReached = !isPremiumUser && messages.filter(m => m.role === 'user').length >= 3;
+          const isUserMessageLimitReached = !isPremiumUser && messages.filter(m => m.role === 'user').length >= 3;
+          const isLimitReached = isLabMode ? (labConfig?.agentId === 'global' && isUserMessageLimitReached) : isUserMessageLimitReached;
+
           const canUploadFile = isPremiumUser || isLabMode;
 
           return (
@@ -386,8 +389,17 @@ export default function ChatWidget({ isLabMode = false, labConfig, initialHistor
                 </div>
               </ScrollArea>
               <div className="p-4 border-t bg-background rounded-b-lg">
-                  {isLimitReached && !isLabMode ? (
-                       <Alert><Package className="h-4 w-4" /><AlertTitle>Límite Gratuito Alcanzado</AlertTitle><AlertDescription className="flex flex-col gap-2">Has usado tus 3 mensajes gratis. ¡Actualiza tu plan para seguir chateando con Valeria!<Button asChild size="sm"><Link href="/valeria">Ver Planes de Valeria</Link></Button></AlertDescription></Alert>
+                  {isLimitReached ? (
+                       <Alert className="border-primary/50 bg-primary/10">
+                           <Sparkles className="h-4 w-4 text-primary" />
+                           <AlertTitle className="font-bold">Límite Gratuito Alcanzado</AlertTitle>
+                           <AlertDescription>
+                               Has usado tus 3 mensajes gratis. ¡Actualiza al plan premium por tan solo 4,99€/mes para seguir chateando!
+                                <Button asChild size="sm" className="mt-2 w-full">
+                                    <Link href="/valeria">Ver Planes de Valeria</Link>
+                                </Button>
+                           </AlertDescription>
+                       </Alert>
                   ) : (
                       <>
                       {attachedFile && (
@@ -445,3 +457,5 @@ export default function ChatWidget({ isLabMode = false, labConfig, initialHistor
     </Sheet>
   );
 }
+
+    
