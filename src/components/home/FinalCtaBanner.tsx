@@ -47,7 +47,7 @@ export default function FinalCtaBanner() {
                      <Button size="lg" variant="secondary" className="text-lg h-12 px-8" onClick={() => handleCheckout('valeria_premium')}>
                         <ArrowRight className="mr-2 h-5 w-5" /> Comprar Premium por 4,97 €/mes
                     </Button>
-                    <Button size="lg" variant="outline" className="text-lg h-12 px-8 border-white text-white hover:bg-white hover:text-primary" onClick={() => handleCheckout('valeria_premium_quarterly')}>
+                    <Button size="lg" variant="outline" className="text-lg h-12 px-8 border-white bg-white text-black hover:bg-white/90" onClick={() => handleCheckout('valeria_premium_quarterly')}>
                        Oferta: 3 meses por 9,97 €
                     </Button>
                 </div>
