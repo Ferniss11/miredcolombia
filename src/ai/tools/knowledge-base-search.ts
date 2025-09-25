@@ -38,27 +38,28 @@ export const knowledgeBaseSearch = ai.defineTool(
     }
 
     try {
+      // Step 1: Generate an embedding for the user's query.
       const embeddingResult = await ai.embed({
         embedder: 'googleai/text-embedding-004',
         content: query,
       });
 
-      const embedding = embeddingResult[0]?.embedding;
-      if (!embedding) throw new Error("Failed to generate embedding for the query.");
+      const queryVector = embeddingResult.embedding;
+      if (!queryVector) throw new Error("Failed to generate embedding for the query.");
       
-      const collectionRef = adminDb.collection('knowledge_base');
+      const collectionRef = adminDb.collection(KNOWLEDGE_BASE_COLLECTION);
       
-      // Perform a broader search first
+      // Step 2: Perform the vector search to find the nearest neighbors.
       const vectorQuery: VectorQuery = collectionRef.findNearest({
         vectorField: 'embedding',
-        queryVector: embedding,
+        queryVector: queryVector,
         limit: 10, // Get more initial results to filter from
         distanceMeasure: 'COSINE',
       });
       
       const querySnapshot: VectorQuerySnapshot = await vectorQuery.get();
 
-      // Now, filter the results based on the context (session or global)
+      // Step 3: Filter the results based on the context (session or global)
       const finalResults = querySnapshot.docs.filter(doc => {
         const metadata = doc.data().metadata;
         if (!metadata) return false;
@@ -82,7 +83,7 @@ export const knowledgeBaseSearch = ai.defineTool(
         };
       }
       
-      // Limit to top results after filtering
+      // Step 4: Limit to top N results after filtering and format the output.
       const topResults = finalResults.slice(0, 5);
 
       const searchResults = topResults.map(doc => {
@@ -99,7 +100,13 @@ export const knowledgeBaseSearch = ai.defineTool(
     } catch (error) {
       console.error("[Knowledge Base] Error performing vector search:", error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      return { results: [{ content: `Error durante la búsqueda: ${errorMessage}`, source: 'Sistema' }] };
+      // Return a helpful error message to the LLM.
+      return { 
+          results: [{ 
+              content: `Error durante la búsqueda en la base de conocimiento: ${errorMessage}. Informa al usuario que ha habido un problema técnico al buscar la información.`, 
+              source: 'Sistema de Errores' 
+          }] 
+      };
     }
   }
 );
