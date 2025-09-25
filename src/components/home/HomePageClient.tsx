@@ -26,10 +26,10 @@ export default function HomePageClient({ initialGuides }: HomePageClientProps) {
       <main className="flex-1">
         <HeroSection />
         <AiAssistantSection onOpenChatModal={openChat} />
+        <TestimonialsSection />
         <HowWeHelpSection />
         <PackagesSection />
         <GuidesSection guides={initialGuides} />
-        <TestimonialsSection />
       </main>
     </div>
   );
