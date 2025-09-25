@@ -4,7 +4,6 @@
 import React from 'react';
 // Import sections directly
 import HeroSection from './HeroSection';
-import StepsSection from './StepsSection';
 import AiAssistantSection from './AiAssistantSection';
 import TestimonialsSection from './TestimonialsSection';
 import { useChat } from '@/context/ChatContext';
@@ -26,12 +25,11 @@ export default function HomePageClient({ initialGuides }: HomePageClientProps) {
     <div className="flex flex-col min-h-[100dvh]">
       <main className="flex-1">
         <HeroSection />
-        <AiAssistantSection onOpenChatModal={openChat} variant="full" />
-        <TestimonialsSection />
-        <PackagesSection />
-        <AiAssistantSection onOpenChatModal={openChat} variant="compact" />
+        <AiAssistantSection onOpenChatModal={openChat} />
         <HowWeHelpSection />
+        <PackagesSection />
         <GuidesSection guides={initialGuides} />
+        <TestimonialsSection />
       </main>
     </div>
   );

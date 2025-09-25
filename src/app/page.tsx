@@ -28,34 +28,15 @@ function shuffleArray<T>(array: T[]): T[] {
 
 
 export default async function HomePage() {
-  // Instantiate the repository and use case directly
-  const blogRepository = new FirestoreBlogPostRepository();
-  const getAllPostsUseCase = new GetAllBlogPostsUseCase(blogRepository);
   const guideRepository = new FirestoreGuideRepository();
   const getAllGuidesUseCase = new GetAllGuidesUseCase(guideRepository);
 
-
-  // Fetch all data in parallel
-  const [{ businesses }, { data: jobs }, allPosts, eurToCopRate, allGuides] = await Promise.all([
-    getSavedBusinessesAction(true),
-    getPublicJobPostingsAction(),
-    getAllPostsUseCase.execute(true), // Fetch all published posts using the use case
-    getEurToCopRate(),
-    getAllGuidesUseCase.execute()
-  ]);
-
-  // Filter and slice the posts here in the server component
-  const latestPosts = allPosts
-    .filter(post => post.status === 'Published')
-    .slice(0, 5); // We now want 5 posts for the home page
-
+  const allGuides = await getAllGuidesUseCase.execute();
   const featuredGuides = allGuides.slice(0, 3);
 
 
   return (
     <HomePageClient
-        eurToCopRate={eurToCopRate}
-        initialPosts={latestPosts}
         initialGuides={featuredGuides}
      />
   );
