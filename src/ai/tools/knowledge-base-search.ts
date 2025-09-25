@@ -43,8 +43,9 @@ export const knowledgeBaseSearch = ai.defineTool(
         content: query,
       });
       
+      debugLogs.push(`Paso 3: Verificando el resultado del embedding. Vector recibido: ${embeddingResult?.embedding ? 'Sí (' + embeddingResult.embedding.length + ' dimensiones)' : 'No'}`);
+      
       queryVector = embeddingResult.embedding;
-      debugLogs.push("Paso 3: Verificando el resultado del embedding. Vector recibido: " + (queryVector ? `Sí (${queryVector.length} dimensiones)` : 'No'));
 
       if (!queryVector) {
         throw new Error("La API no devolvió un vector de embedding.");

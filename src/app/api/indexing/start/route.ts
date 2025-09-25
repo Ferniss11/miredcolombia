@@ -34,11 +34,11 @@ async function indexContent(documents: (Guide | BlogPost)[]) {
     }
     const bucket = getStorage().bucket();
     const collectionRef = adminDb.collection(KNOWLEDGE_BASE_COLLECTION);
-    const batch = adminDb.batch();
-
+    
     let processedCount = 0;
 
     for (const doc of documents) {
+        const batch = adminDb.batch(); // Create a new batch for each document to avoid size limits
         let textContent = '';
         const isGuide = 'pdfUrl' in doc;
 
@@ -49,15 +49,15 @@ async function indexContent(documents: (Guide | BlogPost)[]) {
                 const [pdfBuffer] = await file.download();
                 const pdfData = await pdf(pdfBuffer);
                 textContent = pdfData.text;
-            } else if (!isGuide && doc.content) { // Handle simple blog posts
+            } else if (!isGuide && 'content' in doc && doc.content) { // Handle simple blog posts
                  textContent = `# ${doc.title}\n\n${doc.content}`;
-            } else if (!isGuide && doc.sections) { // Handle intelligent blog posts
+            } else if (!isGuide && 'sections' in doc && doc.sections) { // Handle intelligent blog posts
                 const sectionsText = doc.sections.map(s => `## ${s.heading}\n${s.content}`).join('\n\n');
                 textContent = `# ${doc.title}\n\n**Introducción:**\n${doc.introduction}\n\n${sectionsText}\n\n**Conclusión:**\n${doc.conclusion}`;
             }
         } catch (e) {
-            console.error(`Failed to process document ${doc.id} ("${doc.title}"):`, e);
-            continue; // Skip this document if processing fails
+            console.error(`Failed to process document content for ${doc.id} ("${doc.title}"):`, e);
+            continue; // Skip this document if content processing fails
         }
         
         textContent = textContent.replace(/\s+/g, ' ').trim();
@@ -66,23 +66,25 @@ async function indexContent(documents: (Guide | BlogPost)[]) {
         const chunks = chunkText(textContent);
 
         chunks.forEach((chunk, index) => {
+            // By writing to the 'content' field, we trigger the `firebase/firestore-vector-search`
+            // extension to automatically generate the embedding and write it to the 'embedding' field.
             const chunkDocRef = collectionRef.doc();
             batch.set(chunkDocRef, {
                 content: chunk,
                 metadata: {
                     source: 'admin_kb',
-                    doc_id: doc.id, // CORRECTED: Use the original document ID
-                    doc_title: doc.title, // CORRECTED: Use the original document title
+                    doc_id: doc.id,
+                    doc_title: doc.title,
                     doc_type: isGuide ? 'guide' : 'blog',
                     chunk_number: index + 1,
                 }
             });
         });
-        processedCount++;
-    }
-    
-    if (processedCount > 0) {
-        await batch.commit();
+        
+        if (chunks.length > 0) {
+            await batch.commit();
+            processedCount++;
+        }
     }
     
     return processedCount;
