@@ -6,12 +6,9 @@ import { getPublicJobPostingsAction } from '@/lib/job-posting/infrastructure/nex
 import { JobPosting } from '@/lib/types';
 import { getPublicPropertiesAction } from '@/lib/real-estate/infrastructure/nextjs/property.server-actions';
 import { Property } from '@/lib/real-estate/domain/property.entity';
-
 const URL = 'https://www.miredcolombia.com';
-
 function generateSiteMap(posts: any[], businesses: any[], jobs: JobPosting[], properties: Property[]) {
   const today = new Date().toISOString().split('T')[0];
-
   return `<?xml version="1.0" encoding="UTF-8"?>
    <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
      <!-- Static pages -->
