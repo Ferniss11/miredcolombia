@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useEffect, useTransition } from 'react';
+import React, { useEffect, useTransition, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -16,6 +16,12 @@ import { SheetFooter, SheetClose } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Loader2, Upload } from 'lucide-react';
 import type { Guide } from '@/lib/guide/domain/guide.entity';
+import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { app } from '@/lib/firebase/config'; // Import client-side Firebase app
+
+// Initialize Firebase Storage
+const storage = getStorage(app);
+
 
 // Zod Schema for the form
 const GuideFormSchema = z.object({
@@ -32,6 +38,14 @@ type GuideFormProps = {
   guideToEdit?: Guide | null;
   onFormSubmit: () => void;
 };
+
+// --- Helper function to upload a file from the client ---
+async function uploadClientFile(file: File, path: string): Promise<string> {
+    const storageRef = ref(storage, path);
+    await uploadBytes(storageRef, file);
+    return await getDownloadURL(storageRef);
+}
+
 
 export default function GuideForm({ guideToEdit, onFormSubmit }: GuideFormProps) {
   const { user } = useAuth();
@@ -66,31 +80,54 @@ export default function GuideForm({ guideToEdit, onFormSubmit }: GuideFormProps)
         toast({ variant: 'destructive', title: 'Error', description: 'Debes iniciar sesión.' });
         return;
     }
-    if (!guideToEdit && (!values.coverImageFile || values.coverImageFile.length === 0)) {
+    
+    const coverImageFile = values.coverImageFile?.[0];
+    const pdfFile = values.pdfFile?.[0];
+
+    if (!guideToEdit && !coverImageFile) {
         form.setError('coverImageFile', { message: 'La imagen de portada es obligatoria.' });
         return;
     }
-     if (!guideToEdit && (!values.pdfFile || values.pdfFile.length === 0)) {
+    if (!guideToEdit && !pdfFile) {
         form.setError('pdfFile', { message: 'El archivo PDF es obligatorio.' });
         return;
     }
 
     startTransition(async () => {
       try {
-        const formData = new FormData();
-        formData.append('title', values.title);
-        formData.append('description', values.description);
-        formData.append('category', values.category);
-        if (values.coverImageFile?.[0]) formData.append('coverImageFile', values.coverImageFile[0]);
-        if (values.pdfFile?.[0]) formData.append('pdfFile', values.pdfFile[0]);
+        let coverImageUrl: string | undefined = guideToEdit?.coverImageUrl;
+        let pdfUrl: string | undefined = guideToEdit?.pdfUrl;
+
+        // 1. Upload files from client-side if they exist
+        if (coverImageFile) {
+            const path = `guides/${user.uid}/${Date.now()}-${coverImageFile.name}`;
+            coverImageUrl = await uploadClientFile(coverImageFile, path);
+        }
+        if (pdfFile) {
+             const path = `guides/${user.uid}/${Date.now()}-${pdfFile.name}`;
+            pdfUrl = await uploadClientFile(pdfFile, path);
+        }
+
+        // 2. Prepare data for the API call (only URLs, no files)
+        const apiData = {
+            title: values.title,
+            description: values.description,
+            category: values.category,
+            coverImageUrl,
+            pdfUrl,
+        };
 
         const idToken = await user.getIdToken();
         const endpoint = guideToEdit ? `/api/guides/${guideToEdit.id}` : '/api/guides';
         
+        // 3. Call the API with JSON data
         const response = await fetch(endpoint, {
-          method: 'POST', // The API route handles both create/update via POST
-          headers: { Authorization: `Bearer ${idToken}` },
-          body: formData,
+          method: 'POST',
+          headers: { 
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${idToken}` 
+          },
+          body: JSON.stringify(apiData),
         });
 
         if (!response.ok) {
