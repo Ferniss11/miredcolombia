@@ -80,7 +80,7 @@ export default function FaqCtaSection() {
 
     return (
         <>
-            <section className="w-full py-8 bg-secondary/30 dark:bg-card/30">
+            <section className="w-full py-12 bg-secondary/30 dark:bg-card/30">
                 <div className="container max-w-6xl">
                     <div className="grid md:grid-cols-2 gap-12 items-start">
                         {/* Left Column: FAQs */}

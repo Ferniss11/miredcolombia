@@ -42,7 +42,7 @@ export default function BusinessSection({ businesses }: { businesses: PlaceDetai
     }, [businesses]);
 
     return (
-        <section className="w-full py-12 md:py-24 lg:py-32 bg-primary/10">
+        <section className="w-full py-12 bg-primary/10">
             <div className="container mx-auto px-4 md:px-6">
                 <div className="bg-card rounded-xl shadow-lg p-6 md:p-8 lg:p-12">
                     <div className="flex flex-col lg:flex-row gap-12 items-center">

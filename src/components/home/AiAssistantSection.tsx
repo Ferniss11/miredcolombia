@@ -94,7 +94,7 @@ export default function AiAssistantSection({ onOpenChatModal }: AiAssistantSecti
     
     return (
         <>
-            <section id="asistente-ia" className="w-full py-8 bg-background">
+            <section id="asistente-ia" className="w-full py-12 bg-background">
                 <div className="container space-y-16">
                     
                     {/* Unified container for alignment */}
@@ -186,13 +186,13 @@ export default function AiAssistantSection({ onOpenChatModal }: AiAssistantSecti
                                  <div className="grid grid-cols-3 border-t rounded-b-xl min-w-[600px]">
                                     <div className="col-span-1 p-4 sm:p-6 border-r"></div>
                                     <div className="col-span-2 p-4 sm:p-6 rounded-br-xl bg-primary/5">
-                                         <div className="relative p-1 rounded-lg bg-gradient-to-r from-yellow-400 via-blue-500 to-red-500">
+                                         <div className="relative p-1 rounded-lg border-2 border-transparent [border-image:linear-gradient(to_right,#FCD116,#003893,#CE1126)_1]">
                                             <button 
                                                 onClick={() => handlePlanSelection(valeriaPlans[2])}
                                                 className="w-full p-3 text-center rounded-md transition-all bg-card dark:bg-gray-900 hover:bg-card/80 dark:hover:bg-gray-800"
                                             >
-                                                <p className="font-bold text-primary text-base">Oferta Lanzamiento</p>
-                                                <p className="font-semibold text-foreground text-lg">3 meses por sólo 9,97€ <ArrowRight className="inline-block ml-1 h-4 w-4"/></p>
+                                                <p className="font-bold text-lg text-primary">Oferta Lanzamiento</p>
+                                                <p className="font-bold text-foreground text-lg">3 meses por sólo 9,97€ <ArrowRight className="inline-block ml-1 h-4 w-4"/></p>
                                                 <div className="absolute -top-3 -right-3 transform rotate-12 bg-red-600 text-white px-2 py-1 text-xs font-bold rounded shadow-lg">
                                                     ¡Ahorra un 33%!
                                                 </div>

@@ -24,7 +24,7 @@ export default function GuidesSection({ guides }: { guides: Guide[] }) {
     }
 
     return (
-        <section className="w-full py-8 bg-background relative overflow-hidden">
+        <section className="w-full py-12 bg-background relative overflow-hidden">
             {/* Subtle SVG Background */}
             <div className="absolute inset-0 -z-10 opacity-5">
                 <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">

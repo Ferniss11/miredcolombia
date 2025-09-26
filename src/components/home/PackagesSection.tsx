@@ -96,7 +96,7 @@ export default function PackagesSection() {
     
     return (
         <>
-            <section id="human-packages" className="w-full py-8 bg-secondary/50 dark:bg-card/50">
+            <section id="human-packages" className="w-full py-12 bg-secondary/50 dark:bg-card/50">
                 <div className="container px-4 md:px-6 space-y-20">
                     
                     {/* Main Intro */}
@@ -146,11 +146,11 @@ export default function PackagesSection() {
                     <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
                          <div className="space-y-4">
                              <h3 className="text-2xl font-bold font-headline">¿Cómo trabajamos?</h3>
-                            <ul className="space-y-3 text-muted-foreground md:text-base/relaxed">
+                            <ul className="space-y-3 text-muted-foreground md:text-lg/relaxed">
                                 {howItWorksSteps.map((step, i) => (
                                      <li key={i} className="flex items-center gap-3">
                                         <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center">{i + 1}</div>
-                                        <span className="text-foreground">{step.text}</span>
+                                        <span className="text-foreground text-base md:text-lg">{step.text}</span>
                                     </li>
                                 ))}
                             </ul>
