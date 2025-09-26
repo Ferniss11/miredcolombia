@@ -97,7 +97,7 @@ export default function FaqCtaSection() {
                         </div>
 
                         {/* Right Column: CTA */}
-                        <div className="bg-card p-8 rounded-lg shadow-lg">
+                        <div className="bg-card p-4 sm:p-8 rounded-lg shadow-lg">
                             <h3 className="text-2xl font-bold font-headline mb-6">Tu puente de Colombia a España empieza hoy.</h3>
                             <div className="flex flex-col gap-4">
                                 <Button size="lg" className="w-full justify-between h-auto min-h-14 text-base" onClick={() => handlePlanSelection('premium')}>
