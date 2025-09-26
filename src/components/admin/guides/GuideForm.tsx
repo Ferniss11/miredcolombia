@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useEffect, useTransition, useState } from 'react';
@@ -101,7 +100,6 @@ export default function GuideForm({ guideToEdit, onFormSubmit }: GuideFormProps)
             formData.append('pdfFile', pdfFile);
         }
         
-        // If editing, pass existing URLs so they are not lost if no new file is uploaded
         if (guideToEdit) {
             formData.append('existingCoverImageUrl', guideToEdit.coverImageUrl);
             formData.append('existingPdfUrl', guideToEdit.pdfUrl);
@@ -145,18 +143,30 @@ export default function GuideForm({ guideToEdit, onFormSubmit }: GuideFormProps)
             <FormField control={form.control} name="description" render={({ field }) => (<FormItem><FormLabel>Descripción Corta</FormLabel><FormControl><Textarea placeholder="Un resumen de lo que el usuario encontrará en la guía." {...field} /></FormControl><FormMessage /></FormItem>)} />
             <FormField control={form.control} name="category" render={({ field }) => (<FormItem><FormLabel>Categoría</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Elige una categoría" /></SelectTrigger></FormControl><SelectContent><SelectItem value="Trámites">Trámites</SelectItem><SelectItem value="Vivienda">Vivienda</SelectItem><SelectItem value="Trabajo">Trabajo</SelectItem><SelectItem value="Cultura">Cultura</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
             
-            <FormField control={form.control} name="coverImageFile" render={({ field: { onChange, ...fieldProps } }) => (
+            <FormField control={form.control} name="coverImageFile" render={({ field }) => (
                 <FormItem>
                     <FormLabel>Imagen de Portada</FormLabel>
-                    <FormControl><Input type="file" accept="image/*" onChange={(e) => onChange(e.target.files)} {...fieldProps} /></FormControl>
+                    <FormControl>
+                        <Input
+                            type="file"
+                            accept="image/*"
+                            {...form.register("coverImageFile")}
+                         />
+                    </FormControl>
                     <FormDescription>{guideToEdit ? "Sube un archivo para reemplazar la portada actual." : "Sube la imagen de portada para la guía."}</FormDescription>
                     <FormMessage />
                 </FormItem>
             )} />
-             <FormField control={form.control} name="pdfFile" render={({ field: { onChange, ...fieldProps } }) => (
+             <FormField control={form.control} name="pdfFile" render={({ field }) => (
                 <FormItem>
                     <FormLabel>Archivo PDF de la Guía</FormLabel>
-                    <FormControl><Input type="file" accept="application/pdf" onChange={(e) => onChange(e.target.files)} {...fieldProps} /></FormControl>
+                    <FormControl>
+                         <Input
+                            type="file"
+                            accept="application/pdf"
+                            {...form.register("pdfFile")}
+                         />
+                    </FormControl>
                      <FormDescription>{guideToEdit ? "Sube un archivo para reemplazar el PDF actual." : "Sube el archivo PDF de la guía."}</FormDescription>
                     <FormMessage />
                 </FormItem>
