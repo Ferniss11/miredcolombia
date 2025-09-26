@@ -3,7 +3,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Check, MessageSquare, Shield, PlayCircle, ArrowRight, Sparkles } from "lucide-react";
+import { Check, MessageSquare, Shield, PlayCircle, ArrowRight, Sparkles, X } from "lucide-react";
 import Link from "next/link";
 import { Card, CardContent } from "../ui/card";
 import Image from "next/image";
@@ -162,12 +162,12 @@ export default function AiAssistantSection({ onOpenChatModal }: AiAssistantSecti
                                         <div className="p-4 sm:p-6 border-r flex items-center">{feature.label}</div>
                                         <div className="p-4 sm:p-6 border-r flex items-center justify-center">
                                             {typeof featureData[feature.key].free === 'boolean' ? (
-                                                featureData[feature.key].free ? <Check className="h-6 w-6 text-green-500"/> : <div className="h-6 w-6 flex items-center justify-center text-muted-foreground">-</div>
+                                                featureData[feature.key].free ? <Check className="h-6 w-6 text-green-500"/> : <X className="h-6 w-6 text-destructive"/>
                                             ) : <span className="font-semibold text-sm">{featureData[feature.key].free}</span>}
                                         </div>
                                         <div className="p-4 sm:p-6 flex items-center justify-center bg-primary/5">
                                             {typeof featureData[feature.key].premium === 'boolean' ? (
-                                                featureData[feature.key].premium ? <Check className="h-6 w-6 text-green-500"/> : <div className="h-6 w-6 flex items-center justify-center text-muted-foreground">-</div>
+                                                featureData[feature.key].premium ? <Check className="h-6 w-6 text-green-500"/> : <X className="h-6 w-6 text-destructive"/>
                                             ) : <span className="font-semibold text-primary text-sm">{featureData[feature.key].premium}</span>}
                                         </div>
                                     </div>
@@ -186,24 +186,23 @@ export default function AiAssistantSection({ onOpenChatModal }: AiAssistantSecti
                                  <div className="grid grid-cols-3 border-t rounded-b-xl min-w-[600px]">
                                     <div className="col-span-1 p-4 sm:p-6 border-r"></div>
                                     <div className="col-span-2 p-4 sm:p-6 rounded-br-xl bg-primary/5">
-                                        <button 
-                                            onClick={() => handlePlanSelection(valeriaPlans[2])}
-                                            className="w-full p-3 text-left rounded-lg transition-all transform hover:scale-[1.02] hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
-                                            style={{
-                                                background: 'linear-gradient(to right, hsl(var(--primary)/0.05), hsl(var(--primary)/0.15))',
-                                            }}
+                                        <div 
+                                            className="p-1 rounded-lg bg-gradient-to-r from-yellow-400 via-blue-500 to-red-500"
                                         >
-                                            <div className="text-center">
+                                            <button 
+                                                onClick={() => handlePlanSelection(valeriaPlans[2])}
+                                                className="w-full p-3 text-center rounded-md transition-all bg-card dark:bg-gray-900 hover:bg-card/80 dark:hover:bg-gray-800"
+                                            >
                                                 <p className="font-bold text-primary">Oferta Lanzamiento</p>
-                                                <p className="font-semibold text-foreground text-lg">Lanzamiento 3 meses por sólo 9,97€ <ArrowRight className="inline-block ml-1 h-4 w-4"/></p>
+                                                <p className="font-semibold text-foreground text-lg">3 meses por sólo 9,97€ <ArrowRight className="inline-block ml-1 h-4 w-4"/></p>
                                                 <p className="text-lg font-bold text-yellow-500 mt-1">¡Ahorra un 33%!</p>
-                                            </div>
-                                        </button>
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                             <div className="mt-8 text-center">
-                                <Button variant="link" asChild className="text-primary">
+                                <Button variant="link" asChild className="text-blue-600 text-base">
                                     <Link href="/valeria">Ver todas las características y preguntas frecuentes <ArrowRight className="ml-1 h-4 w-4"/></Link>
                                 </Button>
                             </div>
