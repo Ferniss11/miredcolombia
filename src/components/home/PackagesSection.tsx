@@ -11,6 +11,7 @@ import RequestQuoteSheet from "./RequestQuoteSheet";
 import { Separator } from "../ui/separator";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { useChat } from "@/context/ChatContext";
 
 const packs = [
     {
@@ -28,7 +29,7 @@ const packs = [
         cta: "Reservar Consultoría",
         microcopy: "30–45 min · entregable con plan de 7 días",
         actionType: "link" as const,
-        link: "/checkout/pack_consultoria",
+        link: "https://www.viajamor.com/viaje/asesoria-viajes-90-minutos/",
     },
     {
         icon: Briefcase,
@@ -82,32 +83,17 @@ const signals = [
 export default function PackagesSection() {
     const [isSheetOpen, setIsSheetOpen] = useState(false);
     const [selectedPackage, setSelectedPackage] = useState('');
-    const { user } = useAuth();
-    const { toast } = useToast();
+    const { openChat } = useChat();
 
     const handleAction = (pkg: typeof packs[0]) => {
         if (pkg.actionType === 'modal') {
             setSelectedPackage(pkg.title);
             setIsSheetOpen(true);
         } else if (pkg.actionType === 'link' && pkg.link) {
-            window.location.href = pkg.link;
+            window.open(pkg.link, '_blank');
         }
     };
     
-    const handleCheckout = () => {
-        if (!user) {
-            toast({
-                title: "Necesitas una cuenta",
-                description: "Por favor, regístrate o inicia sesión para suscribirte.",
-                action: <Button asChild><Link href="/signup">Registrarse</Link></Button>,
-            });
-            return;
-        }
-        // Redirect to Stripe checkout
-        console.log("Redirecting to Stripe for Valeria Premium");
-    };
-
-
     return (
         <>
             <section id="human-packages" className="w-full py-20 md:py-32 bg-secondary/50 dark:bg-card/50">
@@ -119,28 +105,27 @@ export default function PackagesSection() {
                         <p className="mt-4 text-muted-foreground md:text-lg/relaxed">
                             Valeria te resuelve la mayoría de pasos. Si tu caso es más complejo o prefieres acompañamiento humano, puedes sumar a nuestros expertos con estos packs. Son soluciones guiadas por personas que conocen el terreno. Coordinamos contigo y con Valeria para ejecutar trámites, revisar documentos y evitar errores costosos.
                         </p>
-                        <p className="mt-2 text-sm font-semibold text-primary">Primero usa Valeria. Si detecta que te conviene escalar, te sugerirá el pack ideal.</p>
+                        <p className="mt-4 text-sm font-semibold text-primary/90 md:text-base">
+                            Compatible con Valeria IA · Menos errores · Más rapidez
+                        </p>
                     </div>
 
                     {/* Packs Section */}
                     <div className="max-w-6xl mx-auto">
-                        <div className="text-center mb-12">
-                             <p className="text-sm font-semibold text-muted-foreground mt-2">Compatible con Valeria IA · Menos errores · Más rapidez</p>
-                        </div>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                             {packs.map((pkg) => (
                                 <Card 
                                     key={pkg.id} 
                                     className="flex flex-col overflow-hidden shadow-lg border-transparent hover:border-primary transition-all duration-300 transform hover:-translate-y-2 group"
                                 >
-                                    <CardHeader className="items-center text-center">
+                                    <CardHeader className="items-center text-center pb-2">
                                         <div className="p-4 bg-primary/10 rounded-full inline-flex mb-2">
                                             <pkg.icon className="w-8 h-8 text-primary" />
                                         </div>
                                         <CardTitle className="font-headline text-2xl">{pkg.title}</CardTitle>
                                         <CardDescription className="font-semibold text-lg !mt-2">{pkg.price}</CardDescription>
                                     </CardHeader>
-                                    <CardContent className="flex-grow space-y-3 pt-0">
+                                    <CardContent className="flex-grow space-y-3 pt-2">
                                         {pkg.features.map((feature, i) => (
                                             <div key={i} className="flex items-start gap-2 text-sm">
                                                 <CheckCircle className="w-4 h-4 mt-0.5 text-green-500 flex-shrink-0"/>
@@ -161,11 +146,11 @@ export default function PackagesSection() {
                     <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
                          <div className="space-y-4">
                              <h3 className="text-2xl font-bold font-headline">¿Cómo trabajamos?</h3>
-                            <ul className="space-y-3 md:text-lg/relaxed text-muted-foreground">
+                            <ul className="space-y-3 text-muted-foreground md:text-lg/relaxed">
                                 {howItWorksSteps.map((step, i) => (
                                      <li key={i} className="flex items-center gap-3">
                                         <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center">{i + 1}</div>
-                                        <span className="text-foreground">{step.text}</span>
+                                        <span className="text-foreground text-base md:text-sm">{step.text}</span>
                                     </li>
                                 ))}
                             </ul>
@@ -177,13 +162,13 @@ export default function PackagesSection() {
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <div className="space-y-2">
-                                     <h4 className="font-semibold flex items-center gap-2 text-foreground md:text-lg/relaxed"><Bot className="w-5 h-5 text-primary"/> Elige solo Valeria si...</h4>
-                                     <p className="text-sm text-muted-foreground pl-7">...necesitas claridad y plantillas, tu caso es estándar y prefieres autogestión económica.</p>
+                                     <h4 className="font-semibold flex items-center gap-2 text-foreground text-base md:text-sm"><Bot className="w-5 h-5 text-primary"/> Elige solo Valeria si...</h4>
+                                     <p className="text-sm text-muted-foreground pl-7">...necesitas claridad, plantillas, tu caso es estándar y prefieres autogestión económica.</p>
                                 </div>
                                 <Separator />
                                 <div className="space-y-2">
-                                     <h4 className="font-semibold flex items-center gap-2 text-foreground md:text-lg/relaxed"><Users className="w-5 h-5 text-primary"/> Elige Pack + Valeria si...</h4>
-                                     <p className="text-sm text-muted-foreground pl-7">...tu caso tiene excepciones, plazos apretados, homologaciones/arraigos complejos, o prefieres que un humano lo lleve contigo.</p>
+                                     <h4 className="font-semibold flex items-center gap-2 text-foreground text-base md:text-sm"><Users className="w-5 h-5 text-primary"/> Elige Pack + Valeria si...</h4>
+                                     <p className="text-sm text-muted-foreground pl-7">...tu caso tiene excepciones, plazos apretados, o prefieres que un humano lo lleve contigo.</p>
                                 </div>
                             </CardContent>
                         </Card>
@@ -193,7 +178,7 @@ export default function PackagesSection() {
                     <div className="text-center max-w-3xl mx-auto">
                         <h3 className="text-2xl font-bold font-headline">Empieza con Valeria por 4,97€/mes o asegura resultados con un pack humano cuando lo necesites.</h3>
                         <div className="flex flex-wrap gap-4 justify-center mt-6">
-                            <Button onClick={handleCheckout}>Usar Valeria ahora</Button>
+                            <Button onClick={openChat}>Usar Valeria ahora</Button>
                             <Button asChild variant="outline"><Link href="/checkout/pack_consultoria">Reservar Consultoría (39€)</Link></Button>
                             <Button variant="outline" onClick={() => { setSelectedPackage("Onboarding en España"); setIsSheetOpen(true); }}>Pedir Onboarding</Button>
                             <Button variant="outline" onClick={() => { setSelectedPackage("Viaje Completo"); setIsSheetOpen(true); }}>Solicitar Viaje Completo</Button>
