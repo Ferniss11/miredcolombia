@@ -21,23 +21,65 @@ function generateSiteMap(posts: any[], businesses: any[], jobs: JobPosting[], pr
        <changefreq>daily</changefreq>
        <priority>1.0</priority>
      </url>
-     <url>
-       <loc>${URL}/directorio</loc>
-       <lastmod>${today}</lastmod>
-       <changefreq>weekly</changefreq>
+      <url>
+       <loc>${URL}/quienes-somos</loc>
+       <lastmod>2024-07-15</lastmod>
+       <changefreq>monthly</changefreq>
        <priority>0.8</priority>
      </url>
-      <url>
+     <url>
        <loc>${URL}/empleos</loc>
        <lastmod>${today}</lastmod>
        <changefreq>daily</changefreq>
        <priority>0.9</priority>
      </url>
      <url>
+       <loc>${URL}/vivienda</loc>
+       <lastmod>${today}</lastmod>
+       <changefreq>daily</changefreq>
+       <priority>0.9</priority>
+     </url>
+      <url>
        <loc>${URL}/inmobiliaria</loc>
        <lastmod>${today}</lastmod>
        <changefreq>daily</changefreq>
        <priority>0.9</priority>
+     </url>
+      <url>
+       <loc>${URL}/tramites</loc>
+       <lastmod>2024-07-15</lastmod>
+       <changefreq>monthly</changefreq>
+       <priority>0.7</priority>
+     </url>
+      <url>
+       <loc>${URL}/packs</loc>
+       <lastmod>2024-07-15</lastmod>
+       <changefreq>monthly</changefreq>
+       <priority>0.7</priority>
+     </url>
+      <url>
+       <loc>${URL}/valeria</loc>
+       <lastmod>2024-07-15</lastmod>
+       <changefreq>weekly</changefreq>
+       <priority>0.9</priority>
+     </url>
+     <url>
+       <loc>${URL}/guias</loc>
+       <lastmod>${today}</lastmod>
+       <changefreq>weekly</changefreq>
+       <priority>0.8</priority>
+     </url>
+     <url>
+       <loc>${URL}/directorio</loc>
+       <lastmod>${today}</lastmod>
+       <changefreq>weekly</changefreq>
+       <priority>0.8</priority>
+     </url>
+     <url>
+       <loc>${URL}/servicios</loc>
+       <lastmod>${today}</lastmod>
+       <changefreq>weekly</changefreq>
+       <priority>0.8</priority>
      </url>
      <url>
        <loc>${URL}/blog</loc>
