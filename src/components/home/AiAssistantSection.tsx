@@ -151,7 +151,7 @@ export default function AiAssistantSection({ onOpenChatModal }: AiAssistantSecti
 
                         {/* --- Comparison Table & CTA --- */}
                         <div className="max-w-6xl mx-auto">
-                            <div className="border rounded-xl shadow-lg bg-card overflow-x-auto">
+                            <div className="border rounded-xl shadow-lg bg-card overflow-x-auto p-2 sm:p-0">
                                 <div className="grid grid-cols-3 min-w-[600px]">
                                     <div className="p-4 sm:p-6 border-r"><h3 className="font-bold h-12 flex items-end">Características</h3></div>
                                     <div className="p-4 sm:p-6 border-r text-center"><h3 className="font-bold h-12 flex items-end justify-center">Gratis</h3></div>
@@ -186,24 +186,31 @@ export default function AiAssistantSection({ onOpenChatModal }: AiAssistantSecti
                                  <div className="grid grid-cols-3 border-t rounded-b-xl min-w-[600px]">
                                     <div className="col-span-1 p-4 sm:p-6 border-r"></div>
                                     <div className="col-span-2 p-2 sm:p-4 rounded-br-xl bg-primary/5">
-                                         <div className="relative p-1 rounded-lg border-2 border-transparent [border-image:linear-gradient(to_right,#FCD116,#003893,#CE1126)_1]">
+                                        <div className="relative">
                                             <button 
                                                 onClick={() => handlePlanSelection(valeriaPlans[2])}
-                                                className="w-full p-3 text-center rounded-md transition-all bg-card dark:bg-gray-900 hover:bg-card/80 dark:hover:bg-gray-800"
+                                                className="w-full p-3 text-center rounded-md transition-all bg-card dark:bg-gray-900 hover:bg-card/80 dark:hover:bg-gray-800 border-2 border-transparent hover:border-primary/50"
                                             >
                                                 <p className="font-bold text-lg text-primary">Oferta Lanzamiento</p>
                                                 <p className="font-bold text-foreground text-lg">3 meses por sólo 9,97€ <ArrowRight className="inline-block ml-1 h-4 w-4"/></p>
-                                                <div className="absolute -top-3 -right-3 transform rotate-12 bg-red-600 text-white px-2 py-1 text-sm font-bold rounded shadow-lg">
-                                                    ¡Ahorra un 33%!
-                                                </div>
                                             </button>
+                                             <div className="absolute -top-3 -right-3 transform rotate-12 bg-red-600 text-white px-2 py-0.5 text-xs font-bold rounded shadow-lg">
+                                                ¡Ahorra un 33%!
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                             <div className="mt-6 text-center w-full sm:w-auto">
-                                <Button variant="link" asChild className="text-primary text-base w-full sm:w-auto">
-                                    <Link href="/valeria">Ver todas las características y preguntas frecuentes <ArrowRight className="ml-1 h-4 w-4"/></Link>
+                                <Button
+                                    variant="link"
+                                    asChild
+                                    className="text-blue-600 text-base w-full sm:w-auto whitespace-normal h-auto py-2"
+                                >
+                                    <Link href="/valeria" className="flex items-center justify-center text-center">
+                                        <span>Ver todas las características y preguntas frecuentes</span>
+                                        <ArrowRight className="ml-2 h-4 w-4 flex-shrink-0" />
+                                    </Link>
                                 </Button>
                             </div>
                             <Card className="mt-4 bg-secondary/50">
