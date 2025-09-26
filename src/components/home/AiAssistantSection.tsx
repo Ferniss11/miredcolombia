@@ -116,7 +116,7 @@ export default function AiAssistantSection({ onOpenChatModal }: AiAssistantSecti
                                 </ul>
                             </div>
                             
-                            <div className="flex items-center justify-center lg:col-span-2">
+                            <div className="flex items-center justify-center lg:justify-end lg:col-span-2">
                                 <div className="w-full max-w-2xl aspect-video rounded-xl shadow-lg overflow-hidden transition-all duration-300 relative group hover:shadow-2xl">
                                 {showVideo ? (
                                         <video
@@ -150,15 +150,15 @@ export default function AiAssistantSection({ onOpenChatModal }: AiAssistantSecti
                         </div>
 
                         {/* --- Comparison Table & CTA --- */}
-                        <div>
-                            <div className="border rounded-xl shadow-lg bg-card max-w-6xl mx-auto">
-                                <div className="grid grid-cols-3">
+                        <div className="max-w-6xl mx-auto">
+                            <div className="border rounded-xl shadow-lg bg-card overflow-x-auto">
+                                <div className="grid grid-cols-3 min-w-[600px]">
                                     <div className="p-4 sm:p-6 border-r"><h3 className="font-bold h-12 flex items-end">Características</h3></div>
                                     <div className="p-4 sm:p-6 border-r text-center"><h3 className="font-bold h-12 flex items-end justify-center">Gratis</h3></div>
                                     <div className="p-4 sm:p-6 text-center bg-primary/5 rounded-tr-xl"><h3 className="font-bold h-12 flex items-end justify-center text-primary">Premium</h3></div>
                                 </div>
                                 {allFeatures.map((feature) => (
-                                    <div key={feature.key} className="grid grid-cols-3 border-t">
+                                    <div key={feature.key} className="grid grid-cols-3 border-t min-w-[600px]">
                                         <div className="p-4 sm:p-6 border-r flex items-center">{feature.label}</div>
                                         <div className="p-4 sm:p-6 border-r flex items-center justify-center">
                                             {typeof featureData[feature.key].free === 'boolean' ? (
@@ -172,7 +172,7 @@ export default function AiAssistantSection({ onOpenChatModal }: AiAssistantSecti
                                         </div>
                                     </div>
                                 ))}
-                                <div className="grid grid-cols-3 border-t">
+                                <div className="grid grid-cols-3 border-t min-w-[600px]">
                                     <div className="p-4 sm:p-6 border-r flex items-center justify-center"></div>
                                     <div className="p-4 sm:p-6 border-r text-center space-y-2">
                                         <p className="text-2xl font-bold">Gratis</p>
@@ -183,7 +183,7 @@ export default function AiAssistantSection({ onOpenChatModal }: AiAssistantSecti
                                         <Button className="w-full" onClick={() => handlePlanSelection(valeriaPlans[1])}>Comprar Premium</Button>
                                     </div>
                                 </div>
-                                 <div className="grid grid-cols-3 border-t rounded-b-xl">
+                                 <div className="grid grid-cols-3 border-t rounded-b-xl min-w-[600px]">
                                     <div className="col-span-1 p-4 sm:p-6 border-r"></div>
                                     <div className="col-span-2 p-4 sm:p-6 rounded-br-xl bg-primary/5">
                                         <button 
@@ -191,15 +191,12 @@ export default function AiAssistantSection({ onOpenChatModal }: AiAssistantSecti
                                             className="w-full p-3 text-left rounded-lg transition-all transform hover:scale-[1.02] hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
                                             style={{
                                                 background: 'linear-gradient(to right, hsl(var(--primary)/0.05), hsl(var(--primary)/0.15))',
-                                                border: '1px solid',
-                                                borderImageSource: 'linear-gradient(to right, #FFCD00, #C70039, #003893)',
-                                                borderImageSlice: 1
                                             }}
                                         >
                                             <div className="text-center">
                                                 <p className="font-bold text-primary">Oferta Lanzamiento</p>
-                                                <p className="font-semibold text-foreground">Lanzamiento 3 meses por sólo 9,97€ <ArrowRight className="inline-block ml-1 h-4 w-4"/></p>
-                                                <p className="text-sm font-bold text-yellow-500 mt-1">¡Ahorra un 33%!</p>
+                                                <p className="font-semibold text-foreground text-lg">Lanzamiento 3 meses por sólo 9,97€ <ArrowRight className="inline-block ml-1 h-4 w-4"/></p>
+                                                <p className="text-lg font-bold text-yellow-500 mt-1">¡Ahorra un 33%!</p>
                                             </div>
                                         </button>
                                     </div>
@@ -214,7 +211,7 @@ export default function AiAssistantSection({ onOpenChatModal }: AiAssistantSecti
                                 <CardContent className="p-4">
                                     <div className="flex items-center gap-3">
                                         <Shield className="w-5 h-5 text-muted-foreground flex-shrink-0"/>
-                                        <p className="text-xs text-muted-foreground">
+                                        <p className="text-sm text-muted-foreground">
                                             Valeria es una herramienta informativa basada en IA. No constituye asesoramiento jurídico. Para decisiones legales, consulta siempre a un profesional colegiado.
                                         </p>
                                     </div>
