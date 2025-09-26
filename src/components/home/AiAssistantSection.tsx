@@ -100,8 +100,8 @@ export default function AiAssistantSection({ onOpenChatModal }: AiAssistantSecti
                     {/* Unified container for alignment */}
                     <div className="max-w-6xl mx-auto space-y-16">
                         {/* --- Main Info & Video --- */}
-                        <div className="grid lg:grid-cols-2 gap-12 items-center">
-                            <div className="space-y-6">
+                        <div className="grid lg:grid-cols-3 gap-12 items-center">
+                            <div className="space-y-6 lg:col-span-1">
                                 <div className="inline-block rounded-lg bg-primary/10 px-3 py-1 text-sm font-semibold text-primary">Asistente IA</div>
                                 <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl font-headline">
                                     Tu Puente de Colombia a España Empieza Hoy
@@ -116,8 +116,8 @@ export default function AiAssistantSection({ onOpenChatModal }: AiAssistantSecti
                                 </ul>
                             </div>
                             
-                            <div className="flex items-center justify-center">
-                                <div className="w-full max-w-md aspect-video rounded-xl shadow-lg overflow-hidden transition-all duration-300 relative group hover:shadow-2xl">
+                            <div className="flex items-center justify-center lg:col-span-2">
+                                <div className="w-full max-w-2xl aspect-video rounded-xl shadow-lg overflow-hidden transition-all duration-300 relative group hover:shadow-2xl">
                                 {showVideo ? (
                                         <video
                                             className="w-full h-full object-cover"
@@ -151,7 +151,7 @@ export default function AiAssistantSection({ onOpenChatModal }: AiAssistantSecti
 
                         {/* --- Comparison Table & CTA --- */}
                         <div>
-                            <div className="border rounded-xl shadow-lg bg-card">
+                            <div className="border rounded-xl shadow-lg bg-card max-w-6xl mx-auto">
                                 <div className="grid grid-cols-3">
                                     <div className="p-4 sm:p-6 border-r"><h3 className="font-bold h-12 flex items-end">Características</h3></div>
                                     <div className="p-4 sm:p-6 border-r text-center"><h3 className="font-bold h-12 flex items-end justify-center">Gratis</h3></div>
