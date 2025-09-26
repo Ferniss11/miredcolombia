@@ -94,7 +94,7 @@ export default function AiAssistantSection({ onOpenChatModal }: AiAssistantSecti
     
     return (
         <>
-            <section id="asistente-ia" className="w-full py-12 bg-background">
+            <section id="asistente-ia" className="w-full py-12">
                 <div className="container space-y-16">
                     
                     {/* Unified container for alignment */}
@@ -162,12 +162,12 @@ export default function AiAssistantSection({ onOpenChatModal }: AiAssistantSecti
                                         <div className="p-4 sm:p-6 border-r flex items-center">{feature.label}</div>
                                         <div className="p-4 sm:p-6 border-r flex items-center justify-center">
                                             {typeof featureData[feature.key].free === 'boolean' ? (
-                                                featureData[feature.key].free ? <Check className="h-6 w-6 text-green-500"/> : <X className="h-6 w-6 text-destructive"/>
+                                                featureData[feature.key].free ? <Check className="h-6 w-6 text-green-500"/> : <X className="h-6 w-6 text-red-500"/>
                                             ) : <span className="font-semibold text-sm">{featureData[feature.key].free}</span>}
                                         </div>
                                         <div className="p-4 sm:p-6 flex items-center justify-center bg-primary/5">
                                             {typeof featureData[feature.key].premium === 'boolean' ? (
-                                                featureData[feature.key].premium ? <Check className="h-6 w-6 text-green-500"/> : <X className="h-6 w-6 text-destructive"/>
+                                                featureData[feature.key].premium ? <Check className="h-6 w-6 text-green-500"/> : <X className="h-6 w-6 text-red-500"/>
                                             ) : <span className="font-semibold text-primary text-sm">{featureData[feature.key].premium}</span>}
                                         </div>
                                     </div>
@@ -185,7 +185,7 @@ export default function AiAssistantSection({ onOpenChatModal }: AiAssistantSecti
                                 </div>
                                  <div className="grid grid-cols-3 border-t rounded-b-xl min-w-[600px]">
                                     <div className="col-span-1 p-4 sm:p-6 border-r"></div>
-                                    <div className="col-span-2 p-4 sm:p-6 rounded-br-xl bg-primary/5">
+                                    <div className="col-span-2 p-2 sm:p-4 rounded-br-xl bg-primary/5">
                                          <div className="relative p-1 rounded-lg border-2 border-transparent [border-image:linear-gradient(to_right,#FCD116,#003893,#CE1126)_1]">
                                             <button 
                                                 onClick={() => handlePlanSelection(valeriaPlans[2])}
@@ -193,7 +193,7 @@ export default function AiAssistantSection({ onOpenChatModal }: AiAssistantSecti
                                             >
                                                 <p className="font-bold text-lg text-primary">Oferta Lanzamiento</p>
                                                 <p className="font-bold text-foreground text-lg">3 meses por sólo 9,97€ <ArrowRight className="inline-block ml-1 h-4 w-4"/></p>
-                                                <div className="absolute -top-3 -right-3 transform rotate-12 bg-red-600 text-white px-2 py-1 text-xs font-bold rounded shadow-lg">
+                                                <div className="absolute -top-3 -right-3 transform rotate-12 bg-red-600 text-white px-2 py-1 text-sm font-bold rounded shadow-lg">
                                                     ¡Ahorra un 33%!
                                                 </div>
                                             </button>
@@ -201,8 +201,8 @@ export default function AiAssistantSection({ onOpenChatModal }: AiAssistantSecti
                                     </div>
                                 </div>
                             </div>
-                            <div className="mt-8 text-center">
-                                <Button variant="link" asChild className="text-blue-600 text-base">
+                            <div className="mt-6 text-center w-full sm:w-auto">
+                                <Button variant="link" asChild className="text-primary text-base w-full sm:w-auto">
                                     <Link href="/valeria">Ver todas las características y preguntas frecuentes <ArrowRight className="ml-1 h-4 w-4"/></Link>
                                 </Button>
                             </div>
@@ -210,7 +210,7 @@ export default function AiAssistantSection({ onOpenChatModal }: AiAssistantSecti
                                 <CardContent className="p-4">
                                     <div className="flex items-center gap-3">
                                         <Shield className="w-5 h-5 text-muted-foreground flex-shrink-0"/>
-                                        <p className="text-sm text-muted-foreground">
+                                        <p className="text-xs sm:text-sm text-muted-foreground">
                                             Valeria es una herramienta informativa basada en IA. No constituye asesoramiento jurídico. Para decisiones legales, consulta siempre a un profesional colegiado.
                                         </p>
                                     </div>
