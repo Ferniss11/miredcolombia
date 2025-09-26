@@ -27,6 +27,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
     // 1. Update user's plan via the Use Case
     const userRepository = new FirestoreUserRepository();
     const setPlanUseCase = new SetUserSubscriptionPlanUseCase(userRepository);
+    // For recurring subscriptions, access doesn't expire until cancelled
     await setPlanUseCase.execute({ userId, planId });
     
     // 2. Create a "succeeded" Order record for accounting
@@ -61,6 +62,30 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
       console.warn(`[Stripe Webhook] Could not create order record due to missing data for session ${session.id}.`);
     }
   }
+}
+
+async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent) {
+    const userId = paymentIntent.metadata?.firebaseUID;
+    const planId = paymentIntent.metadata?.planId;
+
+    if (!userId || !planId) {
+        console.warn(`[Stripe Webhook] payment_intent.succeeded missing userId or planId. PaymentIntent ID: ${paymentIntent.id}`);
+        return;
+    }
+
+    console.log(`[Stripe Webhook] One-time payment succeeded for user ${userId} with plan ${planId}.`);
+    
+    // Grant access based on the plan purchased
+    const userRepository = new FirestoreUserRepository();
+    const setPlanUseCase = new SetUserSubscriptionPlanUseCase(userRepository);
+
+    if (planId === 'valeria_premium_quarterly') {
+        await setPlanUseCase.execute({ userId, planId, accessDurationDays: 90 });
+    }
+    
+    // This is also where you would find the corresponding 'Order' in your database using the paymentIntent.id
+    // and update its status from 'pending' to 'succeeded'.
+    // This part is omitted for brevity but is crucial in a production system.
 }
 
 
@@ -100,8 +125,9 @@ export async function POST(req: NextRequest) {
         await handleCheckoutSessionCompleted(event.data.object as Stripe.Checkout.Session);
         break;
       
-      // case 'payment_intent.succeeded': // We can add other handlers later if needed
-      //   break;
+      case 'payment_intent.succeeded':
+        await handlePaymentIntentSucceeded(event.data.object as Stripe.PaymentIntent);
+        break;
       
       default:
         // console.log(`[Stripe Webhook] Unhandled event type ${event.type}`);

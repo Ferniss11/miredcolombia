@@ -74,6 +74,9 @@ export async function createOneTimeCheckoutSessionAction(input: CreateOneTimeChe
       throw new Error("Failed to create Stripe Payment Intent.");
     }
 
+    // Associate the payment intent ID with our order now
+    await orderRepository.updateOrderStatus(pendingOrder.id, 'pending', paymentIntent.id);
+
     return { clientSecret: paymentIntent.client_secret };
 
   } catch (error) {
