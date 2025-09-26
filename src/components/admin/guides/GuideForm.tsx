@@ -16,11 +16,6 @@ import { SheetFooter, SheetClose } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Loader2, Upload } from 'lucide-react';
 import type { Guide } from '@/lib/guide/domain/guide.entity';
-import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { app } from '@/lib/firebase/config'; // Import client-side Firebase app
-
-// Initialize Firebase Storage
-const storage = getStorage(app);
 
 
 // Zod Schema for the form
@@ -38,13 +33,6 @@ type GuideFormProps = {
   guideToEdit?: Guide | null;
   onFormSubmit: () => void;
 };
-
-// --- Helper function to upload a file from the client ---
-async function uploadClientFile(file: File, path: string): Promise<string> {
-    const storageRef = ref(storage, path);
-    await uploadBytes(storageRef, file);
-    return await getDownloadURL(storageRef);
-}
 
 
 export default function GuideForm({ guideToEdit, onFormSubmit }: GuideFormProps) {
@@ -71,7 +59,13 @@ export default function GuideForm({ guideToEdit, onFormSubmit }: GuideFormProps)
         category: guideToEdit.category,
       });
     } else {
-      form.reset();
+      form.reset({
+        title: '',
+        description: '',
+        category: '',
+        coverImageFile: undefined,
+        pdfFile: undefined,
+      });
     }
   }, [guideToEdit, form]);
 
@@ -95,39 +89,34 @@ export default function GuideForm({ guideToEdit, onFormSubmit }: GuideFormProps)
 
     startTransition(async () => {
       try {
-        let coverImageUrl: string | undefined = guideToEdit?.coverImageUrl;
-        let pdfUrl: string | undefined = guideToEdit?.pdfUrl;
+        const formData = new FormData();
+        formData.append('title', values.title);
+        formData.append('description', values.description);
+        formData.append('category', values.category);
 
-        // 1. Upload files from client-side if they exist
         if (coverImageFile) {
-            const path = `guides/${user.uid}/${Date.now()}-${coverImageFile.name}`;
-            coverImageUrl = await uploadClientFile(coverImageFile, path);
+            formData.append('coverImageFile', coverImageFile);
         }
         if (pdfFile) {
-             const path = `guides/${user.uid}/${Date.now()}-${pdfFile.name}`;
-            pdfUrl = await uploadClientFile(pdfFile, path);
+            formData.append('pdfFile', pdfFile);
+        }
+        
+        // If editing, pass existing URLs so they are not lost if no new file is uploaded
+        if (guideToEdit) {
+            formData.append('existingCoverImageUrl', guideToEdit.coverImageUrl);
+            formData.append('existingPdfUrl', guideToEdit.pdfUrl);
         }
 
-        // 2. Prepare data for the API call (only URLs, no files)
-        const apiData = {
-            title: values.title,
-            description: values.description,
-            category: values.category,
-            coverImageUrl,
-            pdfUrl,
-        };
 
         const idToken = await user.getIdToken();
         const endpoint = guideToEdit ? `/api/guides/${guideToEdit.id}` : '/api/guides';
         
-        // 3. Call the API with JSON data
         const response = await fetch(endpoint, {
           method: 'POST',
           headers: { 
-              'Content-Type': 'application/json',
               'Authorization': `Bearer ${idToken}` 
           },
-          body: JSON.stringify(apiData),
+          body: formData,
         });
 
         if (!response.ok) {
@@ -156,18 +145,18 @@ export default function GuideForm({ guideToEdit, onFormSubmit }: GuideFormProps)
             <FormField control={form.control} name="description" render={({ field }) => (<FormItem><FormLabel>Descripción Corta</FormLabel><FormControl><Textarea placeholder="Un resumen de lo que el usuario encontrará en la guía." {...field} /></FormControl><FormMessage /></FormItem>)} />
             <FormField control={form.control} name="category" render={({ field }) => (<FormItem><FormLabel>Categoría</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Elige una categoría" /></SelectTrigger></FormControl><SelectContent><SelectItem value="Trámites">Trámites</SelectItem><SelectItem value="Vivienda">Vivienda</SelectItem><SelectItem value="Trabajo">Trabajo</SelectItem><SelectItem value="Cultura">Cultura</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
             
-            <FormField control={form.control} name="coverImageFile" render={({ field }) => (
+            <FormField control={form.control} name="coverImageFile" render={({ field: { onChange, ...fieldProps } }) => (
                 <FormItem>
                     <FormLabel>Imagen de Portada</FormLabel>
-                    <FormControl><Input type="file" accept="image/*" onChange={(e) => field.onChange(e.target.files)} /></FormControl>
+                    <FormControl><Input type="file" accept="image/*" onChange={(e) => onChange(e.target.files)} {...fieldProps} /></FormControl>
                     <FormDescription>{guideToEdit ? "Sube un archivo para reemplazar la portada actual." : "Sube la imagen de portada para la guía."}</FormDescription>
                     <FormMessage />
                 </FormItem>
             )} />
-             <FormField control={form.control} name="pdfFile" render={({ field }) => (
+             <FormField control={form.control} name="pdfFile" render={({ field: { onChange, ...fieldProps } }) => (
                 <FormItem>
                     <FormLabel>Archivo PDF de la Guía</FormLabel>
-                    <FormControl><Input type="file" accept="application/pdf" onChange={(e) => field.onChange(e.target.files)} /></FormControl>
+                    <FormControl><Input type="file" accept="application/pdf" onChange={(e) => onChange(e.target.files)} {...fieldProps} /></FormControl>
                      <FormDescription>{guideToEdit ? "Sube un archivo para reemplazar el PDF actual." : "Sube el archivo PDF de la guía."}</FormDescription>
                     <FormMessage />
                 </FormItem>
