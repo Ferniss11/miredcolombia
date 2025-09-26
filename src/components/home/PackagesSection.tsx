@@ -18,6 +18,7 @@ const packs = [
         title: "Consultoría Inicial",
         price: "39€",
         id: "pack_consultoria",
+        description: "Resuelve tus dudas clave en una videollamada y sal con un plan de acción en 7 días.",
         features: [
             "Revisión de tu caso y objetivos",
             "Ruta priorizada (papeles, empleo o vivienda)",
@@ -34,6 +35,7 @@ const packs = [
         title: "Onboarding en España",
         price: "A tu medida",
         id: "pack_onboarding",
+        description: "Te recibimos en tus primeros 30 días para que todo salga a la primera.",
         features: [
             "Empadronamiento y citas",
             "Apertura de cuenta / SIM / seguro",
@@ -49,6 +51,7 @@ const packs = [
         title: "Viaje Completo",
         price: "Personalizado",
         id: "pack_viaje",
+        description: "De Colombia a tu nueva casa en España con acompañamiento de principio a fin.",
         features: [
             "Lista de documentos y apostillas antes de viajar",
             "Vuelo, llegada y traslado (opcional)",
@@ -113,8 +116,8 @@ export default function PackagesSection() {
                     {/* Main Intro */}
                     <div className="text-center max-w-4xl mx-auto">
                         <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl font-headline">Cuando necesitas refuerzo humano, aquí estamos.</h2>
-                        <p className="mt-4 text-muted-foreground md:text-xl/relaxed">
-                            Valeria te resuelve la mayoría de pasos. Si tu caso es más complejo o prefieres acompañamiento humano, puedes sumar a nuestros expertos con estos packs.
+                        <p className="mt-4 text-muted-foreground md:text-lg/relaxed">
+                            Valeria te resuelve la mayoría de pasos. Si tu caso es más complejo o prefieres acompañamiento humano, puedes sumar a nuestros expertos con estos packs. Son soluciones guiadas por personas que conocen el terreno. Coordinamos contigo y con Valeria para ejecutar trámites, revisar documentos y evitar errores costosos.
                         </p>
                         <p className="mt-2 text-sm font-semibold text-primary">Primero usa Valeria. Si detecta que te conviene escalar, te sugerirá el pack ideal.</p>
                     </div>
@@ -122,9 +125,7 @@ export default function PackagesSection() {
                     {/* Packs Section */}
                     <div className="max-w-6xl mx-auto">
                         <div className="text-center mb-12">
-                             <h3 className="text-2xl font-bold font-headline tracking-tight">Nuestros Packs de Acompañamiento</h3>
-                             <p className="text-muted-foreground mt-2 max-w-2xl mx-auto">Soluciones guiadas por personas que conocen el terreno. Coordinamos contigo y con Valeria para ejecutar trámites, revisar documentos y evitar errores costosos.</p>
-                             <p className="text-xs font-semibold text-muted-foreground mt-2">Compatible con Valeria IA · Menos errores · Más rapidez</p>
+                             <p className="text-sm font-semibold text-muted-foreground mt-2">Compatible con Valeria IA · Menos errores · Más rapidez</p>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                             {packs.map((pkg) => (
@@ -140,7 +141,6 @@ export default function PackagesSection() {
                                         <CardDescription className="font-semibold text-lg !mt-2">{pkg.price}</CardDescription>
                                     </CardHeader>
                                     <CardContent className="flex-grow space-y-3 pt-0">
-                                        <p className="text-sm text-muted-foreground text-center pb-3 h-12">{pkg.description}</p>
                                         {pkg.features.map((feature, i) => (
                                             <div key={i} className="flex items-start gap-2 text-sm">
                                                 <CheckCircle className="w-4 h-4 mt-0.5 text-green-500 flex-shrink-0"/>
@@ -161,11 +161,11 @@ export default function PackagesSection() {
                     <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
                          <div className="space-y-4">
                              <h3 className="text-2xl font-bold font-headline">¿Cómo trabajamos?</h3>
-                            <ul className="space-y-3">
+                            <ul className="space-y-3 md:text-lg/relaxed text-muted-foreground">
                                 {howItWorksSteps.map((step, i) => (
                                      <li key={i} className="flex items-center gap-3">
                                         <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center">{i + 1}</div>
-                                        <span>{step.text}</span>
+                                        <span className="text-foreground">{step.text}</span>
                                     </li>
                                 ))}
                             </ul>
@@ -177,13 +177,13 @@ export default function PackagesSection() {
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <div className="space-y-2">
-                                     <h4 className="font-semibold flex items-center gap-2"><Bot className="w-5 h-5 text-primary"/> Elige solo Valeria si...</h4>
+                                     <h4 className="font-semibold flex items-center gap-2 text-foreground md:text-lg/relaxed"><Bot className="w-5 h-5 text-primary"/> Elige solo Valeria si...</h4>
                                      <p className="text-sm text-muted-foreground pl-7">...necesitas claridad y plantillas, tu caso es estándar y prefieres autogestión económica.</p>
                                 </div>
                                 <Separator />
                                 <div className="space-y-2">
-                                     <h4 className="font-semibold flex items-center gap-2"><Users className="w-5 h-5 text-primary"/> Elige Pack + Valeria si...</h4>
-                                     <p className="text-sm text-muted-foreground pl-7">...tu caso tiene excepciones (ej. arraigo), tienes plazos apretados o prefieres que un humano te guíe.</p>
+                                     <h4 className="font-semibold flex items-center gap-2 text-foreground md:text-lg/relaxed"><Users className="w-5 h-5 text-primary"/> Elige Pack + Valeria si...</h4>
+                                     <p className="text-sm text-muted-foreground pl-7">...tu caso tiene excepciones, plazos apretados, homologaciones/arraigos complejos, o prefieres que un humano lo lleve contigo.</p>
                                 </div>
                             </CardContent>
                         </Card>
