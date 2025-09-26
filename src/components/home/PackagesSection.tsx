@@ -103,7 +103,7 @@ export default function PackagesSection() {
                     <div className="text-center max-w-4xl mx-auto">
                         <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl font-headline">Cuando necesitas refuerzo humano, aquí estamos.</h2>
                         <p className="mt-4 text-muted-foreground md:text-lg/relaxed">
-                            Valeria te resuelve la mayoría de pasos. Si tu caso es más complejo o prefieres acompañamiento humano, puedes sumar a nuestros expertos con estos packs. Son soluciones guiadas por personas que conocen el terreno. Coordinamos contigo y con Valeria para ejecutar trámites, revisar documentos y evitar errores costosos.
+                           Valeria te resuelve la mayoría de pasos. Si tu caso es más complejo o prefieres acompañamiento humano, puedes sumar a nuestros expertos con estos packs. Son soluciones guiadas por personas que conocen el terreno. Coordinamos contigo y con Valeria para ejecutar trámites, revisar documentos y evitar errores costosos.
                         </p>
                         <p className="mt-4 text-sm font-semibold text-primary/90 md:text-base">
                             Compatible con Valeria IA · Menos errores · Más rapidez
@@ -125,10 +125,10 @@ export default function PackagesSection() {
                                         <CardTitle className="font-headline text-2xl">{pkg.title}</CardTitle>
                                         <CardDescription className="font-semibold text-lg !mt-2">{pkg.price}</CardDescription>
                                     </CardHeader>
-                                    <CardContent className="flex-grow space-y-3 pt-2">
+                                    <CardContent className="flex-grow space-y-3 pt-2 px-4">
                                         {pkg.features.map((feature, i) => (
                                             <div key={i} className="flex items-start gap-2 text-sm">
-                                                <CheckCircle className="w-4 h-4 mt-0.5 text-green-500 flex-shrink-0"/>
+                                                <CheckCircle className="w-4 h-4 mt-1 text-green-500 flex-shrink-0"/>
                                                 <span>{feature}</span>
                                             </div>
                                         ))}
@@ -146,11 +146,11 @@ export default function PackagesSection() {
                     <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
                          <div className="space-y-4">
                              <h3 className="text-2xl font-bold font-headline">¿Cómo trabajamos?</h3>
-                            <ul className="space-y-3 text-muted-foreground md:text-lg/relaxed">
+                            <ul className="space-y-3 text-muted-foreground md:text-base/relaxed">
                                 {howItWorksSteps.map((step, i) => (
                                      <li key={i} className="flex items-center gap-3">
                                         <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center">{i + 1}</div>
-                                        <span className="text-foreground text-base md:text-sm">{step.text}</span>
+                                        <span className="text-foreground">{step.text}</span>
                                     </li>
                                 ))}
                             </ul>
@@ -162,12 +162,12 @@ export default function PackagesSection() {
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <div className="space-y-2">
-                                     <h4 className="font-semibold flex items-center gap-2 text-foreground text-base md:text-sm"><Bot className="w-5 h-5 text-primary"/> Elige solo Valeria si...</h4>
+                                     <h4 className="font-semibold flex items-center gap-2 text-foreground"><Bot className="w-5 h-5 text-primary"/> Elige solo Valeria si...</h4>
                                      <p className="text-sm text-muted-foreground pl-7">...necesitas claridad, plantillas, tu caso es estándar y prefieres autogestión económica.</p>
                                 </div>
                                 <Separator />
                                 <div className="space-y-2">
-                                     <h4 className="font-semibold flex items-center gap-2 text-foreground text-base md:text-sm"><Users className="w-5 h-5 text-primary"/> Elige Pack + Valeria si...</h4>
+                                     <h4 className="font-semibold flex items-center gap-2 text-foreground"><Users className="w-5 h-5 text-primary"/> Elige Pack + Valeria si...</h4>
                                      <p className="text-sm text-muted-foreground pl-7">...tu caso tiene excepciones, plazos apretados, o prefieres que un humano lo lleve contigo.</p>
                                 </div>
                             </CardContent>
@@ -179,7 +179,11 @@ export default function PackagesSection() {
                         <h3 className="text-2xl font-bold font-headline">Empieza con Valeria por 4,97€/mes o asegura resultados con un pack humano cuando lo necesites.</h3>
                         <div className="flex flex-wrap gap-4 justify-center mt-6">
                             <Button onClick={openChat}>Usar Valeria ahora</Button>
-                            <Button asChild variant="outline"><Link href="/checkout/pack_consultoria">Reservar Consultoría (39€)</Link></Button>
+                             <Button asChild variant="outline">
+                                <a href="https://www.viajamor.com/viaje/asesoria-viajes-90-minutos/" target="_blank" rel="noopener noreferrer">
+                                    Reservar Consultoría (39€)
+                                </a>
+                            </Button>
                             <Button variant="outline" onClick={() => { setSelectedPackage("Onboarding en España"); setIsSheetOpen(true); }}>Pedir Onboarding</Button>
                             <Button variant="outline" onClick={() => { setSelectedPackage("Viaje Completo"); setIsSheetOpen(true); }}>Solicitar Viaje Completo</Button>
                         </div>

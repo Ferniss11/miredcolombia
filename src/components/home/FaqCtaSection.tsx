@@ -8,6 +8,9 @@ import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { createSubscriptionCheckoutSessionAction } from "@/lib/payment-actions";
+import { useState } from "react";
+import CheckoutSheet from "../checkout/CheckoutSheet";
+import type { ValeriaPlan } from "@/lib/types";
 
 const faqs = [
     {
@@ -32,82 +35,101 @@ const faqs = [
     },
 ];
 
+const valeriaPlans: { [key: string]: ValeriaPlan } = {
+  premium: {
+    id: 'valeria_premium',
+    name: 'Valeria Premium (Mensual)',
+    price: 4.97,
+    priceDetails: '/ mes',
+    features: [
+      'Consultas ilimitadas',
+      'Respuestas extendidas y detalladas',
+      'Análisis de documentos',
+      'Acceso a plantillas y checklists',
+    ],
+    cta: 'Comprar Premium',
+    variant: 'default',
+  },
+  quarterly: {
+    id: 'valeria_premium_quarterly',
+    name: 'Valeria Premium (Promoción Trimestral)',
+    price: 9.97,
+    priceDetails: '/ 3 meses',
+    features: [
+      'Un solo pago',
+      'Acceso completo a todas las funciones Premium',
+      'Ahorra un 33% sobre el precio mensual',
+    ],
+    cta: 'Aprovechar Oferta',
+    variant: 'default',
+  }
+};
+
+
 export default function FaqCtaSection() {
     const { user } = useAuth();
     const { toast } = useToast();
+    const [isSheetOpen, setIsSheetOpen] = useState(false);
+    const [selectedPlan, setSelectedPlan] = useState<ValeriaPlan | null>(null);
 
-    const handleCheckout = async (planId: 'valeria_premium' | 'valeria_premium_quarterly') => {
-        if (!user) {
-            toast({
-                title: "Necesitas una cuenta",
-                description: "Por favor, regístrate o inicia sesión para suscribirte.",
-                action: <Button asChild><Link href="/signup">Registrarse</Link></Button>,
-            });
-            return;
-        }
-
-        const result = await createSubscriptionCheckoutSessionAction({
-            planId,
-            userId: user.uid,
-            userEmail: user.email!,
-        });
-
-        if (result.error) {
-            toast({
-                variant: 'destructive',
-                title: 'Error al Iniciar Pago',
-                description: result.error,
-            });
-        } else if (result.checkoutUrl) {
-            window.location.href = result.checkoutUrl;
-        }
+    const handlePlanSelection = (planKey: 'premium' | 'quarterly') => {
+        const plan = valeriaPlans[planKey];
+        setSelectedPlan(plan);
+        setIsSheetOpen(true);
     };
 
     return (
-        <section className="w-full py-20 md:py-32 bg-secondary/30 dark:bg-card/30">
-            <div className="container max-w-6xl">
-                 <div className="grid md:grid-cols-2 gap-12 items-start">
-                    {/* Left Column: FAQs */}
-                    <div>
-                        <h2 className="text-3xl font-bold font-headline mb-6">Preguntas Frecuentes</h2>
-                        <Accordion type="single" collapsible className="w-full">
-                            {faqs.map((faq, index) => (
-                                <AccordionItem key={index} value={`item-${index + 1}`}>
-                                    <AccordionTrigger className="text-left">{faq.question}</AccordionTrigger>
-                                    <AccordionContent>{faq.answer}</AccordionContent>
-                                </AccordionItem>
-                            ))}
-                        </Accordion>
-                    </div>
+        <>
+            <section className="w-full py-20 md:py-32 bg-secondary/30 dark:bg-card/30">
+                <div className="container max-w-6xl">
+                    <div className="grid md:grid-cols-2 gap-12 items-start">
+                        {/* Left Column: FAQs */}
+                        <div>
+                            <h2 className="text-3xl font-bold font-headline mb-6">Preguntas Frecuentes</h2>
+                            <Accordion type="single" collapsible className="w-full">
+                                {faqs.map((faq, index) => (
+                                    <AccordionItem key={index} value={`item-${index + 1}`}>
+                                        <AccordionTrigger className="text-left">{faq.question}</AccordionTrigger>
+                                        <AccordionContent>{faq.answer}</AccordionContent>
+                                    </AccordionItem>
+                                ))}
+                            </Accordion>
+                        </div>
 
-                    {/* Right Column: CTA */}
-                    <div className="bg-card p-8 rounded-lg shadow-lg">
-                        <h3 className="text-2xl font-bold font-headline mb-6">Tu puente de Colombia a España empieza hoy.</h3>
-                        <div className="flex flex-col gap-4">
-                             <Button size="lg" className="w-full justify-between h-14 text-base" onClick={() => handleCheckout('valeria_premium')}>
-                                <span><Sparkles className="inline-block mr-2 h-5 w-5"/>Empezar con Valeria</span>
-                                <span className="flex items-center">
-                                    4,97€/mes <ArrowRight className="ml-2 h-4 w-4"/>
-                                </span>
-                            </Button>
-                             <Button size="lg" variant="outline" className="w-full justify-between h-14 text-base" onClick={() => handleCheckout('valeria_premium_quarterly')}>
-                                <span>Aprovechar 3 meses</span>
-                                 <span className="flex items-center">
-                                    9,97€ <ArrowRight className="ml-2 h-4 w-4"/>
-                                </span>
-                            </Button>
-                             <Button size="lg" variant="outline" className="w-full justify-between h-14 text-base" asChild>
-                                <Link href="/checkout/pack_consultoria">
-                                    <span>Reservar Consultoría</span>
-                                     <span className="flex items-center">
-                                        39€ <ArrowRight className="ml-2 h-4 w-4"/>
+                        {/* Right Column: CTA */}
+                        <div className="bg-card p-8 rounded-lg shadow-lg">
+                            <h3 className="text-2xl font-bold font-headline mb-6">Tu puente de Colombia a España empieza hoy.</h3>
+                            <div className="flex flex-col gap-4">
+                                <Button size="lg" className="w-full justify-between h-14 text-base" onClick={() => handlePlanSelection('premium')}>
+                                    <span><Sparkles className="inline-block mr-2 h-5 w-5"/>Empezar con Valeria</span>
+                                    <span className="flex items-center">
+                                        4,97€/mes <ArrowRight className="ml-2 h-4 w-4"/>
                                     </span>
-                                </Link>
-                            </Button>
+                                </Button>
+                                <Button size="lg" variant="outline" className="w-full justify-between h-14 text-base" onClick={() => handlePlanSelection('quarterly')}>
+                                    <span>Aprovechar 3 meses</span>
+                                    <span className="flex items-center">
+                                        9,97€ <ArrowRight className="ml-2 h-4 w-4"/>
+                                    </span>
+                                </Button>
+                                <Button size="lg" variant="outline" className="w-full justify-between h-14 text-base" asChild>
+                                    <a href="https://www.viajamor.com/viaje/asesoria-viajes-90-minutos/" target="_blank" rel="noopener noreferrer">
+                                        <span>Reservar Consultoría</span>
+                                        <span className="flex items-center">
+                                            39€ <ArrowRight className="ml-2 h-4 w-4"/>
+                                        </span>
+                                    </a>
+                                </Button>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        </section>
+            </section>
+             <CheckoutSheet
+                isOpen={isSheetOpen}
+                onOpenChange={setIsSheetOpen}
+                plan={selectedPlan}
+            />
+        </>
     );
 }
