@@ -1,4 +1,5 @@
 // Defines the core shapes of user-related data (entities).
+import { BusinessAgentConfig } from '@/lib/chat-types';
 
 export type UserRole = 'Admin' | 'Advertiser' | 'User' | 'SAdmin' | 'Guest';
 
@@ -20,6 +21,7 @@ export interface BusinessProfile {
   verificationStatus: 'pending' | 'approved' | 'rejected' | 'unclaimed';
   isAgentEnabled: boolean;
   googleCalendarConnected?: boolean;
+  agentConfig?: BusinessAgentConfig;
 }
 
 /**
@@ -47,6 +49,16 @@ export interface CandidateProfile {
 }
 
 /**
+ * Represents the profile data for Valeria AI subscription.
+ */
+export interface ValeriaProfile {
+    planId: 'valeria_premium' | 'valeria_pro' | 'free';
+    planExpiresAt?: Date | null;
+    sessionId?: string; // Link to the user's primary chat session
+}
+
+
+/**
  * The core User entity for the entire application.
  * It acts as a central hub for user information and can be composed
  * with specific profiles like BusinessProfile or CandidateProfile.
@@ -63,4 +75,5 @@ export interface User {
   // Optional, composite profiles. Their existence defines the user's capabilities.
   businessProfile?: BusinessProfile;
   candidateProfile?: CandidateProfile;
+  valeriaProfile?: ValeriaProfile;
 }

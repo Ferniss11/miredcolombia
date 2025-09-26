@@ -14,7 +14,22 @@ type DebugInfoCardProps = {
 };
 
 export default function DebugInfoCard({ title, description, data }: DebugInfoCardProps) {
-    const [isOpen, setIsOpen] = useState(false);
+    const [isOpen, setIsOpen] = useState(true); // Default to open for better DX
+
+    // Safely render tool invocations
+    const renderToolInvocations = () => {
+        if (!data || !Array.isArray(data.toolInvocations) || data.toolInvocations.length === 0) {
+            return <p className="text-xs text-muted-foreground italic">No se invocó ninguna herramienta en este turno.</p>;
+        }
+        return data.toolInvocations.map((invocation: any, index: number) => (
+            <div key={index} className="mt-2 p-2 border rounded-md bg-background/50">
+                <p className="font-semibold text-sm">Herramienta: <code className="text-primary">{invocation.tool}</code></p>
+                <pre className="text-xs whitespace-pre-wrap break-all mt-1">
+                    {JSON.stringify(invocation.result, null, 2)}
+                </pre>
+            </div>
+        ));
+    };
 
     return (
         <Collapsible open={isOpen} onOpenChange={setIsOpen}>
@@ -26,15 +41,34 @@ export default function DebugInfoCard({ title, description, data }: DebugInfoCar
                             <CardDescription className="mt-1 text-left">{description}</CardDescription>
                         </div>
                         <Button variant="ghost" size="sm" className="w-9 p-0">
-                            <ChevronDown className="h-4 w-4 transition-transform duration-200" data-state={isOpen ? 'open' : 'closed'} />
+                            <ChevronDown className="h-4 w-4 transition-transform duration-200 data-[state=open]:rotate-180" />
                         </Button>
                     </CardHeader>
                 </CollapsibleTrigger>
                 <CollapsibleContent>
                     <CardContent>
-                        <pre className="mt-2 w-full max-h-80 overflow-auto rounded-md bg-muted p-4 text-sm">
-                            {data ? JSON.stringify(data, null, 2) : 'No hay datos disponibles.'}
-                        </pre>
+                        {data?.toolInvocations || data?.systemPrompt ? (
+                            <div className="space-y-4">
+                                {data.toolInvocations && (
+                                    <div>
+                                        <h4 className="text-sm font-semibold mb-1">Invocación de Herramientas</h4>
+                                        {renderToolInvocations()}
+                                    </div>
+                                )}
+                                {data.systemPrompt && (
+                                    <div>
+                                        <h4 className="text-sm font-semibold mb-1">System Prompt Utilizado</h4>
+                                         <pre className="mt-2 w-full max-h-80 overflow-auto rounded-md bg-muted p-4 text-xs">
+                                            {data.systemPrompt}
+                                        </pre>
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                             <pre className="mt-2 w-full max-h-80 overflow-auto rounded-md bg-muted p-4 text-sm">
+                                {data ? JSON.stringify(data, null, 2) : 'No hay datos disponibles.'}
+                            </pre>
+                        )}
                     </CardContent>
                 </CollapsibleContent>
             </Card>

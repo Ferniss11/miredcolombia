@@ -1,12 +1,14 @@
+
+'use client';
+
 import { Button } from "@/components/ui/button";
-import { Package, MessageCircle } from "lucide-react";
+import { MessageCircle } from "lucide-react";
 import Image from "next/image";
-import Link from "next/link";
+import { useChat } from "@/context/ChatContext";
+
 
 export default function HeroSection() {
-
-    const whatsappMessage = encodeURIComponent("Hola, me gustaría tener más información sobre los servicios de migración.");
-    const phoneNumber = "34653863675"; 
+    const { openChat } = useChat();
 
     return (
         <section className="relative w-full h-screen flex items-center justify-center text-white">
@@ -17,6 +19,7 @@ export default function HeroSection() {
                 alt="Madrid cityscape"
                 data-ai-hint="madrid cityscape"
                 className="absolute inset-0 -z-10"
+                priority
             />
             <div className="absolute inset-0 bg-black/60 z-0" />
             <div className="relative z-10 container px-4 md:px-6 text-center flex flex-col items-center">
@@ -25,30 +28,18 @@ export default function HeroSection() {
                   width={100}
                   height={100}
                   alt="Mi Red Colombia Logo"
-                  className="mb-6 bg-white p-2 rounded-2xl shadow-lg"
+                  className="mb-6 rounded-2xl shadow-lg"
                 />
                 <h1 className="text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl lg:text-7xl font-headline">
-                    Tu experiencia en España <br /><span className="text-primary">empieza aquí</span>
+                    Empleo, vivienda y papeles en regla: Valeria te guía paso a paso
                 </h1>
                 <p className="mt-4 max-w-3xl text-lg md:text-xl text-gray-200 font-body">
-                    El sitio de reunión para colombianos en España. Conecta, comparte y crece en tu nuevo hogar.
+                    Asesoría 24/7 con instrucciones claras, checklists y respuestas actualizadas para que tomes decisiones rápidas y seguras. Sin vueltas, sin miedo, sin errores.
                 </p>
-                <div className="mt-8 flex flex-col gap-4 sm:flex-row w-full max-w-md">
-                    <Button asChild size="lg" className="w-full sm:w-auto bg-destructive hover:bg-destructive/90 text-destructive-foreground px-8 py-6 text-base">
-                        <Link href="#packages">
-                            <Package className="mr-2 h-5 w-5" />
-                            Descubre nuestros servicios
-                        </Link>
-                    </Button>
-                    <Button asChild size="lg" variant="outline" className="w-full sm:w-auto border-white text-white bg-transparent hover:bg-white/10 px-8 py-6 text-base">
-                        <a 
-                          href={`https://wa.me/${phoneNumber}?text=${whatsappMessage}`}
-                          target="_blank"
-                          rel="noopener noreferrer" 
-                        >
-                            <MessageCircle className="mr-2 h-5 w-5" />
-                            Chat WhatsApp
-                        </a>
+                <div className="mt-8">
+                    <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-6 text-base" onClick={openChat}>
+                        <MessageCircle className="mr-2 h-5 w-5" />
+                        Pon a prueba a Valeria
                     </Button>
                 </div>
             </div>

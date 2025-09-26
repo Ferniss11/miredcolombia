@@ -1,126 +1,229 @@
 
 'use client';
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Bot, MessageCircle, Lightbulb, PlayCircle } from "lucide-react";
-import RealTimeClocks from "@/components/layout/RealTimeClocks";
-import { cn } from "@/lib/utils";
-import Image from 'next/image';
-import VideoModal from "../ui/video-modal";
+import { Check, MessageSquare, Shield, PlayCircle, ArrowRight, Sparkles, X } from "lucide-react";
+import Link from "next/link";
+import { Card, CardContent } from "../ui/card";
+import Image from "next/image";
+import { useAuth } from "@/context/AuthContext";
+import { useToast } from "@/hooks/use-toast";
+import type { ValeriaPlan } from "@/lib/types";
+import CheckoutSheet from "../checkout/CheckoutSheet";
 
-const migrationTips = [
-    "Recuerda apostillar todos tus documentos oficiales en Colombia antes de viajar.",
-    "El empadronamiento es el primer trámite y el más importante al llegar a España. ¡No lo dejes para después!",
-    "Si vienes con visa de estudiante, puedes trabajar hasta 30 horas semanales con un permiso de trabajo.",
-    "Abre una cuenta bancaria tan pronto como tengas tu NIE. Facilitará todos los demás trámites.",
-    "Investiga sobre el sistema de transporte público de tu ciudad, suele ser muy eficiente y económico.",
-    "El seguro médico es obligatorio. Asegúrate de que tenga cobertura completa sin copagos.",
-    "La 'TIE' (Tarjeta de Identidad de Extranjero) es tu documento de identificación físico en España.",
-    "Guarda copias digitales de todos tus documentos importantes en la nube.",
-    "No tengas miedo de preguntar. Los españoles suelen ser amables y dispuestos a ayudar.",
-    "Para homologar tu título, el proceso puede tardar. ¡Inícialo cuanto antes!",
-    "Conoce las diferencias culturales en los horarios de comida y de las tiendas."
+
+const valeriaPlans: ValeriaPlan[] = [
+    {
+      id: 'plan_free', // Internal ID, doesn't go to Stripe
+      name: 'Gratis',
+      price: 0,
+      priceDetails: '',
+      features: [
+        '3 consultas al día',
+        'Respuestas básicas de la base de conocimiento',
+        'Acceso al chat 24/7',
+      ],
+      cta: 'Empezar Gratis',
+      variant: 'outline'
+    },
+    {
+      id: 'valeria_premium', // Use internal plan name
+      name: 'Valeria Premium',
+      price: 4.97,
+      priceDetails: '/ mes',
+      features: [
+        'Consultas ilimitadas',
+        'Respuestas extendidas y detalladas',
+        'Acceso a checklists descargables',
+        'Análisis de documentos',
+        'Alertas de empleo y vivienda',
+      ],
+      cta: 'Comprar Premium',
+       variant: 'default'
+    },
+    {
+      id: 'valeria_premium_quarterly',
+      name: 'Valeria Premium Trimestral',
+      price: 9.97,
+      priceDetails: '/ 3 meses',
+       features: [
+        'Un solo pago',
+        'Acceso completo a todas las funciones Premium',
+        'Ideal para cubrir preparación y llegada',
+        'Ahorra un 33% sobre el precio mensual',
+      ],
+      cta: 'Aprovechar Oferta',
+      variant: 'default'
+    }
 ];
 
-export default function AiAssistantSection({ onOpenChatModal }: { onOpenChatModal: () => void }) {
-    const [randomTip, setRandomTip] = useState('');
-    const [animationKey, setAnimationKey] = useState(0);
-    const [isVideoModalOpen, setVideoModalOpen] = useState(false);
-    const videoUrl = "https://firebasestorage.googleapis.com/v0/b/colombia-en-esp.firebasestorage.app/o/web%2FVideo%20de%20WhatsApp%202025-08-12%20a%20las%2014.29.54_0ca7af14.mp4?alt=media&token=ac0427e9-ff6e-4897-afba-3684d6ff5585";
+const allFeatures = [
+    { key: 'consultas', label: 'Consultas al mes' },
+    { key: 'base_conocimiento', label: 'Base de conocimiento' },
+    { key: 'analisis_documentos', label: 'Análisis de documentos' },
+    { key: 'plantillas', label: 'Acceso a plantillas y checklists' },
+];
 
+const featureData: { [key: string]: { free: string | boolean; premium: string | boolean } } = {
+    consultas: { free: 'Hasta 3', premium: 'Ilimitadas' },
+    base_conocimiento: { free: true, premium: true },
+    analisis_documentos: { free: false, premium: true },
+    plantillas: { free: false, premium: true },
+};
 
-    useEffect(() => {
-        const getNextTip = () => {
-            setRandomTip(prevTip => {
-                let newTip;
-                do {
-                    newTip = migrationTips[Math.floor(Math.random() * migrationTips.length)];
-                } while (newTip === prevTip);
-                return newTip;
-            });
-            setAnimationKey(prevKey => prevKey + 1);
-        };
-        
-        getNextTip();
-        const tipInterval = setInterval(getNextTip, 5000); // Rotate tip every 5 seconds
-        
-        return () => clearInterval(tipInterval);
-    }, []);
+type AiAssistantSectionProps = {
+    onOpenChatModal: () => void;
+};
 
+export default function AiAssistantSection({ onOpenChatModal }: AiAssistantSectionProps) {
+    const { user } = useAuth();
+    const { toast } = useToast();
+    const [showVideo, setShowVideo] = useState(false);
+    const [isSheetOpen, setIsSheetOpen] = useState(false);
+    const [selectedPlan, setSelectedPlan] = useState<ValeriaPlan | null>(null);
+
+    const handlePlanSelection = (plan: ValeriaPlan) => {
+        if (plan.id === 'plan_free') {
+            onOpenChatModal();
+        } else {
+            setSelectedPlan(plan);
+            setIsSheetOpen(true);
+        }
+    };
+    
     return (
         <>
-            <section id="asistente-ia" className="w-full py-12 md:py-24 lg:py-32 bg-secondary dark:bg-card">
-                <div className="container px-4 md:px-6 max-w-6xl">
-                    <div className="mx-auto grid lg:grid-cols-2 gap-12 items-center">
-                        {/* Left Side: Main CTA and Text */}
-                        <div className="flex flex-col items-start space-y-6">
-                            <div className="w-20 h-20 rounded-full overflow-hidden p-1 bg-primary/20 inline-flex ring-4 ring-primary/30">
-                               <Image 
-                                 src="https://firebasestorage.googleapis.com/v0/b/colombia-en-esp.firebasestorage.app/o/web%2FImagen%20de%20WhatsApp%202025-08-09%20a%20las%2018.20.39_3c2b6161.jpg?alt=media&token=41ebe34a-f846-41fc-937f-4141f1240ee8"
-                                 alt="Avatar de Valeria, la asistente IA"
-                                 width={80}
-                                 height={80}
-                                 className="rounded-full object-cover"
-                               />
+            <section id="asistente-ia" className="w-full py-12 bg-background">
+                <div className="container space-y-16">
+                    
+                    {/* Unified container for alignment */}
+                    <div className="max-w-6xl mx-auto space-y-16">
+                        {/* --- Main Info & Video --- */}
+                        <div className="grid lg:grid-cols-3 gap-12 items-center">
+                            <div className="space-y-6 lg:col-span-1">
+                                <div className="inline-block rounded-lg bg-primary/10 px-3 py-1 text-sm font-semibold text-primary">Asistente IA</div>
+                                <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl font-headline">
+                                    Tu Puente de Colombia a España Empieza Hoy
+                                </h2>
+                                <p className="text-muted-foreground md:text-xl/relaxed">
+                                    Valeria te guía paso a paso para que tomes decisiones rápidas y seguras en tu proceso migratorio. Sin vueltas, sin miedo, sin errores.
+                                </p>
+                                <ul className="space-y-3">
+                                    <li className="flex items-start gap-3"><Check className="h-5 w-5 text-green-500 mt-1 flex-shrink-0"/><span><strong>Empleo legal:</strong> CV optimizado, portales que funcionan y cómo evitar contratos fraudulentos.</span></li>
+                                    <li className="flex items-start gap-3"><Check className="h-5 w-5 text-green-500 mt-1 flex-shrink-0"/><span><strong>Vivienda real:</strong> Filtros, documentación y alertas para evitar estafas.</span></li>
+                                    <li className="flex items-start gap-3"><Check className="h-5 w-5 text-green-500 mt-1 flex-shrink-0"/><span><strong>Papeles en regla:</strong> Rutas legales claras para tu caso (estudios, trabajo, arraigo).</span></li>
+                                </ul>
                             </div>
-                            <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl font-headline">
-                                Conoce a Valeria, tu Asistente IA en Mi Red Colombia
-                            </h2>
-                            <p className="max-w-xl text-muted-foreground md:text-xl/relaxed font-body">
-                                Disponible 24/7, Valeria es la inteligencia artificial de Mi Red Colombia lista para ayudarte en cualquier momento. Responde al instante tus dudas sobre visados, trámites, empleo, vivienda y mucho más, para que tu proceso de venir o vivir en España sea más fácil y rápido.
-                            </p>
-                            <div className="flex flex-col sm:flex-row gap-4">
-                                <Button size="lg" onClick={onOpenChatModal}>
-                                    <MessageCircle className="mr-2 h-5 w-5" />
-                                    Chatea con Valeria Ahora
-                                </Button>
-                                 <Button size="lg" variant="outline" onClick={() => setVideoModalOpen(true)}>
-                                    <PlayCircle className="mr-2 h-5 w-5" />
-                                    Ver Video de Presentación
-                                </Button>
+                            
+                            <div className="flex items-center justify-center lg:justify-end lg:col-span-2">
+                                <div className="w-full max-w-2xl aspect-video rounded-xl shadow-lg overflow-hidden transition-all duration-300 relative group hover:shadow-2xl">
+                                {showVideo ? (
+                                        <video
+                                            className="w-full h-full object-cover"
+                                            controls
+                                            autoPlay
+                                            src="https://firebasestorage.googleapis.com/v0/b/colombia-en-esp.firebasestorage.app/o/web%2Fvaleria.mp4?alt=media&token=676a4910-9fc7-4e7b-ad39-9f1cb313b2b5"
+                                        >
+                                            Tu navegador no soporta la etiqueta de video.
+                                        </video>
+                                ) : (
+                                    <button 
+                                        onClick={() => setShowVideo(true)}
+                                        className="w-full h-full relative"
+                                        aria-label="Play Valeria's Video"
+                                    >
+                                        <Image 
+                                            src="https://firebasestorage.googleapis.com/v0/b/colombia-en-esp.firebasestorage.app/o/web%2Fvaleria_avatar_horizontal.jpg?alt=media&token=ad7b4b6a-8c97-4984-b480-b4ed38936e1a"
+                                            alt="Video de presentación de Valeria"
+                                            fill
+                                            className="object-cover transition-transform duration-500 group-hover:scale-110"
+                                        />
+                                        <div className="absolute inset-0 bg-black/30 group-hover:bg-black/50 transition-colors"></div>
+                                        <div className="absolute inset-0 flex flex-col items-center justify-center text-white p-4">
+                                            <PlayCircle className="w-24 h-24 text-white/80 drop-shadow-lg transition-transform group-hover:scale-110 group-hover:text-white" />
+                                        </div>
+                                    </button>
+                                )}
+                                </div>
                             </div>
                         </div>
 
-                        {/* Right Side: Minimalist Clocks and Tips */}
-                         <div className="space-y-4">
-                            <div className="border rounded-lg bg-background/50 overflow-hidden">
-                                <div className="h-1 flex w-full">
-                                    <div className="w-1/2 bg-[#FFCD00]"></div>
-                                    <div className="w-1/4 bg-[#003893]"></div>
-                                    <div className="w-1/4 bg-[#C70039]"></div>
+                        {/* --- Comparison Table & CTA --- */}
+                        <div className="max-w-6xl mx-auto">
+                            <div className="border rounded-xl shadow-lg bg-card overflow-x-auto">
+                                <div className="grid grid-cols-3 min-w-[600px]">
+                                    <div className="p-4 sm:p-6 border-r"><h3 className="font-bold h-12 flex items-end">Características</h3></div>
+                                    <div className="p-4 sm:p-6 border-r text-center"><h3 className="font-bold h-12 flex items-end justify-center">Gratis</h3></div>
+                                    <div className="p-4 sm:p-6 text-center bg-primary/5 rounded-tr-xl"><h3 className="font-bold h-12 flex items-end justify-center text-primary">Premium</h3></div>
                                 </div>
-                                <RealTimeClocks variant="minimal" country="Colombia" />
-                            </div>
-                             <div className="border rounded-lg bg-background/50 overflow-hidden">
-                                <div className="h-1 flex w-full">
-                                    <div className="w-1/2 bg-[#AA151B]"></div>
-                                    <div className="w-1/2 bg-[#F1BF00]"></div>
+                                {allFeatures.map((feature) => (
+                                    <div key={feature.key} className="grid grid-cols-3 border-t min-w-[600px]">
+                                        <div className="p-4 sm:p-6 border-r flex items-center">{feature.label}</div>
+                                        <div className="p-4 sm:p-6 border-r flex items-center justify-center">
+                                            {typeof featureData[feature.key].free === 'boolean' ? (
+                                                featureData[feature.key].free ? <Check className="h-6 w-6 text-green-500"/> : <X className="h-6 w-6 text-destructive"/>
+                                            ) : <span className="font-semibold text-sm">{featureData[feature.key].free}</span>}
+                                        </div>
+                                        <div className="p-4 sm:p-6 flex items-center justify-center bg-primary/5">
+                                            {typeof featureData[feature.key].premium === 'boolean' ? (
+                                                featureData[feature.key].premium ? <Check className="h-6 w-6 text-green-500"/> : <X className="h-6 w-6 text-destructive"/>
+                                            ) : <span className="font-semibold text-primary text-sm">{featureData[feature.key].premium}</span>}
+                                        </div>
+                                    </div>
+                                ))}
+                                <div className="grid grid-cols-3 border-t min-w-[600px]">
+                                    <div className="p-4 sm:p-6 border-r flex items-center justify-center"></div>
+                                    <div className="p-4 sm:p-6 border-r text-center space-y-2">
+                                        <p className="text-2xl font-bold">Gratis</p>
+                                        <Button variant="outline" className="w-full" onClick={() => handlePlanSelection(valeriaPlans[0])}>{valeriaPlans[0].cta}</Button>
+                                    </div>
+                                    <div className="p-4 sm:p-6 text-center space-y-2 bg-primary/5">
+                                        <p className="text-2xl font-bold">4,97€<span className="text-sm font-normal text-muted-foreground">/mes</span></p>
+                                        <Button className="w-full" onClick={() => handlePlanSelection(valeriaPlans[1])}>Comprar Premium</Button>
+                                    </div>
                                 </div>
-                                <RealTimeClocks variant="minimal" country="Spain" />
-                            </div>
-                            <div className="border rounded-lg p-4 bg-background/50 overflow-hidden relative h-[110px]">
-                                <div key={animationKey} className="animate-slide-in-up">
-                                    <div className="flex items-start gap-4">
-                                        <Lightbulb className="w-5 h-5 text-yellow-500 mt-1 flex-shrink-0" />
-                                        <div>
-                                            <h4 className="font-bold font-headline text-md">Tip del Día</h4>
-                                            <p className="text-muted-foreground text-sm mt-1 h-12">
-                                                {randomTip || 'Cargando tip...'}
-                                            </p>
+                                 <div className="grid grid-cols-3 border-t rounded-b-xl min-w-[600px]">
+                                    <div className="col-span-1 p-4 sm:p-6 border-r"></div>
+                                    <div className="col-span-2 p-4 sm:p-6 rounded-br-xl bg-primary/5">
+                                         <div className="relative p-1 rounded-lg border-2 border-transparent [border-image:linear-gradient(to_right,#FCD116,#003893,#CE1126)_1]">
+                                            <button 
+                                                onClick={() => handlePlanSelection(valeriaPlans[2])}
+                                                className="w-full p-3 text-center rounded-md transition-all bg-card dark:bg-gray-900 hover:bg-card/80 dark:hover:bg-gray-800"
+                                            >
+                                                <p className="font-bold text-lg text-primary">Oferta Lanzamiento</p>
+                                                <p className="font-bold text-foreground text-lg">3 meses por sólo 9,97€ <ArrowRight className="inline-block ml-1 h-4 w-4"/></p>
+                                                <div className="absolute -top-3 -right-3 transform rotate-12 bg-red-600 text-white px-2 py-1 text-xs font-bold rounded shadow-lg">
+                                                    ¡Ahorra un 33%!
+                                                </div>
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
                             </div>
+                            <div className="mt-8 text-center">
+                                <Button variant="link" asChild className="text-blue-600 text-base">
+                                    <Link href="/valeria">Ver todas las características y preguntas frecuentes <ArrowRight className="ml-1 h-4 w-4"/></Link>
+                                </Button>
+                            </div>
+                            <Card className="mt-4 bg-secondary/50">
+                                <CardContent className="p-4">
+                                    <div className="flex items-center gap-3">
+                                        <Shield className="w-5 h-5 text-muted-foreground flex-shrink-0"/>
+                                        <p className="text-sm text-muted-foreground">
+                                            Valeria es una herramienta informativa basada en IA. No constituye asesoramiento jurídico. Para decisiones legales, consulta siempre a un profesional colegiado.
+                                        </p>
+                                    </div>
+                                </CardContent>
+                            </Card>
                         </div>
                     </div>
                 </div>
             </section>
-             <VideoModal 
-                isOpen={isVideoModalOpen}
-                setIsOpen={setVideoModalOpen}
-                videoUrl={videoUrl}
-                title="Presentación de Valeria, tu Asistente IA"
+            <CheckoutSheet
+                isOpen={isSheetOpen}
+                onOpenChange={setIsSheetOpen}
+                plan={selectedPlan}
             />
         </>
     );

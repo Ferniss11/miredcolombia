@@ -10,6 +10,7 @@ import { generateFactualArticleFlow } from '@/ai/flows/generate-factual-article'
 import { unsplashSearch } from '@/ai/tools/unsplash-search';
 import { GenerateArticleInputSchema, GenerateBlogIdeasInputSchema, GenerateBlogTitleInputSchema, type GenerateArticleInput, type GenerateBlogIdeasInput, type GenerateBlogTitleInput, type IntelligentArticle } from '@/lib/types';
 import { initializedProjectId } from '@/lib/firebase/admin-config';
+import { knowledgeBaseSearch } from '@/ai/tools/knowledge-base-search';
 
 /**
  * Enriches a generated article with actual image URLs from Unsplash.
@@ -153,4 +154,15 @@ export async function debugAdminInitAction(): Promise<{ status: string }> {
   } catch (e: any) {
     return { status: `Caught an exception during import: ${e.message}` };
   }
+}
+
+export async function debugKnowledgeBaseSearchAction(query: string, sessionId?: string): Promise<{ result?: string; error?: string }> {
+    try {
+        const result = await knowledgeBaseSearch({ query }, { context: { sessionId } });
+        return { result };
+    } catch (e) {
+        const errorMessage = e instanceof Error ? e.message : "An unknown error occurred during tool execution.";
+        console.error("[Debug KB Action] Error:", e);
+        return { error: errorMessage };
+    }
 }

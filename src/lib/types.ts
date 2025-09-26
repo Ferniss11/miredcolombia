@@ -1,6 +1,8 @@
 
 
 import { z } from 'zod';
+import { v4 as uuidv4 } from 'uuid';
+
 
 // Schema for Blog Content Generation
 export const GenerateBlogContentInputSchema = z.object({
@@ -87,6 +89,39 @@ export const IntelligentArticleOutputSchema = z.object({
 export type IntelligentArticle = z.infer<typeof IntelligentArticleOutputSchema>;
 
 
+// --- Email Sequence Schemas ---
+
+const SequenceTriggerSchema = z.enum(['on_guide_download', 'on_user_signup', 'on_service_purchase']);
+
+export const GenerateEmailSequenceInputSchema = z.object({
+  objective: z.string().describe('The main goal of the email sequence (e.g., "Welcome sequence for new users who downloaded the empadronamiento guide").'),
+  numSteps: z.coerce.number().int().min(1, "Debe ser al menos 1").max(7, "No puede exceder 7"),
+  tone: z.enum(['Amigable', 'Formal', 'Persuasivo', 'Informativo']).describe('The desired tone of voice for the emails.'),
+  additionalInfo: z.string().optional().describe('Any other key information or context to include in the emails (e.g., "Mention a 10% discount on our services in the last email").'),
+  model: z.string().optional().describe("The AI model to use for generation.").default('googleai/gemini-1.5-pro-latest'),
+});
+export type GenerateEmailSequenceInput = z.infer<typeof GenerateEmailSequenceInputSchema>;
+
+
+const EmailStepOutputSchema = z.object({
+  id: z.string().default(() => uuidv4()).describe("A unique UUID for this step."),
+  delayMinutes: z.coerce.number().describe('The delay in minutes from the previous step. The first step\'s delay is from the initial trigger.'),
+  subject: z.string().describe('The subject line for this email.'),
+  body: z.string().describe('The full HTML content of the email. Use standard HTML tags like <p>, <strong>, <a>. Use {{firstName}} for personalization.'),
+});
+
+export const GenerateEmailSequenceOutputSchema = z.object({
+  name: z.string().describe('A descriptive internal name for the sequence.'),
+  trigger: SequenceTriggerSchema.describe('The trigger event that should start this sequence.'),
+  steps: z.array(EmailStepOutputSchema).describe('The array of email steps in the sequence.'),
+  isActive: z.boolean().default(true),
+});
+export type GenerateEmailSequenceOutput = z.infer<typeof GenerateEmailSequenceOutputSchema>;
+
+
+
+// --- General Application Types ---
+
 export type UserRole = 'Guest' | 'Advertiser' | 'Admin' | 'User' | 'SAdmin';
 
 // BusinessAgentConfig is now in chat-types.ts
@@ -104,6 +139,7 @@ export type BusinessProfile = {
   verificationStatus?: 'pending' | 'approved' | 'rejected' | 'unclaimed';
   isAgentEnabled?: boolean;
   googleCalendarConnected?: boolean;
+  gcalTokens?: GoogleTokens;
   agentConfig?: import('./chat-types').BusinessAgentConfig; // Use import() for type-only imports across modules
 };
 
@@ -155,8 +191,14 @@ export type UserProfile = {
   email: string | null;
   role: UserRole;
   status: 'active' | 'deleted';
+  valeriaProfile?: {
+    planId: 'valeria_premium' | 'free', // Simplified plans
+    planExpiresAt?: Date | null,
+    sessionId?: string; // Link to the user's primary chat session
+  };
   businessProfile?: BusinessProfile;
   candidateProfile?: CandidateProfile;
+  createdAt: any; // Firestore Timestamp on server, Date on client
 };
 
 // Re-exporting from the new canonical location in the blog domain
@@ -176,7 +218,7 @@ export type MigrationPackage = {
     name: string;
     title: string;
     price: number;
-    priceCOP: string;
+    priceCOP?: string;
     description: string;
     features: string[];
     color: string;
@@ -195,6 +237,16 @@ export type MigrationService = {
     borderColor: string;
     buttonColor: string;
 }
+
+export type ValeriaPlan = {
+    id: 'plan_free' | 'valeria_premium' | 'valeria_premium_quarterly';
+    name: string;
+    price: number | string;
+    priceDetails: string;
+    features: string[];
+    cta: string;
+    variant: 'default' | 'outline' | 'secondary' | 'ghost' | 'link';
+};
 
 export type Customer = {
   id?: string;
@@ -346,7 +398,7 @@ export const JobPostingFormSchema = z.object({
     (val) => (val === "" ? undefined : Number(val)),
     z.number().min(0, "El salario máximo no puede ser negativo.").optional()
   ),
-  jobType: z.enum(['FULL_TIME', 'PART_TIME', 'CONTRACT', 'INTERNSHIP'], {
+  jobType: z.enum(['FULL_TIME', 'PART_TIME', 'CONTRACT' | 'INTERNSHIP'], {
     errorMap: () => ({ message: "Tipo de empleo inválido." }),
   }),
   applicationUrl: z.string().url("URL de aplicación inválida.").optional().or(z.literal('')),
@@ -366,4 +418,3 @@ export type Business = import('./directory/domain/business.entity').Business;
 export type ServiceListing = import('./service-listing/domain/service-listing.entity').ServiceListing;
 export type AgentConfig = import('./chat-types').AgentConfig;
 export type JobsCtaSectionProps = { jobs: JobPosting[]; };
-

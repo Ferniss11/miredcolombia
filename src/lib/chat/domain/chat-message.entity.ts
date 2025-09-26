@@ -8,13 +8,14 @@ export type ChatMessageRole = 'user' | 'model' | 'admin';
  */
 export interface ChatMessage {
   id: string;
-  sessionId: string;
+  sessionId?: string; // This is optional as it's implicit from the collection path
   businessId?: string; // Context for which business this message belongs to
   role: ChatMessageRole;
   text: string;
   timestamp: Date;
   usage?: TokenUsage;
   cost?: number;
+  authorId?: string; // UID of the user if the role is 'user'
   authorName?: string; // Used for model messages sent by an admin/owner
   replyTo?: {
     messageId: string;

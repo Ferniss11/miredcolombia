@@ -80,6 +80,7 @@ interface AuthContextType {
   loading: boolean;
   claims: IdTokenResult['claims'] | null;
   refreshUserProfile: () => Promise<void>;
+  forceTokenRefresh: () => Promise<void>; // New function
   signUpWithEmail: (name: string, email: string, password: string, role: UserRole) => Promise<{ error: string | null, user: User | null }>;
   loginWithEmail: (email: string, password: string) => Promise<{ error: AuthError | null }>;
   loginWithGoogle: (role: UserRole) => Promise<{ error?: string }>;
@@ -106,10 +107,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [authInstance, setAuthInstance] = useState<Auth | null>(null);
   const router = useRouter();
 
- const fetchUserProfile = useCallback(async (firebaseUser: User | null) => {
+ const fetchUserProfile = useCallback(async (firebaseUser: User | null, forceRefresh: boolean = false) => {
     if (firebaseUser) {
       try {
-        let idTokenResult = await firebaseUser.getIdTokenResult();
+        let idTokenResult = await firebaseUser.getIdTokenResult(forceRefresh);
         const profile = await getUserProfile(firebaseUser.uid, idTokenResult.token);
         
         // --- Role Synchronization Logic ---
@@ -165,6 +166,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setLoading(false);
     }
   }, [user, fetchUserProfile]);
+
+  const forceTokenRefresh = useCallback(async () => {
+    if (user) {
+      console.log("[AuthContext] Forcing token and profile refresh...");
+      await fetchUserProfile(user, true); // Pass true to force refresh
+    }
+  }, [user, fetchUserProfile]);
+
 
   const signUpWithEmail = async (name: string, email: string, password: string, role: UserRole): Promise<{ error: string | null, user: User | null }> => {
     if (!authInstance) return { error: 'Firebase not initialized', user: null };
@@ -296,6 +305,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     loading,
     claims,
     refreshUserProfile,
+    forceTokenRefresh, // Expose the new function
     signUpWithEmail,
     loginWithEmail,
     loginWithGoogle,

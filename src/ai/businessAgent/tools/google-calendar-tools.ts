@@ -19,7 +19,8 @@ export const getAvailableSlots = ai.defineTool(
         }),
     },
     // The UID is now passed as a context parameter from the flow's execution.
-    async ({ date }, { uid }) => {
+    async ({ date }, { context }) => {
+        const uid = (context as any)?.uid as string | undefined;
         if (!uid) {
             throw new Error("UID del propietario no fue proporcionado a la herramienta getAvailableSlots.");
         }
@@ -81,8 +82,9 @@ export const createAppointment = ai.defineTool(
             appointmentId: z.string().optional().describe('El ID del evento creado en Google Calendar.'),
         }),
     },
-    async ({ dateTime, summary, durationMinutes }, { uid }) => {
-         if (!uid) {
+    async ({ dateTime, summary, durationMinutes }, { context }) => {
+        const uid = (context as any)?.uid as string | undefined;
+        if (!uid) {
             throw new Error("UID del propietario no fue proporcionado a la herramienta createAppointment.");
         }
         try {

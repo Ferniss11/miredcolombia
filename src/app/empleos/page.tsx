@@ -1,3 +1,4 @@
+
 // src/app/empleos/page.tsx
 'use client';
 
@@ -5,7 +6,7 @@ import React, { useState, useEffect } from 'react';
 import type { Metadata } from 'next';
 import { getPublicJobPostingsAction } from '@/lib/job-posting/infrastructure/nextjs/job-posting.server-actions';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertCircle, Upload, Building, PlusCircle } from 'lucide-react';
+import { AlertCircle, Upload, Building, PlusCircle, Info } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -66,11 +67,18 @@ const JobsPublicPage = () => {
         <>
             <div className="container mx-auto px-4 py-12 md:px-6">
                 <div className="text-center mb-12">
-                    <h1 className="text-4xl md:text-5xl font-bold font-headline">Oportunidades de Empleo y Trabajo</h1>
+                    <h1 className="text-4xl md:text-5xl font-bold font-headline">Portal de Empleo</h1>
                     <p className="text-lg text-muted-foreground mt-2 font-body max-w-2xl mx-auto">
-                        Encuentra tu próxima aventura profesional en España.
+                        Conectamos empresas con el mejor talento colombiano en España. Publica tu oferta y encuentra al candidato ideal.
                     </p>
                     <div className="mt-6">{renderCtaButton()}</div>
+                    <Alert variant="default" className="max-w-md mx-auto mt-6 text-left bg-blue-50 border-blue-200">
+                        <Info className="h-4 w-4 !text-blue-600" />
+                        <AlertTitle className="text-blue-800">¡Atención Empresas!</AlertTitle>
+                        <AlertDescription className="text-blue-700">
+                            La publicación de ofertas de empleo es gratuita hasta Diciembre de 2025.
+                        </AlertDescription>
+                    </Alert>
                 </div>
 
                 {error && (

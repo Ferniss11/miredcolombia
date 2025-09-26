@@ -5,6 +5,10 @@ import { Calendar, User } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import RelatedPosts from "@/components/blog/RelatedPosts";
+import LeadMagnetCard from "@/components/guides/LeadMagnetCard";
+import { FirestoreGuideRepository } from "@/lib/guide/infrastructure/persistence/firestore-guide.repository";
+import { GetAllGuidesUseCase } from "@/lib/guide/application/get-all-guides.use-case";
 
 // This tells Next.js to generate static pages for all published posts at build time
 export async function generateStaticParams() {
@@ -23,80 +27,109 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
   if (!post || post.status !== 'Published') {
     notFound();
   }
+  
+  // Fetch related posts (e.g., 3 most recent in the same category)
+  const allPostsResult = await getPublishedBlogPosts();
+  const relatedPosts = (allPostsResult.posts || [])
+    .filter(p => p.category === post.category && p.id !== post.id)
+    .slice(0, 3);
+    
+  // Fetch a featured guide for the lead magnet
+  const guideRepository = new FirestoreGuideRepository();
+  const getAllGuidesUseCase = new GetAllGuidesUseCase(guideRepository);
+  const guides = await getAllGuidesUseCase.execute();
+  const featuredGuide = guides.length > 0 ? guides[0] : null;
+
 
   return (
-    <article className="container mx-auto px-4 py-12 md:px-6 max-w-4xl">
-      <header className="mb-8 text-center">
-        <Link href="/blog" className="text-primary font-semibold hover:underline font-body">
-          &larr; Volver al Blog
-        </Link>
-        <h1 className="text-4xl md:text-5xl font-bold font-headline mt-4">{post.title}</h1>
-        <div className="flex items-center justify-center space-x-4 text-sm text-muted-foreground mt-4 font-body">
-          <div className="flex items-center">
-            <Calendar className="w-4 h-4 mr-1.5" />
-            <span>Publicado el {new Date(post.date).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
-          </div>
-          <div className="flex items-center">
-            <User className="w-4 h-4 mr-1.5" />
-            <span>Por {post.author}</span>
-          </div>
-        </div>
-      </header>
-      
-      {post.featuredImageUrl && (
-        <Image
-            src={post.featuredImageUrl}
-            alt={post.title}
-            width={1200}
-            height={600}
-            data-ai-hint={post.featuredImageHint || 'blog post topic'}
-            className="w-full h-auto rounded-lg shadow-lg object-cover mb-8"
-            priority // Preload the main image
-        />
-      )}
-
-      <div className="prose dark:prose-invert max-w-none font-body text-lg leading-relaxed">
-        <p className="text-xl italic text-muted-foreground">{post.introduction}</p>
+    <div className="bg-muted/30">
+      <div className="container mx-auto px-4 py-12 md:px-6 max-w-7xl">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
         
-        {post.sections.map((section, index) => (
-            <section key={index} className="mt-8">
-                <h2 className="font-headline text-2xl md:text-3xl">{section.heading}</h2>
-                {section.imageUrl && (
-                     <Image
-                        src={section.imageUrl}
-                        alt={section.heading}
-                        width={800}
-                        height={400}
-                        data-ai-hint={section.imageHint || 'section image'}
-                        className="w-full h-auto rounded-lg shadow-md object-cover my-4"
-                    />
-                )}
-                <div dangerouslySetInnerHTML={{ __html: section.content.replace(/\n/g, '<br />') }} />
-            </section>
-        ))}
+          {/* Main Content */}
+          <div className="lg:col-span-8">
+            <article>
+              <header className="mb-8">
+                <Link href="/blog" className="text-primary font-semibold hover:underline font-body text-sm">
+                  &larr; Volver al Blog
+                </Link>
+                <h1 className="text-4xl md:text-5xl font-bold font-headline mt-2">{post.title}</h1>
+                <div className="flex items-center space-x-4 text-sm text-muted-foreground mt-4 font-body">
+                  <div className="flex items-center">
+                    <Calendar className="w-4 h-4 mr-1.5" />
+                    <span>Publicado el {new Date(post.date).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                  </div>
+                  <div className="flex items-center">
+                    <User className="w-4 h-4 mr-1.5" />
+                    <span>Por {post.author}</span>
+                  </div>
+                </div>
+              </header>
+              
+              {post.featuredImageUrl && (
+                <Image
+                    src={post.featuredImageUrl}
+                    alt={post.title}
+                    width={1200}
+                    height={600}
+                    data-ai-hint={post.featuredImageHint || 'blog post topic'}
+                    className="w-full h-auto rounded-lg shadow-lg object-cover mb-8"
+                    priority // Preload the main image
+                />
+              )}
 
-        <h2 className="font-headline text-2xl md:text-3xl mt-8">Conclusión</h2>
-        <p>{post.conclusion}</p>
-      </div>
+              <div className="prose dark:prose-invert max-w-none font-body text-lg leading-relaxed">
+                <p className="text-xl italic text-muted-foreground">{post.introduction}</p>
+                
+                {post.sections.map((section, index) => (
+                    <section key={index} className="mt-8">
+                        <h2 className="font-headline text-2xl md:text-3xl">{section.heading}</h2>
+                        {section.imageUrl && (
+                             <Image
+                                src={section.imageUrl}
+                                alt={section.heading}
+                                width={800}
+                                height={400}
+                                data-ai-hint={section.imageHint || 'section image'}
+                                className="w-full h-auto rounded-lg shadow-md object-cover my-4"
+                            />
+                        )}
+                        <div dangerouslySetInnerHTML={{ __html: section.content.replace(/\n/g, '<br />') }} />
+                    </section>
+                ))}
 
-       {post.suggestedTags && post.suggestedTags.length > 0 && (
-        <div className="mt-8 pt-4 border-t">
-          <h3 className="text-sm font-semibold text-muted-foreground mb-2">Etiquetas</h3>
-          <div className="flex flex-wrap gap-2">
-            {post.suggestedTags.map((tag) => (
-              <span key={tag} className="bg-secondary text-secondary-foreground text-xs font-semibold mr-2 px-2.5 py-0.5 rounded-full">{tag}</span>
-            ))}
+                <h2 className="font-headline text-2xl md:text-3xl mt-8">Conclusión</h2>
+                <p>{post.conclusion}</p>
+              </div>
+
+               {post.suggestedTags && post.suggestedTags.length > 0 && (
+                <div className="mt-8 pt-4 border-t">
+                  <h3 className="text-sm font-semibold text-muted-foreground mb-2">Etiquetas</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {post.suggestedTags.map((tag) => (
+                      <span key={tag} className="bg-secondary text-secondary-foreground text-xs font-semibold mr-2 px-2.5 py-0.5 rounded-full">{tag}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </article>
           </div>
+          
+          {/* Sidebar */}
+          <aside className="lg:col-span-4">
+            <div className="sticky top-24 space-y-8 min-h-[400px]">
+              {featuredGuide && <LeadMagnetCard guide={featuredGuide} />}
+              {/* You can add more sidebar components here, like "Popular Posts" */}
+            </div>
+          </aside>
+          
         </div>
-      )}
 
-      <div className="mt-12 text-center">
-        <Button asChild>
-            <Link href="/blog">
-                Explorar Más Artículos
-            </Link>
-        </Button>
+        {/* Related Posts Section */}
+        {relatedPosts.length > 0 && (
+          <RelatedPosts posts={relatedPosts} />
+        )}
       </div>
-    </article>
+    </div>
   );
 }

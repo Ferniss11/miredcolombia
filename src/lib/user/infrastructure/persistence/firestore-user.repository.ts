@@ -1,3 +1,4 @@
+
 // infrastructure/persistence/firestore-user.repository.ts
 import type { User } from '../../domain/user.entity';
 import type { UserRepository } from '../../domain/user.repository';
@@ -102,39 +103,26 @@ export class FirestoreUserRepository implements UserRepository {
   }
 
   // Agent Specific Methods
-  async getGlobalAgentConfig(): Promise<AgentConfig> {
+  async getAgentConfig(agentId: string = 'global'): Promise<AgentConfig> {
     if (!adminDb) throw new Error('Firestore not initialized');
-    const doc = await adminDb.collection('agentConfig').doc('main').get();
+    const docRef = adminDb.collection('agentConfig').doc(agentId);
+    const doc = await docRef.get();
+    
+    // If a specific config doesn't exist, return a default shell.
     if (!doc.exists) {
-        // Return a default config if none exists, to avoid crashing the UI
-        return {
-            model: 'googleai/gemini-1.5-flash-latest',
-            systemPrompt: 'Eres un asistente de IA para Mi Red Colombia. Ayuda a los usuarios con sus preguntas sobre inmigración y servicios.'
-        };
+        console.warn(`[FirestoreRepo] No specific agent config found for '${agentId}'. Returning a default config.`);
     }
-    return doc.data() as AgentConfig;
+    
+    const data = doc.data() as AgentConfig;
+
+    return {
+        model: data?.model || 'googleai/gemini-1.5-flash-latest',
+        systemPrompt: data?.systemPrompt || `Eres Valeria, una asistente de IA experta en ayudar a colombianos en su proceso de migración y vida en España.`
+    };
   }
 
-  async saveGlobalAgentConfig(config: AgentConfig): Promise<void> {
+  async saveAgentConfig(agentId: string, config: AgentConfig): Promise<void> {
     if (!adminDb) throw new Error('Firestore not initialized');
-    await adminDb.collection('agentConfig').doc('main').set(config, { merge: true });
-  }
-
-  async updateAgentStatus(uid: string, isAgentEnabled: boolean): Promise<void> {
-    if (!adminDb) throw new Error('Firestore not initialized');
-    const userRef = adminDb.collection('users').doc(uid);
-    await userRef.update({
-      'businessProfile.isAgentEnabled': isAgentEnabled,
-      'updatedAt': new Date(),
-    });
-  }
-
-  async updateAgentConfig(uid: string, agentConfig: AgentConfig): Promise<void> {
-    if (!adminDb) throw new Error('Firestore not initialized');
-    const userRef = adminDb.collection('users').doc(uid);
-    await userRef.update({
-      'businessProfile.agentConfig': agentConfig,
-      'updatedAt': new Date(),
-    });
+    await adminDb.collection('agentConfig').doc(agentId).set(config, { merge: true });
   }
 }

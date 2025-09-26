@@ -1,5 +1,3 @@
-
-
 import { z } from 'zod';
 
 // --- Core Enums and Schemas ---
@@ -31,12 +29,19 @@ export const ChatMessageSchema = z.object({
   timestamp: z.string(), // ISO string on the client
   usage: TokenUsageSchema.optional(),
   cost: z.number().optional(),
+  authorId: z.string().optional(), // Added for user messages
   authorName: z.string().optional(), // Used for model messages sent by an admin
   replyTo: z.object({
     messageId: z.string(),
     text: z.string(),
     author: z.string(),
   }).nullable(),
+  // New field for handling file uploads in the UI
+  file: z.object({
+      name: z.string(),
+      status: z.enum(['processing', 'ready', 'error']),
+      progress: z.number().optional(),
+  }).optional(),
 });
 export type ChatMessage = z.infer<typeof ChatMessageSchema>;
 
@@ -44,6 +49,7 @@ export type ChatMessage = z.infer<typeof ChatMessageSchema>;
 
 export const ChatSessionSchema = z.object({
   id: z.string().optional(),
+  userId: z.string().optional(),
   userName: z.string(),
   userPhone: z.string(),
   userEmail: z.string().optional(),
@@ -54,6 +60,7 @@ export const ChatSessionSchema = z.object({
   totalOutputTokens: z.number().optional(),
   totalCost: z.number().optional(),
   agentConfig: AgentConfigSchema.optional(), // Added agent config to session
+  messageCount: z.number().optional(), // Add messageCount for free tier
 });
 export type ChatSession = z.infer<typeof ChatSessionSchema>;
 
@@ -74,10 +81,15 @@ export type BusinessAgentConfig = AgentConfig;
 
 
 // --- AI Flow I/O Schemas ---
+const ToolInvocationSchema = z.object({
+    tool: z.string(),
+    result: z.any(),
+});
 
 export const ChatOutputSchema = z.object({
   response: z.string().describe('The AI\'s response.'),
   usage: TokenUsageSchema.optional(),
+  toolInvocations: z.array(ToolInvocationSchema).optional().describe('A list of tools that were called and their results.'),
 });
 export type ChatOutput = z.infer<typeof ChatOutputSchema>;
 

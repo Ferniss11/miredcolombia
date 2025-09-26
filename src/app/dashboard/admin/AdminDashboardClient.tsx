@@ -26,8 +26,6 @@ const passwordSchema = z.object({
   path: ["confirmPassword"],
 });
 
-
-// A reusable card for quick actions
 const ActionCard = ({ title, description, icon: Icon, href }: { title: string, description: string, icon: React.ElementType, href: string }) => (
     <Card className="hover:border-primary/50 hover:shadow-lg transition-all group">
         <Link href={href} className="flex flex-col h-full">

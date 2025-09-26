@@ -1,107 +1,163 @@
+
 'use server';
 
 import { z } from 'zod';
 import { stripe } from '@/lib/stripe';
-import { createOrder } from '@/services/order.service';
-import { getOrCreateCustomer } from '@/services/customer.service';
+import { CreateOrderUseCase } from './order/application/create-order.use-case';
+import { FirestoreOrderRepository } from './order/infrastructure/persistence/firestore-order.repository';
 
-const paymentIntentSchema = z.object({
+
+// --- ONE-TIME PAYMENT CHECKOUT ---
+
+const createOneTimeCheckoutSchema = z.object({
+  itemId: z.string(),
+  itemName: z.string(),
   amount: z.number().positive(),
-  metadata: z.record(z.string()).optional(),
+  userName: z.string(),
+  userEmail: z.string().email(),
+  userId: z.string().nullable().optional(),
+  phone: z.string().optional(),
+  wantsWhatsAppContact: z.boolean().optional(),
+  comments: z.string().optional(),
 });
+type CreateOneTimeCheckoutInput = z.infer<typeof createOneTimeCheckoutSchema>;
 
-export async function createPaymentIntentAction(
-  input: z.infer<typeof paymentIntentSchema>
-) {
-  try {
-    if (!stripe) {
-      throw new Error(
-        'Stripe is not configured. Please provide a STRIPE_SECRET_KEY in your .env file.'
-      );
+
+export async function createOneTimeCheckoutSessionAction(input: CreateOneTimeCheckoutInput) {
+  const validatedInput = createOneTimeCheckoutSchema.parse(input);
+  const { itemId, itemName, amount, userName, userEmail, userId, phone, wantsWhatsAppContact, comments } = validatedInput;
+
+  if (!stripe) {
+    throw new Error('Stripe is not configured.');
+  }
+   const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+    if (!appUrl) {
+      throw new Error('NEXT_PUBLIC_APP_URL is not set in environment variables.');
     }
-    const { amount, metadata } = paymentIntentSchema.parse(input);
 
-    // Stripe expects the amount in the smallest currency unit (e.g., cents)
-    const amountInCents = Math.round(amount * 100);
+  try {
+    const orderRepository = new FirestoreOrderRepository();
+    const createOrderUseCase = new CreateOrderUseCase(orderRepository);
 
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: amountInCents,
-      currency: 'eur',
-      automatic_payment_methods: {
-        enabled: true,
+    // Create a 'pending' order in our database first
+    const pendingOrder = await createOrderUseCase.execute(
+      { // Customer Info
+        userId,
+        firstName: userName.split(' ')[0],
+        lastName: userName.split(' ').slice(1).join(' '),
+        email: userEmail,
+        phone,
+        wantsWhatsAppContact,
+        comments
       },
-      metadata,
+      { // Order Details
+        itemId,
+        itemName,
+        amount,
+        currency: 'eur',
+        provider: 'stripe',
+      }
+    );
+
+    // Create a Stripe Payment Intent
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: Math.round(amount * 100), // Stripe expects the amount in cents
+      currency: 'eur',
+      metadata: { 
+        orderId: pendingOrder.id, // Link our internal order ID to the Stripe transaction
+        userId: userId || 'guest',
+        customerEmail: userEmail,
+       },
     });
 
-    return { clientSecret: paymentIntent.client_secret, error: null };
+    if (!paymentIntent.client_secret) {
+      throw new Error("Failed to create Stripe Payment Intent.");
+    }
+
+    // Associate the payment intent ID with our order now
+    await orderRepository.updateOrderStatus(pendingOrder.id, 'pending', paymentIntent.id);
+
+    return { clientSecret: paymentIntent.client_secret };
+
   } catch (error) {
-    console.error('Error creating PaymentIntent:', error);
-    const errorMessage =
-      error instanceof Error ? error.message : 'An unknown error occurred';
-    return {
-      clientSecret: null,
-      error: `No se pudo iniciar el pago: ${errorMessage}`,
-    };
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
+    console.error('Error creating one-time checkout session:', errorMessage);
+    return { error: `No se pudo crear la sesión de pago: ${errorMessage}` };
   }
 }
 
-const orderActionSchema = z.object({
-  userId: z.string().nullable(),
-  firstName: z.string(),
-  lastName: z.string(),
-  email: z.string().email(),
-  phone: z.string(),
-  wantsWhatsAppContact: z.boolean(),
-  comments: z.string().optional(),
-  itemId: z.string(),
-  itemName: z.string(),
-  amount: z.number(),
-  currency: z.string(),
-  status: z.enum(['pending', 'succeeded', 'failed']),
-  stripePaymentIntentId: z.string(),
+
+// --- SUBSCRIPTION CHECKOUT ---
+
+const createSubscriptionCheckoutSchema = z.object({
+  planId: z.string(),
+  userId: z.string(),
+  userEmail: z.string(),
 });
 
-export async function createOrderAction(
-  input: z.infer<typeof orderActionSchema>
-) {
+type CreateSubscriptionCheckoutInput = z.infer<typeof createSubscriptionCheckoutSchema>;
+
+export async function createSubscriptionCheckoutSessionAction(input: CreateSubscriptionCheckoutInput) {
   try {
-    const validatedData = orderActionSchema.parse(input);
+    const validatedInput = createSubscriptionCheckoutSchema.parse(input);
+    const { planId, userId, userEmail } = validatedInput;
 
-    const {
-      userId,
-      firstName,
-      lastName,
-      email,
-      phone,
-      wantsWhatsAppContact,
-      comments,
-      ...orderData
-    } = validatedData;
+    if (!stripe) { throw new Error('Stripe no está configurado.'); }
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+    if (!appUrl) { throw new Error('NEXT_PUBLIC_APP_URL no está configurado.'); }
 
-    const customerId = await getOrCreateCustomer({
-      userId,
-      firstName,
-      lastName,
-      email,
-      phone,
-      wantsWhatsAppContact,
-      comments,
-    });
+    let customerId: string;
+    const customers = await stripe.customers.list({ email: userEmail, limit: 1 });
+    if (customers.data.length > 0 && customers.data[0].id) {
+        customerId = customers.data[0].id;
+    } else {
+        const newCustomer = await stripe.customers.create({ email: userEmail, metadata: { firebaseUID: userId } });
+        customerId = newCustomer.id;
+    }
 
-    const orderId = await createOrder({
-      ...orderData,
-      userId,
-      customerId,
-    });
+    let checkoutOptions: Stripe.Checkout.SessionCreateParams;
 
-    return { success: true, orderId };
+    if (planId === 'valeria_premium') { // Monthly Recurring Subscription
+        const stripePriceId = process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_VALERIA_PREMIUM;
+        if (!stripePriceId) throw new Error("Stripe Price ID para el plan mensual no está configurado.");
+        checkoutOptions = {
+            customer: customerId,
+            payment_method_types: ['card'],
+            mode: 'subscription',
+            line_items: [{ price: stripePriceId, quantity: 1 }],
+            metadata: { firebaseUID: userId, planId },
+            success_url: `${appUrl}/valeria/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+            cancel_url: `${appUrl}/valeria?payment=cancelled`,
+        };
+    } else if (planId === 'valeria_premium_quarterly') { // One-time payment for 3 months
+        const stripePriceId = process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_VALERIA_PREMIUM_PROMO;
+        if (!stripePriceId) throw new Error("Stripe Price ID para la promoción trimestral no está configurado.");
+         checkoutOptions = {
+            customer: customerId,
+            payment_method_types: ['card'],
+            mode: 'payment', // Important: This is a one-time payment, not a subscription
+            line_items: [{ price: stripePriceId, quantity: 1 }],
+            payment_intent_data: { // We need to capture payment intent data for the webhook
+                metadata: { firebaseUID: userId, planId },
+            },
+            success_url: `${appUrl}/valeria/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+            cancel_url: `${appUrl}/valeria?payment=cancelled`,
+        };
+    } else {
+        throw new Error(`Plan ID desconocido: ${planId}`);
+    }
+
+    const session = await stripe.checkout.sessions.create(checkoutOptions);
+    
+    if (!session.url) {
+        throw new Error("Stripe no devolvió una URL de pago.");
+    }
+    
+    return { checkoutUrl: session.url };
+
   } catch (error) {
-    console.error('Error creating order:', error);
-    const errorMessage =
-      error instanceof Error ? error.message : 'An unknown error occurred';
-    return {
-      success: false,
-      error: `No se pudo guardar el pedido: ${errorMessage}`,
-    };
+    const errorMessage = error instanceof Error ? error.message : 'Un error desconocido ocurrió.';
+    console.error('Error creando la sesión de pago:', errorMessage);
+    return { error: `No se pudo crear la sesión de pago: ${errorMessage}` };
   }
 }

@@ -290,11 +290,10 @@ export default function AdminContentSuitePage() {
                                         <SelectValue placeholder="Selecciona un modelo" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="googleai/gemini-1.5-flash-latest">Gemini 1.5 Flash (Rápido)</SelectItem>
-                                        <SelectItem value="googleai/gemini-1.5-pro-latest">Gemini 1.5 Pro (Potente)</SelectItem>
-                                        <SelectItem value="googleai/gemini-2.5-flash-lite">Gemini 2.5 Flash Lite</SelectItem>
-                                        <SelectItem value="googleai/gemini-2.5-pro">Gemini 2.5 Pro</SelectItem>
+                                        <SelectItem value="googleai/gemini-1.5-flash-latest">Gemini 1.5 Flash</SelectItem>
+                                        <SelectItem value="googleai/gemini-1.5-pro-latest">Gemini 1.5 Pro</SelectItem>
                                         <SelectItem value="googleai/gemini-2.5-flash">Gemini 2.5 Flash</SelectItem>
+                                        <SelectItem value="googleai/gemini-2.5-pro">Gemini 2.5 Pro</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>

@@ -1,4 +1,5 @@
 // src/lib/chat/domain/chat.repository.ts
+import type { AgentConfig } from '@/lib/chat-types';
 import type { ChatMessage } from './chat-message.entity';
 import type { ChatSession } from './chat-session.entity';
 
@@ -37,9 +38,10 @@ export interface ChatRepository {
   /**
    * Saves a new message to a specific chat session.
    * @param message - The message entity to save.
+   * @param agentConfig - Optional agent configuration used to generate this message.
    * @returns The saved message entity, possibly with a database-generated ID.
    */
-  saveMessage(message: Omit<ChatMessage, 'id'>): Promise<ChatMessage>;
+  saveMessage(message: Omit<ChatMessage, 'id' | 'timestamp'>, agentConfig?: AgentConfig): Promise<ChatMessage>;
 
   /**
    * Retrieves the full message history for a given chat session.
@@ -51,7 +53,15 @@ export interface ChatRepository {
   
   /**
    * Retrieves all chat sessions, typically for an admin view.
+   * @param filters - Optional filters to apply, e.g., by userId or if it's a lab session.
    * @returns An array of all ChatSession entities.
    */
-  findAllSessions(): Promise<ChatSession[]>;
+  findAllSessions(filters?: { userId?: string, isLabSession?: boolean }): Promise<ChatSession[]>;
+
+  /**
+   * Deletes a chat session and all its associated messages.
+   * @param sessionId - The ID of the session to delete.
+   * @returns A promise that resolves when deletion is complete.
+   */
+  deleteSession(sessionId: string): Promise<void>;
 }

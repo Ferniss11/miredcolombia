@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import Link from "next/link";
@@ -16,12 +15,15 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Image from 'next/image';
 
 const navLinks = [
-  { href: "/directorio", label: "Negocios" },
-  { href: "/inmobiliaria", label: "Inmobiliaria" },
   { href: "/empleos", label: "Empleo" },
+  { href: "/vivienda", label: "Vivienda" },
+  { href: "/tramites", label: "Trámites" },
+  { href: "/packs", label: "Packs" },
+  { href: "/valeria", label: "Valeria" },
+  { href: "/guias", label: "Guías" },
+  { href: "/directorio", label: "Directorio" },
   { href: "/servicios", label: "Servicios" },
-  { href: "/blog", label: "Blog" },
-  { href: "/precios", label: "Precios" },
+  { href: "/quienes-somos", label: "Quiénes Somos"}
 ];
 
 export default function Header() {
@@ -84,10 +86,10 @@ export default function Header() {
                   <Separator className="my-4" />
                   <div className="flex flex-col space-y-2">
                     <Button asChild variant="outline" onClick={() => setOpen(false)}>
-                      <Link href="#">
+                      <a href="#">
                         <MessageCircle className="mr-2 h-4 w-4" />
                         Contacto WhatsApp
-                      </Link>
+                      </a>
                     </Button>
                     {!loading && (
                         <>

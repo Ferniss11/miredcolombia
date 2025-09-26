@@ -3,11 +3,10 @@
 'use server';
 
 import { adminDb } from './firebase/admin-config';
-import type { UserRole, CandidateProfile, UserProfile } from './types';
 import { revalidatePath } from "next/cache";
 import { uploadFile } from './user/infrastructure/storage/firebase-storage.adapter';
 import { cookies } from 'next/headers';
-
+import { adminAuth } from './firebase/admin-config';
 
 export async function updateCandidateProfileAction(uid: string, formData: FormData, idToken: string) {
      try {

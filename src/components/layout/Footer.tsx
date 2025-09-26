@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { Instagram, Youtube } from "lucide-react";
@@ -7,6 +6,7 @@ import Link from "next/link";
 import Image from 'next/image';
 import ChatWidget from "../chat/ChatWidget";
 import { useChat } from "@/context/ChatContext";
+import { useEffect, useState } from "react";
 
 const TikTokIcon = () => (
     <svg 
@@ -29,7 +29,8 @@ export default function Footer() {
     <>
     <footer className="bg-white dark:bg-gray-900 border-t">
       <div className="container mx-auto py-12 px-4 sm:px-6 lg:px-8">
-        <div className="xl:grid xl:grid-cols-3 xl:gap-8">
+        
+        <div className="xl:grid xl:grid-cols-3 xl:gap-8 border-t pt-8">
           <div className="space-y-8 xl:col-span-1">
              <Link href="/" className="flex items-center space-x-2">
                 <Image src="https://firebasestorage.googleapis.com/v0/b/colombia-en-esp.firebasestorage.app/o/web%2FLOGO.png?alt=media&token=86f8e9f6-587a-4cb6-bae1-15b0c815f22b" alt="Mi Red Colombia Logo" width={32} height={32} />
@@ -58,15 +59,23 @@ export default function Footer() {
               <div>
                 <h3 className="text-sm font-semibold text-gray-900 dark:text-white tracking-wider uppercase font-headline">Explorar</h3>
                 <ul className="mt-4 space-y-4">
-                  <li><Link href="/directorio" className="text-base text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">Negocios</Link></li>
                   <li><Link href="/empleos" className="text-base text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">Empleo</Link></li>
-                  <li><Link href="/inmobiliaria" className="text-base text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">Inmobiliaria</Link></li>
-                  <li><Link href="/servicios" className="text-base text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">Servicios</Link></li>
-                  <li><Link href="/blog" className="text-base text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">Blog</Link></li>
-                  <li><Link href="/precios" className="text-base text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">Precios</Link></li>
+                  <li><Link href="/vivienda" className="text-base text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">Vivienda</Link></li>
+                  <li><Link href="/directorio" className="text-base text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">Directorio</Link></li>
+                  <li><Link href="/guias" className="text-base text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">Guías</Link></li>
                 </ul>
               </div>
               <div className="mt-12 md:mt-0">
+                 <h3 className="text-sm font-semibold text-gray-900 dark:text-white tracking-wider uppercase font-headline">Servicios</h3>
+                <ul className="mt-4 space-y-4">
+                  <li><Link href="/valeria" className="text-base text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">Asistente IA</Link></li>
+                  <li><Link href="/tramites" className="text-base text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">Trámites</Link></li>
+                  <li><Link href="/packs" className="text-base text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">Packs de llegada</Link></li>
+                </ul>
+              </div>
+            </div>
+             <div className="md:grid md:grid-cols-1 md:gap-8">
+               <div>
                 <h3 className="text-sm font-semibold text-gray-900 dark:text-white tracking-wider uppercase font-headline">Legal</h3>
                 <ul className="mt-4 space-y-4">
                   <li><Link href="/legal/privacidad" className="text-base text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">Privacidad</Link></li>

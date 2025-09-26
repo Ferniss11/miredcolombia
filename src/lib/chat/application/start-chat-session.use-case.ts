@@ -5,9 +5,10 @@ import type { ChatMessage } from '../domain/chat-message.entity';
 
 export type StartChatSessionInput = {
   userName: string;
-  userPhone: string;
+  userPhone?: string;
   userEmail?: string;
   businessId?: string; // Optional context for business-specific chats
+  isLabSession?: boolean; // Flag to identify sessions created in the Agent Lab
 };
 
 export type StartChatSessionOutput = {
@@ -25,6 +26,7 @@ export class StartChatSessionUseCase {
   async execute(input: StartChatSessionInput): Promise<StartChatSessionOutput> {
     const sessionData: Omit<ChatSession, 'id'> = {
       ...input,
+      userPhone: input.userPhone || '', // Ensure userPhone is a string
       createdAt: new Date(),
       totalTokens: 0,
       totalInputTokens: 0,
@@ -32,7 +34,7 @@ export class StartChatSessionUseCase {
       totalCost: 0,
     };
     
-    const welcomeMessageText = `¡Hola, ${input.userName}! Soy tu asistente virtual. ¿Cómo puedo ayudarte hoy?`;
+    const welcomeMessageText = `¡Hola, ${input.userName}! Soy Valeria, tu asistente virtual. ¿Cómo puedo ayudarte hoy?`;
     
     const { session, message } = await this.chatRepository.createSessionWithInitialMessage(
       sessionData,

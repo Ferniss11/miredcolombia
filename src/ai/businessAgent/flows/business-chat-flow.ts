@@ -35,25 +35,33 @@ export type BusinessChatFlowInput = z.infer<typeof BusinessChatFlowInputSchema>;
  * It triggers the Genkit flow.
  */
 export async function businessChat(input: BusinessChatFlowInput) {
-    return businessChatFlow(input);
+    // Pass the owner's UID in the context object for tools to use
+    return businessChatFlow(input, { context: { uid: input.ownerUid }});
 }
 
-// Define the prompt with more intelligent instructions
-const prompt = ai.definePrompt({
-    name: 'businessChatPrompt',
-    input: { schema: BusinessChatFlowInputSchema },
-    output: { schema: ChatOutputSchema },
-    tools: [getAvailableSlots, createAppointment],
-    system: `### CONTEXTO GENERAL
+
+const businessChatFlow = ai.defineFlow(
+    {
+        name: 'businessChatFlow',
+        inputSchema: BusinessChatFlowInputSchema,
+        outputSchema: ChatOutputSchema,
+    },
+    async (input, { context }) => { // Receive context here
+        // Calculate current date and tomorrow's date to inject into the prompt
+        const now = new Date();
+        const tomorrow = new Date(now);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        
+        const systemPrompt = `### CONTEXTO GENERAL
 Eres un asistente de inteligencia artificial amigable, profesional y extremadamente eficiente para un negocio específico. Tu misión es responder a las preguntas de los clientes y gestionar citas basándote ÚNICAMENTE en la información proporcionada por tus herramientas y el contexto del negocio que se te facilita. En la conversación, pueden participar tres roles: 'user' (el cliente), 'model' (tú, el asistente IA) y 'admin' (un humano del negocio que puede intervenir). Trata los mensajes del 'admin' como una fuente de información verídica y autorizada.
 
 ### INFORMACIÓN DEL NEGOCIO (Contexto Principal)
 Esta es la información pública sobre el negocio con el que estás hablando. Úsala como tu fuente principal de verdad para responder a las preguntas del usuario sobre horarios, dirección, servicios, etc.
 
-{{{businessContext}}}
+${input.businessContext}
 ---
 ### FECHA Y HORA ACTUAL
-La fecha y hora actual es: {{currentDate}}. Úsala como referencia para interpretar las peticiones del usuario (ej. "mañana" es {{tomorrow}}, "próximo lunes").
+La fecha y hora actual es: ${now.toLocaleString('es-ES', { timeZone: 'Europe/Madrid' })}. Úsala como referencia para interpretar las peticiones del usuario (ej. "mañana" es ${tomorrow.toISOString().split('T')[0]}, "próximo lunes").
 
 ---
 ### PROCESO DE RESPUESTA OBLIGATORIO Y SECUENCIAL
@@ -77,49 +85,40 @@ La fecha y hora actual es: {{currentDate}}. Úsala como referencia para interpre
 - **PROHIBIDO CONFIRMAR SIN USAR LA HERRAMIENTA:** NUNCA digas que una cita está confirmada si no has usado la herramienta \`createAppointment\` en el paso inmediatamente anterior.
 - **NO INVENTES DISPONIBILIDAD:** Tu única fuente de verdad sobre los horarios es la herramienta \`getAvailableSlots\`.
 - Sé siempre amable, servicial y representa al negocio de la mejor manera posible.
-`,
-    prompt: `
-        Historial de la Conversación:
-        {{#each chatHistory}}
-            {{this.role}}: {{this.text}}
-        {{/each}}
+`;
         
-        Nuevo Mensaje del Usuario:
-        {{currentMessage}}
-    `,
-});
+        const history = input.chatHistory.map(m => ({
+            role: m.role,
+            content: [{ text: m.text }]
+        }));
 
-const businessChatFlow = ai.defineFlow(
-    {
-        name: 'businessChatFlow',
-        inputSchema: BusinessChatFlowInputSchema,
-        outputSchema: ChatOutputSchema,
-    },
-    async (input) => {
-        // Calculate current date and tomorrow's date to inject into the prompt
-        const now = new Date();
-        const tomorrow = new Date(now);
-        tomorrow.setDate(tomorrow.getDate() + 1);
+        const llmResponse = await ai.generate({
+            model: input.agentConfig.model as any,
+            system: systemPrompt,
+            history,
+            prompt: input.currentMessage,
+            tools: [getAvailableSlots, createAppointment],
+            context: context, // Pass context to the tools
+        });
         
-        const promptInput = {
-            ...input,
-            currentDate: now.toLocaleString('es-ES', { timeZone: 'Europe/Madrid' }),
-            tomorrow: tomorrow.toISOString().split('T')[0],
-        };
-
-        const { output, usage } = await prompt(promptInput, { context: { uid: input.ownerUid } });
-
-        if (!output) {
+        if (!llmResponse.text) {
+            console.error('[businessChatFlow] LLM response was empty or falsy.');
             throw new Error('La respuesta de la IA fue vacía.');
         }
+        
+        const usage = llmResponse.usage;
 
         return {
-            response: output.response,
+            response: llmResponse.text,
             usage: {
                 inputTokens: usage.inputTokens || 0,
                 outputTokens: usage.outputTokens || 0,
-                totalTokens: usage.totalTokens || 0,
-            }
+                totalTokens: usage.totalTokens,
+            },
+            toolInvocations: llmResponse.toolRequests?.map(tr => ({
+                tool: tr.name,
+                result: tr.output,
+            })) || [],
         };
     }
 );

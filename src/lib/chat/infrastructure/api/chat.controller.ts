@@ -1,5 +1,5 @@
 // src/lib/chat/infrastructure/api/chat.controller.ts
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { ApiResponse } from '@/lib/platform/api/api-response';
 import { FirestoreChatRepository } from '../persistence/firestore-chat.repository';
@@ -7,23 +7,20 @@ import { GenkitAgentAdapter } from '../ai/genkit-agent.adapter';
 import { StartChatSessionUseCase } from '../../application/start-chat-session.use-case';
 import { PostMessageUseCase } from '../../application/post-message.use-case';
 import { GetChatHistoryUseCase } from '../../application/get-chat-history.use-case';
-import { FindSessionByPhoneUseCase } from '../../application/find-session-by-phone.use-case';
-import { StartOrResumeChatUseCase } from '../../application/start-or-resume-chat.use-case';
 import { GetAllChatSessionsUseCase } from '../../application/get-all-chat-sessions.use-case';
 import { GetSessionByIdUseCase } from '../../application/get-session-by-id.use-case';
-
+import { FirestoreUserRepository } from '@/lib/user/infrastructure/persistence/firestore-user.repository';
+import { adminAuth } from '@/lib/firebase/admin-config';
+import { StartOrResumeChatUseCase } from '../../application/start-or-resume-chat.use-case';
 
 // --- Input Validation Schemas ---
 const StartSessionSchema = z.object({
   userName: z.string().min(2),
-  userPhone: z.string().min(7),
+  userPhone: z.string().optional(),
   userEmail: z.string().email().optional().or(z.literal('')),
   businessId: z.string().optional(),
-});
-
-const PostMessageSchema = z.object({
-  userMessage: z.string().min(1),
-  businessId: z.string().optional(),
+  userId: z.string().optional(),
+  isLabSession: z.boolean().optional(), // For agent lab
 });
 
 
@@ -33,81 +30,105 @@ export class ChatController {
   private getAllSessionsUseCase: GetAllChatSessionsUseCase;
   private getSessionByIdUseCase: GetSessionByIdUseCase;
   private getChatHistoryUseCase: GetChatHistoryUseCase;
+  private chatRepository: FirestoreChatRepository;
   
   constructor() {
-    const chatRepository = new FirestoreChatRepository();
+    this.chatRepository = new FirestoreChatRepository();
     const agentAdapter = new GenkitAgentAdapter();
+    const userRepository = new FirestoreUserRepository();
     
-    // Instantiate all necessary use cases
-    const startChatSessionUseCase = new StartChatSessionUseCase(chatRepository);
-    const findSessionByPhoneUseCase = new FindSessionByPhoneUseCase(chatRepository);
-    
-    // Use cases that will be called directly by the controller methods
-    this.getChatHistoryUseCase = new GetChatHistoryUseCase(chatRepository);
-    this.getSessionByIdUseCase = new GetSessionByIdUseCase(chatRepository);
-
-    // Main use cases for the controller
+    const startChatSessionUseCase = new StartChatSessionUseCase(this.chatRepository);
+    this.getChatHistoryUseCase = new GetChatHistoryUseCase(this.chatRepository);
+    this.getSessionByIdUseCase = new GetSessionByIdUseCase(this.chatRepository);
     this.startOrResumeChatUseCase = new StartOrResumeChatUseCase(
         startChatSessionUseCase,
-        findSessionByPhoneUseCase,
-        this.getChatHistoryUseCase
+        this.getChatHistoryUseCase,
+        userRepository,
+        this.getSessionByIdUseCase
     );
-    this.postMessageUseCase = new PostMessageUseCase(chatRepository, agentAdapter);
-    this.getAllSessionsUseCase = new GetAllChatSessionsUseCase(chatRepository);
+    this.postMessageUseCase = new PostMessageUseCase(this.chatRepository, agentAdapter);
+    this.getAllSessionsUseCase = new GetAllChatSessionsUseCase(this.chatRepository);
   }
 
-  /**
-   * Handles starting a new chat session or resuming an existing one.
-   * Linked to POST /api/chat/sessions
-   */
-  async startSession(req: NextRequest): Promise<ApiResponse> {
+  async startSession(req: NextRequest): Promise<NextResponse> {
     const json = await req.json();
     const input = StartSessionSchema.parse(json);
 
-    const { session, history, isResumed } = await this.startOrResumeChatUseCase.execute(input);
+    const { session, history } = await this.startOrResumeChatUseCase.execute(input);
 
     return ApiResponse.success({
-        sessionId: session.id,
+        session: { ...session, createdAt: session.createdAt.toISOString() },
         history: history.map(m => ({ ...m, timestamp: m.timestamp.toISOString() })),
-        isResumed,
     });
   }
   
-  /**
-   * Handles posting a new message to a session.
-   * Linked to POST /api/chat/sessions/[sessionId]/messages
-   */
-  async postMessage(req: NextRequest, { params }: { params: { sessionId: string } }): Promise<ApiResponse> {
-    const { sessionId } = params;
-    const json = await req.json();
-    const { userMessage, businessId } = PostMessageSchema.parse(json);
+  async postMessage(req: NextRequest, { params }: { params: { sessionId: string } }): Promise<NextResponse> {
+      let userMessage: string;
+      let document: File | null = null;
+      let userId: string | undefined = undefined;
 
-    const chatHistory = await this.getChatHistoryUseCase.execute({ sessionId, businessId });
+      const { sessionId } = params;
+      const { searchParams } = new URL(req.url);
+      const businessId = searchParams.get('businessId') || undefined;
+      const agentId = searchParams.get('agentId') as any;
 
-    const output = await this.postMessageUseCase.execute({
-      sessionId,
-      userMessage,
-      chatHistory,
-      businessId,
-    });
+      if (!sessionId) {
+          return ApiResponse.badRequest('Session ID is missing.');
+      }
+      
+      const idToken = req.headers.get('Authorization')?.split('Bearer ')[1];
+      if (idToken && adminAuth) {
+        try {
+          const decodedToken = await adminAuth.verifyIdToken(idToken);
+          userId = decodedToken.uid;
+        } catch (error) { /* Ignore for guests */ }
+      }
 
-    return ApiResponse.success(output);
+      const contentType = req.headers.get('content-type');
+      if (contentType?.includes('multipart/form-data')) {
+          const formData = await req.formData();
+          userMessage = formData.get('currentMessage') as string;
+          document = formData.get('document') as File | null;
+      } else {
+          const json = await req.json();
+          userMessage = json.userMessage;
+      }
+      
+      if (document && !userMessage) {
+        userMessage = `He adjuntado el documento: ${document.name}. Por favor, resúmelo y dime si tienes alguna pregunta sobre él.`;
+      }
+
+
+      const { lastResponse } = await this.postMessageUseCase.execute({
+          sessionId,
+          userMessage,
+          document,
+          userId,
+          businessId,
+          agentId
+      });
+
+      const updatedHistory = await this.getChatHistoryUseCase.execute({ sessionId, businessId });
+      
+      // We pass the full debug info back to the client
+      return ApiResponse.success({
+        history: updatedHistory.map(m => ({ ...m, timestamp: (m.timestamp as any).toISOString() })),
+        lastResponse,
+      });
   }
 
-  /**
-   * Handles retrieving all chat sessions for the admin panel.
-   * Linked to GET /api/chat/sessions
-   */
-  async getAllSessions(req: NextRequest): Promise<ApiResponse> {
-    const sessions = await this.getAllSessionsUseCase.execute();
-    return ApiResponse.success(sessions);
+  async getAllSessions(req: NextRequest): Promise<NextResponse> {
+    const { searchParams } = new URL(req.url);
+    const filters = {
+        userId: searchParams.get('userId') || undefined,
+        isLabSession: searchParams.has('isLabSession'),
+    };
+    
+    const sessions = await this.getAllSessionsUseCase.execute(filters);
+    return ApiResponse.success(sessions.map(s => ({ ...s, createdAt: s.createdAt.toISOString(), updatedAt: s.updatedAt?.toISOString() })));
   }
 
-  /**
-   * Handles retrieving a single chat session with its full message history.
-   * Linked to GET /api/chat/sessions/[sessionId]
-   */
-  async getSessionDetails(req: NextRequest, { params }: { params: { sessionId: string } }): Promise<ApiResponse> {
+  async getSessionDetails(req: NextRequest, { params }: { params: { sessionId: string } }): Promise<NextResponse> {
       const { sessionId } = params;
       const businessId = req.nextUrl.searchParams.get('businessId') || undefined;
 
@@ -119,8 +140,14 @@ export class ChatController {
       const messages = await this.getChatHistoryUseCase.execute({ sessionId, businessId });
 
       return ApiResponse.success({
-          session,
-          messages: messages.map(m => ({ ...m, timestamp: m.timestamp.toISOString() })),
+          session: { ...session, createdAt: session.createdAt.toISOString(), updatedAt: session.updatedAt?.toISOString() },
+          messages: messages.map(m => ({ ...m, timestamp: (m.timestamp as any).toISOString() })),
       });
+  }
+
+  async deleteSession(req: NextRequest, { params }: { params: { sessionId: string } }): Promise<NextResponse> {
+      const { sessionId } = params;
+      await this.chatRepository.deleteSession(sessionId);
+      return ApiResponse.noContent();
   }
 }

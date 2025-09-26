@@ -1,4 +1,8 @@
-// src/lib/chat/application/find-session-by-phone.use-case.ts
+// This file is no longer used by the main StartOrResumeChatUseCase
+// for the guest flow, but is kept in case we want to re-introduce
+// session resumption for guests based on phone numbers in the future.
+// It can be considered for deletion in a later cleanup.
+
 import type { ChatSession } from '../domain/chat-session.entity';
 import type { ChatRepository } from '../domain/chat.repository';
 

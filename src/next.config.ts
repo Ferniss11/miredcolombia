@@ -49,10 +49,14 @@ const nextConfig: NextConfig = {
         hostname: 'lh3.googleusercontent.com',
         port: '',
         pathname: '/**',
+      },
+      {
+        protocol: "https",
+        hostname: "**.googleusercontent.com",
       }
     ],
   },
-  serverExternalPackages: ['firebase-admin', 'teeny-request', 'google-auth-library'],
+  serverExternalPackages: ['firebase-admin', 'teeny-request', 'google-auth-library', 'pdf-parse'],
 };
 
 export default nextConfig;

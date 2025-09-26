@@ -49,4 +49,8 @@ export class ApiResponse {
   static conflict(message: string = 'Conflict'): NextResponse {
     return this.error(message, 409);
   }
+
+  static notImplemented(message: string = 'Not Implemented'): NextResponse {
+    return this.error(message, 501);
+  }
 }

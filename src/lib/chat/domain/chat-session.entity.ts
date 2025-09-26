@@ -13,10 +13,14 @@ export interface ChatSession {
   userEmail?: string;
   createdAt: Date;
   updatedAt?: Date;
+  isLabSession?: boolean; // Flag to identify sessions created in the Agent Lab
   
   // Aggregated analytics
   totalTokens: number;
   totalInputTokens: number;
   totalOutputTokens: number;
   totalCost: number;
+
+  // New field to track message count for free tier
+  messageCount?: number;
 }

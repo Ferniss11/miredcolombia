@@ -5,6 +5,7 @@ import '@/ai/tools/unsplash-search.ts';
 import '@/ai/tools/web-search.ts';
 import '@/ai/tools/knowledge-base-search.ts';
 import '@/ai/tools/google-places-search.ts';
+import '@/ai/flows/generate-email-sequence.flow.ts';
 
 // Business Agent
 import '@/ai/businessAgent/flows/business-chat-flow.ts';

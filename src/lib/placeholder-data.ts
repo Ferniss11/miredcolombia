@@ -1,4 +1,6 @@
-import type { SubscriptionPlan, MigrationPackage, MigrationService } from './types';
+
+
+import type { SubscriptionPlan, MigrationPackage, MigrationService, ValeriaPlan } from './types';
 
 
 export const subscriptionPlans: SubscriptionPlan[] = [
@@ -60,62 +62,31 @@ export const mockUser = {
 
 export const migrationPackages: MigrationPackage[] = [
   {
-    id: 'esencial',
-    name: 'Esencial',
-    title: 'Esencial',
-    price: 500,
-    priceCOP: '',
-    description: 'Perfecto para comenzar tu proceso migratorio con lo fundamental en España',
-    features: [
-      'Asesoría inicial personalizada (2 horas)',
-      'Revisión completa de documentos',
-      'Guía detallada de trámites básicos',
-      'Lista de verificación personalizada',
-      'Soporte por WhatsApp (horario laboral)',
-      'Recursos digitales descargables', 
-      'Gestión NIE/TIE'
-
-    ],
-    color: 'from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700',
-    textColor: 'text-green-600'
+    id: 'pack_consultoria',
+    name: 'Consultoría Inicial',
+    price: 39,
+    description: "Resuelve tus dudas con un experto y empieza con seguridad.",
+    features: [],
+    color: '',
+    textColor: '',
   },
   {
-    id: 'vip',
-    name: 'VIP',
-    title: 'VIP',
-    price: 700,
-    priceCOP: '',
-    description: 'Acompañamiento completo durante todo tu proceso de migración',
-    features: [
-      'Todo lo del paquete Esencial',
-      'Búsqueda y orientación de vivienda',
-      'Orientación laboral y preparación de CV',
-      'Soporte telefónico prioritario',
-      'Guía de integración cultural',
-      'Seguimiento mensual por 3 meses'
-    ],
-    popular: true,
-    color: 'from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700',
-    textColor: 'text-blue-600'
+    id: 'pack_onboarding',
+    name: 'Onboarding en España',
+    price: 0, // El precio se gestiona con el partner
+    description: "Te recibimos, te guiamos en tus primeros trámites y te acompañamos en la adaptación.",
+     features: [],
+    color: '',
+    textColor: '',
   },
   {
-    id: 'empresarial',
-    name: 'Empresarial',
-    title: 'Empresarial',
-    price: 1500,
-    priceCOP: '',
-    description: 'Servicio premium con atención personalizada y exclusiva para emprendedores colombianos',
-    features: [
-      'Todo lo del paquete Integral',
-      'Orientación para apertura de empresa',
-      'Gestor personal asignado exclusivamente',
-      'Atención prioritaria 24/7',
-      'Networking',
-      'Acompañamiento en primeros 30 días',
-      'Seguimiento por 6 meses',
-    ],
-    color: 'from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700',
-    textColor: 'text-purple-600'
+    id: 'pack_viaje',
+    name: 'Viaje Completo',
+    price: 0, // El precio se gestiona con el partner
+    description: "Organizamos tu viaje a España con seguridad: vuelos, seguros y traslados.",
+     features: [],
+    color: '',
+    textColor: '',
   }
 ];
 
@@ -123,14 +94,16 @@ export const migrationServices: MigrationService[] = [
     {
         id: 'recogida-aeropuerto',
         title: 'Recogida en Aeropuerto',
-        description: 'Te esperamos en el aeropuerto y te llevamos a tu nuevo hogar.',
+        name: 'Recogida en Aeropuerto',
         price: 120,
+        description: 'Te esperamos en el aeropuerto y te llevamos a tu nuevo hogar.',
         icon: 'Plane',
         buttonColor: 'bg-indigo-600 hover:bg-indigo-700',
     },
     {
         id: 'homologacion-licencia',
         title: 'Homologación Licencia Conducción',
+        name: 'Homologación Licencia Conducción',
         description: 'Gestionamos el canje de tu licencia de conducir colombiana por la española.',
         price: 250,
         icon: 'FileText', // You might want a better icon like Car
@@ -139,6 +112,7 @@ export const migrationServices: MigrationService[] = [
     {
         id: 'apertura-cuenta',
         title: 'Apertura de Cuenta Bancaria',
+        name: 'Apertura de Cuenta Bancaria',
         description: 'Asesoría para abrir tu primera cuenta bancaria en España sin complicaciones.',
         price: 100,
         icon: 'CreditCard',
@@ -148,6 +122,7 @@ export const migrationServices: MigrationService[] = [
     {
         id: 'seguro-medico',
         title: 'Contratación de Seguro Médico',
+        name: 'Contratación de Seguro Médico',
         description: 'Encontramos el seguro de salud con la cobertura que necesitas al mejor precio.',
         price: 80,
         icon: 'Shield',
@@ -156,6 +131,7 @@ export const migrationServices: MigrationService[] = [
     {
         id: 'empadronamiento',
         title: 'Cita de Empadronamiento',
+        name: 'Cita de Empadronamiento',
         description: 'Agendamos tu cita y te preparamos para el trámite de empadronamiento.',
         price: 90,
         icon: 'MapPin',
@@ -164,9 +140,41 @@ export const migrationServices: MigrationService[] = [
      {
         id: 'homologacion-titulo',
         title: 'Homologación de Título',
+        name: 'Homologación de Título',
         description: 'Gestión completa para la validación de tu título profesional en España.',
         price: 350,
         icon: 'FileText',
         buttonColor: 'bg-blue-600 hover:bg-blue-700',
+    },
+];
+
+export const valeriaPlans: ValeriaPlan[] = [
+    {
+      id: 'plan_free', // Internal ID, doesn't go to Stripe
+      name: 'Gratis',
+      price: 0,
+      priceDetails: '/ mes',
+      features: [
+        '3 consultas al día',
+        'Respuestas básicas de la base de conocimiento',
+        'Acceso al chat 24/7',
+      ],
+      cta: 'Empieza Gratis',
+      variant: 'outline'
+    },
+    {
+      id: 'valeria_premium', // Use internal plan name
+      name: 'Valeria Premium',
+      price: 4.99,
+      priceDetails: '/ mes',
+      features: [
+        'Consultas ilimitadas',
+        'Respuestas extendidas y detalladas',
+        'Acceso a checklists descargables',
+        'Generación de documentos básicos en PDF',
+        'Alertas de empleo y vivienda',
+      ],
+      cta: 'Elegir Plan Premium',
+       variant: 'default'
     },
 ];

@@ -1,16 +1,41 @@
 // src/lib/chat/infrastructure/ai/agent.adapter.ts
-import type { ChatMessage } from '../../domain/chat-message.entity';
-import type { TokenUsage } from '@/lib/chat-types';
+
+import type { ChatMessage, TokenUsage, AgentConfig } from '@/lib/chat-types';
+
+/**
+ * Defines the output structure for the agent's completion.
+ */
+export type AgentCompletionOutput = {
+  response: string;
+  usage: TokenUsage;
+  cost: number;
+  agentConfig: AgentConfig; // Now includes the config used
+  // Add a field to hold debug information from tool calls
+  debugInfo?: {
+    toolInvocations?: Array<{ tool: string; result: any }>;
+    systemPrompt?: string; // Include the exact system prompt used
+    [key: string]: any; // Allow for other debug info
+  };
+};
+
 
 /**
  * Defines the contract (port) for an AI agent adapter.
- * This allows the application layer to be independent of the specific AI
- * implementation (e.g., Genkit, LangChain, etc.).
+ * This decouples the application's use cases from any specific AI implementation
+ * (e.g., Genkit, LangChain, etc.).
  */
 export interface AgentAdapter {
+  /**
+   * Generates a completion from an AI agent based on the conversation history and a new message.
+   * @param input - The context for the AI completion.
+   * @returns A promise that resolves with the AI's response text and token usage details.
+   */
   getCompletion(input: {
-    chatHistory: ChatMessage[];
+    chatHistory: Omit<ChatMessage, 'id' | 'timestamp'>[]; // History can be simpler for the AI
     currentMessage: string;
-    businessId?: string; // Context to decide which agent to use
-  }): Promise<{ response: string; usage: TokenUsage, cost: number }>;
+    businessId?: string;
+    sessionId?: string; // Add sessionId to the interface
+    // New optional field to explicitly specify an agent, used by the Agent Lab
+    agentId?: 'global' | 'valeria_premium' | 'business';
+  }): Promise<AgentCompletionOutput>;
 }

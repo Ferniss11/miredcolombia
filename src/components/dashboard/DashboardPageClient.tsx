@@ -5,11 +5,12 @@ import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Loader2, Briefcase, Home, Handshake, ArrowRight } from 'lucide-react';
+import { Loader2, Briefcase, Home, Handshake, ArrowRight, Sparkles } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '../ui/button';
 import MyApplications from './MyApplications';
+import DebugInfoCard from '../debug/DebugInfoCard';
 
 // A reusable card for quick actions
 const ActionCard = ({ title, description, icon: Icon, href }: { title: string, description: string, icon: React.ElementType, href: string }) => (
@@ -34,7 +35,7 @@ const ActionCard = ({ title, description, icon: Icon, href }: { title: string, d
 );
 
 export default function DashboardPageClient() {
-  const { user, userProfile, loading } = useAuth();
+  const { user, userProfile, loading, claims } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const customToken = searchParams.get('customToken');
@@ -53,6 +54,8 @@ export default function DashboardPageClient() {
     }
   }, [user, userProfile, loading, router, customToken]);
 
+  const hasValeriaPlan = claims?.valeria_plan === 'valeria_premium' || claims?.valeria_plan === 'valeria_pro';
+
   if (loading || customToken || !userProfile || userProfile.role !== 'User') {
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm z-50">
@@ -67,10 +70,29 @@ export default function DashboardPageClient() {
         <CardHeader>
           <CardTitle className="text-3xl font-bold font-headline">Bienvenido, {userProfile?.name || 'Usuario'}</CardTitle>
           <CardDescription className="text-base">
-            Este es tu espacio personal. Desde aquí puedes gestionar tu perfil profesional, tus propiedades y los servicios que ofreces a la comunidad.
+            Este es tu espacio personal. Desde aquí puedes gestionar tu perfil profesional, tus postulaciones y los servicios que ofreces a la comunidad.
           </CardDescription>
         </CardHeader>
       </Card>
+      
+      {hasValeriaPlan && (
+          <Card className="bg-gradient-to-r from-yellow-100 via-yellow-50 to-orange-50 dark:from-yellow-900/30 dark:via-yellow-800/20 dark:to-orange-900/20 border-yellow-300 dark:border-yellow-700">
+              <CardContent className="p-6 flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                      <Sparkles className="w-8 h-8 text-yellow-500" />
+                      <div>
+                          <h3 className="font-bold text-lg">Tienes Acceso Premium a Valeria</h3>
+                          <p className="text-sm text-muted-foreground">Tu asistente personal con capacidades mejoradas te espera.</p>
+                      </div>
+                  </div>
+                  <Button asChild>
+                      <Link href="/dashboard/valeria">
+                          <Sparkles className="mr-2 h-4 w-4"/> Ir al Chat
+                      </Link>
+                  </Button>
+              </CardContent>
+          </Card>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
          <ActionCard 

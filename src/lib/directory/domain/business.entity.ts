@@ -33,6 +33,8 @@ export interface Business {
   
   // Platform-specific Features
   subscriptionTier: 'Gratuito' | 'Básico' | 'Premium' | 'Destacado';
+  subscriptionId?: string; // ID de la suscripción de Stripe para este perfil
+  planExpiresAt?: Date; // Fecha de expiración de la suscripción
   isFeatured: boolean;
   isAgentEnabled: boolean;
   agentConfig?: BusinessAgentConfig;
