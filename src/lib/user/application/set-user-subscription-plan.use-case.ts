@@ -1,5 +1,4 @@
 
-
 // src/lib/user/application/set-user-subscription-plan.use-case.ts
 import { adminAuth } from '@/lib/firebase/admin-config';
 import type { UserRepository } from '../domain/user.repository';
@@ -7,6 +6,8 @@ import type { UserRepository } from '../domain/user.repository';
 export type SetUserSubscriptionPlanInput = {
   userId: string;
   planId: string; // This is our internal planId, e.g., 'valeria_premium' or 'valeria_premium_quarterly'
+  // New parameter for temporary access
+  accessDurationDays?: number;
 };
 
 /**
@@ -16,7 +17,7 @@ export type SetUserSubscriptionPlanInput = {
 export class SetUserSubscriptionPlanUseCase {
   constructor(private readonly userRepository: UserRepository) {}
 
-  async execute({ userId, planId }: SetUserSubscriptionPlanInput): Promise<void> {
+  async execute({ userId, planId, accessDurationDays }: SetUserSubscriptionPlanInput): Promise<void> {
     if (!adminAuth) {
       throw new Error('Firebase Admin Auth is not initialized.');
     }
@@ -33,23 +34,26 @@ export class SetUserSubscriptionPlanUseCase {
         return;
     }
 
-    // 1. Update the custom claims on the user's auth token
+    // --- Set Custom Claim ---
     const { customClaims } = await adminAuth.getUser(userId);
-    // Ensure we are not overwriting other roles or important claims
-    const currentRoles = customClaims?.roles || [];
     const newClaims = {
         ...customClaims,
-        roles: currentRoles, // Preserve existing roles
         valeria_plan: planClaimValue,
     };
     await adminAuth.setCustomUserClaims(userId, newClaims);
-    
     console.log(`[SetUserSubscriptionPlanUseCase] Successfully set custom claim 'valeria_plan: ${planClaimValue}' for user ${userId}`);
+    
+    // --- Update Firestore Profile ---
+    let expiryDate: Date | null = null;
+    if (accessDurationDays) {
+        expiryDate = new Date();
+        expiryDate.setDate(expiryDate.getDate() + accessDurationDays);
+        console.log(`[SetUserSubscriptionPlanUseCase] Plan for user ${userId} will expire on: ${expiryDate.toISOString()}`);
+    }
 
-    // 2. (Optional but recommended) Update the user's profile in Firestore for redundancy
     await this.userRepository.update(userId, { 
       'valeriaProfile.planId': planClaimValue,
-      'valeriaProfile.planExpiresAt': null, // For now, we assume non-expiring subscriptions. Could be set from Stripe data.
+      'valeriaProfile.planExpiresAt': expiryDate,
     } as any);
   }
 }

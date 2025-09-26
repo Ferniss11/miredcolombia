@@ -1,5 +1,4 @@
 
-
 'use server';
 
 import { z } from 'zod';
@@ -88,80 +87,74 @@ export async function createOneTimeCheckoutSessionAction(input: CreateOneTimeChe
 // --- SUBSCRIPTION CHECKOUT ---
 
 const createSubscriptionCheckoutSchema = z.object({
-  planId: z.string(), // Changed from priceId to our internal planId
+  planId: z.string(),
   userId: z.string(),
   userEmail: z.string(),
 });
 
 type CreateSubscriptionCheckoutInput = z.infer<typeof createSubscriptionCheckoutSchema>;
 
-
 export async function createSubscriptionCheckoutSessionAction(input: CreateSubscriptionCheckoutInput) {
   try {
     const validatedInput = createSubscriptionCheckoutSchema.parse(input);
     const { planId, userId, userEmail } = validatedInput;
 
-    if (!stripe) {
-      throw new Error('Stripe is not configured.');
-    }
-
+    if (!stripe) { throw new Error('Stripe no está configurado.'); }
     const appUrl = process.env.NEXT_PUBLIC_APP_URL;
-    if (!appUrl) {
-      throw new Error('NEXT_PUBLIC_APP_URL is not set in environment variables.');
-    }
+    if (!appUrl) { throw new Error('NEXT_PUBLIC_APP_URL no está configurado.'); }
 
-    const customers = await stripe.customers.list({ email: userEmail, limit: 1 });
     let customerId: string;
-
+    const customers = await stripe.customers.list({ email: userEmail, limit: 1 });
     if (customers.data.length > 0 && customers.data[0].id) {
         customerId = customers.data[0].id;
     } else {
-        const newCustomer = await stripe.customers.create({
-            email: userEmail,
-            metadata: { firebaseUID: userId },
-        });
+        const newCustomer = await stripe.customers.create({ email: userEmail, metadata: { firebaseUID: userId } });
         customerId = newCustomer.id;
     }
-    
-    // Map our internal plan IDs to Stripe's Price IDs from environment variables
-    let stripePriceId: string | undefined;
-    if (planId === 'valeria_premium') {
-        stripePriceId = process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_VALERIA_PREMIUM;
-    } else if (planId === 'valeria_premium_quarterly') {
-        stripePriceId = process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_VALERIA_QUARTERLY;
+
+    let checkoutOptions: Stripe.Checkout.SessionCreateParams;
+
+    if (planId === 'valeria_premium') { // Monthly Recurring Subscription
+        const stripePriceId = process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_VALERIA_PREMIUM;
+        if (!stripePriceId) throw new Error("Stripe Price ID para el plan mensual no está configurado.");
+        checkoutOptions = {
+            customer: customerId,
+            payment_method_types: ['card'],
+            mode: 'subscription',
+            line_items: [{ price: stripePriceId, quantity: 1 }],
+            metadata: { firebaseUID: userId, planId },
+            success_url: `${appUrl}/valeria/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+            cancel_url: `${appUrl}/valeria?payment=cancelled`,
+        };
+    } else if (planId === 'valeria_premium_quarterly') { // One-time payment for 3 months
+        const stripePriceId = process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_VALERIA_PREMIUM_PROMO;
+        if (!stripePriceId) throw new Error("Stripe Price ID para la promoción trimestral no está configurado.");
+         checkoutOptions = {
+            customer: customerId,
+            payment_method_types: ['card'],
+            mode: 'payment', // Important: This is a one-time payment, not a subscription
+            line_items: [{ price: stripePriceId, quantity: 1 }],
+            payment_intent_data: { // We need to capture payment intent data for the webhook
+                metadata: { firebaseUID: userId, planId },
+            },
+            success_url: `${appUrl}/valeria/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+            cancel_url: `${appUrl}/valeria?payment=cancelled`,
+        };
+    } else {
+        throw new Error(`Plan ID desconocido: ${planId}`);
     }
 
-    if (!stripePriceId) {
-        throw new Error(`Stripe Price ID for plan '${planId}' is not configured in environment variables.`);
-    }
-
-    const session = await stripe.checkout.sessions.create({
-      customer: customerId,
-      payment_method_types: ['card'],
-      mode: 'subscription',
-      line_items: [
-        {
-          price: stripePriceId,
-          quantity: 1,
-        },
-      ],
-      metadata: {
-        firebaseUID: userId,
-        planId: planId, // Store our internal plan ID
-      },
-      success_url: `${appUrl}/valeria/payment-success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${appUrl}/valeria?payment=cancelled`,
-    });
+    const session = await stripe.checkout.sessions.create(checkoutOptions);
     
     if (!session.url) {
-        throw new Error("Stripe did not return a checkout URL.");
+        throw new Error("Stripe no devolvió una URL de pago.");
     }
     
     return { checkoutUrl: session.url };
 
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
-    console.error('Error creating checkout session:', errorMessage);
+    const errorMessage = error instanceof Error ? error.message : 'Un error desconocido ocurrió.';
+    console.error('Error creando la sesión de pago:', errorMessage);
     return { error: `No se pudo crear la sesión de pago: ${errorMessage}` };
   }
 }

@@ -198,6 +198,7 @@ export type UserProfile = {
   };
   businessProfile?: BusinessProfile;
   candidateProfile?: CandidateProfile;
+  createdAt: any; // Firestore Timestamp on server, Date on client
 };
 
 // Re-exporting from the new canonical location in the blog domain
@@ -238,7 +239,7 @@ export type MigrationService = {
 }
 
 export type ValeriaPlan = {
-    id: string;
+    id: 'plan_free' | 'valeria_premium' | 'valeria_premium_quarterly';
     name: string;
     price: number | string;
     priceDetails: string;
