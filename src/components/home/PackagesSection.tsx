@@ -96,7 +96,7 @@ export default function PackagesSection() {
     
     return (
         <>
-            <section id="human-packages" className="w-full py-20 md:py-32 bg-secondary/50 dark:bg-card/50">
+            <section id="human-packages" className="w-full py-8 bg-secondary/50 dark:bg-card/50">
                 <div className="container px-4 md:px-6 space-y-20">
                     
                     {/* Main Intro */}
