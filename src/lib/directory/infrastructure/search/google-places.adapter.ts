@@ -66,15 +66,15 @@ export class GooglePlacesAdapter implements SearchAdapter {
         url: details.url,
         rating: details.rating,
         userRatingsTotal: details.user_ratings_total,
-        openingHours: details.opening_hours?.weekday_text,
-        isOpenNow: details.opening_hours?.open_now ?? undefined, // isOpenNow can be undefined
+        openingHours: details.opening_hours?.weekday_text || [], // FIX: Default to empty array instead of undefined
+        isOpenNow: details.opening_hours?.open_now ?? undefined,
         photos,
         reviews: details.reviews as Review[],
         geometry: details.geometry,
-        priceLevel: details.price_level ?? null, // Convert undefined to null
-        servesBeer: details.serves_beer ?? false, // Convert undefined to false
-        servesWine: details.serves_wine ?? false, // Convert undefined to false
-        wheelchairAccessibleEntrance: details.wheelchair_accessible_entrance ?? false, // Convert undefined to false
+        priceLevel: details.price_level ?? null,
+        servesBeer: details.serves_beer ?? false,
+        servesWine: details.serves_wine ?? false,
+        wheelchairAccessibleEntrance: details.wheelchair_accessible_entrance ?? false,
         editorialSummary: details.editorial_summary?.overview || '',
         city: city,
       };
