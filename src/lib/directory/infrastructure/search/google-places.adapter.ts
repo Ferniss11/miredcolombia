@@ -66,12 +66,12 @@ export class GooglePlacesAdapter implements SearchAdapter {
         url: details.url,
         rating: details.rating,
         userRatingsTotal: details.user_ratings_total,
-        openingHours: details.opening_hours?.weekday_text || [], // FIX: Default to empty array instead of undefined
-        isOpenNow: details.opening_hours?.open_now ?? undefined,
+        openingHours: details.opening_hours?.weekday_text || [],
+        isOpenNow: details.opening_hours?.open_now ?? false, // FIX: Default to false instead of undefined
         photos,
         reviews: details.reviews as Review[],
         geometry: details.geometry,
-        priceLevel: details.price_level ?? null,
+        priceLevel: details.price_level ?? null, // FIX: Default to null instead of undefined
         servesBeer: details.serves_beer ?? false,
         servesWine: details.serves_wine ?? false,
         wheelchairAccessibleEntrance: details.wheelchair_accessible_entrance ?? false,
