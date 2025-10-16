@@ -97,22 +97,22 @@ export default function FaqCtaSection() {
                         </div>
 
                         {/* Right Column: CTA */}
-                        <div className="bg-card p-8 rounded-lg shadow-lg">
+                        <div className="bg-card p-4 sm:p-8 rounded-lg shadow-lg">
                             <h3 className="text-2xl font-bold font-headline mb-6">Tu puente de Colombia a España empieza hoy.</h3>
                             <div className="flex flex-col gap-4">
-                                <Button size="lg" className="w-full justify-between h-14 text-base" onClick={() => handlePlanSelection('premium')}>
-                                    <span><Sparkles className="inline-block mr-2 h-5 w-5"/>Empezar con Valeria</span>
+                                <Button size="lg" className="w-full justify-between h-auto min-h-14 text-base" onClick={() => handlePlanSelection('premium')}>
+                                    <span className="flex items-center"><Sparkles className="inline-block mr-2 h-5 w-5"/>Empezar con Valeria</span>
                                     <span className="flex items-center">
                                         4,97€/mes <ArrowRight className="ml-2 h-4 w-4"/>
                                     </span>
                                 </Button>
-                                <Button size="lg" variant="outline" className="w-full justify-between h-14 text-base" onClick={() => handlePlanSelection('quarterly')}>
+                                <Button size="lg" variant="outline" className="w-full justify-between h-auto min-h-14 text-base" onClick={() => handlePlanSelection('quarterly')}>
                                     <span>Aprovechar 3 meses</span>
                                     <span className="flex items-center">
                                         9,97€ <ArrowRight className="ml-2 h-4 w-4"/>
                                     </span>
                                 </Button>
-                                <Button size="lg" variant="outline" className="w-full justify-between h-14 text-base" asChild>
+                                <Button size="lg" variant="outline" className="w-full justify-between h-auto min-h-14 text-base" asChild>
                                     <a href="https://www.viajamor.com/viaje/asesoria-viajes-90-minutos/" target="_blank" rel="noopener noreferrer">
                                         <span>Reservar Consultoría</span>
                                         <span className="flex items-center">
