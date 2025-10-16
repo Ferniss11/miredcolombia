@@ -118,7 +118,7 @@ export async function createSubscriptionCheckoutSessionAction(input: CreateSubsc
     let checkoutOptions: Stripe.Checkout.SessionCreateParams;
 
     if (planId === 'valeria_premium') { // Monthly Recurring Subscription
-        const stripePriceId = process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_VALERIA_PREMIUM;
+        const stripePriceId = process.env.STRIPE_PRICE_ID_VALERIA_PREMIUM;
         if (!stripePriceId) throw new Error("Stripe Price ID para el plan mensual no está configurado.");
         checkoutOptions = {
             customer: customerId,
@@ -130,7 +130,7 @@ export async function createSubscriptionCheckoutSessionAction(input: CreateSubsc
             cancel_url: `${appUrl}/valeria?payment=cancelled`,
         };
     } else if (planId === 'valeria_premium_quarterly') { // One-time payment for 3 months
-        const stripePriceId = process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_VALERIA_PREMIUM_PROMO;
+        const stripePriceId = process.env.STRIPE_PRICE_ID_VALERIA_PREMIUM_PROMO;
         if (!stripePriceId) throw new Error("Stripe Price ID para la promoción trimestral no está configurado.");
          checkoutOptions = {
             customer: customerId,
